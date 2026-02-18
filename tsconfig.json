@@ -23,5 +23,6 @@
     "noEmit": true,
 
     "lib": ["es2023"]
-  }
+  },
+  "include": ["src"]
 }
