@@ -2,43 +2,34 @@ import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
+import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
 import { isAbortError, tryCatch } from "./utils.ts";
 
 // TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
 
-export interface Rl {
-  on(event: "SIGINT", handler: () => void): void;
-  question(prompt: string, options: { signal: AbortSignal }): Promise<string>;
-  close(): void;
-}
+const BASH_TOOL_SCHEMA = {
+  name: "bash",
+  description: "Execute a bash command and return its output.",
+  input_schema: {
+    type: "object",
+    properties: {
+      command: {
+        type: "string",
+        description: "The bash command to execute.",
+      },
+    },
+    required: ["command"],
+  },
+};
 
-export interface FinalMessage {
-  usage: Anthropic.Messages.Usage;
-  content: Anthropic.Messages.Message["content"];
-  role: Anthropic.Messages.Message["role"];
-}
+async function main() {
+  const client = new Anthropic();
+  const rl = readline.createInterface({ input, output });
 
-interface ApiStream {
-  on(event: "text", handler: (text: string) => void): ApiStream;
-  finalMessage(): Promise<FinalMessage>;
-  abort(): void;
-}
-
-export interface Client {
-  messages: {
-    stream(params: {
-      max_tokens: number;
-      model: Anthropic.Messages.Model;
-      messages: Anthropic.Messages.MessageParam[];
-    }): ApiStream;
-  };
-}
-
-export async function main(rl: Rl, client: Client): Promise<void> {
   let currQuestionAbortController: AbortController | null = null;
-  let currApiStream: ApiStream | null = null;
+  let currApiStream: MessageStream | null = null;
 
   rl.on("SIGINT", () => {
     if (currApiStream) {
@@ -233,10 +224,7 @@ export function calculateSessionCost(
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const rl = readline.createInterface({ input, output });
-  const client = new Anthropic();
-
-  main(rl, client).catch((err: unknown) => {
+  main().catch((err: unknown) => {
     console.error(err);
     process.exit(0);
   });
