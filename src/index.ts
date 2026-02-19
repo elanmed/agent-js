@@ -32,17 +32,21 @@ async function main() {
       const answer = await rl.question("> ", {
         signal: currentAbortController.signal,
       });
-      dispatch(actions.appendToMessages({ content: answer, role: "user" }));
+      if (answer === "") continue;
+
+      dispatch(
+        actions.appendToMessageParams({ content: answer, role: "user" }),
+      );
 
       const message = await client.messages.create({
         max_tokens: 1024,
-        messages: selectors.getMessages(),
+        messages: selectors.getMessageParams(),
         model: MODEL,
       });
 
-      dispatch(actions.setResponse(message));
+      dispatch(actions.appendToMessageUsages(message.usage));
       dispatch(
-        actions.appendToMessages({
+        actions.appendToMessageParams({
           content: message.content,
           role: message.role,
         }),
@@ -121,11 +125,7 @@ function printSessionCost() {
     console.log("Session cost: unknown");
     return;
   }
-  const response = selectors.getResponse();
-  if (response === undefined) {
-    console.log("Session cost: $0.00");
-    return;
-  }
+  const usages = selectors.getMessageUsages();
 
   const {
     cacheReadPerToken,
@@ -133,17 +133,35 @@ function printSessionCost() {
     inputPerToken,
     outputPerToken,
   } = pricing;
-  const { usage } = response;
 
-  const inputCost = usage.input_tokens * inputPerToken;
-  const outputCost = usage.output_tokens * outputPerToken;
+  const totalUsage = usages.reduce(
+    (accum, curr) => {
+      return {
+        cache_creation_input_tokens:
+          accum.cache_creation_input_tokens +
+          (curr.cache_creation_input_tokens ?? 0),
+        cache_read_input_tokens:
+          accum.cache_read_input_tokens + (curr.cache_read_input_tokens ?? 0),
+        input_tokens: accum.input_tokens + curr.input_tokens,
+        output_tokens: accum.output_tokens + curr.output_tokens,
+      };
+    },
+    {
+      cache_creation_input_tokens: 0,
+      cache_read_input_tokens: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+    },
+  );
+
+  const inputCost = totalUsage.input_tokens * inputPerToken;
+  const outputCost = totalUsage.output_tokens * outputPerToken;
   const cacheCreationCost =
-    (usage.cache_creation_input_tokens ?? 0) * cacheWrite5mPerToken;
-  const cacheReadCost =
-    (usage.cache_read_input_tokens ?? 0) * cacheReadPerToken;
+    totalUsage.cache_creation_input_tokens * cacheWrite5mPerToken;
+  const cacheReadCost = totalUsage.cache_read_input_tokens * cacheReadPerToken;
 
   const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
-  console.log(`Session cost: $${(cost * 100).toFixed(2)}`);
+  console.log(`Session cost: $${cost.toFixed(4)}`);
   return;
 }
 

@@ -3,15 +3,15 @@ import type Anthropic from "@anthropic-ai/sdk";
 interface State {
   interrupted: boolean;
   running: boolean;
-  messages: Anthropic.Messages.MessageParam[];
-  response: Anthropic.Messages.Message | undefined;
+  messageParams: Anthropic.Messages.MessageParam[];
+  messageUsages: Anthropic.Messages.Usage[];
 }
 
 let state: State = {
   interrupted: false,
   running: true,
-  messages: [],
-  response: undefined,
+  messageParams: [],
+  messageUsages: [],
 };
 
 export const getState = () => state;
@@ -26,12 +26,12 @@ type Action =
       payload: boolean;
     }
   | {
-      type: "append-to-messages";
+      type: "append-to-message-params";
       payload: Anthropic.Messages.MessageParam;
     }
   | {
-      type: "set-response";
-      payload: Anthropic.Messages.Message;
+      type: "append-to-message-responses";
+      payload: Anthropic.Messages.Usage;
     };
 
 export const dispatch = (action: Action) => {
@@ -52,16 +52,16 @@ const reducer = (state: State, action: Action): State => {
         running: action.payload,
       };
     }
-    case "append-to-messages": {
+    case "append-to-message-params": {
       return {
         ...state,
-        messages: [...state.messages, action.payload],
+        messageParams: [...state.messageParams, action.payload],
       };
     }
-    case "set-response": {
+    case "append-to-message-responses": {
       return {
         ...state,
-        response: action.payload,
+        messageUsages: [...state.messageUsages, action.payload],
       };
     }
   }
@@ -81,16 +81,18 @@ const setRunning = (running: boolean): Action => {
   };
 };
 
-const appendToMessages = (message: Anthropic.Messages.MessageParam): Action => {
+const appendToMessageParams = (
+  message: Anthropic.Messages.MessageParam,
+): Action => {
   return {
-    type: "append-to-messages",
+    type: "append-to-message-params",
     payload: message,
   };
 };
 
-const setResponse = (message: Anthropic.Messages.Message): Action => {
+const appendToMessageUsages = (message: Anthropic.Messages.Usage): Action => {
   return {
-    type: "set-response",
+    type: "append-to-message-responses",
     payload: message,
   };
 };
@@ -98,18 +100,18 @@ const setResponse = (message: Anthropic.Messages.Message): Action => {
 export const actions = {
   setInterrupted,
   setRunning,
-  appendToMessages,
-  setResponse,
+  appendToMessageParams,
+  appendToMessageUsages,
 };
 
 const getInterrupted = () => getState().interrupted;
 const getRunning = () => getState().running;
-const getMessages = () => getState().messages;
-const getResponse = () => getState().response;
+const getMessageParams = () => getState().messageParams;
+const getMessageUsages = () => getState().messageUsages;
 
 export const selectors = {
   getInterrupted,
   getRunning,
-  getMessages,
-  getResponse,
+  getMessageParams,
+  getMessageUsages,
 };
