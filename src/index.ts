@@ -21,7 +21,6 @@ async function main() {
     // second <C-c> during exit confirmation
     if (selectors.getInterrupted()) {
       rl.close();
-      printSessionCost();
       process.exit(0);
     }
   });
@@ -29,7 +28,7 @@ async function main() {
   while (selectors.getRunning()) {
     currentAbortController = new AbortController();
     try {
-      const answer = await rl.question("> ", {
+      const answer = await rl.question("\n> ", {
         signal: currentAbortController.signal,
       });
       if (answer === "") continue;
@@ -53,6 +52,7 @@ async function main() {
       );
 
       printFromMessageResponse(message);
+      printSessionCost();
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
         dispatch(actions.setInterrupted(true));
@@ -68,7 +68,6 @@ async function main() {
           if (/^y(es)?$/i.exec(exitAnswer)) {
             dispatch(actions.setRunning(false));
             rl.close();
-            printSessionCost();
           }
         } catch {
           // second <C-c> during confirmation is already handled by SIGINT
