@@ -10,7 +10,8 @@ A minimal agent implementation
 
 - [x] Basic readline loop with cancellation
 - [x] Basic API calls
-- [ ] API calls with streaming
+- [x] API calls with streaming
+- [ ] API calls with cancellation
 - [ ] ...
 - [ ] Tool support
 - [ ] Skill support

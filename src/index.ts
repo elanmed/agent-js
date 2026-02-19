@@ -28,7 +28,7 @@ async function main() {
   while (selectors.getRunning()) {
     currentAbortController = new AbortController();
     try {
-      const answer = await rl.question("\n> ", {
+      const answer = await rl.question("> ", {
         signal: currentAbortController.signal,
       });
       if (answer === "") continue;
@@ -37,11 +37,18 @@ async function main() {
         actions.appendToMessageParams({ content: answer, role: "user" }),
       );
 
-      const message = await client.messages.create({
-        max_tokens: 1024,
-        messages: selectors.getMessageParams(),
-        model: MODEL,
-      });
+      const stream = client.messages
+        .stream({
+          max_tokens: 1024,
+          model: MODEL,
+          messages: selectors.getMessageParams(),
+        })
+        .on("text", (text) => {
+          process.stdout.write(text);
+        });
+
+      const message = await stream.finalMessage();
+      process.stdout.write("\n\n");
 
       dispatch(actions.appendToMessageUsages(message.usage));
       dispatch(
@@ -50,8 +57,6 @@ async function main() {
           role: message.role,
         }),
       );
-
-      printFromMessageResponse(message);
       printSessionCost();
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
@@ -162,21 +167,6 @@ function printSessionCost() {
   const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
   console.log(`Session cost: $${cost.toFixed(4)}`);
   return;
-}
-
-function printFromMessageResponse(message: Anthropic.Messages.Message) {
-  message.content.forEach((message) => {
-    switch (message.type) {
-      case "text": {
-        const prettyMessage = `Text response: ${message.text}`;
-        console.log(prettyMessage);
-        break;
-      }
-      default: {
-        console.log(JSON.stringify(message, null, 2));
-      }
-    }
-  });
 }
 
 main().catch(() => process.exit(0));
