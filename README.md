@@ -11,7 +11,12 @@ A minimal agent implementation
 - [x] Basic readline loop with cancellation
 - [x] Basic API calls
 - [x] API calls with streaming
-- [x] API calls with cancellation
-- [ ] ...
+- [x] Streaming with cancellation
+- [ ] Settings file
+- [ ] AGENTS.md support
 - [ ] Tool support
+  - [ ] Bash tool
+  - [ ] Text edit tool
+  - [ ] Web search tool?
+- [ ] ...
 - [ ] Skill support
