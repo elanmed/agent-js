@@ -32,6 +32,9 @@ type Action =
   | {
       type: "append-to-message-responses";
       payload: Anthropic.Messages.Usage;
+    }
+  | {
+      type: "pop-last-message-param";
     };
 
 export const dispatch = (action: Action) => {
@@ -78,6 +81,12 @@ const reducer = (state: State, action: Action): State => {
         messageUsages: [...state.messageUsages, action.payload],
       };
     }
+    case "pop-last-message-param": {
+      return {
+        ...state,
+        messageParams: state.messageParams.slice(0, -1),
+      };
+    }
   }
 };
 
@@ -95,6 +104,7 @@ const setRunning = (running: boolean): Action => {
   };
 };
 
+
 const appendToMessageParams = (
   message: Anthropic.Messages.MessageParam,
 ): Action => {
@@ -111,11 +121,16 @@ const appendToMessageUsages = (message: Anthropic.Messages.Usage): Action => {
   };
 };
 
+const popLastMessageParam = (): Action => {
+  return { type: "pop-last-message-param" };
+};
+
 export const actions = {
   setInterrupted,
   setRunning,
   appendToMessageParams,
   appendToMessageUsages,
+  popLastMessageParam,
 };
 
 const getInterrupted = () => getState().interrupted;

@@ -110,6 +110,7 @@ async function main() {
 
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
+        dispatch(actions.popLastMessageParam());
         console.log("\nAborted\n");
         continue;
       }
