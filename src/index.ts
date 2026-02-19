@@ -1,6 +1,7 @@
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import Anthropic from "@anthropic-ai/sdk";
+import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
 
 // TODO: support config file
@@ -11,11 +12,16 @@ async function main() {
 
   const rl = readline.createInterface({ input, output });
 
-  let currentAbortController: AbortController | null = null;
+  let currQuestionAbortController: AbortController | null = null;
+  let currApiStream: MessageStream | null;
 
   rl.on("SIGINT", () => {
-    if (currentAbortController) {
-      currentAbortController.abort();
+    if (currApiStream) {
+      currApiStream.abort();
+    }
+
+    if (currQuestionAbortController) {
+      currQuestionAbortController.abort();
     }
 
     // second <C-c> during exit confirmation
@@ -26,10 +32,10 @@ async function main() {
   });
 
   while (selectors.getRunning()) {
-    currentAbortController = new AbortController();
+    currQuestionAbortController = new AbortController();
     try {
       const answer = await rl.question("> ", {
-        signal: currentAbortController.signal,
+        signal: currQuestionAbortController.signal,
       });
       if (answer === "") continue;
 
@@ -46,7 +52,7 @@ async function main() {
         }),
       );
 
-      const stream = client.messages
+      currApiStream = client.messages
         .stream({
           max_tokens: 1024,
           model: MODEL,
@@ -56,25 +62,35 @@ async function main() {
           process.stdout.write(text);
         });
 
-      const message = await stream.finalMessage();
-      process.stdout.write("\n\n");
+      try {
+        const message = await currApiStream.finalMessage();
+        process.stdout.write("\n\n");
 
-      dispatch(actions.appendToMessageUsages(message.usage));
-      dispatch(
-        actions.appendToMessageParams({
-          content: message.content,
-          role: message.role,
-        }),
-      );
-      printSessionCost();
+        dispatch(actions.appendToMessageUsages(message.usage));
+        dispatch(
+          actions.appendToMessageParams({
+            content: message.content,
+            role: message.role,
+          }),
+        );
+        printSessionCost();
+      } catch (err) {
+        if (err instanceof Anthropic.APIUserAbortError) {
+          process.stdout.write("\nAborted\n");
+        } else {
+          throw err;
+        }
+      } finally {
+        currApiStream = null;
+      }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
         dispatch(actions.setInterrupted(true));
-        currentAbortController = new AbortController();
+        currQuestionAbortController = new AbortController();
 
         try {
           const exitAnswer = await rl.question("y(es) or <C-c> to exit ", {
-            signal: currentAbortController.signal,
+            signal: currQuestionAbortController.signal,
           });
           if (/^y(es)?$/i.exec(exitAnswer)) {
             dispatch(actions.setRunning(false));
@@ -88,7 +104,7 @@ async function main() {
         throw err;
       }
     } finally {
-      currentAbortController = null;
+      currQuestionAbortController = null;
     }
   }
 }
@@ -175,4 +191,7 @@ function printSessionCost() {
   return;
 }
 
-main().catch(() => process.exit(0));
+main().catch((err: unknown) => {
+  console.error(err);
+  process.exit(0);
+});
