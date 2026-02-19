@@ -64,12 +64,9 @@ async function main() {
         currentAbortController = new AbortController();
 
         try {
-          const exitAnswer = await rl.question(
-            "Are you sure you want to exit? ",
-            {
-              signal: currentAbortController.signal,
-            },
-          );
+          const exitAnswer = await rl.question("y(es) or <C-c> to exit ", {
+            signal: currentAbortController.signal,
+          });
           if (/^y(es)?$/i.exec(exitAnswer)) {
             dispatch(actions.setRunning(false));
             rl.close();
