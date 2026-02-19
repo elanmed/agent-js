@@ -34,7 +34,16 @@ async function main() {
       if (answer === "") continue;
 
       dispatch(
-        actions.appendToMessageParams({ content: answer, role: "user" }),
+        actions.appendToMessageParams({
+          content: [
+            {
+              text: answer,
+              type: "text",
+              cache_control: { type: "ephemeral" },
+            },
+          ],
+          role: "user",
+        }),
       );
 
       const stream = client.messages

@@ -53,9 +53,23 @@ const reducer = (state: State, action: Action): State => {
       };
     }
     case "append-to-message-params": {
+      const withoutCacheMarkers = state.messageParams.map((message) => {
+        if (typeof message.content === "string") {
+          return message;
+        }
+
+        return {
+          ...message,
+          content: message.content.map((content) => ({
+            ...content,
+            cache_control: null,
+          })),
+        };
+      });
+
       return {
         ...state,
-        messageParams: [...state.messageParams, action.payload],
+        messageParams: [...withoutCacheMarkers, action.payload],
       };
     }
     case "append-to-message-responses": {
