@@ -4,6 +4,21 @@ import Anthropic from "@anthropic-ai/sdk";
 import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
 
+type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+async function tryCatch<T>(promise: Promise<T>): Promise<Result<T>> {
+  try {
+    const result = await promise;
+    return { ok: true, value: result };
+  } catch (err) {
+    return { ok: false, error: err };
+  }
+}
+
 // TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
 
@@ -33,79 +48,84 @@ async function main() {
 
   while (selectors.getRunning()) {
     currQuestionAbortController = new AbortController();
-    try {
-      const answer = await rl.question("> ", {
-        signal: currQuestionAbortController.signal,
-      });
-      if (answer === "") continue;
+    const inputResult = await tryCatch(
+      rl.question("> ", { signal: currQuestionAbortController.signal }),
+    );
+    currQuestionAbortController = null;
 
-      dispatch(
-        actions.appendToMessageParams({
-          content: [
-            {
-              text: answer,
-              type: "text",
-              cache_control: { type: "ephemeral" },
-            },
-          ],
-          role: "user",
+    if (!inputResult.ok) {
+      if (!isAbortError(inputResult.error)) throw inputResult.error;
+
+      dispatch(actions.setInterrupted(true));
+      currQuestionAbortController = new AbortController();
+      const exitResult = await tryCatch(
+        rl.question("y(es) or <C-c> to exit ", {
+          signal: currQuestionAbortController.signal,
         }),
       );
-
-      currApiStream = client.messages
-        .stream({
-          max_tokens: 1024,
-          model: MODEL,
-          messages: selectors.getMessageParams(),
-        })
-        .on("text", (text) => {
-          process.stdout.write(text);
-        });
-
-      try {
-        const message = await currApiStream.finalMessage();
-        process.stdout.write("\n\n");
-
-        dispatch(actions.appendToMessageUsages(message.usage));
-        dispatch(
-          actions.appendToMessageParams({
-            content: message.content,
-            role: message.role,
-          }),
-        );
-        printSessionCost();
-      } catch (err) {
-        if (err instanceof Anthropic.APIUserAbortError) {
-          process.stdout.write("\nAborted\n");
-        } else {
-          throw err;
-        }
-      } finally {
-        currApiStream = null;
-      }
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        dispatch(actions.setInterrupted(true));
-        currQuestionAbortController = new AbortController();
-
-        try {
-          const exitAnswer = await rl.question("y(es) or <C-c> to exit ", {
-            signal: currQuestionAbortController.signal,
-          });
-          if (/^y(es)?$/i.exec(exitAnswer)) {
-            dispatch(actions.setRunning(false));
-            rl.close();
-          }
-        } catch {
-          // second <C-c> during confirmation is already handled by SIGINT
-        }
-        dispatch(actions.setInterrupted(false));
-      } else {
-        throw err;
-      }
-    } finally {
       currQuestionAbortController = null;
+
+      if (exitResult.ok) {
+        if (/^y(es)?$/i.exec(exitResult.value)) {
+          dispatch(actions.setRunning(false));
+          rl.close();
+        }
+      } else {
+        // second <C-c> during confirmation is already handled by SIGINT
+      }
+
+      dispatch(actions.setInterrupted(false));
+      continue;
     }
+
+    if (inputResult.value === "") {
+      console.log("Empty input, aborting");
+      continue;
+    }
+
+    dispatch(
+      actions.appendToMessageParams({
+        content: [
+          {
+            text: inputResult.value,
+            type: "text",
+            cache_control: { type: "ephemeral" },
+          },
+        ],
+        role: "user",
+      }),
+    );
+
+    currApiStream = client.messages
+      .stream({
+        max_tokens: 1024,
+        model: MODEL,
+        messages: selectors.getMessageParams(),
+      })
+      .on("text", (text) => {
+        process.stdout.write(text);
+      });
+    const streamResult = await tryCatch(currApiStream.finalMessage());
+    currApiStream = null;
+
+    if (!streamResult.ok) {
+      if (streamResult.error instanceof Anthropic.APIUserAbortError) {
+        console.log("\nAborted\n");
+        continue;
+      }
+      throw streamResult.error;
+    }
+
+    process.stdout.write("\n\n");
+
+    dispatch(actions.appendToMessageUsages(streamResult.value.usage));
+    dispatch(
+      actions.appendToMessageParams({
+        content: streamResult.value.content,
+        role: streamResult.value.role,
+      }),
+    );
+    printSessionCost();
   }
 }
 
