@@ -7,14 +7,20 @@ interface State {
   messageUsages: Anthropic.Messages.Usage[];
 }
 
-let state: State = {
+const initialState: State = {
   interrupted: false,
   running: true,
   messageParams: [],
   messageUsages: [],
 };
 
+let state: State = { ...initialState };
+
 export const getState = () => state;
+
+export const resetState = () => {
+  state = { ...initialState };
+};
 
 type Action =
   | {
@@ -103,7 +109,6 @@ const setRunning = (running: boolean): Action => {
     payload: running,
   };
 };
-
 
 const appendToMessageParams = (
   message: Anthropic.Messages.MessageParam,

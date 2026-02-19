@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.ts",
+    "test": "node --test 'src/**/*.test.ts'",
     "lint": "eslint src",
     "types": "tsc"
   },

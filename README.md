@@ -12,6 +12,7 @@ A minimal agent implementation
 - [x] Basic API calls
 - [x] API calls with streaming
 - [x] Streaming with cancellation
+- [ ] Tests
 - [ ] Settings file
 - [ ] AGENTS.md support
 - [ ] Tool support

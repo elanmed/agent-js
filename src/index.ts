@@ -3,21 +3,7 @@ import { stdin as input, stdout as output } from "node:process";
 import Anthropic from "@anthropic-ai/sdk";
 import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
-
-type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
-async function tryCatch<T>(promise: Promise<T>): Promise<Result<T>> {
-  try {
-    const result = await promise;
-    return { ok: true, value: result };
-  } catch (err) {
-    return { ok: false, error: err };
-  }
-}
+import { isAbortError, tryCatch } from "./utils.ts";
 
 // TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
