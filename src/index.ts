@@ -1,20 +1,44 @@
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
-import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
 import { isAbortError, tryCatch } from "./utils.ts";
 
 // TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
 
-async function main() {
-  const client = new Anthropic();
+export interface Rl {
+  on(event: "SIGINT", handler: () => void): void;
+  question(prompt: string, options: { signal: AbortSignal }): Promise<string>;
+  close(): void;
+}
 
-  const rl = readline.createInterface({ input, output });
+export interface FinalMessage {
+  usage: Anthropic.Messages.Usage;
+  content: Anthropic.Messages.Message["content"];
+  role: Anthropic.Messages.Message["role"];
+}
 
+interface ApiStream {
+  on(event: "text", handler: (text: string) => void): ApiStream;
+  finalMessage(): Promise<FinalMessage>;
+  abort(): void;
+}
+
+export interface Client {
+  messages: {
+    stream(params: {
+      max_tokens: number;
+      model: Anthropic.Messages.Model;
+      messages: Anthropic.Messages.MessageParam[];
+    }): ApiStream;
+  };
+}
+
+export async function main(rl: Rl, client: Client): Promise<void> {
   let currQuestionAbortController: AbortController | null = null;
-  let currApiStream: MessageStream | null;
+  let currApiStream: ApiStream | null = null;
 
   rl.on("SIGINT", () => {
     if (currApiStream) {
@@ -112,7 +136,7 @@ async function main() {
         role: streamResult.value.role,
       }),
     );
-    printSessionCost();
+    console.log(calculateSessionCost(MODEL, selectors.getMessageUsages()));
   }
 }
 
@@ -124,12 +148,20 @@ interface ModelPricing {
   cacheReadPerToken: number;
 }
 
-function printSessionCost() {
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens?: number | null;
+  cache_read_input_tokens?: number | null;
+}
+
+export function calculateSessionCost(
+  model: string,
+  usages: TokenUsage[],
+): string {
   const DOLLARS_PER_MILLION = 1_000_000;
 
-  const pricingPerModel: Partial<
-    Record<Anthropic.Messages.Model, ModelPricing>
-  > = {
+  const pricingPerModel: Partial<Record<string, ModelPricing>> = {
     "claude-opus-4-6": {
       inputPerToken: 5 / DOLLARS_PER_MILLION,
       cacheWrite5mPerToken: 6.25 / DOLLARS_PER_MILLION,
@@ -153,12 +185,10 @@ function printSessionCost() {
     },
   };
 
-  const pricing = pricingPerModel[MODEL];
+  const pricing = pricingPerModel[model];
   if (pricing === undefined) {
-    console.log("Session cost: unknown");
-    return;
+    return "Session cost: unknown";
   }
-  const usages = selectors.getMessageUsages();
 
   const {
     cacheReadPerToken,
@@ -167,7 +197,12 @@ function printSessionCost() {
     outputPerToken,
   } = pricing;
 
-  const totalUsage = usages.reduce(
+  const totalUsage = usages.reduce<{
+    cache_creation_input_tokens: number;
+    cache_read_input_tokens: number;
+    input_tokens: number;
+    output_tokens: number;
+  }>(
     (accum, curr) => {
       return {
         cache_creation_input_tokens:
@@ -194,11 +229,15 @@ function printSessionCost() {
   const cacheReadCost = totalUsage.cache_read_input_tokens * cacheReadPerToken;
 
   const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
-  console.log(`Session cost: $${cost.toFixed(4)}`);
-  return;
+  return `Session cost: $${cost.toFixed(4)}`;
 }
 
-main().catch((err: unknown) => {
-  console.error(err);
-  process.exit(0);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const rl = readline.createInterface({ input, output });
+  const client = new Anthropic();
+
+  main(rl, client).catch((err: unknown) => {
+    console.error(err);
+    process.exit(0);
+  });
+}
