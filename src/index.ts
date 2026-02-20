@@ -11,9 +11,8 @@ import {
   logNewline,
   calculateSessionCost,
 } from "./utils.ts";
-import { BASH_TOOL_SCHEMA, getBashToolMessageParam } from "./tools.ts";
+import { BASH_TOOL_SCHEMA, getBashToolResultBlockParam } from "./tools.ts";
 
-// TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
 
 async function main() {
@@ -40,14 +39,8 @@ async function main() {
       });
     const streamResult = await currApiStream.finalMessage();
     currApiStream = null;
-
     dispatch(actions.appendToMessageUsages(streamResult.usage));
-    dispatch(
-      actions.appendToMessageParams({
-        content: streamResult.content,
-        role: streamResult.role,
-      }),
-    );
+
     return streamResult;
   }
 
@@ -121,55 +114,82 @@ async function main() {
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
         dispatch(actions.popLastMessageParam());
-        logNewline();
-        colorLog("Aborted", "red");
-        logNewline();
+        colorLog("\nAborted\n", "red");
         continue;
+      } else {
+        throw streamResult.error;
       }
-      throw streamResult.error;
     }
 
-    let stopReason = streamResult.value.stop_reason;
-    while (stopReason === "tool_use") {
-      const toolUseBlock = streamResult.value.content.find(
-        (contentBlock) => contentBlock.type === "tool_use",
+    let currentMessage = streamResult.value;
+    while (currentMessage.stop_reason === "tool_use") {
+      dispatch(
+        actions.appendToMessageParams({
+          content: currentMessage.content,
+          role: currentMessage.role,
+        }),
       );
-      if (!toolUseBlock) {
-        throw new Error(
-          "`stop_reason` was `tool_use` but could not find a content block with a type of `tool_use`",
-        );
-      }
 
-      let messageParam: Anthropic.Messages.MessageParam | null = null;
+      const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
+      let aborted = false;
 
-      switch (toolUseBlock.name) {
-        case "bash": {
-          messageParam = await getBashToolMessageParam(toolUseBlock);
-          break;
+      for (const contentBlock of currentMessage.content) {
+        if (contentBlock.type === "tool_use") {
+          const toolUseBlock = contentBlock;
+
+          let toolResultBlock: Anthropic.Messages.ToolResultBlockParam | null =
+            null;
+
+          switch (toolUseBlock.name) {
+            case "bash": {
+              toolResultBlock = await getBashToolResultBlockParam(toolUseBlock);
+              break;
+            }
+          }
+
+          if (!toolResultBlock) {
+            throw new Error(
+              "Failed to create a tool result when processing the tool call",
+            );
+          }
+
+          toolResults.push(toolResultBlock);
         }
       }
 
-      if (!messageParam) {
-        throw new Error(
-          "Failed to create a `messageParam` when processing the tool call",
-        );
-      }
+      const toolResultsMessage: Anthropic.Messages.MessageParam = {
+        content: toolResults.map((toolResult) => ({
+          ...toolResult,
+          cache_control: { type: "ephemeral" },
+        })),
+        role: "user",
+      };
 
-      const toolStreamResult = await tryCatch(callApi(messageParam));
+      const toolStreamResult = await tryCatch(callApi(toolResultsMessage));
 
       if (!toolStreamResult.ok) {
         if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
           dispatch(actions.popLastMessageParam());
-          logNewline();
-          colorLog("Aborted", "red");
-          logNewline();
-          break;
+          colorLog("\nAborted\n", "red");
+          aborted = true;
+        } else {
+          throw toolStreamResult.error;
         }
-        throw toolStreamResult.error;
       }
 
-      stopReason = toolStreamResult.value.stop_reason;
+      if (aborted) {
+        break;
+      }
+
+      currentMessage = toolStreamResult.value;
     }
+
+    dispatch(
+      actions.appendToMessageParams({
+        content: currentMessage.content,
+        role: currentMessage.role,
+      }),
+    );
 
     logNewline();
     colorLog(
