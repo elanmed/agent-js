@@ -197,6 +197,7 @@ async function main() {
           logNewline();
           colorLog("Aborted", "red");
           logNewline();
+          break;
         }
         throw toolStreamResult.error;
       }
