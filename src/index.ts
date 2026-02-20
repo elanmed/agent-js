@@ -1,15 +1,19 @@
 import * as readline from "node:readline/promises";
+import { promisify } from "node:util";
+import child_process from "node:child_process";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { type ParsedMessage } from "@anthropic-ai/sdk";
 import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
-import { isAbortError, tryCatch } from "./utils.ts";
+import { isAbortError, tryCatch, type Result } from "./utils.ts";
+
+const exec = promisify(child_process.exec);
 
 // TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
 
-const BASH_TOOL_SCHEMA = {
+const BASH_TOOL_SCHEMA: Anthropic.Messages.Tool = {
   name: "bash",
   description: "Execute a bash command and return its output.",
   input_schema: {
@@ -30,6 +34,32 @@ async function main() {
 
   let currQuestionAbortController: AbortController | null = null;
   let currApiStream: MessageStream | null = null;
+
+  async function callApi(messageParam: Anthropic.Messages.MessageParam) {
+    dispatch(actions.appendToMessageParams(messageParam));
+
+    currApiStream = client.messages
+      .stream({
+        max_tokens: 1024,
+        model: MODEL,
+        messages: selectors.getMessageParams(),
+        tools: [BASH_TOOL_SCHEMA],
+      })
+      .on("text", (text) => {
+        process.stdout.write(text);
+      });
+    const streamResult = await currApiStream.finalMessage();
+    currApiStream = null;
+
+    dispatch(actions.appendToMessageUsages(streamResult.usage));
+    dispatch(
+      actions.appendToMessageParams({
+        content: streamResult.content,
+        role: streamResult.role,
+      }),
+    );
+    return streamResult;
+  }
 
   rl.on("SIGINT", () => {
     if (currApiStream) {
@@ -84,8 +114,8 @@ async function main() {
       continue;
     }
 
-    dispatch(
-      actions.appendToMessageParams({
+    const streamResult = await tryCatch(
+      callApi({
         content: [
           {
             text: inputResult.value,
@@ -97,18 +127,6 @@ async function main() {
       }),
     );
 
-    currApiStream = client.messages
-      .stream({
-        max_tokens: 1024,
-        model: MODEL,
-        messages: selectors.getMessageParams(),
-      })
-      .on("text", (text) => {
-        process.stdout.write(text);
-      });
-    const streamResult = await tryCatch(currApiStream.finalMessage());
-    currApiStream = null;
-
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
         dispatch(actions.popLastMessageParam());
@@ -118,15 +136,48 @@ async function main() {
       throw streamResult.error;
     }
 
-    process.stdout.write("\n\n");
+    let stopReason = streamResult.value.stop_reason;
+    while (stopReason === "tool_use") {
+      const toolUseBlock = streamResult.value.content.find(
+        (contentBlock) => contentBlock.type === "tool_use",
+      );
+      if (!toolUseBlock) {
+        throw new Error(
+          "`stop_reason` was `tool_use` but could not find a content block with a type of `tool_use`",
+        );
+      }
 
-    dispatch(actions.appendToMessageUsages(streamResult.value.usage));
-    dispatch(
-      actions.appendToMessageParams({
-        content: streamResult.value.content,
-        role: streamResult.value.role,
-      }),
-    );
+      let messageParam: Anthropic.Messages.MessageParam | null = null;
+
+      switch (toolUseBlock.name) {
+        case "bash": {
+          const toolResult = await executeBashTool(toolUseBlock);
+          messageParam = {
+            content: [],
+            role: "user",
+          };
+        }
+      }
+
+      if (!messageParam) {
+        throw new Error(
+          "Failed to create a `messageParam` when processing the tool call",
+        );
+      }
+
+      const toolStreamResult = await tryCatch(callApi(messageParam));
+
+      if (!toolStreamResult.ok) {
+        if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
+          dispatch(actions.popLastMessageParam());
+          console.log("\nAborted\n");
+        }
+        throw toolStreamResult.error;
+      }
+      stopReason = toolStreamResult.value.stop_reason;
+    }
+
+    process.stdout.write("\n\n");
     console.log(calculateSessionCost(MODEL, selectors.getMessageUsages()));
   }
 }
@@ -221,6 +272,24 @@ export function calculateSessionCost(
 
   const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
   return `Session cost: $${cost.toFixed(4)}`;
+}
+
+async function executeBashTool(toolUseBlock: Anthropic.Messages.ToolUseBlock) {
+  if (typeof toolUseBlock.input !== "object") {
+    throw new Error("Expected `toolUseBlock.input` to be an object");
+  }
+  if (toolUseBlock.input === null) {
+    throw new Error("Expected `toolUseBlock.input` to be an object");
+  }
+  if (!("command" in toolUseBlock.input)) {
+    throw new Error("Expected `toolUseBlock.input.command` to be a valid key");
+  }
+  if (typeof toolUseBlock.input.command !== "string") {
+    throw new Error("Expected `toolUseBlock.input.command` to be a string");
+  }
+
+  const bashCommand = toolUseBlock.input.command;
+  return await tryCatch(exec(bashCommand));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
