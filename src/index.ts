@@ -41,6 +41,8 @@ async function main() {
         model: MODEL,
         messages: selectors.getMessageParams(),
         tools: [BASH_TOOL_SCHEMA],
+        system:
+          "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal.",
       })
       .on("text", (text) => {
         process.stdout.write(text);

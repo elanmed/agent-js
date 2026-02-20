@@ -12,11 +12,12 @@ A minimal agent implementation
 - [x] Basic API calls
 - [x] API calls with streaming
 - [x] Streaming with cancellation
-- [ ] Tests
+- [x] Test infrastructure
+- [ ] Pretty terminal output
 - [ ] Settings file
 - [ ] AGENTS.md support
 - [ ] Tool support
-  - [ ] Bash tool
+  - [x] Bash tool
   - [ ] Text edit tool
   - [ ] Web search tool?
 - [ ] ...
