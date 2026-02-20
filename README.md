@@ -5,6 +5,7 @@ A minimal agent implementation
 ## Features
 
 - 1 dependency (the anthropic SDK)
+- Strictest typescript around
 
 ## TODO
 
@@ -13,7 +14,8 @@ A minimal agent implementation
 - [x] API calls with streaming
 - [x] Streaming with cancellation
 - [x] Test infrastructure
-- [ ] Pretty terminal output
+- [x] Pretty terminal output
+- [ ] Convert to Deno for executable
 - [ ] Settings file
 - [ ] AGENTS.md support
 - [ ] Tool support
