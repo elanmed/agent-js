@@ -13,8 +13,6 @@ import {
 } from "./utils.ts";
 import { BASH_TOOL_SCHEMA, getToolResultBlock } from "./tools.ts";
 
-const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
-
 async function main() {
   const client = new Anthropic();
   const rl = readline.createInterface({ input, output });
@@ -28,7 +26,7 @@ async function main() {
     currApiStream = client.messages
       .stream({
         max_tokens: 1024,
-        model: MODEL,
+        model: selectors.getModel(),
         messages: [...selectors.getMessageParams(), messageParam],
         tools: [BASH_TOOL_SCHEMA],
         system:
@@ -168,11 +166,16 @@ async function main() {
       }
     }
 
-    logNewline();
-    colorLog(
-      calculateSessionCost(MODEL, selectors.getMessageUsages()),
-      "green",
-    );
+    if (!selectors.getDisableCostMessage()) {
+      logNewline();
+      colorLog(
+        calculateSessionCost(
+          selectors.getModel(),
+          selectors.getMessageUsages(),
+        ),
+        "green",
+      );
+    }
   }
 }
 

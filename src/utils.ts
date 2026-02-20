@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import { resolve } from "node:path";
+import { selectors } from "./state.ts";
+
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
 export function isAbortError(error: unknown): boolean {
@@ -26,11 +30,18 @@ export function colorLog(text: string, color: keyof typeof COLORS = "white") {
   console.log(`${colorCode}${text}${reset}`);
 }
 
+export function debugLog(content: string) {
+  if (process.env["AGENT_JS_DEBUG"] !== "true") return;
+  const path = resolve("agent-js.log");
+  fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
+  console.log(content);
+}
+
 export function logNewline(repeat = 1) {
   for (let i = 0; i < repeat; i++) console.log("");
 }
 
-interface ModelPricing {
+export interface ModelPricing {
   inputPerToken: number;
   outputPerToken: number;
   cacheWrite5mPerToken: number;
@@ -45,40 +56,17 @@ export interface TokenUsage {
   cache_read_input_tokens?: number | null;
 }
 
+export type SupportedModel =
+  | "claude-opus-4-6"
+  | "claude-sonnet-4-6"
+  | "claude-haiku-4-5";
+
 export function calculateSessionCost(
-  model: string,
+  model: SupportedModel,
   usages: TokenUsage[],
 ): string {
   const DOLLARS_PER_MILLION = 1_000_000;
-
-  const pricingPerModel: Partial<Record<string, ModelPricing>> = {
-    "claude-opus-4-6": {
-      inputPerToken: 5 / DOLLARS_PER_MILLION,
-      cacheWrite5mPerToken: 6.25 / DOLLARS_PER_MILLION,
-      cacheWrite1hPerToken: 10 / DOLLARS_PER_MILLION,
-      cacheReadPerToken: 0.5 / DOLLARS_PER_MILLION,
-      outputPerToken: 25 / DOLLARS_PER_MILLION,
-    },
-    "claude-sonnet-4-6": {
-      inputPerToken: 3 / DOLLARS_PER_MILLION,
-      cacheWrite5mPerToken: 3.75 / DOLLARS_PER_MILLION,
-      cacheWrite1hPerToken: 6 / DOLLARS_PER_MILLION,
-      cacheReadPerToken: 0.3 / DOLLARS_PER_MILLION,
-      outputPerToken: 15 / DOLLARS_PER_MILLION,
-    },
-    "claude-haiku-4-5": {
-      inputPerToken: 1 / DOLLARS_PER_MILLION,
-      cacheWrite5mPerToken: 1.25 / DOLLARS_PER_MILLION,
-      cacheWrite1hPerToken: 2 / DOLLARS_PER_MILLION,
-      cacheReadPerToken: 0.1 / DOLLARS_PER_MILLION,
-      outputPerToken: 5 / DOLLARS_PER_MILLION,
-    },
-  };
-
-  const pricing = pricingPerModel[model];
-  if (pricing === undefined) {
-    return "Session cost: unknown";
-  }
+  const pricing = selectors.getPricingPerModel()[model];
 
   const {
     cacheReadPerToken,
@@ -112,11 +100,16 @@ export function calculateSessionCost(
     },
   );
 
-  const inputCost = totalUsage.input_tokens * inputPerToken;
-  const outputCost = totalUsage.output_tokens * outputPerToken;
+  const inputCost =
+    (totalUsage.input_tokens * inputPerToken) / DOLLARS_PER_MILLION;
+  const outputCost =
+    (totalUsage.output_tokens * outputPerToken) / DOLLARS_PER_MILLION;
   const cacheCreationCost =
-    totalUsage.cache_creation_input_tokens * cacheWrite5mPerToken;
-  const cacheReadCost = totalUsage.cache_read_input_tokens * cacheReadPerToken;
+    (totalUsage.cache_creation_input_tokens * cacheWrite5mPerToken) /
+    DOLLARS_PER_MILLION;
+  const cacheReadCost =
+    (totalUsage.cache_read_input_tokens * cacheReadPerToken) /
+    DOLLARS_PER_MILLION;
 
   const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
   return `Session cost: $${cost.toFixed(4)}`;

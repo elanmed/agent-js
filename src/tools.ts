@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { colorLog, tryCatch } from "./utils.ts";
 import { exec } from "node:child_process";
+import { z } from "zod";
+import { colorLog, tryCatch } from "./utils.ts";
 
 export const BASH_TOOL_SCHEMA: Anthropic.Messages.Tool = {
   name: "bash",
@@ -17,23 +18,14 @@ export const BASH_TOOL_SCHEMA: Anthropic.Messages.Tool = {
   },
 };
 
+const BashToolInputSchema = z.object({ command: z.string() }).strict();
+
 export async function executeBashTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ) {
-  if (typeof toolUseBlock.input !== "object") {
-    throw new Error("Expected `toolUseBlock.input` to be an object");
-  }
-  if (toolUseBlock.input === null) {
-    throw new Error("Expected `toolUseBlock.input` to be an object");
-  }
-  if (!("command" in toolUseBlock.input)) {
-    throw new Error("Expected `toolUseBlock.input.command` to be a valid key");
-  }
-  if (typeof toolUseBlock.input.command !== "string") {
-    throw new Error("Expected `toolUseBlock.input.command` to be a string");
-  }
-
-  const bashCommand = toolUseBlock.input.command;
+  const { command: bashCommand } = BashToolInputSchema.parse(
+    toolUseBlock.input,
+  );
   colorLog(`Executing bash tool: ${bashCommand}`, "grey");
 
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {

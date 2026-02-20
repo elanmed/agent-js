@@ -45,14 +45,6 @@ describe("utils", () => {
   const noUsages: TokenUsage[] = [];
 
   describe("calculateSessionCost", () => {
-    it("unknown model returns 'Session cost: unknown'", () => {
-      const result = calculateSessionCost(
-        "claude-3-5-haiku-20241022",
-        noUsages,
-      );
-      assert.equal(result, "Session cost: unknown");
-    });
-
     it("known model with no usages returns $0.0000", () => {
       const result = calculateSessionCost("claude-haiku-4-5", noUsages);
       assert.equal(result, "Session cost: $0.0000");
