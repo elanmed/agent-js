@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { ModelPricing, SupportedModel } from "./utils.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
+import { debugLog } from "./utils.ts";
+import type { ModelPricing, SupportedModel } from "./utils.ts";
 
 interface State {
   appState: {
@@ -65,6 +66,7 @@ type Action =
     };
 
 export const dispatch = (action: Action) => {
+  debugLog(`dispatch: ${action.type}`);
   state = reducer(getState(), action);
 };
 

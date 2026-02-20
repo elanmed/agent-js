@@ -8,6 +8,7 @@ import {
   isAbortError,
   tryCatch,
   colorLog,
+  debugLog,
   logNewline,
   calculateSessionCost,
 } from "./utils.ts";
@@ -21,6 +22,10 @@ async function main() {
   let currApiStream: MessageStream | null = null;
 
   async function callApi(messageParam: Anthropic.Messages.MessageParam) {
+    const messageCount = selectors.getMessageParams().length + 1;
+    debugLog(
+      `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
+    );
     let lastChar: string | undefined = "";
 
     currApiStream = client.messages
@@ -40,6 +45,9 @@ async function main() {
       });
     const streamResult = await currApiStream.finalMessage();
     currApiStream = null;
+    debugLog(
+      `callApi: stop_reason=${String(streamResult.stop_reason)}, input_tokens=${String(streamResult.usage.input_tokens)}, output_tokens=${String(streamResult.usage.output_tokens)}`,
+    );
 
     if (lastChar !== "\n") {
       process.stdout.write("\n");
@@ -94,6 +102,7 @@ async function main() {
 
       if (exitResult.ok) {
         if (/^y(es)?$/i.exec(exitResult.value)) {
+          debugLog("user confirmed exit");
           dispatch(actions.setRunning(false));
           rl.close();
         }

@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { exec } from "node:child_process";
 import { z } from "zod";
-import { colorLog, tryCatch } from "./utils.ts";
+import { colorLog, debugLog, tryCatch } from "./utils.ts";
 
 export const BASH_TOOL_SCHEMA: Anthropic.Messages.Tool = {
   name: "bash",
@@ -27,12 +27,15 @@ export async function executeBashTool(
     toolUseBlock.input,
   );
   colorLog(`Executing bash tool: ${bashCommand}`, "grey");
+  debugLog(`executeBashTool: command=${bashCommand}`);
 
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     exec(bashCommand, (error, stdout, stderr) => {
       if (error) {
+        debugLog(`executeBashTool: error=${error.message}`);
         reject(new Error(error.message));
       } else {
+        debugLog(`executeBashTool: stdout=${stdout}, stderr=${stderr}`);
         resolve({ stdout, stderr });
       }
     });
