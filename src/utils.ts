@@ -34,7 +34,6 @@ export function debugLog(content: string) {
   if (process.env["AGENT_JS_DEBUG"] !== "true") return;
   const path = resolve("agent-js.log");
   fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
-  console.log(content);
 }
 
 export function logNewline(repeat = 1) {

@@ -41,6 +41,7 @@ describe("initStateFromConfig", () => {
       },
     })) as unknown as typeof fs.readFileSync);
 
+    mock.method(fs, "mkdirSync", mock.fn() as unknown as typeof fs.mkdirSync);
     mock.method(fs, "writeFileSync", ((path: string, content: string) => {
       writeFileArgs = [path, content];
     }) as unknown as typeof fs.writeFileSync);

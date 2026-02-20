@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { z } from "zod";
-import { debugLog } from "./utils.ts";
+import { colorLog, debugLog } from "./utils.ts";
 import { actions, dispatch } from "./state.ts";
 
 const ModelPricingSchema = z
@@ -77,11 +77,15 @@ export function initStateFromConfig() {
       return parseConfigStr(fs.readFileSync(GLOBAL_CONFIG_PATH).toString());
     }
 
+    fs.mkdirSync(dirname(GLOBAL_CONFIG_PATH), { recursive: true });
     fs.writeFileSync(
       GLOBAL_CONFIG_PATH,
       JSON.stringify(DEFAULT_CONFIG, null, 2),
     );
-    debugLog(`${GLOBAL_CONFIG_PATH} does not exist, writing default config`);
+    colorLog(
+      `${GLOBAL_CONFIG_PATH} does not exist, writing default config`,
+      "grey",
+    );
 
     return DEFAULT_CONFIG;
   })();
