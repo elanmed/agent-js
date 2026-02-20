@@ -11,11 +11,7 @@ import {
   logNewline,
   calculateSessionCost,
 } from "./utils.ts";
-import {
-  BASH_TOOL_SCHEMA,
-  getBashToolResultBlockParam,
-  getToolResultBlock,
-} from "./tools.ts";
+import { BASH_TOOL_SCHEMA, getToolResultBlock } from "./tools.ts";
 
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
 
@@ -183,6 +179,6 @@ async function main() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((err: unknown) => {
     console.error(err);
-    process.exit(0);
+    process.exit(1);
   });
 }
