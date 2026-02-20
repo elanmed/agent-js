@@ -93,6 +93,36 @@ describe("utils", () => {
       assert.equal(result, "Session cost: $0.1000");
     });
 
+    it("treats null cache token fields as zero", () => {
+      const result = calculateSessionCost("claude-haiku-4-5", [
+        {
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_creation_input_tokens: null,
+          cache_read_input_tokens: null,
+        },
+      ]);
+      assert.equal(result, "Session cost: $0.0000");
+    });
+
+    it("calculates costs correctly for claude-sonnet-4-6", () => {
+      // sonnet: input=$3/M, output=$15/M
+      // 1_000_000 input + 1_000_000 output = $3 + $15 = $18.0000
+      const result = calculateSessionCost("claude-sonnet-4-6", [
+        { input_tokens: 1_000_000, output_tokens: 1_000_000 },
+      ]);
+      assert.equal(result, "Session cost: $18.0000");
+    });
+
+    it("calculates costs correctly for claude-opus-4-6", () => {
+      // opus: input=$5/M, output=$25/M
+      // 1_000_000 input + 1_000_000 output = $5 + $25 = $30.0000
+      const result = calculateSessionCost("claude-opus-4-6", [
+        { input_tokens: 1_000_000, output_tokens: 1_000_000 },
+      ]);
+      assert.equal(result, "Session cost: $30.0000");
+    });
+
     it("accumulates costs across multiple usages", () => {
       // haiku: input=$1/M, output=$5/M
       // usage1: 500_000 input + 200_000 output = $0.50 + $1.00 = $1.50
