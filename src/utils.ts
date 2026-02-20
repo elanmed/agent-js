@@ -114,4 +114,3 @@ export function calculateSessionCost(
   const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
   return `Session cost: $${cost.toFixed(4)}`;
 }
-

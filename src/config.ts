@@ -32,8 +32,7 @@ const ConfigSchema = z
   .strict();
 
 type Config = z.infer<typeof ConfigSchema>;
-const RequiredConfigSchema = ConfigSchema.required();
-type ConfigRequired = z.infer<typeof RequiredConfigSchema>;
+type ConfigRequired = z.infer<ReturnType<typeof ConfigSchema.required>>;
 
 export const DEFAULT_CONFIG: ConfigRequired = {
   model: "claude-opus-4-6",
@@ -63,13 +62,13 @@ export const DEFAULT_CONFIG: ConfigRequired = {
   },
 };
 
-const GLOBAL_CONFIG_PATH = join(
+export const GLOBAL_CONFIG_PATH = join(
   homedir(),
   ".config",
   "agent-js",
   "agent-js.settings.json",
 );
-const LOCAL_CONFIG_PATH = resolve("agent-js.settings.json");
+export const LOCAL_CONFIG_PATH = resolve("agent-js.settings.json");
 
 export function initStateFromConfig() {
   const globalConfig: Config = (() => {
@@ -127,4 +126,3 @@ function parseConfigStr(configStr: string): Config {
   }
   return ConfigSchema.parse(parsed);
 }
-

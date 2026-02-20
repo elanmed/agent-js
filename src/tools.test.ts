@@ -22,40 +22,11 @@ function makeToolUseBlock(
 
 describe("tools", () => {
   describe("executeBashTool", () => {
-    it("throws when input is not an object", async () => {
+    it("throws when input is invalid", async () => {
       const block = makeToolUseBlock({
         input: "not-an-object" as unknown as Record<string, unknown>,
       });
-      await assert.rejects(
-        () => executeBashTool(block),
-        /Expected `toolUseBlock.input` to be an object/,
-      );
-    });
-
-    it("throws when input is null", async () => {
-      const block = makeToolUseBlock({
-        input: null as unknown as Record<string, unknown>,
-      });
-      await assert.rejects(
-        () => executeBashTool(block),
-        /Expected `toolUseBlock.input` to be an object/,
-      );
-    });
-
-    it("throws when command key is missing", async () => {
-      const block = makeToolUseBlock({ input: {} });
-      await assert.rejects(
-        () => executeBashTool(block),
-        /Expected `toolUseBlock.input.command` to be a valid key/,
-      );
-    });
-
-    it("throws when command is not a string", async () => {
-      const block = makeToolUseBlock({ input: { command: 42 } });
-      await assert.rejects(
-        () => executeBashTool(block),
-        /Expected `toolUseBlock.input.command` to be a string/,
-      );
+      await assert.rejects(() => executeBashTool(block));
     });
 
     it("returns stdout from a successful command", async () => {

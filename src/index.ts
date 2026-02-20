@@ -13,8 +13,11 @@ import {
   calculateSessionCost,
 } from "./utils.ts";
 import { BASH_TOOL_SCHEMA, getToolResultBlock } from "./tools.ts";
+import { initStateFromConfig } from "./config.ts";
 
 async function main() {
+  initStateFromConfig();
+
   const client = new Anthropic();
   const rl = readline.createInterface({ input, output });
 
