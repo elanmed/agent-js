@@ -25,6 +25,7 @@
   "type": "module",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.77.0",
+    "globby": "^16.1.1",
     "zod": "^4.3.6"
   }
 }

@@ -16,12 +16,12 @@ A minimal agent implementation
 - [x] Test infrastructure
 - [x] Pretty terminal output
 - [ ] Convert to Deno for executable
-- [ ] Settings file
-  - [ ] ~/.config/agent-js/agent-js.settings.json
-  - [ ] ./agent-js.settings.json
-  - [ ] Model
-  - [ ] Disable session cost prompt
-  - [ ] Session cost object
+- [x] Settings file
+  - [x] ~/.config/agent-js/agent-js.settings.json
+  - [x] ./agent-js.settings.json
+  - [x] Model
+  - [x] Disable session cost prompt
+  - [x] Session cost object
 - [ ] AGENTS.md support
 - [ ] Tool support
   - [x] Bash tool

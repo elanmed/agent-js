@@ -11,6 +11,8 @@ import {
   debugLog,
   logNewline,
   calculateSessionCost,
+  BASE_SYSTEM_PROMPT,
+  getRecursiveAgentsMdFilesStr,
 } from "./utils.ts";
 import { BASH_TOOL_SCHEMA, getToolResultBlock } from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
@@ -37,8 +39,7 @@ async function main() {
         model: selectors.getModel(),
         messages: [...selectors.getMessageParams(), messageParam],
         tools: [BASH_TOOL_SCHEMA],
-        system:
-          "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal. Avoid markdown syntax since it will not be parsed by the terminal, and unparsed markdown is difficult to read.",
+        system: [BASE_SYSTEM_PROMPT, getRecursiveAgentsMdFilesStr()].join("\n"),
       })
       .on("text", (text) => {
         process.stdout.write(text);

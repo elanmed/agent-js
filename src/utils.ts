@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { resolve } from "node:path";
 import { selectors } from "./state.ts";
+import { globby } from "globby";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
@@ -28,6 +29,16 @@ export function colorLog(text: string, color: keyof typeof COLORS = "white") {
   const reset = "\x1b[0m";
   const colorCode = COLORS[color];
   console.log(`${colorCode}${text}${reset}`);
+}
+
+export async function getRecursiveAgentsMdFilesStr() {
+  const agentFiles = await globby("**/AGENTS.md", { gitignore: true });
+  const filesContents = [];
+  for (const filePath of agentFiles) {
+    const fileContent = fs.readFileSync(filePath).toString();
+    filesContents.push(`FILEPATH: ${filePath}`, fileContent);
+  }
+  return filesContents.join("\n");
 }
 
 export function debugLog(content: string) {
@@ -113,3 +124,6 @@ export function calculateSessionCost(
   const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
   return `Session cost: $${cost.toFixed(4)}`;
 }
+
+export const BASE_SYSTEM_PROMPT =
+  "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal. Avoid markdown syntax since it will not be parsed by the terminal, and unparsed markdown is difficult to read.";
