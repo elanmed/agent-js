@@ -39,7 +39,9 @@ async function main() {
         model: selectors.getModel(),
         messages: [...selectors.getMessageParams(), messageParam],
         tools: [BASH_TOOL_SCHEMA],
-        system: [BASE_SYSTEM_PROMPT, getRecursiveAgentsMdFilesStr()].join("\n"),
+        system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
+          "\n",
+        ),
       })
       .on("text", (text) => {
         process.stdout.write(text);
