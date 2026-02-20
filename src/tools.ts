@@ -63,7 +63,10 @@ export async function getBashToolResultBlockParam(
   const toolResultBlock: Anthropic.Messages.ToolResultBlockParam = {
     type: "tool_result",
     tool_use_id: toolUseBlock.id,
-    content: JSON.stringify(bashResult.error),
+    content:
+      bashResult.error instanceof Error
+        ? bashResult.error.message
+        : JSON.stringify(bashResult.error),
     is_error: true,
   };
   return toolResultBlock;
