@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
-import { isAbortError, tryCatch } from "./utils.ts";
+import { isAbortError, tryCatch, colorLog, logNewline } from "./utils.ts";
 
 // TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
@@ -89,7 +89,7 @@ async function main() {
       dispatch(actions.setInterrupted(true));
       currQuestionAbortController = new AbortController();
       const exitResult = await tryCatch(
-        rl.question("y(es) or <C-c> to exit ", {
+        rl.question("y(es) or <C-c> to exit: ", {
           signal: currQuestionAbortController.signal,
         }),
       );
@@ -107,9 +107,10 @@ async function main() {
       dispatch(actions.setInterrupted(false));
       continue;
     }
+    logNewline();
 
     if (inputResult.value === "") {
-      console.log("Empty input, aborting");
+      colorLog("Empty input, aborting", "red");
       continue;
     }
 
@@ -129,7 +130,9 @@ async function main() {
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
         dispatch(actions.popLastMessageParam());
-        console.log("\nAborted\n");
+        logNewline();
+        colorLog("Aborted", "red");
+        logNewline();
         continue;
       }
       throw streamResult.error;
@@ -191,15 +194,20 @@ async function main() {
       if (!toolStreamResult.ok) {
         if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
           dispatch(actions.popLastMessageParam());
-          console.log("\nAborted\n");
+          logNewline();
+          colorLog("Aborted", "red");
+          logNewline();
         }
         throw toolStreamResult.error;
       }
       stopReason = toolStreamResult.value.stop_reason;
     }
 
-    process.stdout.write("\n\n");
-    console.log(calculateSessionCost(MODEL, selectors.getMessageUsages()));
+    logNewline();
+    colorLog(
+      calculateSessionCost(MODEL, selectors.getMessageUsages()),
+      "green",
+    );
   }
 }
 
@@ -310,7 +318,9 @@ async function executeBashTool(toolUseBlock: Anthropic.Messages.ToolUseBlock) {
   }
 
   const bashCommand = toolUseBlock.input.command;
-  console.log(`Executing bash tool: ${bashCommand}`);
+  colorLog(`Executing bash tool: ${bashCommand}`, "grey");
+  logNewline();
+
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     exec(bashCommand, (error, stdout, stderr) => {
       if (error) {
