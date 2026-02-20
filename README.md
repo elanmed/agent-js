@@ -4,7 +4,7 @@ A minimal agent implementation
 
 ## Features
 
-- 3 dependencies: (`@anthropic-ai/sdk`)[https://www.npmjs.com/package/@anthropic-ai/sdk], (`globby`)[https://www.npmjs.com/package/globby], (`zod`)[https://www.npmjs.com/package/zod]
+- 3 dependencies: [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`globby`](https://www.npmjs.com/package/globby), [`zod`](https://www.npmjs.com/package/zod)
   - Only 3 transitive dependencies!
 - Strictest typescript around
 
