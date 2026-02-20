@@ -27,23 +27,31 @@ async function main() {
   let currApiStream: MessageStream | null = null;
 
   async function callApi(messageParam: Anthropic.Messages.MessageParam) {
-    dispatch(actions.appendToMessageParams(messageParam));
+    let lastChar: string | undefined = "";
 
     currApiStream = client.messages
       .stream({
         max_tokens: 1024,
         model: MODEL,
-        messages: selectors.getMessageParams(),
+        messages: [...selectors.getMessageParams(), messageParam],
         tools: [BASH_TOOL_SCHEMA],
         system:
-          "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal.",
+          "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal. Avoid markdown syntax since it will not be parsed by the terminal, and unparsed markdown is difficult to read.",
       })
       .on("text", (text) => {
         process.stdout.write(text);
+        if (text.length > 0) {
+          lastChar = text.at(-1);
+        }
       });
     const streamResult = await currApiStream.finalMessage();
     currApiStream = null;
 
+    if (lastChar !== "\n") {
+      process.stdout.write("\n");
+    }
+
+    dispatch(actions.appendToMessageParams(messageParam));
     dispatch(actions.appendToMessageUsages(streamResult.usage));
     dispatch(
       actions.appendToMessageParams({
@@ -124,7 +132,6 @@ async function main() {
 
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
-        dispatch(actions.popLastMessageParam());
         colorLog("\nAborted\n", "red");
         continue;
       } else {
