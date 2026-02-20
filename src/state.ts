@@ -63,6 +63,10 @@ type Action =
   | {
       type: "set-disable-cost-message";
       payload: boolean;
+    }
+  | {
+      type: "truncate-message-params";
+      payload: number;
     };
 
 export const dispatch = (action: Action) => {
@@ -122,6 +126,14 @@ const reducer = (state: State, action: Action): State => {
       newState.configState.disableCostMessage = action.payload;
       return newState;
     }
+    case "truncate-message-params": {
+      const newState = structuredClone(state);
+      newState.appState.messageParams = newState.appState.messageParams.slice(
+        0,
+        action.payload,
+      );
+      return newState;
+    }
   }
 };
 
@@ -169,6 +181,10 @@ const setDisableCostMessage = (disabled: boolean): Action => {
   return { type: "set-disable-cost-message", payload: disabled };
 };
 
+const truncateMessageParams = (count: number): Action => {
+  return { type: "truncate-message-params", payload: count };
+};
+
 export const actions = {
   setInterrupted,
   setRunning,
@@ -177,6 +193,7 @@ export const actions = {
   setModel,
   setPricingPerModel,
   setDisableCostMessage,
+  truncateMessageParams,
 };
 
 const getInterrupted = () => getState().appState.interrupted;

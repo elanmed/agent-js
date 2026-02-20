@@ -13,6 +13,7 @@ import {
   calculateSessionCost,
   BASE_SYSTEM_PROMPT,
   getRecursiveAgentsMdFilesStr,
+  maybePrintCostMessage,
 } from "./utils.ts";
 import { BASH_TOOL_SCHEMA, getToolResultBlock } from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
@@ -26,12 +27,16 @@ async function main() {
   let currQuestionAbortController: AbortController | null = null;
   let currApiStream: MessageStream | null = null;
 
-  async function callApi(messageParam: Anthropic.Messages.MessageParam) {
+  async function callApi(
+    messageParam: Anthropic.Messages.MessageParam,
+    { prependNewline }: { prependNewline: boolean } = { prependNewline: false },
+  ) {
     const messageCount = selectors.getMessageParams().length + 1;
     debugLog(
       `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
     );
     let lastChar: string | undefined = "";
+    let isFirstText = true;
 
     currApiStream = client.messages
       .stream({
@@ -44,6 +49,10 @@ async function main() {
         ),
       })
       .on("text", (text) => {
+        if (prependNewline && isFirstText) {
+          process.stdout.write("\n");
+          isFirstText = false;
+        }
         process.stdout.write(text);
         if (text.length > 0) {
           lastChar = text.at(-1);
@@ -55,7 +64,7 @@ async function main() {
       `callApi: stop_reason=${String(streamResult.stop_reason)}, input_tokens=${String(streamResult.usage.input_tokens)}, output_tokens=${String(streamResult.usage.output_tokens)}`,
     );
 
-    if (lastChar !== "\n") {
+    if (lastChar && lastChar !== "\n") {
       process.stdout.write("\n");
     }
 
@@ -126,22 +135,23 @@ async function main() {
       continue;
     }
 
-    const streamResult = await tryCatch(
-      callApi({
-        content: [
-          {
-            text: inputResult.value,
-            type: "text",
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        role: "user",
-      }),
-    );
+    const inputMessageParam: Anthropic.Messages.MessageParam = {
+      content: [
+        {
+          text: inputResult.value,
+          type: "text",
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      role: "user",
+    };
+    const messageCountBeforeTurn = selectors.getMessageParams().length;
+    const streamResult = await tryCatch(callApi(inputMessageParam));
 
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
-        colorLog("\nAborted\n", "red");
+        colorLog("\nAborted", "red");
+        maybePrintCostMessage();
         continue;
       } else {
         throw streamResult.error;
@@ -167,13 +177,16 @@ async function main() {
         role: "user",
       };
 
-      const toolStreamResult = await tryCatch(callApi(toolResultsMessage));
+      const toolStreamResult = await tryCatch(
+        callApi(toolResultsMessage, { prependNewline: true }),
+      );
 
       if (toolStreamResult.ok) {
         currentMessage = toolStreamResult.value;
       } else {
         if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
-          colorLog("\nAborted\n", "red");
+          colorLog("\nAborted", "red");
+          dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
           break;
         } else {
           throw toolStreamResult.error;
@@ -181,16 +194,7 @@ async function main() {
       }
     }
 
-    if (!selectors.getDisableCostMessage()) {
-      logNewline();
-      colorLog(
-        calculateSessionCost(
-          selectors.getModel(),
-          selectors.getMessageUsages(),
-        ),
-        "green",
-      );
-    }
+    maybePrintCostMessage();
   }
 }
 

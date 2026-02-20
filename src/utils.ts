@@ -128,3 +128,13 @@ export function calculateSessionCost(
 
 export const BASE_SYSTEM_PROMPT =
   "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal. CRITICAL: You may use backticks (`) for inline code and code blocks, but NEVER use other markdown syntax (no *, #, -, [], {}, etc). Output must be plain text with the exception of backticks for code. Unformatted markdown in terminal output is unreadable and confusing. Always use plain text formatting instead.";
+
+export function maybePrintCostMessage() {
+  if (selectors.getDisableCostMessage()) return;
+
+  logNewline();
+  colorLog(
+    calculateSessionCost(selectors.getModel(), selectors.getMessageUsages()),
+    "green",
+  );
+}
