@@ -157,7 +157,6 @@ async function main() {
         currentMessage = toolStreamResult.value;
       } else {
         if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
-          dispatch(actions.popLastMessageParam());
           colorLog("\nAborted\n", "red");
           break;
         } else {
