@@ -43,7 +43,14 @@ async function main() {
       });
     const streamResult = await currApiStream.finalMessage();
     currApiStream = null;
+
     dispatch(actions.appendToMessageUsages(streamResult.usage));
+    dispatch(
+      actions.appendToMessageParams({
+        content: streamResult.content,
+        role: streamResult.role,
+      }),
+    );
 
     return streamResult;
   }
@@ -127,15 +134,7 @@ async function main() {
 
     let currentMessage = streamResult.value;
     while (currentMessage.stop_reason === "tool_use") {
-      dispatch(
-        actions.appendToMessageParams({
-          content: currentMessage.content,
-          role: currentMessage.role,
-        }),
-      );
-
       const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
-      let aborted = false;
 
       for (const contentBlock of currentMessage.content) {
         if (contentBlock.type === "tool_use") {
@@ -160,23 +159,12 @@ async function main() {
         if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
           dispatch(actions.popLastMessageParam());
           colorLog("\nAborted\n", "red");
-          aborted = true;
+          break;
         } else {
           throw toolStreamResult.error;
         }
       }
-
-      if (aborted) {
-        break;
-      }
     }
-
-    dispatch(
-      actions.appendToMessageParams({
-        content: currentMessage.content,
-        role: currentMessage.role,
-      }),
-    );
 
     logNewline();
     colorLog(
