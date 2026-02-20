@@ -1,14 +1,11 @@
 import * as readline from "node:readline/promises";
-import { promisify } from "node:util";
-import child_process from "node:child_process";
+import { exec } from "node:child_process";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
-import Anthropic, { type ParsedMessage } from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
-import { isAbortError, tryCatch, type Result } from "./utils.ts";
-
-const exec = promisify(child_process.exec);
+import { isAbortError, tryCatch } from "./utils.ts";
 
 // TODO: support config file
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
@@ -151,11 +148,33 @@ async function main() {
 
       switch (toolUseBlock.name) {
         case "bash": {
-          const toolResult = await executeBashTool(toolUseBlock);
-          messageParam = {
-            content: [],
-            role: "user",
-          };
+          const toolResult = await tryCatch(executeBashTool(toolUseBlock));
+          if (toolResult.ok) {
+            messageParam = {
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: toolUseBlock.id,
+                  cache_control: { type: "ephemeral" },
+                  content: JSON.stringify(toolResult.value),
+                },
+              ],
+              role: "user",
+            };
+          } else {
+            messageParam = {
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: toolUseBlock.id,
+                  cache_control: { type: "ephemeral" },
+                  content: JSON.stringify(toolResult.error),
+                  is_error: true,
+                },
+              ],
+              role: "user",
+            };
+          }
         }
       }
 
@@ -289,7 +308,15 @@ async function executeBashTool(toolUseBlock: Anthropic.Messages.ToolUseBlock) {
   }
 
   const bashCommand = toolUseBlock.input.command;
-  return await tryCatch(exec(bashCommand));
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    exec(bashCommand, (error, stdout, stderr) => {
+      if (error) {
+        reject(new Error(error.message));
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
