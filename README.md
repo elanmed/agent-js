@@ -4,7 +4,8 @@ A minimal agent implementation
 
 ## Features
 
-- 1 dependency (the anthropic SDK)
+- 3 dependencies: (`@anthropic-ai/sdk`)[https://www.npmjs.com/package/@anthropic-ai/sdk], (`globby`)[https://www.npmjs.com/package/globby], (`zod`)[https://www.npmjs.com/package/zod]
+  - Only 3 transitive dependencies!
 - Strictest typescript around
 
 ## TODO
@@ -22,7 +23,7 @@ A minimal agent implementation
   - [x] Model
   - [x] Disable session cost prompt
   - [x] Session cost object
-- [ ] AGENTS.md support
+- [x] AGENTS.md support
 - [ ] Tool support
   - [x] Bash tool
   - [ ] Text edit tool
