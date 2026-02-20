@@ -68,3 +68,24 @@ export async function getBashToolResultBlockParam(
   };
   return toolResultBlock;
 }
+
+export async function getToolResultBlock(
+  toolUseBlock: Anthropic.Messages.ToolUseBlock,
+) {
+  let toolResultBlock: Anthropic.Messages.ToolResultBlockParam | null = null;
+
+  switch (toolUseBlock.name) {
+    case "bash": {
+      toolResultBlock = await getBashToolResultBlockParam(toolUseBlock);
+      break;
+    }
+  }
+
+  if (!toolResultBlock) {
+    throw new Error(
+      "Failed to create a tool result when processing the tool call",
+    );
+  }
+
+  return toolResultBlock;
+}

@@ -11,7 +11,11 @@ import {
   logNewline,
   calculateSessionCost,
 } from "./utils.ts";
-import { BASH_TOOL_SCHEMA, getBashToolResultBlockParam } from "./tools.ts";
+import {
+  BASH_TOOL_SCHEMA,
+  getBashToolResultBlockParam,
+  getToolResultBlock,
+} from "./tools.ts";
 
 const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
 
@@ -135,24 +139,7 @@ async function main() {
 
       for (const contentBlock of currentMessage.content) {
         if (contentBlock.type === "tool_use") {
-          const toolUseBlock = contentBlock;
-
-          let toolResultBlock: Anthropic.Messages.ToolResultBlockParam | null =
-            null;
-
-          switch (toolUseBlock.name) {
-            case "bash": {
-              toolResultBlock = await getBashToolResultBlockParam(toolUseBlock);
-              break;
-            }
-          }
-
-          if (!toolResultBlock) {
-            throw new Error(
-              "Failed to create a tool result when processing the tool call",
-            );
-          }
-
+          const toolResultBlock = await getToolResultBlock(contentBlock);
           toolResults.push(toolResultBlock);
         }
       }
@@ -167,7 +154,9 @@ async function main() {
 
       const toolStreamResult = await tryCatch(callApi(toolResultsMessage));
 
-      if (!toolStreamResult.ok) {
+      if (toolStreamResult.ok) {
+        currentMessage = toolStreamResult.value;
+      } else {
         if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
           dispatch(actions.popLastMessageParam());
           colorLog("\nAborted\n", "red");
@@ -180,8 +169,6 @@ async function main() {
       if (aborted) {
         break;
       }
-
-      currentMessage = toolStreamResult.value;
     }
 
     dispatch(
