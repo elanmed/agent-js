@@ -6,6 +6,7 @@ A minimal agent implementation
 
 - 3 dependencies: [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`globby`](https://www.npmjs.com/package/globby), [`zod`](https://www.npmjs.com/package/zod)
 - Strictest typescript around
+- No build step: uses Node's native type stripping
 
 ## TODO
 
