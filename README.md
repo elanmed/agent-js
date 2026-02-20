@@ -16,6 +16,7 @@ A minimal agent implementation
 - [x] Streaming with cancellation
 - [x] Test infrastructure
 - [x] Pretty terminal output
+- [ ] Allow pasting content without submitting
 - [ ] Convert to Deno for executable
 - [x] Settings file
   - [x] ~/.config/agent-js/agent-js.settings.json
