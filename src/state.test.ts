@@ -9,6 +9,18 @@ beforeEach(() => {
 });
 
 describe("state", () => {
+  it("resetState restores initial state after mutations", () => {
+    dispatch(actions.setRunning(false));
+    dispatch(actions.setInterrupted(true));
+    dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
+    resetState();
+    const s = getState();
+    assert.equal(s.running, true);
+    assert.equal(s.interrupted, false);
+    assert.deepEqual(s.messageParams, []);
+    assert.deepEqual(s.messageUsages, []);
+  });
+
   it("initial state", () => {
     const s = getState();
     assert.equal(s.running, true);
