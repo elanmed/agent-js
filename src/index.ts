@@ -308,6 +308,7 @@ async function executeBashTool(toolUseBlock: Anthropic.Messages.ToolUseBlock) {
   }
 
   const bashCommand = toolUseBlock.input.command;
+  console.log(`Executing bash tool: ${bashCommand}`);
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     exec(bashCommand, (error, stdout, stderr) => {
       if (error) {
