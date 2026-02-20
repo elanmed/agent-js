@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { z } from "zod";
 import { debugLog } from "./utils.ts";
+import { actions, dispatch } from "./state.ts";
 
 const ModelPricingSchema = z
   .object({
@@ -16,21 +17,25 @@ const ModelPricingSchema = z
 
 const ConfigSchema = z
   .object({
-    model: z.enum(["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"]),
-    disableCostMessage: z.boolean(),
+    model: z
+      .enum(["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"])
+      .optional(),
+    disableCostMessage: z.boolean().optional(),
     pricingPerModel: z
       .object({
         "claude-opus-4-6": ModelPricingSchema,
         "claude-sonnet-4-6": ModelPricingSchema,
         "claude-haiku-4-5": ModelPricingSchema,
       })
-      .strict(),
+      .optional(),
   })
   .strict();
 
 type Config = z.infer<typeof ConfigSchema>;
+const RequiredConfigSchema = ConfigSchema.required();
+type ConfigRequired = z.infer<typeof RequiredConfigSchema>;
 
-export const DEFAULT_CONFIG: Config = {
+export const DEFAULT_CONFIG: ConfigRequired = {
   model: "claude-opus-4-6",
   disableCostMessage: false,
   pricingPerModel: {
@@ -66,29 +71,51 @@ const GLOBAL_CONFIG_PATH = join(
 );
 const LOCAL_CONFIG_PATH = resolve("agent-js.settings.json");
 
-export function writeGlobalConfig() {
-  if (fs.existsSync(GLOBAL_CONFIG_PATH)) {
-    debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
-    return;
-  }
-
-  fs.writeFileSync(GLOBAL_CONFIG_PATH, JSON.stringify(DEFAULT_CONFIG, null, 2));
-  debugLog(`${GLOBAL_CONFIG_PATH} does not exist, writing default config`);
-}
-
 export function initStateFromConfig() {
-  const globalConfigStr = fs.readFileSync(GLOBAL_CONFIG_PATH).toString();
-  const localConfigStr = (() => {
-    if (!fs.existsSync(LOCAL_CONFIG_PATH)) {
-      debugLog(`${LOCAL_CONFIG_PATH} does not exist, returning`);
-      return {};
+  const globalConfig: Config = (() => {
+    if (fs.existsSync(GLOBAL_CONFIG_PATH)) {
+      debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
+      return parseConfigStr(fs.readFileSync(GLOBAL_CONFIG_PATH).toString());
     }
 
-    return fs.readFileSync(LOCAL_CONFIG_PATH).toString();
+    fs.writeFileSync(
+      GLOBAL_CONFIG_PATH,
+      JSON.stringify(DEFAULT_CONFIG, null, 2),
+    );
+    debugLog(`${GLOBAL_CONFIG_PATH} does not exist, writing default config`);
+
+    return DEFAULT_CONFIG;
   })();
 
-  const globalConfig = parseConfigStr(globalConfigStr);
-  const localConfig = parseConfigStr(localConfigStr);
+  const localConfig: Config = (() => {
+    if (fs.existsSync(LOCAL_CONFIG_PATH)) {
+      debugLog(`${LOCAL_CONFIG_PATH} exists, reading`);
+      return parseConfigStr(fs.readFileSync(LOCAL_CONFIG_PATH).toString());
+    }
+
+    debugLog(`${LOCAL_CONFIG_PATH} does not exist`);
+    return {};
+  })();
+
+  dispatch(
+    actions.setModel(
+      localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model,
+    ),
+  );
+  dispatch(
+    actions.setDisableCostMessage(
+      localConfig.disableCostMessage ??
+        globalConfig.disableCostMessage ??
+        DEFAULT_CONFIG.disableCostMessage,
+    ),
+  );
+  dispatch(
+    actions.setPricingPerModel(
+      localConfig.pricingPerModel ??
+        globalConfig.pricingPerModel ??
+        DEFAULT_CONFIG.pricingPerModel,
+    ),
+  );
 }
 
 function parseConfigStr(configStr: string): Config {
