@@ -44,6 +44,21 @@ async function main() {
     let lastChar: string | undefined = "";
     let isFirstText = true;
 
+    const spinnerFrames = ["|", "/", "-", "\\"];
+    let spinnerIdx = 0;
+    const spinnerInterval = setInterval(() => {
+      process.stdout.write(
+        `\r${String(spinnerFrames[spinnerIdx++ % spinnerFrames.length])}`,
+      );
+    }, 80);
+    let spinnerCleared = false;
+    const clearSpinner = () => {
+      if (spinnerCleared) return;
+      clearInterval(spinnerInterval);
+      process.stdout.write("\r \r");
+      spinnerCleared = true;
+    };
+
     currApiStream = client.messages
       .stream({
         max_tokens: 8192,
@@ -61,8 +76,9 @@ async function main() {
         ),
       })
       .on("text", (text) => {
-        if (prependNewline && isFirstText) {
-          process.stdout.write("\n");
+        if (isFirstText) {
+          clearSpinner();
+          if (prependNewline) process.stdout.write("\n");
           isFirstText = false;
         }
         process.stdout.write(text);
@@ -70,8 +86,15 @@ async function main() {
           lastChar = text.at(-1);
         }
       });
-    const streamResult = await currApiStream.finalMessage();
-    currApiStream = null;
+    let streamResult;
+
+    try {
+      streamResult = await currApiStream.finalMessage();
+    } finally {
+      clearSpinner();
+      currApiStream = null;
+    }
+
     debugLog(
       `callApi: stop_reason=${String(streamResult.stop_reason)}, input_tokens=${String(streamResult.usage.input_tokens)}, output_tokens=${String(streamResult.usage.output_tokens)}`,
     );
