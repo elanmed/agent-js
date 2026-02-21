@@ -27,7 +27,10 @@ A minimal agent implementation
 - [x] AGENTS.md support
 - [ ] Tool support
   - [x] Bash tool
-  - [ ] Text edit tool
+  - [x] Create file tool
+  - [x] Read file tool
+  - [x] Insert lines in file tool
+  - [x] Replaces string in file tool
   - [ ] Web search tool?
 - [ ] ...
 - [ ] Skill support
