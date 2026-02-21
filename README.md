@@ -2,6 +2,8 @@
 
 A minimal agent implementation for working with Claude: execute bash commands, create/edit files, etc.
 
+![demo](https://elanmed.dev/nvim-plugins/agent-js.png)
+
 ## Features
 
 - **Minimal deps**: 3 packages [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`globby`](https://www.npmjs.com/package/globby), [`zod`](https://www.npmjs.com/package/zod)
