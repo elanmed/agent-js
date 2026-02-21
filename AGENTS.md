@@ -1,6 +1,6 @@
 # agent-js
 
-A minimal CLI agent built on the Anthropic SDK. It runs an interactive readline loop, streams responses from Claude, and supports tool use (currently: bash execution).
+A minimal CLI agent built on the Anthropic SDK. It runs an interactive readline loop, streams responses from Claude, and supports tool use for bash execution, file manipulation, and code editing.
 
 ## Architecture
 
@@ -9,13 +9,21 @@ src/
   index.ts   - Entry point: readline loop, API call orchestration, tool use loop
   state.ts   - Redux-style state management (dispatch/actions/selectors)
   config.ts  - Config loading and validation with zod
-  tools.ts   - Tool schemas and execution (bash tool)
+  tools.ts   - Tool schemas and execution (bash, file, and code editing tools)
   utils.ts   - Helpers: logging, cost calculation, AGENTS.md discovery
 ```
 
 **State** is a plain object managed via `dispatch(action)` — no external state library. Config is loaded once at startup and merged into state.
 
 **Tool use loop**: after each API response, if `stop_reason === "tool_use"`, tool calls are executed and results are fed back to the API, repeating until the model stops.
+
+**Supported tools**:
+
+- `bash` — Execute bash commands
+- `create_file` — Create new files with content
+- `view_file` — View file contents (with line numbers) or list directories
+- `str_replace` — Replace exact strings in files
+- `insert_lines` — Insert text after a specific line in a file
 
 **AGENTS.md discovery**: `getRecursiveAgentsMdFilesStr()` walks up from the cwd and appends any `AGENTS.md` files found into the system prompt.
 
