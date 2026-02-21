@@ -428,6 +428,16 @@ export function executeInsertLinesTool(
   };
 }
 
+async function printGitDiff(path: string) {
+  const diffResult = await tryCatchAsync(
+    execPromise(`git diff --color=always ${path}`),
+  );
+  if (diffResult.ok && diffResult.value.stdout) {
+    colorLog("Printing git diff:", "grey");
+    console.log(diffResult.value.stdout);
+  }
+}
+
 export async function getToolResultBlock(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ) {
@@ -448,10 +458,18 @@ export async function getToolResultBlock(
     }
     case "str_replace": {
       toolResultBlock = executeStrReplaceTool(toolUseBlock);
+      if (!toolResultBlock.is_error) {
+        const { path } = toolUseBlock.input as { path: string };
+        await printGitDiff(path);
+      }
       break;
     }
     case "insert_lines": {
       toolResultBlock = executeInsertLinesTool(toolUseBlock);
+      if (!toolResultBlock.is_error) {
+        const { path } = toolUseBlock.input as { path: string };
+        await printGitDiff(path);
+      }
       break;
     }
   }
