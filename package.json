@@ -13,6 +13,12 @@
     "build:darwin-x64": "bun build --compile --minify --target=bun-darwin-x64 ./src/index.ts --outfile dist/agent-darwin-x64",
     "build:darwin-arm64": "bun build --compile --minify --target=bun-darwin-arm64 ./src/index.ts --outfile dist/agent-darwin-arm64",
     "build:windows-x64": "bun build --compile --minify --target=bun-windows-x64 ./src/index.ts --outfile dist/agent-windows-x64"
+    "start": "node src/index.ts",
+    "start:debug": "AGENT_JS_DEBUG=true node src/index.ts",
+    "test": "node --test 'src/**/*.test.ts'",
+    "lint": "eslint src",
+    "types": "tsc",
+    "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -27,6 +33,8 @@
   },
   "type": "module",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.77.0"
+    "@anthropic-ai/sdk": "^0.77.0",
+    "globby": "^16.1.1",
+    "zod": "^4.3.6"
   }
 }

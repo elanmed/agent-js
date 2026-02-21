@@ -1,55 +1,112 @@
 import * as readline from "node:readline/promises";
-import { exec } from "node:child_process";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
-import { isAbortError, tryCatch, colorLog, logNewline } from "./utils.ts";
-
-// TODO: support config file
-const MODEL: Anthropic.Messages.Model = "claude-haiku-4-5";
-
-const BASH_TOOL_SCHEMA: Anthropic.Messages.Tool = {
-  name: "bash",
-  description: "Execute a bash command and return its output.",
-  input_schema: {
-    type: "object",
-    properties: {
-      command: {
-        type: "string",
-        description: "The bash command to execute.",
-      },
-    },
-    required: ["command"],
-  },
-};
+import {
+  isAbortError,
+  colorLog,
+  debugLog,
+  logNewline,
+  BASE_SYSTEM_PROMPT,
+  getRecursiveAgentsMdFilesStr,
+  maybePrintCostMessage,
+  tryCatchAsync,
+  getAvailableSlashCommands,
+} from "./utils.ts";
+import {
+  BASH_TOOL_SCHEMA,
+  CREATE_FILE_TOOL_SCHEMA,
+  VIEW_FILE_TOOL_SCHEMA,
+  STR_REPLACE_TOOL_SCHEMA,
+  INSERT_LINES_TOOL_SCHEMA,
+  getToolResultBlock,
+} from "./tools.ts";
+import { initStateFromConfig } from "./config.ts";
+import { join } from "node:path";
 
 async function main() {
+  initStateFromConfig();
+  const availableSlashCommands = getAvailableSlashCommands();
+
   const client = new Anthropic();
   const rl = readline.createInterface({ input, output });
 
   let currQuestionAbortController: AbortController | null = null;
   let currApiStream: MessageStream | null = null;
 
-  async function callApi(messageParam: Anthropic.Messages.MessageParam) {
-    dispatch(actions.appendToMessageParams(messageParam));
+  async function callApi(
+    messageParam: Anthropic.Messages.MessageParam,
+    { prependNewline }: { prependNewline: boolean } = { prependNewline: false },
+  ) {
+    const messageCount = selectors.getMessageParams().length + 1;
+    debugLog(
+      `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
+    );
+    let lastChar: string | undefined = "";
+    let isFirstText = true;
+
+    const spinnerFrames = ["|", "/", "-", "\\"];
+    let spinnerIdx = 0;
+    const spinnerInterval = setInterval(() => {
+      process.stdout.write(
+        `\r${String(spinnerFrames[spinnerIdx++ % spinnerFrames.length])}`,
+      );
+    }, 80);
+    let spinnerCleared = false;
+    const clearSpinner = () => {
+      if (spinnerCleared) return;
+      clearInterval(spinnerInterval);
+      process.stdout.write("\r \r");
+      spinnerCleared = true;
+    };
 
     currApiStream = client.messages
       .stream({
-        max_tokens: 1024,
-        model: MODEL,
-        messages: selectors.getMessageParams(),
-        tools: [BASH_TOOL_SCHEMA],
-        system:
-          "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal.",
+        max_tokens: 8192,
+        model: selectors.getModel(),
+        messages: [...selectors.getMessageParams(), messageParam],
+        tools: [
+          BASH_TOOL_SCHEMA,
+          CREATE_FILE_TOOL_SCHEMA,
+          VIEW_FILE_TOOL_SCHEMA,
+          STR_REPLACE_TOOL_SCHEMA,
+          INSERT_LINES_TOOL_SCHEMA,
+        ],
+        system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
+          "\n",
+        ),
       })
       .on("text", (text) => {
+        if (isFirstText) {
+          clearSpinner();
+          if (prependNewline) process.stdout.write("\n");
+          isFirstText = false;
+        }
         process.stdout.write(text);
+        if (text.length > 0) {
+          lastChar = text.at(-1);
+        }
       });
-    const streamResult = await currApiStream.finalMessage();
-    currApiStream = null;
+    let streamResult;
 
+    try {
+      streamResult = await currApiStream.finalMessage();
+    } finally {
+      clearSpinner();
+      currApiStream = null;
+    }
+
+    debugLog(
+      `callApi: stop_reason=${String(streamResult.stop_reason)}, input_tokens=${String(streamResult.usage.input_tokens)}, output_tokens=${String(streamResult.usage.output_tokens)}`,
+    );
+
+    if (lastChar && lastChar !== "\n") {
+      process.stdout.write("\n");
+    }
+
+    dispatch(actions.appendToMessageParams(messageParam));
     dispatch(actions.appendToMessageUsages(streamResult.usage));
     dispatch(
       actions.appendToMessageParams({
@@ -57,6 +114,7 @@ async function main() {
         role: streamResult.role,
       }),
     );
+
     return streamResult;
   }
 
@@ -78,7 +136,7 @@ async function main() {
 
   while (selectors.getRunning()) {
     currQuestionAbortController = new AbortController();
-    const inputResult = await tryCatch(
+    const inputResult = await tryCatchAsync(
       rl.question("> ", { signal: currQuestionAbortController.signal }),
     );
     currQuestionAbortController = null;
@@ -88,7 +146,7 @@ async function main() {
 
       dispatch(actions.setInterrupted(true));
       currQuestionAbortController = new AbortController();
-      const exitResult = await tryCatch(
+      const exitResult = await tryCatchAsync(
         rl.question("y(es) or <C-c> to exit: ", {
           signal: currQuestionAbortController.signal,
         }),
@@ -97,6 +155,7 @@ async function main() {
 
       if (exitResult.ok) {
         if (/^y(es)?$/i.exec(exitResult.value)) {
+          debugLog("user confirmed exit");
           dispatch(actions.setRunning(false));
           rl.close();
         }
@@ -114,228 +173,95 @@ async function main() {
       continue;
     }
 
-    const streamResult = await tryCatch(
-      callApi({
-        content: [
-          {
-            text: inputResult.value,
-            type: "text",
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        role: "user",
-      }),
-    );
+    let inputResultValue = inputResult.value;
+    if (inputResult.value.at(0) === "/") {
+      if (availableSlashCommands.includes(inputResult.value.slice(1))) {
+        colorLog(`Executing slash command: ${inputResult.value}`, "grey");
+        const path = join(
+          process.cwd(),
+          ".agent-js",
+          "commands",
+          inputResult.value.slice(1).concat(".md"),
+        );
+        debugLog(`Performing the slash command at ${path}`);
+        inputResultValue = `Perform the instructions located at ${path}`;
+      } else {
+        colorLog(
+          `Invalid / command detected, valid commands: ${availableSlashCommands.join(",")}`,
+          "red",
+        );
+        maybePrintCostMessage();
+        continue;
+      }
+    }
+
+    const inputMessageParam: Anthropic.Messages.MessageParam = {
+      content: [
+        {
+          text: inputResultValue,
+          type: "text",
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      role: "user",
+    };
+    const messageCountBeforeTurn = selectors.getMessageParams().length;
+    const streamResult = await tryCatchAsync(callApi(inputMessageParam));
 
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
-        dispatch(actions.popLastMessageParam());
-        logNewline();
-        colorLog("Aborted", "red");
-        logNewline();
+        colorLog("\nAborted", "red");
+        maybePrintCostMessage();
         continue;
-      }
-      throw streamResult.error;
-    }
-
-    let stopReason = streamResult.value.stop_reason;
-    while (stopReason === "tool_use") {
-      const toolUseBlock = streamResult.value.content.find(
-        (contentBlock) => contentBlock.type === "tool_use",
-      );
-      if (!toolUseBlock) {
-        throw new Error(
-          "`stop_reason` was `tool_use` but could not find a content block with a type of `tool_use`",
-        );
-      }
-
-      let messageParam: Anthropic.Messages.MessageParam | null = null;
-
-      switch (toolUseBlock.name) {
-        case "bash": {
-          const toolResult = await tryCatch(executeBashTool(toolUseBlock));
-          if (toolResult.ok) {
-            messageParam = {
-              content: [
-                {
-                  type: "tool_result",
-                  tool_use_id: toolUseBlock.id,
-                  cache_control: { type: "ephemeral" },
-                  content: JSON.stringify(toolResult.value),
-                },
-              ],
-              role: "user",
-            };
-          } else {
-            messageParam = {
-              content: [
-                {
-                  type: "tool_result",
-                  tool_use_id: toolUseBlock.id,
-                  cache_control: { type: "ephemeral" },
-                  content: JSON.stringify(toolResult.error),
-                  is_error: true,
-                },
-              ],
-              role: "user",
-            };
-          }
-        }
-      }
-
-      if (!messageParam) {
-        throw new Error(
-          "Failed to create a `messageParam` when processing the tool call",
-        );
-      }
-
-      const toolStreamResult = await tryCatch(callApi(messageParam));
-
-      if (!toolStreamResult.ok) {
-        if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
-          dispatch(actions.popLastMessageParam());
-          logNewline();
-          colorLog("Aborted", "red");
-          logNewline();
-          break;
-        }
-        throw toolStreamResult.error;
-      }
-      stopReason = toolStreamResult.value.stop_reason;
-    }
-
-    logNewline();
-    colorLog(
-      calculateSessionCost(MODEL, selectors.getMessageUsages()),
-      "green",
-    );
-  }
-}
-
-interface ModelPricing {
-  inputPerToken: number;
-  outputPerToken: number;
-  cacheWrite5mPerToken: number;
-  cacheWrite1hPerToken: number;
-  cacheReadPerToken: number;
-}
-
-export interface TokenUsage {
-  input_tokens: number;
-  output_tokens: number;
-  cache_creation_input_tokens?: number | null;
-  cache_read_input_tokens?: number | null;
-}
-
-export function calculateSessionCost(
-  model: string,
-  usages: TokenUsage[],
-): string {
-  const DOLLARS_PER_MILLION = 1_000_000;
-
-  const pricingPerModel: Partial<Record<string, ModelPricing>> = {
-    "claude-opus-4-6": {
-      inputPerToken: 5 / DOLLARS_PER_MILLION,
-      cacheWrite5mPerToken: 6.25 / DOLLARS_PER_MILLION,
-      cacheWrite1hPerToken: 10 / DOLLARS_PER_MILLION,
-      cacheReadPerToken: 0.5 / DOLLARS_PER_MILLION,
-      outputPerToken: 25 / DOLLARS_PER_MILLION,
-    },
-    "claude-sonnet-4-6": {
-      inputPerToken: 3 / DOLLARS_PER_MILLION,
-      cacheWrite5mPerToken: 3.75 / DOLLARS_PER_MILLION,
-      cacheWrite1hPerToken: 6 / DOLLARS_PER_MILLION,
-      cacheReadPerToken: 0.3 / DOLLARS_PER_MILLION,
-      outputPerToken: 15 / DOLLARS_PER_MILLION,
-    },
-    "claude-haiku-4-5": {
-      inputPerToken: 1 / DOLLARS_PER_MILLION,
-      cacheWrite5mPerToken: 1.25 / DOLLARS_PER_MILLION,
-      cacheWrite1hPerToken: 2 / DOLLARS_PER_MILLION,
-      cacheReadPerToken: 0.1 / DOLLARS_PER_MILLION,
-      outputPerToken: 5 / DOLLARS_PER_MILLION,
-    },
-  };
-
-  const pricing = pricingPerModel[model];
-  if (pricing === undefined) {
-    return "Session cost: unknown";
-  }
-
-  const {
-    cacheReadPerToken,
-    cacheWrite5mPerToken,
-    inputPerToken,
-    outputPerToken,
-  } = pricing;
-
-  const totalUsage = usages.reduce<{
-    cache_creation_input_tokens: number;
-    cache_read_input_tokens: number;
-    input_tokens: number;
-    output_tokens: number;
-  }>(
-    (accum, curr) => {
-      return {
-        cache_creation_input_tokens:
-          accum.cache_creation_input_tokens +
-          (curr.cache_creation_input_tokens ?? 0),
-        cache_read_input_tokens:
-          accum.cache_read_input_tokens + (curr.cache_read_input_tokens ?? 0),
-        input_tokens: accum.input_tokens + curr.input_tokens,
-        output_tokens: accum.output_tokens + curr.output_tokens,
-      };
-    },
-    {
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-      input_tokens: 0,
-      output_tokens: 0,
-    },
-  );
-
-  const inputCost = totalUsage.input_tokens * inputPerToken;
-  const outputCost = totalUsage.output_tokens * outputPerToken;
-  const cacheCreationCost =
-    totalUsage.cache_creation_input_tokens * cacheWrite5mPerToken;
-  const cacheReadCost = totalUsage.cache_read_input_tokens * cacheReadPerToken;
-
-  const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
-  return `Session cost: $${cost.toFixed(4)}`;
-}
-
-async function executeBashTool(toolUseBlock: Anthropic.Messages.ToolUseBlock) {
-  if (typeof toolUseBlock.input !== "object") {
-    throw new Error("Expected `toolUseBlock.input` to be an object");
-  }
-  if (toolUseBlock.input === null) {
-    throw new Error("Expected `toolUseBlock.input` to be an object");
-  }
-  if (!("command" in toolUseBlock.input)) {
-    throw new Error("Expected `toolUseBlock.input.command` to be a valid key");
-  }
-  if (typeof toolUseBlock.input.command !== "string") {
-    throw new Error("Expected `toolUseBlock.input.command` to be a string");
-  }
-
-  const bashCommand = toolUseBlock.input.command;
-  colorLog(`Executing bash tool: ${bashCommand}`, "grey");
-  logNewline();
-
-  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-    exec(bashCommand, (error, stdout, stderr) => {
-      if (error) {
-        reject(new Error(error.message));
       } else {
-        resolve({ stdout, stderr });
+        throw streamResult.error;
       }
-    });
-  });
+    }
+
+    let currentMessage = streamResult.value;
+    while (currentMessage.stop_reason === "tool_use") {
+      const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
+
+      for (const contentBlock of currentMessage.content) {
+        if (contentBlock.type === "tool_use") {
+          const toolResultBlock = await getToolResultBlock(contentBlock);
+          toolResults.push(toolResultBlock);
+        }
+      }
+      const lastToolResult = toolResults.at(-1);
+      if (lastToolResult) {
+        lastToolResult.cache_control = { type: "ephemeral" };
+      }
+
+      const toolResultsMessage: Anthropic.Messages.MessageParam = {
+        content: toolResults,
+        role: "user",
+      };
+
+      const toolStreamResult = await tryCatchAsync(
+        callApi(toolResultsMessage, { prependNewline: true }),
+      );
+
+      if (toolStreamResult.ok) {
+        currentMessage = toolStreamResult.value;
+      } else {
+        if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
+          colorLog("\nAborted", "red");
+          dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
+          break;
+        } else {
+          throw toolStreamResult.error;
+        }
+      }
+    }
+
+    maybePrintCostMessage();
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((err: unknown) => {
     console.error(err);
-    process.exit(0);
+    process.exit(1);
   });
 }

@@ -1,25 +1,38 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import { DEFAULT_CONFIG } from "./config.ts";
+import { debugLog } from "./utils.ts";
+import type { ModelPricing, SupportedModel } from "./utils.ts";
 
 interface State {
-  interrupted: boolean;
-  running: boolean;
-  messageParams: Anthropic.Messages.MessageParam[];
-  messageUsages: Anthropic.Messages.Usage[];
+  appState: {
+    interrupted: boolean;
+    running: boolean;
+    messageParams: Anthropic.Messages.MessageParam[];
+    messageUsages: Anthropic.Messages.Usage[];
+  };
+  configState: {
+    pricingPerModel: Record<SupportedModel, ModelPricing>;
+    model: SupportedModel;
+    disableCostMessage: boolean;
+  };
 }
 
 const initialState: State = {
-  interrupted: false,
-  running: true,
-  messageParams: [],
-  messageUsages: [],
+  appState: {
+    interrupted: false,
+    running: true,
+    messageParams: [],
+    messageUsages: [],
+  },
+  configState: structuredClone(DEFAULT_CONFIG),
 };
 
-let state: State = { ...initialState };
+let state: State = structuredClone(initialState);
 
 export const getState = () => state;
 
 export const resetState = () => {
-  state = { ...initialState };
+  state = structuredClone(initialState);
 };
 
 type Action =
@@ -36,62 +49,90 @@ type Action =
       payload: Anthropic.Messages.MessageParam;
     }
   | {
-      type: "append-to-message-responses";
+      type: "append-to-message-usages";
       payload: Anthropic.Messages.Usage;
     }
   | {
-      type: "pop-last-message-param";
+      type: "set-model";
+      payload: SupportedModel;
+    }
+  | {
+      type: "set-pricing-per-model";
+      payload: Record<SupportedModel, ModelPricing>;
+    }
+  | {
+      type: "set-disable-cost-message";
+      payload: boolean;
+    }
+  | {
+      type: "truncate-message-params";
+      payload: number;
     };
 
 export const dispatch = (action: Action) => {
+  debugLog(`dispatch: ${action.type}`);
   state = reducer(getState(), action);
 };
 
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "set-interrupted": {
-      return {
-        ...state,
-        interrupted: action.payload,
-      };
+      const newState = structuredClone(state);
+      newState.appState.interrupted = action.payload;
+      return newState;
     }
     case "set-running": {
-      return {
-        ...state,
-        running: action.payload,
-      };
+      const newState = structuredClone(state);
+      newState.appState.running = action.payload;
+      return newState;
     }
     case "append-to-message-params": {
-      const withoutCacheMarkers = state.messageParams.map((message) => {
-        if (typeof message.content === "string") {
-          return message;
-        }
+      const newState = structuredClone(state);
+      newState.appState.messageParams = newState.appState.messageParams.map(
+        (message) => {
+          if (typeof message.content === "string") {
+            return message;
+          }
 
-        return {
-          ...message,
-          content: message.content.map((content) => ({
-            ...content,
-            cache_control: null,
-          })),
-        };
-      });
-
-      return {
-        ...state,
-        messageParams: [...withoutCacheMarkers, action.payload],
-      };
+          return {
+            ...message,
+            content: message.content.map((content) => ({
+              ...content,
+              cache_control: null,
+            })),
+          };
+        },
+      );
+      newState.appState.messageParams.push(action.payload);
+      return newState;
     }
-    case "append-to-message-responses": {
-      return {
-        ...state,
-        messageUsages: [...state.messageUsages, action.payload],
-      };
+    case "append-to-message-usages": {
+      const newState = structuredClone(state);
+      newState.appState.messageUsages.push(action.payload);
+      return newState;
     }
-    case "pop-last-message-param": {
-      return {
-        ...state,
-        messageParams: state.messageParams.slice(0, -1),
-      };
+    case "set-model": {
+      const newState = structuredClone(state);
+      newState.configState.model = action.payload;
+      return newState;
+    }
+    case "set-pricing-per-model": {
+      const newState = structuredClone(state);
+      newState.configState.pricingPerModel = action.payload;
+      return newState;
+    }
+    case "set-disable-cost-message": {
+      const newState = structuredClone(state);
+      newState.configState.disableCostMessage = action.payload;
+      return newState;
+    }
+    case "truncate-message-params": {
+      const newState = structuredClone(state);
+      newState.appState.messageParams = newState.appState.messageParams.slice(
+        0,
+        action.payload,
+      );
+      return newState;
     }
   }
 };
@@ -121,13 +162,27 @@ const appendToMessageParams = (
 
 const appendToMessageUsages = (message: Anthropic.Messages.Usage): Action => {
   return {
-    type: "append-to-message-responses",
+    type: "append-to-message-usages",
     payload: message,
   };
 };
 
-const popLastMessageParam = (): Action => {
-  return { type: "pop-last-message-param" };
+const setModel = (model: SupportedModel): Action => {
+  return { type: "set-model", payload: model };
+};
+
+const setPricingPerModel = (
+  pricing: Record<SupportedModel, ModelPricing>,
+): Action => {
+  return { type: "set-pricing-per-model", payload: pricing };
+};
+
+const setDisableCostMessage = (disabled: boolean): Action => {
+  return { type: "set-disable-cost-message", payload: disabled };
+};
+
+const truncateMessageParams = (count: number): Action => {
+  return { type: "truncate-message-params", payload: count };
 };
 
 export const actions = {
@@ -135,17 +190,26 @@ export const actions = {
   setRunning,
   appendToMessageParams,
   appendToMessageUsages,
-  popLastMessageParam,
+  setModel,
+  setPricingPerModel,
+  setDisableCostMessage,
+  truncateMessageParams,
 };
 
-const getInterrupted = () => getState().interrupted;
-const getRunning = () => getState().running;
-const getMessageParams = () => getState().messageParams;
-const getMessageUsages = () => getState().messageUsages;
+const getInterrupted = () => getState().appState.interrupted;
+const getRunning = () => getState().appState.running;
+const getMessageParams = () => getState().appState.messageParams;
+const getMessageUsages = () => getState().appState.messageUsages;
+const getModel = () => getState().configState.model;
+const getPricingPerModel = () => getState().configState.pricingPerModel;
+const getDisableCostMessage = () => getState().configState.disableCostMessage;
 
 export const selectors = {
   getInterrupted,
   getRunning,
   getMessageParams,
   getMessageUsages,
+  getModel,
+  getPricingPerModel,
+  getDisableCostMessage,
 };
