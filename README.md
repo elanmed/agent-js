@@ -33,5 +33,4 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 
 ## TODO:
 
-- [ ] Allow pasting content without submitting
 - [ ] Better rendering support
