@@ -9,18 +9,18 @@ A minimal agent implementation for working with Claude: execute bash commands, c
 - **Minimal deps**: 3 packages [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`globby`](https://www.npmjs.com/package/globby), [`zod`](https://www.npmjs.com/package/zod)
 - **Strict TypeScript**: all the strictest `tsconfig`, `eslint` settings
   - Note to future self: probably not worth it
-- **No build step**: uses Node's native `.ts` support
+- **No build step**: uses Bun's native `.ts` support
 - **Tools**: (see below)
 - **Streaming**: responses stream in real time, cancellable
 - **Configurable**: global and local settings to pick your model, track costs
 - **Recursive AGENTS.md discovery**: automatically includes project context
-- **Slash commands**: trigger a command defined in `./agent-js/commands/command.md` with an input of `/command`
+- **Slash commands**: trigger a command defined in `./.agent-js/commands/command.md` with an input of `/command`
 
 ## Configuration
 
-Settings live in `~/.config/agent-js/.agent-js/settings.json` (global) and `./agent-js/settings.json` (local overrides)
+Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/settings.json` (local overrides)
 
-The global `agents-js.settings.json` is written if it doesn't exist - see it for configurable options
+The global `settings.json` is written if it doesn't exist - see it for configurable options
 
 ## Tools
 
