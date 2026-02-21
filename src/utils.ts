@@ -2,6 +2,8 @@ import fs from "node:fs";
 import { dirname, join, parse, resolve } from "node:path";
 import { selectors } from "./state.ts";
 import { globby } from "globby";
+import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
@@ -157,4 +159,15 @@ export function getAvailableSlashCommands() {
 
   const files = fs.readdirSync(path);
   return files.map((file) => parse(file).name);
+}
+
+export function readFromEditor() {
+  const tempFile = join(tmpdir(), `agent-js-${String(Date.now())}.txt`);
+  const editor = process.env["EDITOR"] ?? "vi";
+  fs.writeFileSync(tempFile, "");
+  spawnSync(editor, [tempFile], { shell: true, stdio: "inherit" });
+  const content = fs.readFileSync(tempFile).toString();
+  fs.unlinkSync(tempFile);
+
+  return content.trim();
 }

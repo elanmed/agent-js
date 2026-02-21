@@ -14,6 +14,7 @@ import {
   maybePrintCostMessage,
   tryCatchAsync,
   getAvailableSlashCommands,
+  readFromEditor,
 } from "./utils.ts";
 import {
   BASH_TOOL_SCHEMA,
@@ -168,14 +169,12 @@ async function main() {
     }
     logNewline();
 
-    if (inputResult.value === "") {
-      colorLog("Empty input, aborting", "red");
-      continue;
-    }
-
     let inputResultValue = inputResult.value;
     if (inputResult.value.at(0) === "/") {
-      if (availableSlashCommands.includes(inputResult.value.slice(1))) {
+      const commandWithoutSlash = inputResult.value.slice(1);
+      if (commandWithoutSlash === "e") {
+        inputResultValue = readFromEditor();
+      } else if (availableSlashCommands.includes(commandWithoutSlash)) {
         colorLog(`Executing slash command: ${inputResult.value}`, "grey");
         const path = join(
           process.cwd(),
@@ -193,6 +192,11 @@ async function main() {
         maybePrintCostMessage();
         continue;
       }
+    }
+
+    if (inputResultValue === "") {
+      colorLog("Empty input, aborting", "red");
+      continue;
     }
 
     const inputMessageParam: Anthropic.Messages.MessageParam = {

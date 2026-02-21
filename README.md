@@ -14,7 +14,8 @@ A minimal agent implementation for working with Claude: execute bash commands, c
 - **Streaming**: responses stream in real time, cancellable
 - **Configurable**: global and local settings to pick your model, track costs
 - **Recursive AGENTS.md discovery**: automatically includes project context
-- **Slash commands**: trigger a command defined in `./.agent-js/commands/command.md` with an input of `/command`
+- **Slash commands**: trigger a command defined in `./.agent-js/commands/command.md` with `/command`
+  - Builtin `/e` to open your editor and send multi-line content to the LLM
 
 ## Configuration
 
