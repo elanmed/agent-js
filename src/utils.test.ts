@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   isAbortError,
   tryCatch,
+  tryCatchAsync,
   calculateSessionCost,
   type TokenUsage,
 } from "./utils.ts";
@@ -30,14 +31,29 @@ describe("utils", () => {
   });
 
   describe("tryCatch", () => {
+    it("returns {ok: true, value} when the callback succeeds", () => {
+      const result = tryCatch(() => 42);
+      assert.deepEqual(result, { ok: true, value: 42 });
+    });
+
+    it("returns {ok: false, error} when the callback throws", () => {
+      const err = new Error("boom");
+      const result = tryCatch(() => {
+        throw err;
+      });
+      assert.deepEqual(result, { ok: false, error: err });
+    });
+  });
+
+  describe("tryCatchAsync", () => {
     it("returns {ok: true, value} for a resolved promise", async () => {
-      const result = await tryCatch(Promise.resolve(42));
+      const result = await tryCatchAsync(Promise.resolve(42));
       assert.deepEqual(result, { ok: true, value: 42 });
     });
 
     it("returns {ok: false, error} for a rejected promise", async () => {
       const err = new Error("boom");
-      const result = await tryCatch(Promise.reject(err));
+      const result = await tryCatchAsync(Promise.reject(err));
       assert.deepEqual(result, { ok: false, error: err });
     });
   });

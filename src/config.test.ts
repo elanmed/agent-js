@@ -43,7 +43,9 @@ describe("initStateFromConfig", () => {
 
     mock.method(fs, "mkdirSync", mock.fn() as unknown as typeof fs.mkdirSync);
     mock.method(fs, "writeFileSync", ((path: string, content: string) => {
-      writeFileArgs = [path, content];
+      if (path === GLOBAL_CONFIG_PATH) {
+        writeFileArgs = [path, content];
+      }
     }) as unknown as typeof fs.writeFileSync);
   });
 
