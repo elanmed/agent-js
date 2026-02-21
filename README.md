@@ -1,4 +1,4 @@
-# agent-js
+# `agent-js`
 
 A minimal agent implementation for working with Claude: execute bash commands, create/edit files, etc.
 
