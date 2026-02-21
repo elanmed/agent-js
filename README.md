@@ -1,6 +1,6 @@
 # `agent-js`
 
-A minimal agent implementation for working with Claude: execute bash commands, create/edit files, etc.
+A minimal agent implementation for working with claude (my mini claude code)
 
 ![demo](https://elanmed.dev/nvim-plugins/agent-js.png)
 
@@ -10,8 +10,8 @@ A minimal agent implementation for working with Claude: execute bash commands, c
 - **Strict TypeScript**: all the strictest `tsconfig`, `eslint` settings
   - Note to future self: probably not worth it
 - **No build step**: uses Bun's native `.ts` support
-- **Tools**: (see below)
-- **Streaming**: responses stream in real time, cancellable
+- **Tools**: execute bash commands, create/edit files, etc. A `git diff` is output when a tool changes a file
+- **Streaming**: responses stream in real time, cancellable with `<C-c>`
 - **Configurable**: global and local settings to pick your model, track costs
 - **Recursive AGENTS.md discovery**: automatically includes project context
 - **Slash commands**: trigger a command defined in `./.agent-js/commands/command.md` with `/command`
@@ -33,4 +33,4 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 
 ## TODO:
 
-- [ ] Better rendering support
+- [ ] Better rendering support?
