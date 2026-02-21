@@ -6,16 +6,19 @@ import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
-  tryCatch,
   colorLog,
   debugLog,
   logNewline,
-  calculateSessionCost,
   BASE_SYSTEM_PROMPT,
   getRecursiveAgentsMdFilesStr,
   maybePrintCostMessage,
+  tryCatchAsync,
 } from "./utils.ts";
-import { BASH_TOOL_SCHEMA, getToolResultBlock } from "./tools.ts";
+import {
+  BASH_TOOL_SCHEMA,
+  CREATE_FILE_TOOL_SCHEMA,
+  getToolResultBlock,
+} from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
 
 async function main() {
@@ -43,7 +46,7 @@ async function main() {
         max_tokens: 1024,
         model: selectors.getModel(),
         messages: [...selectors.getMessageParams(), messageParam],
-        tools: [BASH_TOOL_SCHEMA],
+        tools: [BASH_TOOL_SCHEMA, CREATE_FILE_TOOL_SCHEMA],
         system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
           "\n",
         ),
@@ -98,7 +101,7 @@ async function main() {
 
   while (selectors.getRunning()) {
     currQuestionAbortController = new AbortController();
-    const inputResult = await tryCatch(
+    const inputResult = await tryCatchAsync(
       rl.question("> ", { signal: currQuestionAbortController.signal }),
     );
     currQuestionAbortController = null;
@@ -108,7 +111,7 @@ async function main() {
 
       dispatch(actions.setInterrupted(true));
       currQuestionAbortController = new AbortController();
-      const exitResult = await tryCatch(
+      const exitResult = await tryCatchAsync(
         rl.question("y(es) or <C-c> to exit: ", {
           signal: currQuestionAbortController.signal,
         }),
@@ -146,7 +149,7 @@ async function main() {
       role: "user",
     };
     const messageCountBeforeTurn = selectors.getMessageParams().length;
-    const streamResult = await tryCatch(callApi(inputMessageParam));
+    const streamResult = await tryCatchAsync(callApi(inputMessageParam));
 
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
@@ -177,7 +180,7 @@ async function main() {
         role: "user",
       };
 
-      const toolStreamResult = await tryCatch(
+      const toolStreamResult = await tryCatchAsync(
         callApi(toolResultsMessage, { prependNewline: true }),
       );
 
