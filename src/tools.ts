@@ -117,6 +117,38 @@ const StrReplaceToolInputSchema = z
   .object({ path: z.string(), old_str: z.string(), new_str: z.string() })
   .strict();
 
+export const INSERT_LINES_TOOL_SCHEMA: Anthropic.Messages.Tool = {
+  name: "insert_lines",
+  description:
+    "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
+  input_schema: {
+    type: "object",
+    required: ["path", "after_line", "content"],
+    properties: {
+      path: {
+        type: "string",
+        description: "Path to the file to edit",
+      },
+      after_line: {
+        type: "integer",
+        description: "Line number to insert after (0 for beginning of file)",
+      },
+      content: {
+        type: "string",
+        description: "Text to insert",
+      },
+    },
+  },
+};
+
+const InsertLinesToolInputSchema = z
+  .object({
+    path: z.string(),
+    after_line: z.number().int(),
+    content: z.string(),
+  })
+  .strict();
+
 export async function executeBashTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ): Promise<Anthropic.Messages.ToolResultBlockParam> {
@@ -334,6 +366,67 @@ export function executeStrReplaceTool(
   };
 }
 
+export function executeInsertLinesTool(
+  toolUseBlock: Anthropic.Messages.ToolUseBlock,
+): Anthropic.Messages.ToolResultBlockParam {
+  const { path, after_line, content } = InsertLinesToolInputSchema.parse(
+    toolUseBlock.input,
+  );
+  colorLog(`Executing insert_lines tool: ${path}`, "grey");
+  debugLog(
+    `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
+  );
+
+  const readResult = tryCatch(() => fs.readFileSync(path));
+  if (!readResult.ok) {
+    const error = getMessageFromError(readResult.error);
+    debugLog(`executeInsertLinesTool: error=${error}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: error,
+      is_error: true,
+    };
+  }
+
+  const lines = readResult.value.toString().split("\n");
+
+  if (after_line < 0 || after_line > lines.length) {
+    debugLog(
+      `executeInsertLinesTool: after_line ${String(after_line)} out of range`,
+    );
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: `after_line ${String(after_line)} is out of range (file has ${String(lines.length)} lines)`,
+      is_error: true,
+    };
+  }
+
+  lines.splice(after_line, 0, content);
+
+  const writeResult = tryCatch(() => {
+    fs.writeFileSync(path, lines.join("\n"));
+  });
+  if (!writeResult.ok) {
+    const error = getMessageFromError(writeResult.error);
+    debugLog(`executeInsertLinesTool: error=${error}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: error,
+      is_error: true,
+    };
+  }
+
+  debugLog(`executeInsertLinesTool: ${path} updated successfully`);
+  return {
+    type: "tool_result",
+    tool_use_id: toolUseBlock.id,
+    content: `${path} updated successfully`,
+  };
+}
+
 export async function getToolResultBlock(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ) {
@@ -354,6 +447,10 @@ export async function getToolResultBlock(
     }
     case "str_replace": {
       toolResultBlock = executeStrReplaceTool(toolUseBlock);
+      break;
+    }
+    case "insert_lines": {
+      toolResultBlock = executeInsertLinesTool(toolUseBlock);
       break;
     }
   }
