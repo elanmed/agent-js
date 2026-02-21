@@ -55,6 +55,39 @@ const CreateFileToolSchema = z
   .object({ path: z.string(), content: z.string() })
   .strict();
 
+export const VIEW_FILE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
+  name: "view_file",
+  description:
+    "View the contents of a file or list a directory. File contents are returned with line numbers.",
+  input_schema: {
+    type: "object",
+    required: ["path"],
+    properties: {
+      path: {
+        type: "string",
+        description: "Path to the file or directory to view",
+      },
+      start_line: {
+        type: "integer",
+        description: "Starting line number (1-indexed). Only applies to files.",
+      },
+      end_line: {
+        type: "integer",
+        description:
+          "Ending line number (inclusive). Use -1 for end of file. Only applies to files.",
+      },
+    },
+  },
+};
+
+const ViewFileToolInputSchema = z
+  .object({
+    path: z.string(),
+    start_line: z.number().int().optional(),
+    end_line: z.number().int().optional(),
+  })
+  .strict();
+
 export async function executeBashTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ): Promise<Anthropic.Messages.ToolResultBlockParam> {
@@ -132,6 +165,79 @@ export function executeCreateFileTool(
   return toolResultBlock;
 }
 
+export function executeViewFileTool(
+  toolUseBlock: Anthropic.Messages.ToolUseBlock,
+): Anthropic.Messages.ToolResultBlockParam {
+  const { path, start_line, end_line } = ViewFileToolInputSchema.parse(
+    toolUseBlock.input,
+  );
+  colorLog(`Executing view_file tool: ${path}`, "grey");
+  debugLog(`executeViewFileTool: path=${path}`);
+
+  const statResult = tryCatch(() => fs.statSync(path));
+  if (!statResult.ok) {
+    const error = getMessageFromError(statResult.error);
+    debugLog(`executeViewFileTool: error=${error}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: error,
+      is_error: true,
+    };
+  }
+
+  if (statResult.value.isDirectory()) {
+    const readdirResult = tryCatch(() => fs.readdirSync(path));
+    if (!readdirResult.ok) {
+      const error = getMessageFromError(readdirResult.error);
+      debugLog(`executeViewFileTool: error=${error}`);
+      return {
+        type: "tool_result",
+        tool_use_id: toolUseBlock.id,
+        content: error,
+        is_error: true,
+      };
+    }
+    const listing = readdirResult.value.join("\n");
+    debugLog(`executeViewFileTool: directory listing for ${path}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: listing,
+    };
+  }
+
+  const readResult = tryCatch(() => fs.readFileSync(path));
+  if (!readResult.ok) {
+    const error = getMessageFromError(readResult.error);
+    debugLog(`executeViewFileTool: error=${error}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: error,
+      is_error: true,
+    };
+  }
+
+  const lines = readResult.value.toString().split("\n");
+  const start = (start_line ?? 1) - 1;
+  const end =
+    end_line === undefined || end_line === -1 ? lines.length : end_line;
+  const slice = lines.slice(start, end);
+  const numbered = slice
+    .map((line, i) => `${String(start + i + 1)}\t${line}`)
+    .join("\n");
+
+  debugLog(
+    `executeViewFileTool: ${path} lines ${String(start + 1)}-${String(end)}`,
+  );
+  return {
+    type: "tool_result",
+    tool_use_id: toolUseBlock.id,
+    content: numbered,
+  };
+}
+
 export async function getToolResultBlock(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ) {
@@ -144,6 +250,10 @@ export async function getToolResultBlock(
     }
     case "create_file": {
       toolResultBlock = executeCreateFileTool(toolUseBlock);
+      break;
+    }
+    case "view_file": {
+      toolResultBlock = executeViewFileTool(toolUseBlock);
       break;
     }
   }
