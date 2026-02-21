@@ -31,22 +31,22 @@ src/
 
 ```bash
 # Run the agent
-npm start
+bun start
 
 # Run with debug logging (prints model, token counts, dispatched actions, etc.)
-npm run start:debug
+bun run start:debug
 
 # Run tests
-npm test
+bun test
 
 # Type-check (no emit)
-npm run types
+bun run types
 
 # Lint
-npm run lint
+bun run lint
 
 # Format
-npm run format
+bun run format
 ```
 
 ## Slash Commands
@@ -89,14 +89,14 @@ Pricing values are in USD per million tokens.
 
 ## TypeScript
 
-The project uses the strictest TypeScript settings: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`, and `erasableSyntaxOnly`. All of these must pass (`npm run types`) before committing.
+The project uses the strictest TypeScript settings: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`, and `erasableSyntaxOnly`. All of these must pass (`bun run types`) before committing.
 
 ## Testing
 
-Tests use Node's built-in test runner (`node --test`). Test files are colocated with source files as `*.test.ts`.
+Tests use Node's built-in test runner. Test files are colocated with source files as `*.test.ts`.
 
 ```bash
-npm test
+bun test
 ```
 
 No external test framework is used.
