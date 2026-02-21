@@ -31,124 +31,6 @@ export const BASH_TOOL_SCHEMA: Anthropic.Messages.Tool = {
 
 const BashToolInputSchema = z.object({ command: z.string() }).strict();
 
-export const CREATE_FILE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
-  name: "create_file",
-  description:
-    "Create a new file with the given content. Fails if the file already exists.",
-  input_schema: {
-    type: "object",
-    required: ["path", "content"],
-    properties: {
-      path: {
-        type: "string",
-        description: "Path for the new file",
-      },
-      content: {
-        type: "string",
-        description: "Full content of the new file",
-      },
-    },
-  },
-};
-
-const CreateFileToolSchema = z
-  .object({ path: z.string(), content: z.string() })
-  .strict();
-
-export const VIEW_FILE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
-  name: "view_file",
-  description:
-    "View the contents of a file or list a directory. File contents are returned with line numbers.",
-  input_schema: {
-    type: "object",
-    required: ["path"],
-    properties: {
-      path: {
-        type: "string",
-        description: "Path to the file or directory to view",
-      },
-      start_line: {
-        type: "integer",
-        description: "Starting line number (1-indexed). Only applies to files.",
-      },
-      end_line: {
-        type: "integer",
-        description:
-          "Ending line number (inclusive). Use -1 for end of file. Only applies to files.",
-      },
-    },
-  },
-};
-
-const ViewFileToolInputSchema = z
-  .object({
-    path: z.string(),
-    start_line: z.number().int().optional(),
-    end_line: z.number().int().optional(),
-  })
-  .strict();
-
-export const STR_REPLACE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
-  name: "str_replace",
-  description:
-    "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
-  input_schema: {
-    type: "object",
-    required: ["path", "old_str", "new_str"],
-    properties: {
-      path: {
-        type: "string",
-        description: "Path to the file to edit",
-      },
-      old_str: {
-        type: "string",
-        description:
-          "The exact text to find (must match exactly once in the file)",
-      },
-      new_str: {
-        type: "string",
-        description: "The replacement text",
-      },
-    },
-  },
-};
-
-const StrReplaceToolInputSchema = z
-  .object({ path: z.string(), old_str: z.string(), new_str: z.string() })
-  .strict();
-
-export const INSERT_LINES_TOOL_SCHEMA: Anthropic.Messages.Tool = {
-  name: "insert_lines",
-  description:
-    "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
-  input_schema: {
-    type: "object",
-    required: ["path", "after_line", "content"],
-    properties: {
-      path: {
-        type: "string",
-        description: "Path to the file to edit",
-      },
-      after_line: {
-        type: "integer",
-        description: "Line number to insert after (0 for beginning of file)",
-      },
-      content: {
-        type: "string",
-        description: "Text to insert",
-      },
-    },
-  },
-};
-
-const InsertLinesToolInputSchema = z
-  .object({
-    path: z.string(),
-    after_line: z.number().int(),
-    content: z.string(),
-  })
-  .strict();
-
 export async function executeBashTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ): Promise<Anthropic.Messages.ToolResultBlockParam> {
@@ -185,6 +67,30 @@ export async function executeBashTool(
   };
   return toolResultBlock;
 }
+
+export const CREATE_FILE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
+  name: "create_file",
+  description:
+    "Create a new file with the given content. Fails if the file already exists.",
+  input_schema: {
+    type: "object",
+    required: ["path", "content"],
+    properties: {
+      path: {
+        type: "string",
+        description: "Path for the new file",
+      },
+      content: {
+        type: "string",
+        description: "Full content of the new file",
+      },
+    },
+  },
+};
+
+const CreateFileToolSchema = z
+  .object({ path: z.string(), content: z.string() })
+  .strict();
 
 export function executeCreateFileTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
@@ -225,6 +131,39 @@ export function executeCreateFileTool(
   };
   return toolResultBlock;
 }
+
+export const VIEW_FILE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
+  name: "view_file",
+  description:
+    "View the contents of a file or list a directory. File contents are returned with line numbers.",
+  input_schema: {
+    type: "object",
+    required: ["path"],
+    properties: {
+      path: {
+        type: "string",
+        description: "Path to the file or directory to view",
+      },
+      start_line: {
+        type: "integer",
+        description: "Starting line number (1-indexed). Only applies to files.",
+      },
+      end_line: {
+        type: "integer",
+        description:
+          "Ending line number (inclusive). Use -1 for end of file. Only applies to files.",
+      },
+    },
+  },
+};
+
+const ViewFileToolInputSchema = z
+  .object({
+    path: z.string(),
+    start_line: z.number().int().optional(),
+    end_line: z.number().int().optional(),
+  })
+  .strict();
 
 export function executeViewFileTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
@@ -298,6 +237,36 @@ export function executeViewFileTool(
     content: numbered,
   };
 }
+
+export const STR_REPLACE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
+  name: "str_replace",
+  description:
+    "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
+  input_schema: {
+    type: "object",
+    required: ["path", "old_str", "new_str"],
+    properties: {
+      path: {
+        type: "string",
+        description: "Path to the file to edit",
+      },
+      old_str: {
+        type: "string",
+        description:
+          "The exact text to find (must match exactly once in the file)",
+      },
+      new_str: {
+        type: "string",
+        description: "The replacement text",
+      },
+    },
+  },
+};
+
+const StrReplaceToolInputSchema = z
+  .object({ path: z.string(), old_str: z.string(), new_str: z.string() })
+  .strict();
+
 export function executeStrReplaceTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ): Anthropic.Messages.ToolResultBlockParam {
@@ -365,6 +334,38 @@ export function executeStrReplaceTool(
     content: `${path} updated successfully`,
   };
 }
+
+export const INSERT_LINES_TOOL_SCHEMA: Anthropic.Messages.Tool = {
+  name: "insert_lines",
+  description:
+    "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
+  input_schema: {
+    type: "object",
+    required: ["path", "after_line", "content"],
+    properties: {
+      path: {
+        type: "string",
+        description: "Path to the file to edit",
+      },
+      after_line: {
+        type: "integer",
+        description: "Line number to insert after (0 for beginning of file)",
+      },
+      content: {
+        type: "string",
+        description: "Text to insert",
+      },
+    },
+  },
+};
+
+const InsertLinesToolInputSchema = z
+  .object({
+    path: z.string(),
+    after_line: z.number().int(),
+    content: z.string(),
+  })
+  .strict();
 
 export function executeInsertLinesTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,

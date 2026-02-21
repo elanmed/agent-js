@@ -46,10 +46,16 @@ async function main() {
 
     currApiStream = client.messages
       .stream({
-        max_tokens: 1024,
+        max_tokens: 8192,
         model: selectors.getModel(),
         messages: [...selectors.getMessageParams(), messageParam],
-        tools: [BASH_TOOL_SCHEMA, CREATE_FILE_TOOL_SCHEMA, VIEW_FILE_TOOL_SCHEMA, STR_REPLACE_TOOL_SCHEMA, INSERT_LINES_TOOL_SCHEMA],
+        tools: [
+          BASH_TOOL_SCHEMA,
+          CREATE_FILE_TOOL_SCHEMA,
+          VIEW_FILE_TOOL_SCHEMA,
+          STR_REPLACE_TOOL_SCHEMA,
+          INSERT_LINES_TOOL_SCHEMA,
+        ],
         system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
           "\n",
         ),
