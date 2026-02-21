@@ -18,6 +18,7 @@ import {
   BASH_TOOL_SCHEMA,
   CREATE_FILE_TOOL_SCHEMA,
   VIEW_FILE_TOOL_SCHEMA,
+  STR_REPLACE_TOOL_SCHEMA,
   getToolResultBlock,
 } from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
@@ -47,7 +48,7 @@ async function main() {
         max_tokens: 1024,
         model: selectors.getModel(),
         messages: [...selectors.getMessageParams(), messageParam],
-        tools: [BASH_TOOL_SCHEMA, CREATE_FILE_TOOL_SCHEMA, VIEW_FILE_TOOL_SCHEMA],
+        tools: [BASH_TOOL_SCHEMA, CREATE_FILE_TOOL_SCHEMA, VIEW_FILE_TOOL_SCHEMA, STR_REPLACE_TOOL_SCHEMA],
         system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
           "\n",
         ),

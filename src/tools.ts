@@ -88,6 +88,35 @@ const ViewFileToolInputSchema = z
   })
   .strict();
 
+export const STR_REPLACE_TOOL_SCHEMA: Anthropic.Messages.Tool = {
+  name: "str_replace",
+  description:
+    "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
+  input_schema: {
+    type: "object",
+    required: ["path", "old_str", "new_str"],
+    properties: {
+      path: {
+        type: "string",
+        description: "Path to the file to edit",
+      },
+      old_str: {
+        type: "string",
+        description:
+          "The exact text to find (must match exactly once in the file)",
+      },
+      new_str: {
+        type: "string",
+        description: "The replacement text",
+      },
+    },
+  },
+};
+
+const StrReplaceToolInputSchema = z
+  .object({ path: z.string(), old_str: z.string(), new_str: z.string() })
+  .strict();
+
 export async function executeBashTool(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
 ): Promise<Anthropic.Messages.ToolResultBlockParam> {
@@ -237,6 +266,73 @@ export function executeViewFileTool(
     content: numbered,
   };
 }
+export function executeStrReplaceTool(
+  toolUseBlock: Anthropic.Messages.ToolUseBlock,
+): Anthropic.Messages.ToolResultBlockParam {
+  const { path, old_str, new_str } = StrReplaceToolInputSchema.parse(
+    toolUseBlock.input,
+  );
+  colorLog(`Executing str_replace tool: ${path}`, "grey");
+  debugLog(`executeStrReplaceTool: path=${path}`);
+
+  const readResult = tryCatch(() => fs.readFileSync(path));
+  if (!readResult.ok) {
+    const error = getMessageFromError(readResult.error);
+    debugLog(`executeStrReplaceTool: error=${error}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: error,
+      is_error: true,
+    };
+  }
+
+  const content = readResult.value.toString();
+  const occurrences = content.split(old_str).length - 1;
+
+  if (occurrences === 0) {
+    debugLog(`executeStrReplaceTool: old_str not found in ${path}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: "old_str not found in file",
+      is_error: true,
+    };
+  }
+
+  if (occurrences > 1) {
+    debugLog(
+      `executeStrReplaceTool: old_str matched ${String(occurrences)} times in ${path}`,
+    );
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: `old_str matched ${String(occurrences)} times — must match exactly once`,
+      is_error: true,
+    };
+  }
+
+  const writeResult = tryCatch(() => {
+    fs.writeFileSync(path, content.replace(old_str, new_str));
+  });
+  if (!writeResult.ok) {
+    const error = getMessageFromError(writeResult.error);
+    debugLog(`executeStrReplaceTool: error=${error}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolUseBlock.id,
+      content: error,
+      is_error: true,
+    };
+  }
+
+  debugLog(`executeStrReplaceTool: ${path} updated successfully`);
+  return {
+    type: "tool_result",
+    tool_use_id: toolUseBlock.id,
+    content: `${path} updated successfully`,
+  };
+}
 
 export async function getToolResultBlock(
   toolUseBlock: Anthropic.Messages.ToolUseBlock,
@@ -254,6 +350,10 @@ export async function getToolResultBlock(
     }
     case "view_file": {
       toolResultBlock = executeViewFileTool(toolUseBlock);
+      break;
+    }
+    case "str_replace": {
+      toolResultBlock = executeStrReplaceTool(toolUseBlock);
       break;
     }
   }
