@@ -55,10 +55,10 @@ TypeScript is run directly via Node's native `.ts` support (`node src/index.ts`)
 
 Settings are loaded from two locations and merged (local takes precedence):
 
-| Path                                        | Purpose                                     |
-| ------------------------------------------- | ------------------------------------------- |
-| `~/.config/agent-js/agent-js.settings.json` | Global (created with defaults on first run) |
-| `./agent-js.settings.json`                  | Local (project-level overrides)             |
+| Path                                         | Purpose                                     |
+| -------------------------------------------- | ------------------------------------------- |
+| `~/.config/agent-js/.agent-js/settings.json` | Global (created with defaults on first run) |
+| `./agent-js/settings.json`                   | Local (project-level overrides)             |
 
 **Config schema** (all fields optional):
 

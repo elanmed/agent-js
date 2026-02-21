@@ -14,11 +14,11 @@ A minimal agent implementation for working with Claude: execute bash commands, c
 - **Streaming**: responses stream in real time, cancellable
 - **Configurable**: global and local settings to pick your model, track costs
 - **Recursive AGENTS.md discovery**: automatically includes project context
-- **Cost tracking**: see how much your session is costing (optional)
+- **Slash commands**: trigger a command defined in `./agent-js/commands/command.md` with an input of `/command`
 
 ## Configuration
 
-Settings live in `~/.config/agent-js/agent-js.settings.json` (global) and `./agent-js.settings.json` (local overrides)
+Settings live in `~/.config/agent-js/.agent-js/settings.json` (global) and `./agent-js/settings.json` (local overrides)
 
 The global `agents-js.settings.json` is written if it doesn't exist - see it for configurable options
 
@@ -33,5 +33,5 @@ The global `agents-js.settings.json` is written if it doesn't exist - see it for
 ## TODO:
 
 - [ ] Executable
-- [ ] Slash commands
+- [x] Slash commands
 - [ ] Allow pasting content without submitting
