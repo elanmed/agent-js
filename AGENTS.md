@@ -49,6 +49,10 @@ npm run lint
 npm run format
 ```
 
+## Slash Commands
+
+Slash commands are dynamically loaded from markdown files in `.agent-js/commands/`. When you enter `/commandname`, the agent reads `.agent-js/commands/commandname.md` and passes its instructions to Claude as a prompt.
+
 TypeScript is run directly via Node's native `.ts` support (`node src/index.ts`) — there is no build step.
 
 ## Configuration
