@@ -32,6 +32,5 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 
 ## TODO:
 
-- [ ] Executable
-- [x] Slash commands
 - [ ] Allow pasting content without submitting
+- [ ] Better rendering support
