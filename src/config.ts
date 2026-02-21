@@ -65,10 +65,14 @@ export const DEFAULT_CONFIG: ConfigRequired = {
 export const GLOBAL_CONFIG_PATH = join(
   homedir(),
   ".config",
-  "agent-js",
-  "agent-js.settings.json",
+  ".agent-js",
+  "settings.json",
 );
-export const LOCAL_CONFIG_PATH = resolve("agent-js.settings.json");
+export const LOCAL_CONFIG_PATH = join(
+  process.cwd(),
+  ".agent-js",
+  "settings.json",
+);
 
 export function initStateFromConfig() {
   const globalConfig: Config = (() => {

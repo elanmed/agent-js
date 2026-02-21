@@ -13,6 +13,7 @@ import {
   getRecursiveAgentsMdFilesStr,
   maybePrintCostMessage,
   tryCatchAsync,
+  getAvailableSlashCommands,
 } from "./utils.ts";
 import {
   BASH_TOOL_SCHEMA,
@@ -23,9 +24,11 @@ import {
   getToolResultBlock,
 } from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
+import { join } from "node:path";
 
 async function main() {
   initStateFromConfig();
+  const availableSlashCommands = getAvailableSlashCommands();
 
   const client = new Anthropic();
   const rl = readline.createInterface({ input, output });
@@ -170,10 +173,32 @@ async function main() {
       continue;
     }
 
+    let inputResultValue = inputResult.value;
+    if (inputResult.value.at(0) === "/") {
+      if (availableSlashCommands.includes(inputResult.value.slice(1))) {
+        colorLog(`Executing slash command: ${inputResult.value}`, "grey");
+        const path = join(
+          process.cwd(),
+          ".agent-js",
+          "commands",
+          inputResult.value.slice(1).concat(".md"),
+        );
+        debugLog(`Performing the slash command at ${path}`);
+        inputResultValue = `Perform the instructions located at ${path}`;
+      } else {
+        colorLog(
+          `Invalid / command detected, valid commands: ${availableSlashCommands.join(",")}`,
+          "red",
+        );
+        maybePrintCostMessage();
+        continue;
+      }
+    }
+
     const inputMessageParam: Anthropic.Messages.MessageParam = {
       content: [
         {
-          text: inputResult.value,
+          text: inputResultValue,
           type: "text",
           cache_control: { type: "ephemeral" },
         },

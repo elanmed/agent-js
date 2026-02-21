@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { resolve } from "node:path";
+import { dirname, join, parse, resolve } from "node:path";
 import { selectors } from "./state.ts";
 import { globby } from "globby";
 
@@ -55,7 +55,8 @@ export async function getRecursiveAgentsMdFilesStr() {
 
 export function debugLog(content: string) {
   if (process.env["AGENT_JS_DEBUG"] !== "true") return;
-  const path = resolve("agent-js.log");
+  const path = join(process.cwd(), ".agent-js", "debug.log");
+  fs.mkdirSync(dirname(path), { recursive: true });
   fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
 }
 
@@ -148,4 +149,12 @@ export function maybePrintCostMessage() {
     calculateSessionCost(selectors.getModel(), selectors.getMessageUsages()),
     "green",
   );
+}
+
+export function getAvailableSlashCommands() {
+  const path = join(process.cwd(), ".agent-js", "commands");
+  if (!fs.existsSync(path)) return [];
+
+  const files = fs.readdirSync(path);
+  return files.map((file) => parse(file).name);
 }

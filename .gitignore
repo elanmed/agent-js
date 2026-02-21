@@ -1,2 +1,2 @@
 node_modules
-agent-js.log
+.agent-js/debug.log
