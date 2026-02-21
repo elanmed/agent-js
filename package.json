@@ -4,10 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.ts",
-    "test": "node --test 'src/**/*.test.ts'",
+    "start": "bun src/index.ts",
+    "test": "bun --test 'src/**/*.test.ts'",
     "lint": "eslint src",
-    "types": "tsc"
+    "types": "tsc",
+    "build:linux-x64": "bun build --compile --minify --target=bun-linux-x64 ./src/index.ts --outfile dist/agent-linux-x64",
+    "build:linux-arm64": "bun build --compile --minify --target=bun-linux-arm64 ./src/index.ts --outfile dist/agent-linux-arm64",
+    "build:darwin-x64": "bun build --compile --minify --target=bun-darwin-x64 ./src/index.ts --outfile dist/agent-darwin-x64",
+    "build:darwin-arm64": "bun build --compile --minify --target=bun-darwin-arm64 ./src/index.ts --outfile dist/agent-darwin-arm64",
+    "build:windows-x64": "bun build --compile --minify --target=bun-windows-x64 ./src/index.ts --outfile dist/agent-windows-x64"
   },
   "keywords": [],
   "author": "",
