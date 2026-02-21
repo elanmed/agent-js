@@ -29,3 +29,9 @@ The global `agents-js.settings.json` is written if it doesn't exist - see it for
 - `view_file` — view files or list directories
 - `str_replace` — replace strings in files
 - `insert_lines` — insert text at a line
+
+## TODO:
+
+- [ ] Executable
+- [ ] Slash commands
+- [ ] Allow pasting content without submitting
