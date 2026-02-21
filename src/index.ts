@@ -203,12 +203,13 @@ async function main() {
           toolResults.push(toolResultBlock);
         }
       }
+      const lastToolResult = toolResults.at(-1);
+      if (lastToolResult) {
+        lastToolResult.cache_control = { type: "ephemeral" };
+      }
 
       const toolResultsMessage: Anthropic.Messages.MessageParam = {
-        content: toolResults.map((toolResult) => ({
-          ...toolResult,
-          cache_control: { type: "ephemeral" },
-        })),
+        content: toolResults,
         role: "user",
       };
 
