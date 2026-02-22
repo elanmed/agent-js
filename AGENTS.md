@@ -62,3 +62,5 @@ Pricing values are in USD per million tokens.
 Strict TypeScript (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, etc.) — all must pass via `bun run types`.
 
 Tests use Node's built-in test runner, colocated as `*.test.ts`. No external test framework.
+
+After every code change, run `bun run types` and `bun run lint` to verify there are no type errors or lint violations before considering the change complete.
