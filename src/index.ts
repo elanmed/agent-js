@@ -1,8 +1,8 @@
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
-import Anthropic from "@anthropic-ai/sdk";
-import { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
+import Anthropic, { type ParsedMessage } from "@anthropic-ai/sdk";
+import { type MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
@@ -15,6 +15,7 @@ import {
   tryCatchAsync,
   getAvailableSlashCommands,
   readFromEditor,
+  executeBat,
 } from "./utils.ts";
 import {
   BASH_TOOL_SCHEMA,
@@ -45,8 +46,6 @@ async function main() {
     debugLog(
       `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
     );
-    let lastChar: string | undefined = "";
-    let isFirstText = true;
 
     const spinnerFrames = ["|", "/", "-", "\\"];
     let spinnerIdx = 0;
@@ -63,35 +62,23 @@ async function main() {
       spinnerCleared = true;
     };
 
-    currApiStream = client.messages
-      .stream({
-        max_tokens: 8192,
-        model: selectors.getModel(),
-        messages: [...selectors.getMessageParams(), messageParam],
-        tools: [
-          BASH_TOOL_SCHEMA,
-          CREATE_FILE_TOOL_SCHEMA,
-          VIEW_FILE_TOOL_SCHEMA,
-          STR_REPLACE_TOOL_SCHEMA,
-          INSERT_LINES_TOOL_SCHEMA,
-        ],
-        system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
-          "\n",
-        ),
-      })
-      .on("text", (text) => {
-        if (isFirstText) {
-          clearSpinner();
-          if (prependNewline) process.stdout.write("\n");
-          isFirstText = false;
-        }
-        process.stdout.write(text);
-        if (text.length > 0) {
-          lastChar = text.at(-1);
-        }
-      });
-    let streamResult;
+    currApiStream = client.messages.stream({
+      max_tokens: 8192,
+      model: selectors.getModel(),
+      messages: [...selectors.getMessageParams(), messageParam],
+      tools: [
+        BASH_TOOL_SCHEMA,
+        CREATE_FILE_TOOL_SCHEMA,
+        VIEW_FILE_TOOL_SCHEMA,
+        STR_REPLACE_TOOL_SCHEMA,
+        INSERT_LINES_TOOL_SCHEMA,
+      ],
+      system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
+        "\n",
+      ),
+    });
 
+    let streamResult: ParsedMessage<null>;
     try {
       streamResult = await currApiStream.finalMessage();
     } finally {
@@ -103,8 +90,14 @@ async function main() {
       `callApi: stop_reason=${String(streamResult.stop_reason)}, input_tokens=${String(streamResult.usage.input_tokens)}, output_tokens=${String(streamResult.usage.output_tokens)}`,
     );
 
-    if (lastChar && lastChar !== "\n") {
-      process.stdout.write("\n");
+    const fullText = streamResult.content
+      .filter((block) => block.type === "text")
+      .map((block) => block.text)
+      .join("");
+
+    if (fullText) {
+      if (prependNewline) process.stdout.write("\n");
+      await executeBat(fullText);
     }
 
     dispatch(actions.appendToMessageParams(messageParam));
@@ -214,7 +207,7 @@ async function main() {
 
     if (!streamResult.ok) {
       if (streamResult.error instanceof Anthropic.APIUserAbortError) {
-        colorLog("\nAborted", "red");
+        colorLog("Aborted", "red");
         maybePrintCostMessage();
         continue;
       } else {
@@ -250,7 +243,7 @@ async function main() {
         currentMessage = toolStreamResult.value;
       } else {
         if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
-          colorLog("\nAborted", "red");
+          colorLog("Aborted", "red");
           dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
           break;
         } else {
@@ -259,6 +252,7 @@ async function main() {
       }
     }
 
+    logNewline();
     maybePrintCostMessage();
   }
 }

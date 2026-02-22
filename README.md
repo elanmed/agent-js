@@ -11,7 +11,7 @@ A minimal agent implementation for working with claude (my mini claude code)
   - Note to future self: probably not worth it
 - **No build step**: uses Bun's native `.ts` support
 - **Tools**: execute bash commands, create/edit files, etc. A `git diff` is output when a tool changes a file
-- **Streaming**: responses stream in real time, cancellable with `<C-c>`
+- **Rendering with `bat`**: responses are parsed and rendered as markdown
 - **Configurable**: global and local settings to pick your model, track costs
 - **Recursive AGENTS.md discovery**: automatically includes project context
 - **Slash commands**: trigger a command defined in `./.agent-js/commands/command.md` with `/command`
@@ -30,7 +30,3 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 - `view_file` — view files or list directories
 - `str_replace` — replace strings in files
 - `insert_lines` — insert text at a line
-
-## TODO:
-
-- [ ] Better rendering support?

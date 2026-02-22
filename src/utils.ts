@@ -1,9 +1,13 @@
 import fs from "node:fs";
-import { dirname, join, parse, resolve } from "node:path";
+import { dirname, join, parse } from "node:path";
 import { selectors } from "./state.ts";
 import { globby } from "globby";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+
+const execPromise = promisify(exec);
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
@@ -141,7 +145,7 @@ export function calculateSessionCost(
 }
 
 export const BASE_SYSTEM_PROMPT =
-  "You are an AI agent being called from a minimal terminal cli. All your responses will be output directly to the terminal without any alteration. Keep your responses brief as to not pollute the terminal. CRITICAL: You may use backticks (`) for inline code and code blocks, but NEVER use other markdown syntax (no *, #, -, [], {}, etc). Output must be plain text with the exception of backticks for code. Unformatted markdown in terminal output is unreadable and confusing. Always use plain text formatting instead.";
+  "You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. CRITICAL: All your responses will be parsed by bat as markdown, your responses must be formatted as valid markdown.";
 
 export function maybePrintCostMessage() {
   if (selectors.getDisableCostMessage()) return;
@@ -171,3 +175,65 @@ export function readFromEditor() {
 
   return content.trim();
 }
+
+async function checkBat(): Promise<boolean> {
+  return (await tryCatchAsync(execPromise("bat --version"))).ok;
+}
+
+function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
+  return tryCatch(() =>
+    spawnSync(
+      "bat",
+      [
+        "--language",
+        "md",
+        "--paging=never",
+        "--italic-text=always",
+        "--style=plain",
+        "--color=always",
+        "-",
+      ],
+      { input },
+    ),
+  );
+}
+
+export async function executeBat(
+  content: string,
+  {
+    checkBat: checkBatFn = checkBat,
+    spawnBat: spawnBatFn = spawnBat,
+  }: {
+    checkBat?: () => Promise<boolean>;
+    spawnBat?: (input: string) => Result<{ stdout: Buffer | string }>;
+  } = {},
+) {
+  debugLog(`executeBat: content.length=${String(content.length)}`);
+  const isBatAvailable = await checkBatFn();
+  debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
+
+  if (!isBatAvailable) {
+    colorLog(
+      "`bat` is not available, falling back to plain text rendering",
+      "red",
+    );
+    process.stdout.write(content);
+    debugLog("executeBat: rendered as plain text (bat unavailable)");
+    return;
+  }
+
+  const batResult = spawnBatFn(content);
+  debugLog(`executeBat: batResult.ok=${String(batResult.ok)}`);
+
+  if (batResult.ok) {
+    debugLog(
+      `executeBat: writing bat output, bytes=${String(batResult.value.stdout.length)}`,
+    );
+    process.stdout.write(batResult.value.stdout);
+    return;
+  }
+
+  debugLog("executeBat: bat spawn failed, falling back to plain text");
+  process.stdout.write(content);
+}
+
