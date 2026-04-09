@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { dirname, join, parse } from "node:path";
 import { selectors } from "./state.ts";
-import { globby } from "globby";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { exec } from "node:child_process";
