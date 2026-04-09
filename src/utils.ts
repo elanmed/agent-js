@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { glob } from "node:fs/promises";
 
 const execPromise = promisify(exec);
 
@@ -49,7 +50,11 @@ export function colorLog(text: string, color: keyof typeof COLORS = "white") {
 }
 
 export async function getRecursiveAgentsMdFilesStr() {
-  const agentFiles = await globby("**/AGENTS.md", { gitignore: true });
+  const agentFiles = [];
+  for await (const file of glob("**/AGENTS.md")) {
+    agentFiles.push(file);
+  }
+
   debugLog(`AGENTS.md found: ${agentFiles.join(",")}`);
   const filesContents = [];
   for (const filePath of agentFiles) {

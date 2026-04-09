@@ -6,7 +6,7 @@ A minimal agent implementation for working with claude (my mini claude code)
 
 ## Features
 
-- **Minimal deps**: 3 packages [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`globby`](https://www.npmjs.com/package/globby), [`zod`](https://www.npmjs.com/package/zod)
+- **Minimal deps**: 3 packages [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`zod`](https://www.npmjs.com/package/zod)
 - **Strict TypeScript**: all the strictest `tsconfig`, `eslint` settings
   - Note to future self: probably not worth it
 - **No build step**: uses Bun's native `.ts` support
