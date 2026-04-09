@@ -1,18 +1,19 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type OpenAI from "openai";
 import { DEFAULT_CONFIG } from "./config.ts";
 import { debugLog } from "./utils.ts";
-import type { ModelPricing, SupportedModel } from "./utils.ts";
+import type { ModelPricing, TokenUsage } from "./utils.ts";
 
 interface State {
   appState: {
     interrupted: boolean;
     running: boolean;
-    messageParams: Anthropic.Messages.MessageParam[];
-    messageUsages: Anthropic.Messages.Usage[];
+    messageParams: OpenAI.Chat.ChatCompletionMessageParam[];
+    messageUsages: TokenUsage[];
   };
   configState: {
-    pricingPerModel: Record<SupportedModel, ModelPricing>;
-    model: SupportedModel;
+    pricingPerModel: Record<string, ModelPricing>;
+    model: string;
+    baseURL: string | null;
     disableCostMessage: boolean;
   };
 }
@@ -24,7 +25,12 @@ const initialState: State = {
     messageParams: [],
     messageUsages: [],
   },
-  configState: structuredClone(DEFAULT_CONFIG),
+  configState: {
+    model: DEFAULT_CONFIG.model,
+    baseURL: null,
+    disableCostMessage: DEFAULT_CONFIG.disableCostMessage,
+    pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
+  },
 };
 
 let state: State = structuredClone(initialState);
@@ -46,19 +52,23 @@ type Action =
     }
   | {
       type: "append-to-message-params";
-      payload: Anthropic.Messages.MessageParam;
+      payload: OpenAI.Chat.ChatCompletionMessageParam;
     }
   | {
       type: "append-to-message-usages";
-      payload: Anthropic.Messages.Usage;
+      payload: TokenUsage;
     }
   | {
       type: "set-model";
-      payload: SupportedModel;
+      payload: string;
+    }
+  | {
+      type: "set-base-url";
+      payload: string | null;
     }
   | {
       type: "set-pricing-per-model";
-      payload: Record<SupportedModel, ModelPricing>;
+      payload: Record<string, ModelPricing>;
     }
   | {
       type: "set-disable-cost-message";
@@ -88,21 +98,6 @@ const reducer = (state: State, action: Action): State => {
     }
     case "append-to-message-params": {
       const newState = structuredClone(state);
-      newState.appState.messageParams = newState.appState.messageParams.map(
-        (message) => {
-          if (typeof message.content === "string") {
-            return message;
-          }
-
-          return {
-            ...message,
-            content: message.content.map((content) => ({
-              ...content,
-              cache_control: null,
-            })),
-          };
-        },
-      );
       newState.appState.messageParams.push(action.payload);
       return newState;
     }
@@ -114,6 +109,11 @@ const reducer = (state: State, action: Action): State => {
     case "set-model": {
       const newState = structuredClone(state);
       newState.configState.model = action.payload;
+      return newState;
+    }
+    case "set-base-url": {
+      const newState = structuredClone(state);
+      newState.configState.baseURL = action.payload;
       return newState;
     }
     case "set-pricing-per-model": {
@@ -152,7 +152,7 @@ const setRunning = (running: boolean): Action => {
 };
 
 const appendToMessageParams = (
-  message: Anthropic.Messages.MessageParam,
+  message: OpenAI.Chat.ChatCompletionMessageParam,
 ): Action => {
   return {
     type: "append-to-message-params",
@@ -160,20 +160,22 @@ const appendToMessageParams = (
   };
 };
 
-const appendToMessageUsages = (message: Anthropic.Messages.Usage): Action => {
+const appendToMessageUsages = (message: TokenUsage): Action => {
   return {
     type: "append-to-message-usages",
     payload: message,
   };
 };
 
-const setModel = (model: SupportedModel): Action => {
+const setModel = (model: string): Action => {
   return { type: "set-model", payload: model };
 };
 
-const setPricingPerModel = (
-  pricing: Record<SupportedModel, ModelPricing>,
-): Action => {
+const setBaseURL = (baseURL: string | null): Action => {
+  return { type: "set-base-url", payload: baseURL };
+};
+
+const setPricingPerModel = (pricing: Record<string, ModelPricing>): Action => {
   return { type: "set-pricing-per-model", payload: pricing };
 };
 
@@ -191,6 +193,7 @@ export const actions = {
   appendToMessageParams,
   appendToMessageUsages,
   setModel,
+  setBaseURL,
   setPricingPerModel,
   setDisableCostMessage,
   truncateMessageParams,
@@ -201,6 +204,7 @@ const getRunning = () => getState().appState.running;
 const getMessageParams = () => getState().appState.messageParams;
 const getMessageUsages = () => getState().appState.messageUsages;
 const getModel = () => getState().configState.model;
+const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
 const getDisableCostMessage = () => getState().configState.disableCostMessage;
 
@@ -210,6 +214,7 @@ export const selectors = {
   getMessageParams,
   getMessageUsages,
   getModel,
+  getBaseURL,
   getPricingPerModel,
   getDisableCostMessage,
 };

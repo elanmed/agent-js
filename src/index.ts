@@ -1,8 +1,7 @@
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
-import Anthropic, { type ParsedMessage } from "@anthropic-ai/sdk";
-import { type MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
+import OpenAI from "openai";
 import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
@@ -24,25 +23,31 @@ import {
   STR_REPLACE_TOOL_SCHEMA,
   INSERT_LINES_TOOL_SCHEMA,
   getToolResultBlock,
+  type ToolCall,
 } from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
 import { join } from "node:path";
+// TODO: better type?
+import type { ChatCompletionStream } from "openai/lib/ChatCompletionStream.mjs";
 
 async function main() {
   initStateFromConfig();
   const availableSlashCommands = getAvailableSlashCommands();
 
-  const client = new Anthropic();
+  const client = new OpenAI({
+    baseURL: selectors.getBaseURL() ?? undefined,
+  });
   const rl = readline.createInterface({ input, output });
 
   let currQuestionAbortController: AbortController | null = null;
-  let currApiStream: MessageStream | null = null;
+  let currApiStream: ChatCompletionStream | null = null;
 
   async function callApi(
-    messageParam: Anthropic.Messages.MessageParam,
+    newMessages: OpenAI.Chat.ChatCompletionMessageParam[],
     { prependNewline }: { prependNewline: boolean } = { prependNewline: false },
   ) {
-    const messageCount = selectors.getMessageParams().length + 1;
+    const messageCount =
+      selectors.getMessageParams().length + newMessages.length;
     debugLog(
       `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
     );
@@ -62,10 +67,18 @@ async function main() {
       spinnerCleared = true;
     };
 
-    currApiStream = client.messages.stream({
-      max_tokens: 8192,
+    const systemContent = [
+      BASE_SYSTEM_PROMPT,
+      await getRecursiveAgentsMdFilesStr(),
+    ].join("\n");
+
+    currApiStream = client.chat.completions.stream({
       model: selectors.getModel(),
-      messages: [...selectors.getMessageParams(), messageParam],
+      messages: [
+        { role: "system", content: systemContent },
+        ...selectors.getMessageParams(),
+        ...newMessages,
+      ],
       tools: [
         BASH_TOOL_SCHEMA,
         CREATE_FILE_TOOL_SCHEMA,
@@ -73,41 +86,38 @@ async function main() {
         STR_REPLACE_TOOL_SCHEMA,
         INSERT_LINES_TOOL_SCHEMA,
       ],
-      system: [BASE_SYSTEM_PROMPT, await getRecursiveAgentsMdFilesStr()].join(
-        "\n",
-      ),
+      max_completion_tokens: 8192,
+      stream_options: { include_usage: true },
     });
 
-    let streamResult: ParsedMessage<null>;
+    let streamResult: OpenAI.Chat.ChatCompletion;
     try {
-      streamResult = await currApiStream.finalMessage();
+      streamResult = await currApiStream.finalChatCompletion();
     } finally {
       clearSpinner();
       currApiStream = null;
     }
 
+    const choice = streamResult.choices[0];
+    if (!choice) throw new Error("No choices in completion response");
+
     debugLog(
-      `callApi: stop_reason=${String(streamResult.stop_reason)}, input_tokens=${String(streamResult.usage.input_tokens)}, output_tokens=${String(streamResult.usage.output_tokens)}`,
+      `callApi: finish_reason=${choice.finish_reason}, prompt_tokens=${String(streamResult.usage?.prompt_tokens)}, completion_tokens=${String(streamResult.usage?.completion_tokens)}`,
     );
 
-    const fullText = streamResult.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("");
-
+    const fullText = choice.message.content ?? "";
     if (fullText) {
       if (prependNewline) process.stdout.write("\n");
       await executeBat(fullText);
     }
 
-    dispatch(actions.appendToMessageParams(messageParam));
-    dispatch(actions.appendToMessageUsages(streamResult.usage));
-    dispatch(
-      actions.appendToMessageParams({
-        content: streamResult.content,
-        role: streamResult.role,
-      }),
-    );
+    for (const message of newMessages) {
+      dispatch(actions.appendToMessageParams(message));
+    }
+    if (streamResult.usage) {
+      dispatch(actions.appendToMessageUsages(streamResult.usage));
+    }
+    dispatch(actions.appendToMessageParams(choice.message));
 
     return streamResult;
   }
@@ -192,21 +202,15 @@ async function main() {
       continue;
     }
 
-    const inputMessageParam: Anthropic.Messages.MessageParam = {
-      content: [
-        {
-          text: inputResultValue,
-          type: "text",
-          cache_control: { type: "ephemeral" },
-        },
-      ],
+    const inputMessageParam: OpenAI.Chat.ChatCompletionUserMessageParam = {
       role: "user",
+      content: inputResultValue,
     };
     const messageCountBeforeTurn = selectors.getMessageParams().length;
-    const streamResult = await tryCatchAsync(callApi(inputMessageParam));
+    const streamResult = await tryCatchAsync(callApi([inputMessageParam]));
 
     if (!streamResult.ok) {
-      if (streamResult.error instanceof Anthropic.APIUserAbortError) {
+      if (streamResult.error instanceof OpenAI.APIUserAbortError) {
         colorLog("Aborted", "red");
         maybePrintCostMessage();
         continue;
@@ -215,34 +219,35 @@ async function main() {
       }
     }
 
-    let currentMessage = streamResult.value;
-    while (currentMessage.stop_reason === "tool_use") {
-      const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
+    // TODO: handle multiple choices
+    let currentChoice = streamResult.value.choices[0];
+    while (currentChoice?.finish_reason === "tool_calls") {
+      const toolCalls = currentChoice.message.tool_calls ?? [];
+      const toolMessages: OpenAI.Chat.ChatCompletionToolMessageParam[] = [];
 
-      for (const contentBlock of currentMessage.content) {
-        if (contentBlock.type === "tool_use") {
-          const toolResultBlock = await getToolResultBlock(contentBlock);
-          toolResults.push(toolResultBlock);
-        }
+      for (const toolCall of toolCalls) {
+        if (toolCall.type !== "function") continue;
+        const localToolCall: ToolCall = {
+          id: toolCall.id,
+          name: toolCall.function.name,
+          input: JSON.parse(toolCall.function.arguments) as unknown,
+        };
+        const toolResult = await getToolResultBlock(localToolCall);
+        toolMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: toolResult.content,
+        });
       }
-      const lastToolResult = toolResults.at(-1);
-      if (lastToolResult) {
-        lastToolResult.cache_control = { type: "ephemeral" };
-      }
-
-      const toolResultsMessage: Anthropic.Messages.MessageParam = {
-        content: toolResults,
-        role: "user",
-      };
 
       const toolStreamResult = await tryCatchAsync(
-        callApi(toolResultsMessage, { prependNewline: true }),
+        callApi(toolMessages, { prependNewline: true }),
       );
 
       if (toolStreamResult.ok) {
-        currentMessage = toolStreamResult.value;
+        currentChoice = toolStreamResult.value.choices[0];
       } else {
-        if (toolStreamResult.error instanceof Anthropic.APIUserAbortError) {
+        if (toolStreamResult.error instanceof OpenAI.APIUserAbortError) {
           colorLog("Aborted", "red");
           dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
           break;

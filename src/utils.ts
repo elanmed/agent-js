@@ -77,74 +77,43 @@ export function logNewline(repeat = 1) {
 export interface ModelPricing {
   inputPerToken: number;
   outputPerToken: number;
-  cacheWrite5mPerToken: number;
-  cacheWrite1hPerToken: number;
-  cacheReadPerToken: number;
 }
 
 export interface TokenUsage {
-  input_tokens: number;
-  output_tokens: number;
-  cache_creation_input_tokens?: number | null;
-  cache_read_input_tokens?: number | null;
+  prompt_tokens: number;
+  completion_tokens: number;
 }
 
-export type SupportedModel =
-  | "claude-opus-4-6"
-  | "claude-sonnet-4-6"
-  | "claude-haiku-4-5";
-
 export function calculateSessionCost(
-  model: SupportedModel,
+  model: string,
   usages: TokenUsage[],
 ): string {
   const DOLLARS_PER_MILLION = 1_000_000;
   const pricing = selectors.getPricingPerModel()[model];
 
-  const {
-    cacheReadPerToken,
-    cacheWrite5mPerToken,
-    inputPerToken,
-    outputPerToken,
-  } = pricing;
+  if (!pricing) {
+    return `Session cost: unknown (no pricing configured for "${model}")`;
+  }
+
+  const { inputPerToken, outputPerToken } = pricing;
 
   const totalUsage = usages.reduce<{
-    cache_creation_input_tokens: number;
-    cache_read_input_tokens: number;
-    input_tokens: number;
-    output_tokens: number;
+    prompt_tokens: number;
+    completion_tokens: number;
   }>(
-    (accum, curr) => {
-      return {
-        cache_creation_input_tokens:
-          accum.cache_creation_input_tokens +
-          (curr.cache_creation_input_tokens ?? 0),
-        cache_read_input_tokens:
-          accum.cache_read_input_tokens + (curr.cache_read_input_tokens ?? 0),
-        input_tokens: accum.input_tokens + curr.input_tokens,
-        output_tokens: accum.output_tokens + curr.output_tokens,
-      };
-    },
-    {
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-      input_tokens: 0,
-      output_tokens: 0,
-    },
+    (accum, curr) => ({
+      prompt_tokens: accum.prompt_tokens + curr.prompt_tokens,
+      completion_tokens: accum.completion_tokens + curr.completion_tokens,
+    }),
+    { prompt_tokens: 0, completion_tokens: 0 },
   );
 
   const inputCost =
-    (totalUsage.input_tokens * inputPerToken) / DOLLARS_PER_MILLION;
+    (totalUsage.prompt_tokens * inputPerToken) / DOLLARS_PER_MILLION;
   const outputCost =
-    (totalUsage.output_tokens * outputPerToken) / DOLLARS_PER_MILLION;
-  const cacheCreationCost =
-    (totalUsage.cache_creation_input_tokens * cacheWrite5mPerToken) /
-    DOLLARS_PER_MILLION;
-  const cacheReadCost =
-    (totalUsage.cache_read_input_tokens * cacheReadPerToken) /
-    DOLLARS_PER_MILLION;
+    (totalUsage.completion_tokens * outputPerToken) / DOLLARS_PER_MILLION;
 
-  const cost = inputCost + outputCost + cacheCreationCost + cacheReadCost;
+  const cost = inputCost + outputCost;
   return `Session cost: $${cost.toFixed(4)}`;
 }
 

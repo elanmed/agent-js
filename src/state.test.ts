@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-non-null-assertion */
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import type Anthropic from "@anthropic-ai/sdk";
+import type { TokenUsage } from "./utils.ts";
 import { getState, resetState, dispatch, actions, selectors } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 
@@ -56,35 +56,16 @@ describe("state", () => {
       });
     });
 
-    it("sets cache_control to null on prior messages with array content", () => {
+    it("appends multiple messages in order", () => {
+      dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
       dispatch(
-        actions.appendToMessageParams({
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "first",
-              cache_control: { type: "ephemeral" },
-            },
-          ],
-        }),
-      );
-
-      dispatch(
-        actions.appendToMessageParams({
-          role: "assistant",
-          content: [{ type: "text", text: "second" }],
-        }),
+        actions.appendToMessageParams({ role: "assistant", content: "hello" }),
       );
 
       const params = getState().appState.messageParams;
       assert.equal(params.length, 2);
-      const firstContent = params[0]!.content;
-      assert.ok(Array.isArray(firstContent));
-      assert.equal(
-        (firstContent[0] as { cache_control: unknown }).cache_control,
-        null,
-      );
+      assert.equal(params[0]!.role, "user");
+      assert.equal(params[1]!.role, "assistant");
     });
 
     it("passes through messages with string content untouched", () => {
@@ -100,19 +81,9 @@ describe("state", () => {
     });
   });
 
-  it("append-to-message-responses", () => {
-    const usage1 = {
-      input_tokens: 10,
-      output_tokens: 5,
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-    } as Anthropic.Messages.Usage;
-    const usage2 = {
-      input_tokens: 20,
-      output_tokens: 8,
-      cache_creation_input_tokens: 2,
-      cache_read_input_tokens: 1,
-    } as Anthropic.Messages.Usage;
+  it("append-to-message-usages", () => {
+    const usage1: TokenUsage = { prompt_tokens: 10, completion_tokens: 5 };
+    const usage2: TokenUsage = { prompt_tokens: 20, completion_tokens: 8 };
 
     dispatch(actions.appendToMessageUsages(usage1));
     dispatch(actions.appendToMessageUsages(usage2));
@@ -128,9 +99,20 @@ describe("state", () => {
     assert.equal(getState().configState.model, "claude-haiku-4-5");
   });
 
+  it("set-base-url", () => {
+    dispatch(actions.setBaseURL("https://api.example.com/v1"));
+    assert.equal(
+      getState().configState.baseURL,
+      "https://api.example.com/v1",
+    );
+
+    dispatch(actions.setBaseURL(null));
+    assert.equal(getState().configState.baseURL, null);
+  });
+
   it("set-pricing-per-model", () => {
     const newPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-    newPricing["claude-opus-4-6"].inputPerToken = 999;
+    newPricing["claude-opus-4-6"]!.inputPerToken = 999;
     dispatch(actions.setPricingPerModel(newPricing));
     assert.deepEqual(getState().configState.pricingPerModel, newPricing);
   });
@@ -165,12 +147,7 @@ describe("selectors", () => {
 
   it("getMessageUsages", () => {
     assert.deepEqual(selectors.getMessageUsages(), []);
-    const usage = {
-      input_tokens: 1,
-      output_tokens: 2,
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-    } as Anthropic.Messages.Usage;
+    const usage: TokenUsage = { prompt_tokens: 1, completion_tokens: 2 };
     dispatch(actions.appendToMessageUsages(usage));
     assert.deepEqual(selectors.getMessageUsages(), [usage]);
   });
@@ -181,13 +158,19 @@ describe("selectors", () => {
     assert.equal(selectors.getModel(), "claude-haiku-4-5");
   });
 
+  it("getBaseURL", () => {
+    assert.equal(selectors.getBaseURL(), null);
+    dispatch(actions.setBaseURL("https://api.example.com/v1"));
+    assert.equal(selectors.getBaseURL(), "https://api.example.com/v1");
+  });
+
   it("getPricingPerModel", () => {
     assert.deepEqual(
       selectors.getPricingPerModel(),
       DEFAULT_CONFIG.pricingPerModel,
     );
     const newPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-    newPricing["claude-sonnet-4-6"].outputPerToken = 42;
+    newPricing["claude-sonnet-4-6"]!.outputPerToken = 42;
     dispatch(actions.setPricingPerModel(newPricing));
     assert.deepEqual(selectors.getPricingPerModel(), newPricing);
   });

@@ -30,7 +30,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.77.0",
+    "openai": "^6.34.0",
     "zod": "^4.3.6"
   }
 }
