@@ -112,7 +112,7 @@ export function calculateSessionUsage(
     (totalUsage.completion_tokens * outputPerToken) / DOLLARS_PER_MILLION;
 
   const cost = inputCost + outputCost;
-  return `Session usage: ${cost.toFixed(4)}`;
+  return `Session usage: $${cost.toFixed(4)}`;
 }
 
 export const BASE_SYSTEM_PROMPT =

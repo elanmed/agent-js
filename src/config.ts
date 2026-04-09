@@ -5,6 +5,8 @@ import { z } from "zod";
 import { colorLog, debugLog } from "./utils.ts";
 import { actions, dispatch } from "./state.ts";
 
+export type DiffStyle = "unified" | "lines";
+
 const ModelPricingSchema = z
   .object({
     inputPerToken: z.number(),
@@ -16,6 +18,7 @@ const ConfigSchema = z.object({
   model: z.string().optional(),
   baseURL: z.string().optional(),
   disableUsageMessage: z.boolean().optional(),
+  diffStyle: z.enum(["unified", "lines"]).optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
 });
 
@@ -24,6 +27,7 @@ type Config = z.infer<typeof ConfigSchema>;
 interface DefaultConfig {
   model: string;
   disableUsageMessage: boolean;
+  diffStyle: "unified" | "lines";
   pricingPerModel: Record<
     string,
     { inputPerToken: number; outputPerToken: number }
@@ -33,6 +37,7 @@ interface DefaultConfig {
 export const DEFAULT_CONFIG: DefaultConfig = {
   model: "claude-opus-4-6",
   disableUsageMessage: false,
+  diffStyle: "unified",
   pricingPerModel: {
     "claude-opus-4-6": { inputPerToken: 5, outputPerToken: 25 },
     "claude-sonnet-4-6": { inputPerToken: 3, outputPerToken: 15 },
@@ -95,6 +100,13 @@ export function initStateFromConfig() {
       localConfig.disableUsageMessage ??
         globalConfig.disableUsageMessage ??
         DEFAULT_CONFIG.disableUsageMessage,
+    ),
+  );
+  dispatch(
+    actions.setDiffStyle(
+      (localConfig.diffStyle ??
+        globalConfig.diffStyle ??
+        DEFAULT_CONFIG.diffStyle) as DiffStyle,
     ),
   );
   dispatch(

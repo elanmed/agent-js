@@ -4,6 +4,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
 import { colorLog, debugLog, tryCatch, tryCatchAsync } from "./utils.ts";
+import { selectors } from "./state.ts";
 
 const execPromise = promisify(exec);
 
@@ -440,9 +441,11 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
 }
 
 async function printGitDiff(path: string) {
-  const diffResult = await tryCatchAsync(
-    execPromise(`git diff --color=always ${path}`),
-  );
+  const diffArgs =
+    selectors.getDiffStyle() === "lines"
+      ? `git diff --color=always ${path}`
+      : `git diff --color=always --stat ${path}`;
+  const diffResult = await tryCatchAsync(execPromise(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
     colorLog("Printing git diff:", "grey");
     console.log(diffResult.value.stdout);

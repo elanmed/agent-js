@@ -1,5 +1,5 @@
 import type OpenAI from "openai";
-import { DEFAULT_CONFIG } from "./config.ts";
+import { DEFAULT_CONFIG, type DiffStyle } from "./config.ts";
 import { debugLog } from "./utils.ts";
 import type { ModelPricing, TokenUsage } from "./utils.ts";
 
@@ -15,6 +15,7 @@ interface State {
     model: string;
     baseURL: string | null;
     disableUsageMessage: boolean;
+    diffStyle: DiffStyle;
   };
 }
 
@@ -29,6 +30,7 @@ const initialState: State = {
     model: DEFAULT_CONFIG.model,
     baseURL: null,
     disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
+    diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
   },
 };
@@ -73,6 +75,10 @@ type Action =
   | {
       type: "set-disable-usage-message";
       payload: boolean;
+    }
+  | {
+      type: "set-diff-style";
+      payload: "unified" | "lines";
     }
   | {
       type: "truncate-message-params";
@@ -124,6 +130,11 @@ const reducer = (state: State, action: Action): State => {
     case "set-disable-usage-message": {
       const newState = structuredClone(state);
       newState.configState.disableUsageMessage = action.payload;
+      return newState;
+    }
+    case "set-diff-style": {
+      const newState = structuredClone(state);
+      newState.configState.diffStyle = action.payload;
       return newState;
     }
     case "truncate-message-params": {
@@ -183,6 +194,10 @@ const setDisableUsageMessage = (disabled: boolean): Action => {
   return { type: "set-disable-usage-message", payload: disabled };
 };
 
+const setDiffStyle = (diffStyle: DiffStyle): Action => {
+  return { type: "set-diff-style", payload: diffStyle };
+};
+
 const truncateMessageParams = (count: number): Action => {
   return { type: "truncate-message-params", payload: count };
 };
@@ -196,6 +211,7 @@ export const actions = {
   setBaseURL,
   setPricingPerModel,
   setDisableUsageMessage,
+  setDiffStyle,
   truncateMessageParams,
 };
 
@@ -207,6 +223,7 @@ const getModel = () => getState().configState.model;
 const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
 const getDisableUsageMessage = () => getState().configState.disableUsageMessage;
+const getDiffStyle = () => getState().configState.diffStyle;
 
 export const selectors = {
   getInterrupted,
@@ -217,4 +234,5 @@ export const selectors = {
   getBaseURL,
   getPricingPerModel,
   getDisableUsageMessage,
+  getDiffStyle,
 };

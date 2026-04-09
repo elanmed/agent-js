@@ -8,6 +8,7 @@
     "test": "node --test 'src/**/*.test.ts'",
     "lint": "eslint src",
     "types": "tsc",
+    "ci": "npm run test && npm run lint && npm run types",
     "format": "prettier --write .",
     "build-base": "bun build --compile --minify ./src/index.ts",
     "build:linux-x64": "bun run build-base -- --target=bun-linux-x64 --outfile dist/agent-linux-x64",

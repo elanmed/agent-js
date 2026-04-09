@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { describe, it, beforeEach, afterEach, mock } from "node:test";
+import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { resetState, selectors } from "./state.ts";
@@ -16,6 +16,11 @@ const fsState = {
   localContent: "{}",
 };
 
+let originalExistsSync = fs.existsSync;
+let originalReadFileSync = fs.readFileSync;
+let originalMkdirSync = fs.mkdirSync;
+let originalWriteFileSync = fs.writeFileSync;
+
 describe("initStateFromConfig", () => {
   let writeFileArgs: [string, string] | null = null;
 
@@ -27,30 +32,38 @@ describe("initStateFromConfig", () => {
     fsState.localExists = false;
     fsState.localContent = "{}";
 
-    mock.method(fs, "existsSync", ((path: unknown): boolean => {
+    originalExistsSync = fs.existsSync;
+    originalReadFileSync = fs.readFileSync;
+    originalMkdirSync = fs.mkdirSync;
+    originalWriteFileSync = fs.writeFileSync;
+
+    fs.existsSync = ((path: unknown): boolean => {
       return path === GLOBAL_CONFIG_PATH
         ? fsState.globalExists
         : fsState.localExists;
-    }) as unknown as typeof fs.existsSync);
+    }) as typeof fs.existsSync;
 
-    mock.method(fs, "readFileSync", ((path: unknown) => ({
+    fs.readFileSync = ((path: unknown) => ({
       toString: (): string => {
         return path === GLOBAL_CONFIG_PATH
           ? fsState.globalContent
           : fsState.localContent;
       },
-    })) as unknown as typeof fs.readFileSync);
+    })) as typeof fs.readFileSync;
 
-    mock.method(fs, "mkdirSync", mock.fn() as unknown as typeof fs.mkdirSync);
-    mock.method(fs, "writeFileSync", ((path: string, content: string) => {
+    fs.mkdirSync = (() => undefined) as typeof fs.mkdirSync;
+    fs.writeFileSync = ((path: string, content: string) => {
       if (path === GLOBAL_CONFIG_PATH) {
         writeFileArgs = [path, content];
       }
-    }) as unknown as typeof fs.writeFileSync);
+    }) as typeof fs.writeFileSync;
   });
 
   afterEach(() => {
-    mock.restoreAll();
+    fs.existsSync = originalExistsSync;
+    fs.readFileSync = originalReadFileSync;
+    fs.mkdirSync = originalMkdirSync;
+    fs.writeFileSync = originalWriteFileSync;
   });
 
   describe("when local config exists", () => {
@@ -74,6 +87,15 @@ describe("initStateFromConfig", () => {
       initStateFromConfig();
 
       assert.equal(selectors.getDisableUsageMessage(), true);
+    });
+
+    it("uses its diffStyle over the global config, default config", () => {
+      fsState.globalContent = JSON.stringify({ diffStyle: "lines" });
+      fsState.localContent = JSON.stringify({ diffStyle: "unified" });
+
+      initStateFromConfig();
+
+      assert.equal(selectors.getDiffStyle(), "unified");
     });
 
     it("uses its pricingPerModel over the global config, default config", () => {
@@ -112,6 +134,12 @@ describe("initStateFromConfig", () => {
         assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
+      it("uses its diffStyle over the default config", () => {
+        fsState.globalContent = JSON.stringify({ diffStyle: "unified" });
+        initStateFromConfig();
+        assert.equal(selectors.getDiffStyle(), "unified");
+      });
+
       it("uses its pricingPerModel over the default config", () => {
         const globalPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
         const globalOpusPricing = globalPricing["claude-opus-4-6"];
@@ -148,6 +176,11 @@ describe("initStateFromConfig", () => {
           selectors.getDisableUsageMessage(),
           DEFAULT_CONFIG.disableUsageMessage,
         );
+      });
+
+      it("uses the default diffStyle", () => {
+        initStateFromConfig();
+        assert.equal(selectors.getDiffStyle(), DEFAULT_CONFIG.diffStyle);
       });
 
       it("uses the default pricingPerModel", () => {
