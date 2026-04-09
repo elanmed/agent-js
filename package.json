@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "bun src/index.ts",
-    "test": "bun --test 'src/**/*.test.ts'",
+    "test": "node --experimental-strip-types --test 'src/**/*.test.ts'",
     "lint": "eslint src",
     "types": "tsc",
     "format": "prettier --write .",
