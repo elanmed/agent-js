@@ -88,15 +88,6 @@ export function calculateSessionCost(
   model: string,
   usages: TokenUsage[],
 ): string {
-  const DOLLARS_PER_MILLION = 1_000_000;
-  const pricing = selectors.getPricingPerModel()[model];
-
-  if (!pricing) {
-    return `Session cost: unknown (no pricing configured for "${model}")`;
-  }
-
-  const { inputPerToken, outputPerToken } = pricing;
-
   const totalUsage = usages.reduce<{
     prompt_tokens: number;
     completion_tokens: number;
@@ -108,6 +99,13 @@ export function calculateSessionCost(
     { prompt_tokens: 0, completion_tokens: 0 },
   );
 
+  const pricing = selectors.getPricingPerModel()[model];
+  if (!pricing) {
+    return `Token usage: ${String(totalUsage.prompt_tokens)} in, ${String(totalUsage.completion_tokens)} out`;
+  }
+
+  const DOLLARS_PER_MILLION = 1_000_000;
+  const { inputPerToken, outputPerToken } = pricing;
   const inputCost =
     (totalUsage.prompt_tokens * inputPerToken) / DOLLARS_PER_MILLION;
   const outputCost =
