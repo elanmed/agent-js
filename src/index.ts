@@ -36,6 +36,7 @@ async function main() {
 
   const client = new OpenAI({
     baseURL: selectors.getBaseURL() ?? undefined,
+    apiKey: process.env["AGENT_JS_API_KEY"],
   });
   const rl = readline.createInterface({ input, output });
 
