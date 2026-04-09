@@ -30,3 +30,9 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 - `view_file` — view files or list directories
 - `str_replace` — replace strings in files
 - `insert_lines` — insert text at a line
+
+## TODO
+
+- [ ] Queue messages with an editor
+- [ ] Prefill the editor with the current input when opening
+- [ ] Gracefully handle unknown errors
