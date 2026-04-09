@@ -45,7 +45,7 @@ export const BASH_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
   },
 };
 
-const BashToolInputSchema = z.object({ command: z.string() }).strict();
+const BashToolInputSchema = z.object({ command: z.string() });
 
 export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
   const { command: bashCommand } = BashToolInputSchema.parse(toolCall.input);
@@ -101,9 +101,10 @@ export const CREATE_FILE_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
   },
 };
 
-const CreateFileToolSchema = z
-  .object({ path: z.string(), content: z.string() })
-  .strict();
+const CreateFileToolSchema = z.object({
+  path: z.string(),
+  content: z.string(),
+});
 
 export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
   const { content, path } = CreateFileToolSchema.parse(toolCall.input);
@@ -169,13 +170,11 @@ export const VIEW_FILE_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
   },
 };
 
-const ViewFileToolInputSchema = z
-  .object({
-    path: z.string(),
-    start_line: z.number().int().optional(),
-    end_line: z.number().int().optional(),
-  })
-  .strict();
+const ViewFileToolInputSchema = z.object({
+  path: z.string(),
+  start_line: z.number().int().optional(),
+  end_line: z.number().int().optional(),
+});
 
 export function executeViewFileTool(toolCall: ToolCall): ToolResult {
   const { path, start_line, end_line } = ViewFileToolInputSchema.parse(
@@ -276,9 +275,11 @@ export const STR_REPLACE_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
   },
 };
 
-const StrReplaceToolInputSchema = z
-  .object({ path: z.string(), old_str: z.string(), new_str: z.string() })
-  .strict();
+const StrReplaceToolInputSchema = z.object({
+  path: z.string(),
+  old_str: z.string(),
+  new_str: z.string(),
+});
 
 export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
   const { path, old_str, new_str } = StrReplaceToolInputSchema.parse(
@@ -373,13 +374,11 @@ export const INSERT_LINES_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
   },
 };
 
-const InsertLinesToolInputSchema = z
-  .object({
-    path: z.string(),
-    after_line: z.number().int(),
-    content: z.string(),
-  })
-  .strict();
+const InsertLinesToolInputSchema = z.object({
+  path: z.string(),
+  after_line: z.number().int(),
+  content: z.string(),
+});
 
 export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   const { path, after_line, content } = InsertLinesToolInputSchema.parse(

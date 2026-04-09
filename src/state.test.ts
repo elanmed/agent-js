@@ -117,12 +117,12 @@ describe("state", () => {
     assert.deepEqual(getState().configState.pricingPerModel, newPricing);
   });
 
-  it("set-disable-cost-message", () => {
-    dispatch(actions.setDisableCostMessage(true));
-    assert.equal(getState().configState.disableCostMessage, true);
+  it("set-disable-usage-message", () => {
+    dispatch(actions.setDisableUsageMessage(true));
+    assert.equal(getState().configState.disableUsageMessage, true);
 
-    dispatch(actions.setDisableCostMessage(false));
-    assert.equal(getState().configState.disableCostMessage, false);
+    dispatch(actions.setDisableUsageMessage(false));
+    assert.equal(getState().configState.disableUsageMessage, false);
   });
 });
 
@@ -175,9 +175,9 @@ describe("selectors", () => {
     assert.deepEqual(selectors.getPricingPerModel(), newPricing);
   });
 
-  it("getDisableCostMessage", () => {
-    assert.equal(selectors.getDisableCostMessage(), false);
-    dispatch(actions.setDisableCostMessage(true));
-    assert.equal(selectors.getDisableCostMessage(), true);
+  it("getDisableUsageMessage", () => {
+    assert.equal(selectors.getDisableUsageMessage(), false);
+    dispatch(actions.setDisableUsageMessage(true));
+    assert.equal(selectors.getDisableUsageMessage(), true);
   });
 });

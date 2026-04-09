@@ -14,7 +14,7 @@ interface State {
     pricingPerModel: Record<string, ModelPricing>;
     model: string;
     baseURL: string | null;
-    disableCostMessage: boolean;
+    disableUsageMessage: boolean;
   };
 }
 
@@ -28,7 +28,7 @@ const initialState: State = {
   configState: {
     model: DEFAULT_CONFIG.model,
     baseURL: null,
-    disableCostMessage: DEFAULT_CONFIG.disableCostMessage,
+    disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
   },
 };
@@ -71,7 +71,7 @@ type Action =
       payload: Record<string, ModelPricing>;
     }
   | {
-      type: "set-disable-cost-message";
+      type: "set-disable-usage-message";
       payload: boolean;
     }
   | {
@@ -121,9 +121,9 @@ const reducer = (state: State, action: Action): State => {
       newState.configState.pricingPerModel = action.payload;
       return newState;
     }
-    case "set-disable-cost-message": {
+    case "set-disable-usage-message": {
       const newState = structuredClone(state);
-      newState.configState.disableCostMessage = action.payload;
+      newState.configState.disableUsageMessage = action.payload;
       return newState;
     }
     case "truncate-message-params": {
@@ -179,8 +179,8 @@ const setPricingPerModel = (pricing: Record<string, ModelPricing>): Action => {
   return { type: "set-pricing-per-model", payload: pricing };
 };
 
-const setDisableCostMessage = (disabled: boolean): Action => {
-  return { type: "set-disable-cost-message", payload: disabled };
+const setDisableUsageMessage = (disabled: boolean): Action => {
+  return { type: "set-disable-usage-message", payload: disabled };
 };
 
 const truncateMessageParams = (count: number): Action => {
@@ -195,7 +195,7 @@ export const actions = {
   setModel,
   setBaseURL,
   setPricingPerModel,
-  setDisableCostMessage,
+  setDisableUsageMessage,
   truncateMessageParams,
 };
 
@@ -206,7 +206,7 @@ const getMessageUsages = () => getState().appState.messageUsages;
 const getModel = () => getState().configState.model;
 const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
-const getDisableCostMessage = () => getState().configState.disableCostMessage;
+const getDisableUsageMessage = () => getState().configState.disableUsageMessage;
 
 export const selectors = {
   getInterrupted,
@@ -216,5 +216,5 @@ export const selectors = {
   getModel,
   getBaseURL,
   getPricingPerModel,
-  getDisableCostMessage,
+  getDisableUsageMessage,
 };

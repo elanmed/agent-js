@@ -84,7 +84,7 @@ export interface TokenUsage {
   completion_tokens: number;
 }
 
-export function calculateSessionCost(
+export function calculateSessionUsage(
   model: string,
   usages: TokenUsage[],
 ): string {
@@ -101,7 +101,7 @@ export function calculateSessionCost(
 
   const pricing = selectors.getPricingPerModel()[model];
   if (!pricing) {
-    return `Token usage: ${String(totalUsage.prompt_tokens)} in, ${String(totalUsage.completion_tokens)} out`;
+    return `Session usage: ${String(totalUsage.prompt_tokens)} in, ${String(totalUsage.completion_tokens)} out`;
   }
 
   const DOLLARS_PER_MILLION = 1_000_000;
@@ -112,18 +112,18 @@ export function calculateSessionCost(
     (totalUsage.completion_tokens * outputPerToken) / DOLLARS_PER_MILLION;
 
   const cost = inputCost + outputCost;
-  return `Session cost: $${cost.toFixed(4)}`;
+  return `Session usage: ${cost.toFixed(4)}`;
 }
 
 export const BASE_SYSTEM_PROMPT =
   "You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. CRITICAL: All your responses will be parsed by bat as markdown, your responses must be formatted as valid markdown.";
 
-export function maybePrintCostMessage() {
-  if (selectors.getDisableCostMessage()) return;
+export function maybePrintUsageMessage() {
+  if (selectors.getDisableUsageMessage()) return;
 
   logNewline();
   colorLog(
-    calculateSessionCost(selectors.getModel(), selectors.getMessageUsages()),
+    calculateSessionUsage(selectors.getModel(), selectors.getMessageUsages()),
     "green",
   );
 }

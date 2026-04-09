@@ -10,7 +10,7 @@ import {
   logNewline,
   BASE_SYSTEM_PROMPT,
   getRecursiveAgentsMdFilesStr,
-  maybePrintCostMessage,
+  maybePrintUsageMessage,
   tryCatchAsync,
   getAvailableSlashCommands,
   readFromEditor,
@@ -192,7 +192,7 @@ async function main() {
           `Invalid / command detected, valid commands: ${availableSlashCommands.join(",")}`,
           "red",
         );
-        maybePrintCostMessage();
+        maybePrintUsageMessage();
         continue;
       }
     }
@@ -212,14 +212,14 @@ async function main() {
     if (!streamResult.ok) {
       if (streamResult.error instanceof OpenAI.APIUserAbortError) {
         colorLog("Aborted", "red");
-        maybePrintCostMessage();
+        maybePrintUsageMessage();
         continue;
       } else {
         throw streamResult.error;
       }
     }
 
-    // TODO: handle multiple choices
+    // TODO: handle multiple choices?
     let currentChoice = streamResult.value.choices[0];
     while (currentChoice?.finish_reason === "tool_calls") {
       const toolCalls = currentChoice.message.tool_calls ?? [];
@@ -258,7 +258,7 @@ async function main() {
     }
 
     logNewline();
-    maybePrintCostMessage();
+    maybePrintUsageMessage();
   }
 }
 

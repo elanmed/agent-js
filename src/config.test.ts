@@ -67,18 +67,20 @@ describe("initStateFromConfig", () => {
       assert.equal(selectors.getModel(), "claude-haiku-4-5");
     });
 
-    it("uses its disableCostMessage over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({ disableCostMessage: false });
-      fsState.localContent = JSON.stringify({ disableCostMessage: true });
+    it("uses its disableUsageMessage over the global config, default config", () => {
+      fsState.globalContent = JSON.stringify({ disableUsageMessage: false });
+      fsState.localContent = JSON.stringify({ disableUsageMessage: true });
 
       initStateFromConfig();
 
-      assert.equal(selectors.getDisableCostMessage(), true);
+      assert.equal(selectors.getDisableUsageMessage(), true);
     });
 
     it("uses its pricingPerModel over the global config, default config", () => {
       const localPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-      localPricing["claude-opus-4-6"].inputPerToken = 999;
+      const localOpusPricing = localPricing["claude-opus-4-6"];
+      assert.ok(localOpusPricing);
+      localOpusPricing.inputPerToken = 999;
 
       fsState.globalContent = JSON.stringify({
         pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
@@ -104,15 +106,17 @@ describe("initStateFromConfig", () => {
         assert.equal(selectors.getModel(), "claude-haiku-4-5");
       });
 
-      it("uses its disableCostMessage over the default config", () => {
-        fsState.globalContent = JSON.stringify({ disableCostMessage: true });
+      it("uses its disableUsageMessage over the default config", () => {
+        fsState.globalContent = JSON.stringify({ disableUsageMessage: true });
         initStateFromConfig();
-        assert.equal(selectors.getDisableCostMessage(), true);
+        assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
       it("uses its pricingPerModel over the default config", () => {
         const globalPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-        globalPricing["claude-opus-4-6"].inputPerToken = 999;
+        const globalOpusPricing = globalPricing["claude-opus-4-6"];
+        assert.ok(globalOpusPricing);
+        globalOpusPricing.inputPerToken = 999;
         fsState.globalContent = JSON.stringify({
           pricingPerModel: globalPricing,
         });
@@ -138,11 +142,11 @@ describe("initStateFromConfig", () => {
         assert.equal(selectors.getModel(), DEFAULT_CONFIG.model);
       });
 
-      it("uses the default disableCostMessage", () => {
+      it("uses the default disableUsageMessage", () => {
         initStateFromConfig();
         assert.equal(
-          selectors.getDisableCostMessage(),
-          DEFAULT_CONFIG.disableCostMessage,
+          selectors.getDisableUsageMessage(),
+          DEFAULT_CONFIG.disableUsageMessage,
         );
       });
 

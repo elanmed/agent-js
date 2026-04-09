@@ -43,7 +43,7 @@ Merged from global (`~/.config/agent-js/.agent-js/settings.json`) and local (`.a
 ```json
 {
   "model": "claude-opus-4-6" | "claude-sonnet-4-6" | "claude-haiku-4-5",
-  "disableCostMessage": false,
+  "disableUsageMessage": false,
   "pricingPerModel": { ... }
 }
 ```

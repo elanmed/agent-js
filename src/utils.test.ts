@@ -5,7 +5,7 @@ import {
   isAbortError,
   tryCatch,
   tryCatchAsync,
-  calculateSessionCost,
+  calculateSessionUsage,
   executeBat,
   type TokenUsage,
 } from "./utils.ts";
@@ -61,14 +61,14 @@ describe("utils", () => {
 
   const noUsages: TokenUsage[] = [];
 
-  describe("calculateSessionCost", () => {
+  describe("calculateSessionUsage", () => {
     it("known model with no usages returns $0.0000", () => {
-      const result = calculateSessionCost("claude-haiku-4-5", noUsages);
-      assert.equal(result, "Session cost: $0.0000");
+      const result = calculateSessionUsage("claude-haiku-4-5", noUsages);
+      assert.equal(result, "Session usage: $0.0000");
     });
 
     it("returns unknown message for a model with no pricing configured", () => {
-      const result = calculateSessionCost("unknown-model", noUsages);
+      const result = calculateSessionUsage("unknown-model", noUsages);
       assert.ok(result.includes("unknown"));
       assert.ok(result.includes("unknown-model"));
     });
@@ -76,28 +76,28 @@ describe("utils", () => {
     it("calculates prompt and completion token costs correctly", () => {
       // haiku: input=$1/M, output=$5/M
       // 1_000_000 prompt + 1_000_000 completion = $1 + $5 = $6.0000
-      const result = calculateSessionCost("claude-haiku-4-5", [
+      const result = calculateSessionUsage("claude-haiku-4-5", [
         { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
       ]);
-      assert.equal(result, "Session cost: $6.0000");
+      assert.equal(result, "Session usage: $6.0000");
     });
 
     it("calculates costs correctly for claude-sonnet-4-6", () => {
       // sonnet: input=$3/M, output=$15/M
       // 1_000_000 prompt + 1_000_000 completion = $3 + $15 = $18.0000
-      const result = calculateSessionCost("claude-sonnet-4-6", [
+      const result = calculateSessionUsage("claude-sonnet-4-6", [
         { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
       ]);
-      assert.equal(result, "Session cost: $18.0000");
+      assert.equal(result, "Session usage: $18.0000");
     });
 
     it("calculates costs correctly for claude-opus-4-6", () => {
       // opus: input=$5/M, output=$25/M
       // 1_000_000 prompt + 1_000_000 completion = $5 + $25 = $30.0000
-      const result = calculateSessionCost("claude-opus-4-6", [
+      const result = calculateSessionUsage("claude-opus-4-6", [
         { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
       ]);
-      assert.equal(result, "Session cost: $30.0000");
+      assert.equal(result, "Session usage: $30.0000");
     });
 
     it("accumulates costs across multiple usages", () => {
@@ -105,11 +105,11 @@ describe("utils", () => {
       // usage1: 500_000 prompt + 200_000 completion = $0.50 + $1.00 = $1.50
       // usage2: 500_000 prompt + 300_000 completion = $0.50 + $1.50 = $2.00
       // total = $3.50
-      const result = calculateSessionCost("claude-haiku-4-5", [
+      const result = calculateSessionUsage("claude-haiku-4-5", [
         { prompt_tokens: 500_000, completion_tokens: 200_000 },
         { prompt_tokens: 500_000, completion_tokens: 300_000 },
       ]);
-      assert.equal(result, "Session cost: $3.5000");
+      assert.equal(result, "Session usage: $3.5000");
     });
   });
 });

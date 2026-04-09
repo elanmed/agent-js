@@ -12,20 +12,18 @@ const ModelPricingSchema = z
   })
   .strict();
 
-const ConfigSchema = z
-  .object({
-    model: z.string().optional(),
-    baseURL: z.string().optional(),
-    disableCostMessage: z.boolean().optional(),
-    pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
-  })
-  .strict();
+const ConfigSchema = z.object({
+  model: z.string().optional(),
+  baseURL: z.string().optional(),
+  disableUsageMessage: z.boolean().optional(),
+  pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
+});
 
 type Config = z.infer<typeof ConfigSchema>;
 
 interface DefaultConfig {
   model: string;
-  disableCostMessage: boolean;
+  disableUsageMessage: boolean;
   pricingPerModel: Record<
     string,
     { inputPerToken: number; outputPerToken: number }
@@ -34,7 +32,7 @@ interface DefaultConfig {
 
 export const DEFAULT_CONFIG: DefaultConfig = {
   model: "claude-opus-4-6",
-  disableCostMessage: false,
+  disableUsageMessage: false,
   pricingPerModel: {
     "claude-opus-4-6": { inputPerToken: 5, outputPerToken: 25 },
     "claude-sonnet-4-6": { inputPerToken: 3, outputPerToken: 15 },
@@ -93,10 +91,10 @@ export function initStateFromConfig() {
     actions.setBaseURL(localConfig.baseURL ?? globalConfig.baseURL ?? null),
   );
   dispatch(
-    actions.setDisableCostMessage(
-      localConfig.disableCostMessage ??
-        globalConfig.disableCostMessage ??
-        DEFAULT_CONFIG.disableCostMessage,
+    actions.setDisableUsageMessage(
+      localConfig.disableUsageMessage ??
+        globalConfig.disableUsageMessage ??
+        DEFAULT_CONFIG.disableUsageMessage,
     ),
   );
   dispatch(
