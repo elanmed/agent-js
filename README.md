@@ -36,3 +36,4 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 - [ ] Queue messages with an editor
 - [ ] Prefill the editor with the current input when opening
 - [ ] Gracefully handle unknown errors
+- [ ] Swap over to `ai` and `@ai-sdk/openai-compatible` and `@ai-sdk/anthropic`
