@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "bun src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
     "test": "node --experimental-strip-types --test 'src/**/*.test.ts'",
     "lint": "eslint src",
     "types": "tsc",
