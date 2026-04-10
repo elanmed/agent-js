@@ -91,6 +91,12 @@ type Action =
   | {
       type: "truncate-message-params";
       payload: number;
+    }
+  | {
+      type: "reset-message-usages";
+    }
+  | {
+      type: "reset-message-params";
     };
 
 export const dispatch = (action: Action) => {
@@ -158,6 +164,16 @@ const reducer = (state: State, action: Action): State => {
       );
       return newState;
     }
+    case "reset-message-usages": {
+      const newState = structuredClone(state);
+      newState.appState.messageUsages = [];
+      return newState;
+    }
+    case "reset-message-params": {
+      const newState = structuredClone(state);
+      newState.appState.messageParams = [];
+      return newState;
+    }
   }
 };
 
@@ -217,6 +233,14 @@ const truncateMessageParams = (count: number): Action => {
   return { type: "truncate-message-params", payload: count };
 };
 
+const resetMessageUsages = (): Action => {
+  return { type: "reset-message-usages" };
+};
+
+const resetMessageParams = (): Action => {
+  return { type: "reset-message-params" };
+};
+
 export const actions = {
   setInterrupted,
   setRunning,
@@ -229,6 +253,8 @@ export const actions = {
   setDisableUsageMessage,
   setDiffStyle,
   truncateMessageParams,
+  resetMessageUsages,
+  resetMessageParams,
 };
 
 const getInterrupted = () => getState().appState.interrupted;

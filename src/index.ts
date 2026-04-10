@@ -203,6 +203,12 @@ async function main() {
       const commandWithoutSlash = inputResult.value.slice(1);
       if (commandWithoutSlash === "e") {
         inputResultValue = readFromEditor();
+      } else if (commandWithoutSlash === "clear") {
+        dispatch(actions.resetMessageUsages());
+        dispatch(actions.resetMessageParams());
+        debugLog("Reset message usages and message params");
+        colorLog("Context cleared", "grey");
+        continue;
       } else if (availableSlashCommands.includes(commandWithoutSlash)) {
         colorLog(`Executing slash command: ${inputResult.value}`, "grey");
         const path = join(

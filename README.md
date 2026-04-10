@@ -37,4 +37,3 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 - [ ] Gracefully handle unknown errors
 - [ ] Swap over to `ai` and `@ai-sdk/openai-compatible` and `@ai-sdk/anthropic`
 - [ ] More accurate diffs specific to changes
-- [ ] Reset command
