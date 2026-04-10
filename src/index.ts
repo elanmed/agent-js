@@ -140,9 +140,12 @@ async function main() {
       inputResultValue = inputResult.value;
     }
 
+    // TODO: don't apply when using editor
     if (inputResultValue.at(0) === "/") {
       const commandWithoutSlash = inputResultValue.slice(1);
-      if (commandWithoutSlash === "clear") {
+      if (commandWithoutSlash === "edit") {
+        inputResultValue = readFromEditor("");
+      } else if (commandWithoutSlash === "clear") {
         dispatch(actions.resetMessageUsages());
         dispatch(actions.resetMessageParams());
         debugLog("Reset message usages and message params");
