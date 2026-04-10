@@ -123,8 +123,8 @@ async function main() {
       }
       dispatch(
         actions.appendToMessageUsages({
-          prompt_tokens: usage.inputTokens ?? 0,
-          completion_tokens: usage.outputTokens ?? 0,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
         }),
       );
       for (const msg of response.messages) {

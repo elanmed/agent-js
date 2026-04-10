@@ -77,7 +77,7 @@ describe("utils", () => {
       // haiku: input=$1/M, output=$5/M
       // 1_000_000 prompt + 1_000_000 completion = $1 + $5 = $6.0000
       const result = calculateSessionUsage("claude-haiku-4-5", [
-        { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
+        { inputTokens: 1_000_000, outputTokens: 1_000_000 },
       ]);
       assert.equal(result, "Session usage: $6.0000");
     });
@@ -86,7 +86,7 @@ describe("utils", () => {
       // sonnet: input=$3/M, output=$15/M
       // 1_000_000 prompt + 1_000_000 completion = $3 + $15 = $18.0000
       const result = calculateSessionUsage("claude-sonnet-4-6", [
-        { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
+        { inputTokens: 1_000_000, outputTokens: 1_000_000 },
       ]);
       assert.equal(result, "Session usage: $18.0000");
     });
@@ -95,7 +95,7 @@ describe("utils", () => {
       // opus: input=$5/M, output=$25/M
       // 1_000_000 prompt + 1_000_000 completion = $5 + $25 = $30.0000
       const result = calculateSessionUsage("claude-opus-4-6", [
-        { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
+        { inputTokens: 1_000_000, outputTokens: 1_000_000 },
       ]);
       assert.equal(result, "Session usage: $30.0000");
     });
@@ -106,8 +106,8 @@ describe("utils", () => {
       // usage2: 500_000 prompt + 300_000 completion = $0.50 + $1.50 = $2.00
       // total = $3.50
       const result = calculateSessionUsage("claude-haiku-4-5", [
-        { prompt_tokens: 500_000, completion_tokens: 200_000 },
-        { prompt_tokens: 500_000, completion_tokens: 300_000 },
+        { inputTokens: 500_000, outputTokens: 200_000 },
+        { inputTokens: 500_000, outputTokens: 300_000 },
       ]);
       assert.equal(result, "Session usage: $3.5000");
     });

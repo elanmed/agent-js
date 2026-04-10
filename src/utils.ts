@@ -87,8 +87,8 @@ export interface ModelPricing {
 }
 
 export interface TokenUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 export function calculateSessionUsage(
@@ -96,27 +96,27 @@ export function calculateSessionUsage(
   usages: TokenUsage[],
 ): string {
   const totalUsage = usages.reduce<{
-    prompt_tokens: number;
-    completion_tokens: number;
+    inputTokens: number;
+    outputTokens: number;
   }>(
     (accum, curr) => ({
-      prompt_tokens: accum.prompt_tokens + curr.prompt_tokens,
-      completion_tokens: accum.completion_tokens + curr.completion_tokens,
+      inputTokens: accum.inputTokens + curr.inputTokens,
+      outputTokens: accum.outputTokens + curr.outputTokens,
     }),
-    { prompt_tokens: 0, completion_tokens: 0 },
+    { inputTokens: 0, outputTokens: 0 },
   );
 
   const pricing = selectors.getPricingPerModel()[model];
   if (!pricing) {
-    return `Session usage: ${String(totalUsage.prompt_tokens)} in, ${String(totalUsage.completion_tokens)} out`;
+    return `Session usage: ${String(totalUsage.inputTokens)} in, ${String(totalUsage.outputTokens)} out`;
   }
 
   const DOLLARS_PER_MILLION = 1_000_000;
   const { inputPerToken, outputPerToken } = pricing;
   const inputCost =
-    (totalUsage.prompt_tokens * inputPerToken) / DOLLARS_PER_MILLION;
+    (totalUsage.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
   const outputCost =
-    (totalUsage.completion_tokens * outputPerToken) / DOLLARS_PER_MILLION;
+    (totalUsage.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
 
   const cost = inputCost + outputCost;
   return `Session usage: $${cost.toFixed(4)}`;

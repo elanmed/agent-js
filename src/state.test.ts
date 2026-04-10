@@ -82,8 +82,8 @@ describe("state", () => {
   });
 
   it("append-to-message-usages", () => {
-    const usage1: TokenUsage = { prompt_tokens: 10, completion_tokens: 5 };
-    const usage2: TokenUsage = { prompt_tokens: 20, completion_tokens: 8 };
+    const usage1: TokenUsage = { inputTokens: 10, outputTokens: 5 };
+    const usage2: TokenUsage = { inputTokens: 20, outputTokens: 8 };
 
     dispatch(actions.appendToMessageUsages(usage1));
     dispatch(actions.appendToMessageUsages(usage2));
@@ -155,7 +155,7 @@ describe("selectors", () => {
 
   it("getMessageUsages", () => {
     assert.deepEqual(selectors.getMessageUsages(), []);
-    const usage: TokenUsage = { prompt_tokens: 1, completion_tokens: 2 };
+    const usage: TokenUsage = { inputTokens: 1, outputTokens: 2 };
     dispatch(actions.appendToMessageUsages(usage));
     assert.deepEqual(selectors.getMessageUsages(), [usage]);
   });
