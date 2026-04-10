@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
@@ -34,16 +35,15 @@ async function main() {
 
   const rl = readline.createInterface({ input, output });
 
-  let currQuestionAbortController: AbortController | null = null;
-  let currApiStream: AbortController | null = null;
-
   rl.on("SIGINT", () => {
-    if (currApiStream) {
-      currApiStream.abort();
+    const apiStream = selectors.getApiStreamAbortController();
+    if (apiStream) {
+      apiStream.abort();
     }
 
-    if (currQuestionAbortController) {
-      currQuestionAbortController.abort();
+    const questionAbortController = selectors.getQuestionAbortController();
+    if (questionAbortController) {
+      questionAbortController.abort();
     }
 
     // second <C-c> during exit confirmation
@@ -54,11 +54,12 @@ async function main() {
   });
 
   while (selectors.getRunning()) {
-    currQuestionAbortController = new AbortController();
+    dispatch(actions.setQuestionAbortController(new AbortController()));
+    const questionController = selectors.getQuestionAbortController();
     const inputResult = await tryCatchAsync(
-      rl.question("> ", { signal: currQuestionAbortController.signal }),
+      rl.question("> ", { signal: questionController!.signal }),
     );
-    currQuestionAbortController = null;
+    dispatch(actions.setQuestionAbortController(null));
 
     if (!inputResult.ok) {
       if (!isAbortError(inputResult.error)) {
@@ -67,13 +68,14 @@ async function main() {
       }
 
       dispatch(actions.setInterrupted(true));
-      currQuestionAbortController = new AbortController();
+      dispatch(actions.setQuestionAbortController(new AbortController()));
+      const exitQuestionController = selectors.getQuestionAbortController();
       const exitResult = await tryCatchAsync(
         rl.question("y(es) or <C-c> to exit: ", {
-          signal: currQuestionAbortController.signal,
+          signal: exitQuestionController!.signal,
         }),
       );
-      currQuestionAbortController = null;
+      dispatch(actions.setQuestionAbortController(null));
 
       if (exitResult.ok) {
         if (/^y(es)?$/i.exec(exitResult.value)) {
@@ -131,15 +133,16 @@ async function main() {
       content: inputResultValue,
     };
     const messageCountBeforeTurn = selectors.getMessageParams().length;
-    currApiStream = new AbortController();
+    dispatch(actions.setApiStreamAbortController(new AbortController()));
+    const apiStreamController = selectors.getApiStreamAbortController();
     const streamResult = await tryCatchAsync(
       callApi(
         [inputMessageParam],
         { prependNewline: false },
-        currApiStream.signal,
+        apiStreamController!.signal,
       ),
     );
-    currApiStream = null;
+    dispatch(actions.setApiStreamAbortController(null));
 
     if (!streamResult.ok) {
       if (isAbortError(streamResult.error)) {
@@ -178,11 +181,16 @@ async function main() {
         content: toolMessages,
       };
 
-      currApiStream = new AbortController();
+      dispatch(actions.setApiStreamAbortController(new AbortController()));
+      const toolApiStreamController = selectors.getApiStreamAbortController();
       const toolStreamResult = await tryCatchAsync(
-        callApi([toolMessage], { prependNewline: true }, currApiStream.signal),
+        callApi(
+          [toolMessage],
+          { prependNewline: true },
+          toolApiStreamController!.signal,
+        ),
       );
-      currApiStream = null;
+      dispatch(actions.setApiStreamAbortController(null));
 
       if (toolStreamResult.ok) {
         currentResult = toolStreamResult.value;

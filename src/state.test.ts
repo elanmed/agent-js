@@ -14,12 +14,16 @@ describe("state", () => {
     dispatch(actions.setRunning(false));
     dispatch(actions.setInterrupted(true));
     dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
+    dispatch(actions.setQuestionAbortController(new AbortController()));
+    dispatch(actions.setApiStreamAbortController(new AbortController()));
     resetState();
     const s = getState();
     assert.equal(s.appState.running, true);
     assert.equal(s.appState.interrupted, false);
     assert.deepEqual(s.appState.messageParams, []);
     assert.deepEqual(s.appState.messageUsages, []);
+    assert.equal(s.abortControllers.question, null);
+    assert.equal(s.abortControllers.apiStream, null);
   });
 
   it("initial state", () => {
@@ -28,6 +32,8 @@ describe("state", () => {
     assert.equal(s.appState.interrupted, false);
     assert.deepEqual(s.appState.messageParams, []);
     assert.deepEqual(s.appState.messageUsages, []);
+    assert.equal(s.abortControllers.question, null);
+    assert.equal(s.abortControllers.apiStream, null);
   });
 
   it("set-interrupted", () => {
@@ -132,6 +138,24 @@ describe("state", () => {
     dispatch(actions.setDisableUsageMessage(false));
     assert.equal(getState().configState.disableUsageMessage, false);
   });
+
+  it("set-question-abort-controller", () => {
+    const controller = new AbortController();
+    dispatch(actions.setQuestionAbortController(controller));
+    assert.equal(getState().abortControllers.question, controller);
+
+    dispatch(actions.setQuestionAbortController(null));
+    assert.equal(getState().abortControllers.question, null);
+  });
+
+  it("set-api-stream-abort-controller", () => {
+    const controller = new AbortController();
+    dispatch(actions.setApiStreamAbortController(controller));
+    assert.equal(getState().abortControllers.apiStream, controller);
+
+    dispatch(actions.setApiStreamAbortController(null));
+    assert.equal(getState().abortControllers.apiStream, null);
+  });
 });
 
 describe("selectors", () => {
@@ -193,5 +217,21 @@ describe("selectors", () => {
     assert.equal(selectors.getDisableUsageMessage(), false);
     dispatch(actions.setDisableUsageMessage(true));
     assert.equal(selectors.getDisableUsageMessage(), true);
+  });
+
+  it("getQuestionAbortController", () => {
+    assert.equal(selectors.getQuestionAbortController(), null);
+    dispatch(actions.setQuestionAbortController(new AbortController()));
+    assert.ok(selectors.getQuestionAbortController() instanceof AbortController);
+    dispatch(actions.setQuestionAbortController(null));
+    assert.equal(selectors.getQuestionAbortController(), null);
+  });
+
+  it("getApiStreamAbortController", () => {
+    assert.equal(selectors.getApiStreamAbortController(), null);
+    dispatch(actions.setApiStreamAbortController(new AbortController()));
+    assert.ok(selectors.getApiStreamAbortController() instanceof AbortController);
+    dispatch(actions.setApiStreamAbortController(null));
+    assert.equal(selectors.getApiStreamAbortController(), null);
   });
 });

@@ -20,6 +20,10 @@ interface State {
     disableUsageMessage: boolean;
     diffStyle: DiffStyle;
   };
+  abortControllers: {
+    question: AbortController | null;
+    apiStream: AbortController | null;
+  };
 }
 
 const initialState: State = {
@@ -36,6 +40,10 @@ const initialState: State = {
     disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
     diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
+  },
+  abortControllers: {
+    question: null,
+    apiStream: null,
   },
 };
 
@@ -97,6 +105,14 @@ type Action =
     }
   | {
       type: "reset-message-params";
+    }
+  | {
+      type: "set-question-abort-controller";
+      payload: AbortController | null;
+    }
+  | {
+      type: "set-api-stream-abort-controller";
+      payload: AbortController | null;
     };
 
 export const dispatch = (action: Action) => {
@@ -107,72 +123,112 @@ export const dispatch = (action: Action) => {
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "set-interrupted": {
-      const newState = structuredClone(state);
-      newState.appState.interrupted = action.payload;
-      return newState;
+      return {
+        ...state,
+        appState: { ...state.appState, interrupted: action.payload },
+      };
     }
     case "set-running": {
-      const newState = structuredClone(state);
-      newState.appState.running = action.payload;
-      return newState;
+      return {
+        ...state,
+        appState: { ...state.appState, running: action.payload },
+      };
     }
     case "append-to-message-params": {
-      const newState = structuredClone(state);
-      newState.appState.messageParams.push(action.payload);
-      return newState;
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          messageParams: [...state.appState.messageParams, action.payload],
+        },
+      };
     }
     case "append-to-message-usages": {
-      const newState = structuredClone(state);
-      newState.appState.messageUsages.push(action.payload);
-      return newState;
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          messageUsages: [...state.appState.messageUsages, action.payload],
+        },
+      };
     }
     case "set-model": {
-      const newState = structuredClone(state);
-      newState.configState.model = action.payload;
-      return newState;
+      return {
+        ...state,
+        configState: { ...state.configState, model: action.payload },
+      };
     }
     case "set-provider": {
-      const newState = structuredClone(state);
-      newState.configState.provider = action.payload;
-      return newState;
+      return {
+        ...state,
+        configState: { ...state.configState, provider: action.payload },
+      };
     }
     case "set-base-url": {
-      const newState = structuredClone(state);
-      newState.configState.baseURL = action.payload;
-      return newState;
+      return {
+        ...state,
+        configState: { ...state.configState, baseURL: action.payload },
+      };
     }
     case "set-pricing-per-model": {
-      const newState = structuredClone(state);
-      newState.configState.pricingPerModel = action.payload;
-      return newState;
+      return {
+        ...state,
+        configState: { ...state.configState, pricingPerModel: action.payload },
+      };
     }
     case "set-disable-usage-message": {
-      const newState = structuredClone(state);
-      newState.configState.disableUsageMessage = action.payload;
-      return newState;
+      return {
+        ...state,
+        configState: {
+          ...state.configState,
+          disableUsageMessage: action.payload,
+        },
+      };
     }
     case "set-diff-style": {
-      const newState = structuredClone(state);
-      newState.configState.diffStyle = action.payload;
-      return newState;
+      return {
+        ...state,
+        configState: { ...state.configState, diffStyle: action.payload },
+      };
     }
     case "truncate-message-params": {
-      const newState = structuredClone(state);
-      newState.appState.messageParams = newState.appState.messageParams.slice(
-        0,
-        action.payload,
-      );
-      return newState;
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          messageParams: state.appState.messageParams.slice(0, action.payload),
+        },
+      };
     }
     case "reset-message-usages": {
-      const newState = structuredClone(state);
-      newState.appState.messageUsages = [];
-      return newState;
+      return {
+        ...state,
+        appState: { ...state.appState, messageUsages: [] },
+      };
     }
     case "reset-message-params": {
-      const newState = structuredClone(state);
-      newState.appState.messageParams = [];
-      return newState;
+      return {
+        ...state,
+        appState: { ...state.appState, messageParams: [] },
+      };
+    }
+    case "set-question-abort-controller": {
+      return {
+        ...state,
+        abortControllers: {
+          ...state.abortControllers,
+          question: action.payload,
+        },
+      };
+    }
+    case "set-api-stream-abort-controller": {
+      return {
+        ...state,
+        abortControllers: {
+          ...state.abortControllers,
+          apiStream: action.payload,
+        },
+      };
     }
   }
 };
@@ -241,6 +297,18 @@ const resetMessageParams = (): Action => {
   return { type: "reset-message-params" };
 };
 
+const setQuestionAbortController = (
+  controller: AbortController | null,
+): Action => {
+  return { type: "set-question-abort-controller", payload: controller };
+};
+
+const setApiStreamAbortController = (
+  controller: AbortController | null,
+): Action => {
+  return { type: "set-api-stream-abort-controller", payload: controller };
+};
+
 export const actions = {
   setInterrupted,
   setRunning,
@@ -255,6 +323,8 @@ export const actions = {
   truncateMessageParams,
   resetMessageUsages,
   resetMessageParams,
+  setQuestionAbortController,
+  setApiStreamAbortController,
 };
 
 const getInterrupted = () => getState().appState.interrupted;
@@ -267,6 +337,8 @@ const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
 const getDisableUsageMessage = () => getState().configState.disableUsageMessage;
 const getDiffStyle = () => getState().configState.diffStyle;
+const getQuestionAbortController = () => getState().abortControllers.question;
+const getApiStreamAbortController = () => getState().abortControllers.apiStream;
 
 export const selectors = {
   getInterrupted,
@@ -279,4 +351,6 @@ export const selectors = {
   getPricingPerModel,
   getDisableUsageMessage,
   getDiffStyle,
+  getQuestionAbortController,
+  getApiStreamAbortController,
 };
