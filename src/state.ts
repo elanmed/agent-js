@@ -1,19 +1,22 @@
-import type OpenAI from "openai";
-import { DEFAULT_CONFIG, type DiffStyle } from "./config.ts";
+import type { ModelMessage } from "ai";
+import { DEFAULT_CONFIG, type DiffStyle, type Provider } from "./config.ts";
 import { debugLog } from "./utils.ts";
 import type { ModelPricing, TokenUsage } from "./utils.ts";
+
+export const MISSING = "MISSING" as const;
 
 interface State {
   appState: {
     interrupted: boolean;
     running: boolean;
-    messageParams: OpenAI.Chat.ChatCompletionMessageParam[];
+    messageParams: ModelMessage[];
     messageUsages: TokenUsage[];
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
     model: string;
-    baseURL: string | null;
+    provider: Provider;
+    baseURL: string;
     disableUsageMessage: boolean;
     diffStyle: DiffStyle;
   };
@@ -27,8 +30,9 @@ const initialState: State = {
     messageUsages: [],
   },
   configState: {
-    model: DEFAULT_CONFIG.model,
-    baseURL: null,
+    model: MISSING,
+    provider: DEFAULT_CONFIG.provider,
+    baseURL: MISSING,
     disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
     diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
@@ -54,7 +58,7 @@ type Action =
     }
   | {
       type: "append-to-message-params";
-      payload: OpenAI.Chat.ChatCompletionMessageParam;
+      payload: ModelMessage;
     }
   | {
       type: "append-to-message-usages";
@@ -65,8 +69,12 @@ type Action =
       payload: string;
     }
   | {
+      type: "set-provider";
+      payload: Provider;
+    }
+  | {
       type: "set-base-url";
-      payload: string | null;
+      payload: string;
     }
   | {
       type: "set-pricing-per-model";
@@ -117,6 +125,11 @@ const reducer = (state: State, action: Action): State => {
       newState.configState.model = action.payload;
       return newState;
     }
+    case "set-provider": {
+      const newState = structuredClone(state);
+      newState.configState.provider = action.payload;
+      return newState;
+    }
     case "set-base-url": {
       const newState = structuredClone(state);
       newState.configState.baseURL = action.payload;
@@ -162,9 +175,7 @@ const setRunning = (running: boolean): Action => {
   };
 };
 
-const appendToMessageParams = (
-  message: OpenAI.Chat.ChatCompletionMessageParam,
-): Action => {
+const appendToMessageParams = (message: ModelMessage): Action => {
   return {
     type: "append-to-message-params",
     payload: message,
@@ -182,7 +193,11 @@ const setModel = (model: string): Action => {
   return { type: "set-model", payload: model };
 };
 
-const setBaseURL = (baseURL: string | null): Action => {
+const setProvider = (provider: Provider): Action => {
+  return { type: "set-provider", payload: provider };
+};
+
+const setBaseURL = (baseURL: string): Action => {
   return { type: "set-base-url", payload: baseURL };
 };
 
@@ -208,6 +223,7 @@ export const actions = {
   appendToMessageParams,
   appendToMessageUsages,
   setModel,
+  setProvider,
   setBaseURL,
   setPricingPerModel,
   setDisableUsageMessage,
@@ -220,6 +236,7 @@ const getRunning = () => getState().appState.running;
 const getMessageParams = () => getState().appState.messageParams;
 const getMessageUsages = () => getState().appState.messageUsages;
 const getModel = () => getState().configState.model;
+const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
 const getDisableUsageMessage = () => getState().configState.disableUsageMessage;
@@ -231,6 +248,7 @@ export const selectors = {
   getMessageParams,
   getMessageUsages,
   getModel,
+  getProvider,
   getBaseURL,
   getPricingPerModel,
   getDisableUsageMessage,

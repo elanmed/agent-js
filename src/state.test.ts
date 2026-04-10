@@ -99,6 +99,14 @@ describe("state", () => {
     assert.equal(getState().configState.model, "claude-haiku-4-5");
   });
 
+  it("set-provider", () => {
+    dispatch(actions.setProvider("anthropic"));
+    assert.equal(getState().configState.provider, "anthropic");
+
+    dispatch(actions.setProvider("openai-compatible"));
+    assert.equal(getState().configState.provider, "openai-compatible");
+  });
+
   it("set-base-url", () => {
     dispatch(actions.setBaseURL("https://api.example.com/v1"));
     assert.equal(
@@ -106,8 +114,8 @@ describe("state", () => {
       "https://api.example.com/v1",
     );
 
-    dispatch(actions.setBaseURL(null));
-    assert.equal(getState().configState.baseURL, null);
+    dispatch(actions.setBaseURL("MISSING"));
+    assert.equal(getState().configState.baseURL, "MISSING");
   });
 
   it("set-pricing-per-model", () => {
@@ -158,8 +166,14 @@ describe("selectors", () => {
     assert.equal(selectors.getModel(), "claude-haiku-4-5");
   });
 
+  it("getProvider", () => {
+    assert.equal(selectors.getProvider(), DEFAULT_CONFIG.provider);
+    dispatch(actions.setProvider("anthropic"));
+    assert.equal(selectors.getProvider(), "anthropic");
+  });
+
   it("getBaseURL", () => {
-    assert.equal(selectors.getBaseURL(), null);
+    assert.equal(selectors.getBaseURL(), "MISSING");
     dispatch(actions.setBaseURL("https://api.example.com/v1"));
     assert.equal(selectors.getBaseURL(), "https://api.example.com/v1");
   });

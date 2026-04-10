@@ -7,6 +7,7 @@ import {
   initStateFromConfig,
   DEFAULT_CONFIG,
   GLOBAL_CONFIG_PATH,
+  LOCAL_CONFIG_PATH,
 } from "./config.ts";
 
 const fsState = {
@@ -53,8 +54,14 @@ describe("initStateFromConfig", () => {
 
     fs.mkdirSync = (() => undefined) as typeof fs.mkdirSync;
     fs.writeFileSync = ((path: string, content: string) => {
-      if (path === GLOBAL_CONFIG_PATH) {
+      if (path === GLOBAL_CONFIG_PATH || path === LOCAL_CONFIG_PATH) {
         writeFileArgs = [path, content];
+      }
+      if (path === LOCAL_CONFIG_PATH) {
+        fsState.localContent = content;
+      }
+      if (path === GLOBAL_CONFIG_PATH) {
+        fsState.globalContent = content;
       }
     }) as typeof fs.writeFileSync;
   });
@@ -73,16 +80,45 @@ describe("initStateFromConfig", () => {
     });
 
     it("uses its model over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({ model: "claude-sonnet-4-6" });
-      fsState.localContent = JSON.stringify({ model: "claude-haiku-4-5" });
+      fsState.globalContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+      });
+      fsState.localContent = JSON.stringify({
+        model: "claude-haiku-4-5",
+        baseURL: "https://api.example.com",
+      });
       initStateFromConfig();
 
       assert.equal(selectors.getModel(), "claude-haiku-4-5");
     });
 
+    it("uses its provider over the global config, default config", () => {
+      fsState.globalContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        provider: "openai-compatible",
+      });
+      fsState.localContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        provider: "anthropic",
+      });
+
+      initStateFromConfig();
+
+      assert.equal(selectors.getProvider(), "anthropic");
+    });
+
     it("uses its disableUsageMessage over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({ disableUsageMessage: false });
-      fsState.localContent = JSON.stringify({ disableUsageMessage: true });
+      fsState.globalContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+        disableUsageMessage: false,
+      });
+      fsState.localContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+        disableUsageMessage: true,
+      });
 
       initStateFromConfig();
 
@@ -90,8 +126,16 @@ describe("initStateFromConfig", () => {
     });
 
     it("uses its diffStyle over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({ diffStyle: "lines" });
-      fsState.localContent = JSON.stringify({ diffStyle: "unified" });
+      fsState.globalContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+        diffStyle: "lines",
+      });
+      fsState.localContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+        diffStyle: "unified",
+      });
 
       initStateFromConfig();
 
@@ -105,9 +149,15 @@ describe("initStateFromConfig", () => {
       localOpusPricing.inputPerToken = 999;
 
       fsState.globalContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
         pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
       });
-      fsState.localContent = JSON.stringify({ pricingPerModel: localPricing });
+      fsState.localContent = JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+        pricingPerModel: localPricing,
+      });
 
       initStateFromConfig();
 
@@ -123,19 +173,39 @@ describe("initStateFromConfig", () => {
 
     describe("when the global config exists", () => {
       it("uses its model over the default config", () => {
-        fsState.globalContent = JSON.stringify({ model: "claude-haiku-4-5" });
+        fsState.globalContent = JSON.stringify({
+          model: "claude-haiku-4-5",
+          baseURL: "https://api.example.com",
+        });
         initStateFromConfig();
         assert.equal(selectors.getModel(), "claude-haiku-4-5");
       });
 
+      it("uses its provider over the default config", () => {
+        fsState.globalContent = JSON.stringify({
+          model: "claude-sonnet-4-6",
+          provider: "anthropic",
+        });
+        initStateFromConfig();
+        assert.equal(selectors.getProvider(), "anthropic");
+      });
+
       it("uses its disableUsageMessage over the default config", () => {
-        fsState.globalContent = JSON.stringify({ disableUsageMessage: true });
+        fsState.globalContent = JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          disableUsageMessage: true,
+        });
         initStateFromConfig();
         assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
       it("uses its diffStyle over the default config", () => {
-        fsState.globalContent = JSON.stringify({ diffStyle: "unified" });
+        fsState.globalContent = JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          diffStyle: "unified",
+        });
         initStateFromConfig();
         assert.equal(selectors.getDiffStyle(), "unified");
       });
@@ -146,6 +216,8 @@ describe("initStateFromConfig", () => {
         assert.ok(globalOpusPricing);
         globalOpusPricing.inputPerToken = 999;
         fsState.globalContent = JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
           pricingPerModel: globalPricing,
         });
         initStateFromConfig();
@@ -159,36 +231,28 @@ describe("initStateFromConfig", () => {
       });
 
       it("writes the global config as the default config", () => {
-        initStateFromConfig();
+        try {
+          initStateFromConfig();
+        } catch {
+          // Expected to throw due to missing model
+        }
 
         assert.ok(writeFileArgs !== null);
         assert.deepEqual(JSON.parse(writeFileArgs[1]), DEFAULT_CONFIG);
       });
 
-      it("uses the default model", () => {
-        initStateFromConfig();
-        assert.equal(selectors.getModel(), DEFAULT_CONFIG.model);
+      it("throws when model is not configured", () => {
+        assert.throws(() => {
+          initStateFromConfig();
+        }, /A `model` is required/);
       });
 
-      it("uses the default disableUsageMessage", () => {
-        initStateFromConfig();
-        assert.equal(
-          selectors.getDisableUsageMessage(),
-          DEFAULT_CONFIG.disableUsageMessage,
-        );
-      });
-
-      it("uses the default diffStyle", () => {
-        initStateFromConfig();
-        assert.equal(selectors.getDiffStyle(), DEFAULT_CONFIG.diffStyle);
-      });
-
-      it("uses the default pricingPerModel", () => {
-        initStateFromConfig();
-        assert.deepEqual(
-          selectors.getPricingPerModel(),
-          DEFAULT_CONFIG.pricingPerModel,
-        );
+      it("throws when baseURL is not configured for openai-compatible provider", () => {
+        fsState.globalContent = JSON.stringify({ model: "some-model" });
+        fsState.globalExists = true;
+        assert.throws(() => {
+          initStateFromConfig();
+        }, /A `baseURL` is required when `provider=openai-compatible`/);
       });
     });
   });

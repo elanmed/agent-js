@@ -3,9 +3,10 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import { colorLog, debugLog } from "./utils.ts";
-import { actions, dispatch } from "./state.ts";
+import { actions, dispatch, MISSING } from "./state.ts";
 
 export type DiffStyle = "unified" | "lines";
+export type Provider = "anthropic" | "openai-compatible";
 
 const ModelPricingSchema = z
   .object({
@@ -17,6 +18,7 @@ const ModelPricingSchema = z
 const ConfigSchema = z.object({
   model: z.string().optional(),
   baseURL: z.string().optional(),
+  provider: z.enum(["anthropic", "openai-compatible"]).optional(),
   disableUsageMessage: z.boolean().optional(),
   diffStyle: z.enum(["unified", "lines"]).optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
@@ -26,6 +28,8 @@ type Config = z.infer<typeof ConfigSchema>;
 
 interface DefaultConfig {
   model: string;
+  baseURL: string;
+  provider: Provider;
   disableUsageMessage: boolean;
   diffStyle: "unified" | "lines";
   pricingPerModel: Record<
@@ -35,7 +39,9 @@ interface DefaultConfig {
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
-  model: "claude-opus-4-6",
+  model: "MISSING",
+  baseURL: "MISSING",
+  provider: "openai-compatible",
   disableUsageMessage: false,
   diffStyle: "unified",
   pricingPerModel: {
@@ -64,16 +70,7 @@ export function initStateFromConfig() {
       return parseConfigStr(fs.readFileSync(GLOBAL_CONFIG_PATH).toString());
     }
 
-    fs.mkdirSync(dirname(GLOBAL_CONFIG_PATH), { recursive: true });
-    fs.writeFileSync(
-      GLOBAL_CONFIG_PATH,
-      JSON.stringify(DEFAULT_CONFIG, null, 2),
-    );
-    colorLog(
-      `${GLOBAL_CONFIG_PATH} does not exist, writing default config`,
-      "grey",
-    );
-
+    debugLog(`${GLOBAL_CONFIG_PATH} does not exist`);
     return DEFAULT_CONFIG;
   })();
 
@@ -83,18 +80,43 @@ export function initStateFromConfig() {
       return parseConfigStr(fs.readFileSync(LOCAL_CONFIG_PATH).toString());
     }
 
-    debugLog(`${LOCAL_CONFIG_PATH} does not exist`);
+    fs.mkdirSync(dirname(LOCAL_CONFIG_PATH), { recursive: true });
+    fs.writeFileSync(
+      LOCAL_CONFIG_PATH,
+      JSON.stringify(DEFAULT_CONFIG, null, 2),
+    );
+    colorLog(
+      `${LOCAL_CONFIG_PATH} does not exist, writing default config`,
+      "grey",
+    );
+
     return {};
   })();
 
-  dispatch(
-    actions.setModel(
-      localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model,
-    ),
-  );
-  dispatch(
-    actions.setBaseURL(localConfig.baseURL ?? globalConfig.baseURL ?? null),
-  );
+  const defaultedModel =
+    localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model;
+  if (defaultedModel === MISSING) {
+    throw new Error(
+      `A \`model\` is required in either ${LOCAL_CONFIG_PATH} or ${GLOBAL_CONFIG_PATH}`,
+    );
+  }
+
+  const defaultedProvider =
+    localConfig.provider ?? globalConfig.provider ?? DEFAULT_CONFIG.provider;
+  const defaultedBaseURL =
+    localConfig.baseURL ?? globalConfig.baseURL ?? DEFAULT_CONFIG.baseURL;
+  if (
+    defaultedBaseURL === MISSING &&
+    defaultedProvider === "openai-compatible"
+  ) {
+    throw new Error(
+      `A \`baseURL\` is required when \`provider=openai-compatible\` in either ${LOCAL_CONFIG_PATH} or ${GLOBAL_CONFIG_PATH}`,
+    );
+  }
+
+  dispatch(actions.setModel(defaultedModel));
+  dispatch(actions.setBaseURL(defaultedBaseURL));
+  dispatch(actions.setProvider(defaultedProvider));
   dispatch(
     actions.setDisableUsageMessage(
       localConfig.disableUsageMessage ??

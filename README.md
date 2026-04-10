@@ -9,7 +9,6 @@ A minimal agent implementation for working with claude (my mini claude code)
 - **Minimal deps**: 3 packages [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`zod`](https://www.npmjs.com/package/zod)
 - **Strict TypeScript**: all the strictest `tsconfig`, `eslint` settings
   - Note to future self: probably not worth it
-- **No build step**: uses Bun's native `.ts` support
 - **Tools**: execute bash commands, create/edit files, etc. A `git diff` is output when a tool changes a file
 - **Rendering with `bat`**: responses are parsed and rendered as markdown
 - **Configurable**: global and local settings to pick your model, track costs
@@ -37,3 +36,4 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 - [ ] Prefill the editor with the current input when opening
 - [ ] Gracefully handle unknown errors
 - [ ] Swap over to `ai` and `@ai-sdk/openai-compatible` and `@ai-sdk/anthropic`
+- [ ] More accurate diffs specific to changes

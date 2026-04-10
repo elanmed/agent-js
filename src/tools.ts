@@ -1,9 +1,15 @@
-import type OpenAI from "openai";
+import { tool } from "ai";
 import fs from "node:fs";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
-import { colorLog, debugLog, tryCatch, tryCatchAsync } from "./utils.ts";
+import {
+  colorLog,
+  debugLog,
+  getMessageFromError,
+  tryCatch,
+  tryCatchAsync,
+} from "./utils.ts";
 import { selectors } from "./state.ts";
 
 const execPromise = promisify(exec);
@@ -20,31 +26,6 @@ export interface ToolResult {
   content: string;
   is_error?: boolean;
 }
-
-function getMessageFromError(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return JSON.stringify(error);
-}
-
-export const BASH_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: "bash",
-    description: "Execute a bash command and return its output.",
-    parameters: {
-      type: "object",
-      properties: {
-        command: {
-          type: "string",
-          description: "The bash command to execute.",
-        },
-      },
-      required: ["command"],
-    },
-  },
-};
 
 const BashToolInputSchema = z.object({ command: z.string() });
 
@@ -78,29 +59,6 @@ export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
     is_error: true,
   };
 }
-
-export const CREATE_FILE_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: "create_file",
-    description:
-      "Create a new file with the given content. Fails if the file already exists.",
-    parameters: {
-      type: "object",
-      required: ["path", "content"],
-      properties: {
-        path: {
-          type: "string",
-          description: "Path for the new file",
-        },
-        content: {
-          type: "string",
-          description: "Full content of the new file",
-        },
-      },
-    },
-  },
-};
 
 const CreateFileToolSchema = z.object({
   path: z.string(),
@@ -141,35 +99,6 @@ export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
     content: `${path} created successfully`,
   };
 }
-
-export const VIEW_FILE_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: "view_file",
-    description:
-      "View the contents of a file or list a directory. File contents are returned with line numbers.",
-    parameters: {
-      type: "object",
-      required: ["path"],
-      properties: {
-        path: {
-          type: "string",
-          description: "Path to the file or directory to view",
-        },
-        start_line: {
-          type: "integer",
-          description:
-            "Starting line number (1-indexed). Only applies to files.",
-        },
-        end_line: {
-          type: "integer",
-          description:
-            "Ending line number (inclusive). Use -1 for end of file. Only applies to files.",
-        },
-      },
-    },
-  },
-};
 
 const ViewFileToolInputSchema = z.object({
   path: z.string(),
@@ -248,34 +177,6 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
   };
 }
 
-export const STR_REPLACE_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: "str_replace",
-    description:
-      "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
-    parameters: {
-      type: "object",
-      required: ["path", "old_str", "new_str"],
-      properties: {
-        path: {
-          type: "string",
-          description: "Path to the file to edit",
-        },
-        old_str: {
-          type: "string",
-          description:
-            "The exact text to find (must match exactly once in the file)",
-        },
-        new_str: {
-          type: "string",
-          description: "The replacement text",
-        },
-      },
-    },
-  },
-};
-
 const StrReplaceToolInputSchema = z.object({
   path: z.string(),
   old_str: z.string(),
@@ -348,38 +249,38 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
   };
 }
 
-export const INSERT_LINES_TOOL_SCHEMA: OpenAI.Chat.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: "insert_lines",
-    description:
-      "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
-    parameters: {
-      type: "object",
-      required: ["path", "after_line", "content"],
-      properties: {
-        path: {
-          type: "string",
-          description: "Path to the file to edit",
-        },
-        after_line: {
-          type: "integer",
-          description: "Line number to insert after (0 for beginning of file)",
-        },
-        content: {
-          type: "string",
-          description: "Text to insert",
-        },
-      },
-    },
-  },
-};
-
 const InsertLinesToolInputSchema = z.object({
   path: z.string(),
   after_line: z.number().int(),
   content: z.string(),
 });
+
+export const TOOLS = {
+  bash: tool({
+    description: "Execute a bash command and return its output.",
+    inputSchema: BashToolInputSchema,
+  }),
+  create_file: tool({
+    description:
+      "Create a new file with the given content. Fails if the file already exists.",
+    inputSchema: CreateFileToolSchema,
+  }),
+  view_file: tool({
+    description:
+      "View the contents of a file or list a directory. File contents are returned with line numbers.",
+    inputSchema: ViewFileToolInputSchema,
+  }),
+  str_replace: tool({
+    description:
+      "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
+    inputSchema: StrReplaceToolInputSchema,
+  }),
+  insert_lines: tool({
+    description:
+      "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
+    inputSchema: InsertLinesToolInputSchema,
+  }),
+};
 
 export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   const { path, after_line, content } = InsertLinesToolInputSchema.parse(

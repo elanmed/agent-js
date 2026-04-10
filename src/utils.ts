@@ -15,6 +15,13 @@ export function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
+export function getMessageFromError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return JSON.stringify(error);
+}
+
 export function tryCatch<T>(cb: () => T): Result<T> {
   try {
     const result = cb();
@@ -140,7 +147,7 @@ export function readFromEditor() {
   const tempFile = join(tmpdir(), `agent-js-${String(Date.now())}.txt`);
   const editor = process.env["EDITOR"] ?? "vi";
   fs.writeFileSync(tempFile, "");
-  spawnSync(editor, [tempFile], { shell: true, stdio: "inherit" });
+  spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
   const content = fs.readFileSync(tempFile).toString();
   fs.unlinkSync(tempFile);
 

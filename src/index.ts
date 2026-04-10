@@ -1,7 +1,10 @@
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
-import OpenAI from "openai";
+import { generateText } from "ai";
+import type { ModelMessage, ToolSet } from "ai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
@@ -15,38 +18,55 @@ import {
   getAvailableSlashCommands,
   readFromEditor,
   executeBat,
+  getMessageFromError,
 } from "./utils.ts";
-import {
-  BASH_TOOL_SCHEMA,
-  CREATE_FILE_TOOL_SCHEMA,
-  VIEW_FILE_TOOL_SCHEMA,
-  STR_REPLACE_TOOL_SCHEMA,
-  INSERT_LINES_TOOL_SCHEMA,
-  getToolResultBlock,
-  type ToolCall,
-} from "./tools.ts";
+import { TOOLS, getToolResultBlock, type ToolCall } from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
 import { join } from "node:path";
-// TODO: better type?
-import type { ChatCompletionStream } from "openai/lib/ChatCompletionStream.mjs";
+
+function getLanguageModel() {
+  const provider = selectors.getProvider();
+  const modelName = selectors.getModel();
+  const apiKey = process.env["AGENT_JS_API_KEY"];
+
+  if (provider === "anthropic") {
+    return createAnthropic({ ...(apiKey && { apiKey }) })(modelName);
+  }
+
+  return createOpenAICompatible({
+    name: "openai-compatible",
+    baseURL: selectors.getBaseURL(),
+    ...(apiKey && { apiKey }),
+  })(modelName);
+}
+
+interface ToolMessage {
+  type: "tool-result";
+  toolCallId: string;
+  toolName: string;
+  output:
+    | { type: "text"; value: string }
+    | { type: "error-text"; value: string };
+}
+
+interface CallApiResult {
+  finishReason: string;
+  toolCalls: { toolCallId: string; toolName: string; input: unknown }[];
+}
 
 async function main() {
   initStateFromConfig();
   const availableSlashCommands = getAvailableSlashCommands();
 
-  const client = new OpenAI({
-    baseURL: selectors.getBaseURL() ?? undefined,
-    apiKey: process.env["AGENT_JS_API_KEY"],
-  });
   const rl = readline.createInterface({ input, output });
 
   let currQuestionAbortController: AbortController | null = null;
-  let currApiStream: ChatCompletionStream | null = null;
+  let currApiStream: AbortController | null = null;
 
   async function callApi(
-    newMessages: OpenAI.Chat.ChatCompletionMessageParam[],
+    newMessages: ModelMessage[],
     { prependNewline }: { prependNewline: boolean } = { prependNewline: false },
-  ) {
+  ): Promise<CallApiResult> {
     const messageCount =
       selectors.getMessageParams().length + newMessages.length;
     debugLog(
@@ -73,54 +93,56 @@ async function main() {
       await getRecursiveAgentsMdFilesStr(),
     ].join("\n");
 
-    currApiStream = client.chat.completions.stream({
-      model: selectors.getModel(),
-      messages: [
-        { role: "system", content: systemContent },
-        ...selectors.getMessageParams(),
-        ...newMessages,
-      ],
-      tools: [
-        BASH_TOOL_SCHEMA,
-        CREATE_FILE_TOOL_SCHEMA,
-        VIEW_FILE_TOOL_SCHEMA,
-        STR_REPLACE_TOOL_SCHEMA,
-        INSERT_LINES_TOOL_SCHEMA,
-      ],
-      max_completion_tokens: 8192,
-      stream_options: { include_usage: true },
-    });
+    const abortController = new AbortController();
+    currApiStream = abortController;
 
-    let streamResult: OpenAI.Chat.ChatCompletion;
     try {
-      streamResult = await currApiStream.finalChatCompletion();
+      const { text, finishReason, toolCalls, usage, response } =
+        await generateText({
+          model: getLanguageModel(),
+          system: systemContent,
+          messages: [...selectors.getMessageParams(), ...newMessages],
+          tools: TOOLS as unknown as ToolSet,
+          maxOutputTokens: 8192,
+          abortSignal: abortController.signal,
+        });
+
+      debugLog(
+        `callApi: finish_reason=${finishReason}, prompt_tokens=${String(usage.inputTokens)}, completion_tokens=${String(usage.outputTokens)}`,
+      );
+
+      clearSpinner();
+
+      if (text) {
+        if (prependNewline) process.stdout.write("\n");
+        await executeBat(text);
+      }
+
+      for (const message of newMessages) {
+        dispatch(actions.appendToMessageParams(message));
+      }
+      dispatch(
+        actions.appendToMessageUsages({
+          prompt_tokens: usage.inputTokens ?? 0,
+          completion_tokens: usage.outputTokens ?? 0,
+        }),
+      );
+      for (const msg of response.messages) {
+        dispatch(actions.appendToMessageParams(msg));
+      }
+
+      return {
+        finishReason,
+        toolCalls: toolCalls.map((toolCall) => ({
+          toolCallId: toolCall.toolCallId,
+          toolName: toolCall.toolName,
+          input: toolCall.input,
+        })),
+      };
     } finally {
       clearSpinner();
       currApiStream = null;
     }
-
-    const choice = streamResult.choices[0];
-    if (!choice) throw new Error("No choices in completion response");
-
-    debugLog(
-      `callApi: finish_reason=${choice.finish_reason}, prompt_tokens=${String(streamResult.usage?.prompt_tokens)}, completion_tokens=${String(streamResult.usage?.completion_tokens)}`,
-    );
-
-    const fullText = choice.message.content ?? "";
-    if (fullText) {
-      if (prependNewline) process.stdout.write("\n");
-      await executeBat(fullText);
-    }
-
-    for (const message of newMessages) {
-      dispatch(actions.appendToMessageParams(message));
-    }
-    if (streamResult.usage) {
-      dispatch(actions.appendToMessageUsages(streamResult.usage));
-    }
-    dispatch(actions.appendToMessageParams(choice.message));
-
-    return streamResult;
   }
 
   rl.on("SIGINT", () => {
@@ -147,7 +169,10 @@ async function main() {
     currQuestionAbortController = null;
 
     if (!inputResult.ok) {
-      if (!isAbortError(inputResult.error)) throw inputResult.error;
+      if (!isAbortError(inputResult.error)) {
+        console.error(getMessageFromError(inputResult.error));
+        continue;
+      }
 
       dispatch(actions.setInterrupted(true));
       currQuestionAbortController = new AbortController();
@@ -203,7 +228,7 @@ async function main() {
       continue;
     }
 
-    const inputMessageParam: OpenAI.Chat.ChatCompletionUserMessageParam = {
+    const inputMessageParam: ModelMessage = {
       role: "user",
       content: inputResultValue,
     };
@@ -211,49 +236,56 @@ async function main() {
     const streamResult = await tryCatchAsync(callApi([inputMessageParam]));
 
     if (!streamResult.ok) {
-      if (streamResult.error instanceof OpenAI.APIUserAbortError) {
+      if (isAbortError(streamResult.error)) {
         colorLog("Aborted", "red");
         maybePrintUsageMessage();
         continue;
       } else {
-        throw streamResult.error;
+        console.error(getMessageFromError(streamResult.error));
+        continue;
       }
     }
 
-    // TODO: handle multiple choices?
-    let currentChoice = streamResult.value.choices[0];
-    while (currentChoice?.finish_reason === "tool_calls") {
-      const toolCalls = currentChoice.message.tool_calls ?? [];
-      const toolMessages: OpenAI.Chat.ChatCompletionToolMessageParam[] = [];
+    let currentResult = streamResult.value;
+    while (currentResult.finishReason === "tool-calls") {
+      const toolMessages: ToolMessage[] = [];
 
-      for (const toolCall of toolCalls) {
-        if (toolCall.type !== "function") continue;
+      for (const toolCall of currentResult.toolCalls) {
         const localToolCall: ToolCall = {
-          id: toolCall.id,
-          name: toolCall.function.name,
-          input: JSON.parse(toolCall.function.arguments) as unknown,
+          id: toolCall.toolCallId,
+          name: toolCall.toolName,
+          input: toolCall.input,
         };
         const toolResult = await getToolResultBlock(localToolCall);
         toolMessages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: toolResult.content,
+          type: "tool-result",
+          toolCallId: toolCall.toolCallId,
+          toolName: toolCall.toolName,
+          output: toolResult.is_error
+            ? { type: "error-text", value: toolResult.content }
+            : { type: "text", value: toolResult.content },
         });
       }
 
+      const toolMessage: ModelMessage = {
+        role: "tool",
+        content: toolMessages,
+      };
+
       const toolStreamResult = await tryCatchAsync(
-        callApi(toolMessages, { prependNewline: true }),
+        callApi([toolMessage], { prependNewline: true }),
       );
 
       if (toolStreamResult.ok) {
-        currentChoice = toolStreamResult.value.choices[0];
+        currentResult = toolStreamResult.value;
       } else {
-        if (toolStreamResult.error instanceof OpenAI.APIUserAbortError) {
+        if (isAbortError(toolStreamResult.error)) {
           colorLog("Aborted", "red");
           dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
           break;
         } else {
-          throw toolStreamResult.error;
+          console.error(getMessageFromError(toolStreamResult.error));
+          continue;
         }
       }
     }

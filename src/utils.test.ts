@@ -67,10 +67,10 @@ describe("utils", () => {
       assert.equal(result, "Session usage: $0.0000");
     });
 
-    it("returns unknown message for a model with no pricing configured", () => {
+    it("returns token counts for a model with no pricing configured", () => {
       const result = calculateSessionUsage("unknown-model", noUsages);
-      assert.ok(result.includes("unknown"));
-      assert.ok(result.includes("unknown-model"));
+      assert.ok(result.includes("0 in"));
+      assert.ok(result.includes("0 out"));
     });
 
     it("calculates prompt and completion token costs correctly", () => {

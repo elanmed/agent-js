@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.ts",
+    "start:debug": "AGENT_JS_DEBUG=true node src/index.ts",
     "test": "node --test 'src/**/*.test.ts'",
     "lint": "eslint src",
     "types": "tsc",
@@ -31,7 +32,9 @@
   },
   "type": "module",
   "dependencies": {
-    "openai": "^6.34.0",
+    "@ai-sdk/anthropic": "^3.0.68",
+    "@ai-sdk/openai-compatible": "^2.0.41",
+    "ai": "^6.0.156",
     "zod": "^4.3.6"
   }
 }
