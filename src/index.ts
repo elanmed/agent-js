@@ -63,6 +63,7 @@ async function main() {
   let currQuestionAbortController: AbortController | null = null;
   let currApiStream: AbortController | null = null;
 
+  // TODO: move out
   async function callApi(
     newMessages: ModelMessage[],
     { prependNewline }: { prependNewline: boolean } = { prependNewline: false },
@@ -247,7 +248,7 @@ async function main() {
         maybePrintUsageMessage();
         continue;
       } else {
-        console.error(getMessageFromError(streamResult.error));
+        colorLog(getMessageFromError(streamResult.error), "red");
         continue;
       }
     }
@@ -290,7 +291,7 @@ async function main() {
           dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
           break;
         } else {
-          console.error(getMessageFromError(toolStreamResult.error));
+          colorLog(getMessageFromError(toolStreamResult.error), "red");
           continue;
         }
       }
@@ -302,8 +303,8 @@ async function main() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch((err: unknown) => {
-    console.error(err);
+  main().catch((error: unknown) => {
+    colorLog(getMessageFromError(error), "red");
     process.exit(1);
   });
 }
