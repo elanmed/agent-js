@@ -1,44 +1,23 @@
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
-import { generateText } from "ai";
-import type { ModelMessage, ToolSet } from "ai";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { ModelMessage } from "ai";
 import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
   colorLog,
   debugLog,
   logNewline,
-  BASE_SYSTEM_PROMPT,
-  getRecursiveAgentsMdFilesStr,
   maybePrintUsageMessage,
   tryCatchAsync,
   getAvailableSlashCommands,
   readFromEditor,
-  executeBat,
   getMessageFromError,
 } from "./utils.ts";
-import { TOOLS, getToolResultBlock, type ToolCall } from "./tools.ts";
+import { getToolResultBlock, type ToolCall } from "./tools.ts";
 import { initStateFromConfig } from "./config.ts";
+import { callApi } from "./api.ts";
 import { join } from "node:path";
-
-function getLanguageModel() {
-  const provider = selectors.getProvider();
-  const modelName = selectors.getModel();
-  const apiKey = process.env["AGENT_JS_API_KEY"];
-
-  if (provider === "anthropic") {
-    return createAnthropic({ ...(apiKey && { apiKey }) })(modelName);
-  }
-
-  return createOpenAICompatible({
-    name: "openai-compatible",
-    baseURL: selectors.getBaseURL(),
-    ...(apiKey && { apiKey }),
-  })(modelName);
-}
 
 interface ToolMessage {
   type: "tool-result";
@@ -49,11 +28,6 @@ interface ToolMessage {
     | { type: "error-text"; value: string };
 }
 
-interface CallApiResult {
-  finishReason: string;
-  toolCalls: { toolCallId: string; toolName: string; input: unknown }[];
-}
-
 async function main() {
   initStateFromConfig();
   const availableSlashCommands = getAvailableSlashCommands();
@@ -62,89 +36,6 @@ async function main() {
 
   let currQuestionAbortController: AbortController | null = null;
   let currApiStream: AbortController | null = null;
-
-  // TODO: move out
-  async function callApi(
-    newMessages: ModelMessage[],
-    { prependNewline }: { prependNewline: boolean } = { prependNewline: false },
-  ): Promise<CallApiResult> {
-    const messageCount =
-      selectors.getMessageParams().length + newMessages.length;
-    debugLog(
-      `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
-    );
-
-    const spinnerFrames = ["|", "/", "-", "\\"];
-    let spinnerIdx = 0;
-    const spinnerInterval = setInterval(() => {
-      process.stdout.write(
-        `\r${String(spinnerFrames[spinnerIdx++ % spinnerFrames.length])}`,
-      );
-    }, 80);
-    let spinnerCleared = false;
-    const clearSpinner = () => {
-      if (spinnerCleared) return;
-      clearInterval(spinnerInterval);
-      process.stdout.write("\r \r");
-      spinnerCleared = true;
-    };
-
-    const systemContent = [
-      BASE_SYSTEM_PROMPT,
-      await getRecursiveAgentsMdFilesStr(),
-    ].join("\n");
-
-    const abortController = new AbortController();
-    currApiStream = abortController;
-
-    try {
-      const { text, finishReason, toolCalls, usage, response } =
-        await generateText({
-          model: getLanguageModel(),
-          system: systemContent,
-          messages: [...selectors.getMessageParams(), ...newMessages],
-          tools: TOOLS as unknown as ToolSet,
-          maxOutputTokens: 8192,
-          abortSignal: abortController.signal,
-        });
-
-      debugLog(
-        `callApi: finish_reason=${finishReason}, prompt_tokens=${String(usage.inputTokens)}, completion_tokens=${String(usage.outputTokens)}`,
-      );
-
-      clearSpinner();
-
-      if (text) {
-        if (prependNewline) process.stdout.write("\n");
-        await executeBat(text);
-      }
-
-      for (const message of newMessages) {
-        dispatch(actions.appendToMessageParams(message));
-      }
-      dispatch(
-        actions.appendToMessageUsages({
-          inputTokens: usage.inputTokens ?? 0,
-          outputTokens: usage.outputTokens ?? 0,
-        }),
-      );
-      for (const msg of response.messages) {
-        dispatch(actions.appendToMessageParams(msg));
-      }
-
-      return {
-        finishReason,
-        toolCalls: toolCalls.map((toolCall) => ({
-          toolCallId: toolCall.toolCallId,
-          toolName: toolCall.toolName,
-          input: toolCall.input,
-        })),
-      };
-    } finally {
-      clearSpinner();
-      currApiStream = null;
-    }
-  }
 
   rl.on("SIGINT", () => {
     if (currApiStream) {
@@ -240,7 +131,15 @@ async function main() {
       content: inputResultValue,
     };
     const messageCountBeforeTurn = selectors.getMessageParams().length;
-    const streamResult = await tryCatchAsync(callApi([inputMessageParam]));
+    currApiStream = new AbortController();
+    const streamResult = await tryCatchAsync(
+      callApi(
+        [inputMessageParam],
+        { prependNewline: false },
+        currApiStream.signal,
+      ),
+    );
+    currApiStream = null;
 
     if (!streamResult.ok) {
       if (isAbortError(streamResult.error)) {
@@ -279,9 +178,11 @@ async function main() {
         content: toolMessages,
       };
 
+      currApiStream = new AbortController();
       const toolStreamResult = await tryCatchAsync(
-        callApi([toolMessage], { prependNewline: true }),
+        callApi([toolMessage], { prependNewline: true }, currApiStream.signal),
       );
+      currApiStream = null;
 
       if (toolStreamResult.ok) {
         currentResult = toolStreamResult.value;
