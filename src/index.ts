@@ -243,7 +243,6 @@ async function main() {
       }
     }
 
-    logNewline();
     maybePrintUsageMessage();
   }
 }

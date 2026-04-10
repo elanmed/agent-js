@@ -128,7 +128,6 @@ export const BASE_SYSTEM_PROMPT =
 export function maybePrintUsageMessage() {
   if (selectors.getDisableUsageMessage()) return;
 
-  logNewline();
   colorLog(
     calculateSessionUsage(selectors.getModel(), selectors.getMessageUsages()),
     "green",
@@ -187,6 +186,7 @@ export async function executeBat(
     spawnBat?: (input: string) => Result<{ stdout: Buffer | string }>;
   } = {},
 ) {
+  content = content.trim().concat("\n");
   debugLog(`executeBat: content.length=${String(content.length)}`);
   const isBatAvailable = await checkBatFn();
   debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
