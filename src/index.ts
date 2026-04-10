@@ -43,6 +43,10 @@ async function main() {
 
     const questionAbortController = selectors.getQuestionAbortController();
     if (questionAbortController) {
+      if (rl.line.length > 0) {
+        rl.write(null, { ctrl: true, name: "u" });
+        return;
+      }
       questionAbortController.abort();
     }
 
@@ -55,9 +59,9 @@ async function main() {
 
   while (selectors.getRunning()) {
     dispatch(actions.setQuestionAbortController(new AbortController()));
-    const questionController = selectors.getQuestionAbortController();
+    const questionAbortController = selectors.getQuestionAbortController();
     const inputResult = await tryCatchAsync(
-      rl.question("> ", { signal: questionController!.signal }),
+      rl.question("> ", { signal: questionAbortController!.signal }),
     );
     dispatch(actions.setQuestionAbortController(null));
 
@@ -69,10 +73,11 @@ async function main() {
 
       dispatch(actions.setInterrupted(true));
       dispatch(actions.setQuestionAbortController(new AbortController()));
-      const exitQuestionController = selectors.getQuestionAbortController();
+      const exitQuestionAbortController =
+        selectors.getQuestionAbortController();
       const exitResult = await tryCatchAsync(
         rl.question("y(es) or <C-c> to exit: ", {
-          signal: exitQuestionController!.signal,
+          signal: exitQuestionAbortController!.signal,
         }),
       );
       dispatch(actions.setQuestionAbortController(null));
