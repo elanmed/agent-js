@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as readline from "node:readline/promises";
-import { stdin as input, stdout as output } from "node:process";
+import { emitKeypressEvents } from "node:readline";
+import { stdin, stdout } from "node:process";
 import { fileURLToPath } from "node:url";
 import type { ModelMessage } from "ai";
 import { actions, dispatch, selectors } from "./state.ts";
@@ -33,7 +34,35 @@ async function main() {
   initStateFromConfig();
   const availableSlashCommands = getAvailableSlashCommands();
 
-  const rl = readline.createInterface({ input, output });
+  const rl = readline.createInterface({
+    input: stdin,
+    output: stdout,
+    terminal: true,
+  });
+
+  if (stdin.isTTY) {
+    stdin.setRawMode(true);
+  }
+
+  process.on("exit", () => {
+    if (stdin.isTTY) {
+      stdin.setRawMode(false);
+    }
+  });
+
+  emitKeypressEvents(stdin, rl);
+
+  stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
+    debugLog(JSON.stringify(key, null, 2));
+    if (key.ctrl && key.name === "e") {
+      const editorContent = readFromEditor(rl.line);
+      if (editorContent) {
+        rl.write(null, { ctrl: true, name: "e" });
+        rl.write(null, { ctrl: true, name: "u" });
+        rl.write(editorContent);
+      }
+    }
+  });
 
   rl.on("SIGINT", () => {
     const apiStream = selectors.getApiStreamAbortController();
@@ -44,6 +73,7 @@ async function main() {
     const questionAbortController = selectors.getQuestionAbortController();
     if (questionAbortController) {
       if (rl.line.length > 0) {
+        rl.write(null, { ctrl: true, name: "e" });
         rl.write(null, { ctrl: true, name: "u" });
         return;
       }
@@ -100,9 +130,7 @@ async function main() {
     let inputResultValue = inputResult.value;
     if (inputResult.value.at(0) === "/") {
       const commandWithoutSlash = inputResult.value.slice(1);
-      if (commandWithoutSlash === "e") {
-        inputResultValue = readFromEditor();
-      } else if (commandWithoutSlash === "clear") {
+      if (commandWithoutSlash === "clear") {
         dispatch(actions.resetMessageUsages());
         dispatch(actions.resetMessageParams());
         debugLog("Reset message usages and message params");

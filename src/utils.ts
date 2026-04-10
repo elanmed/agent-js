@@ -143,10 +143,10 @@ export function getAvailableSlashCommands() {
   return files.map((file) => parse(file).name);
 }
 
-export function readFromEditor() {
+export function readFromEditor(currentLine: string) {
   const tempFile = join(tmpdir(), `agent-js-${String(Date.now())}.txt`);
   const editor = process.env["EDITOR"] ?? "vi";
-  fs.writeFileSync(tempFile, "");
+  fs.writeFileSync(tempFile, currentLine);
   spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
   const content = fs.readFileSync(tempFile).toString();
   fs.unlinkSync(tempFile);
