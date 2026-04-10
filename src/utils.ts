@@ -145,13 +145,14 @@ export function getAvailableSlashCommands() {
 
 export function readFromEditor(currentLine: string) {
   const tempFile = join(tmpdir(), `agent-js-${String(Date.now())}.txt`);
-  const editor = process.env["EDITOR"] ?? "vi";
+  const editor =
+    process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
   fs.writeFileSync(tempFile, currentLine);
   spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
   const content = fs.readFileSync(tempFile).toString();
   fs.unlinkSync(tempFile);
 
-  return content.trim();
+  return content.trim().concat("\n");
 }
 
 async function checkBat(): Promise<boolean> {

@@ -156,6 +156,14 @@ describe("state", () => {
     dispatch(actions.setApiStreamAbortController(null));
     assert.equal(getState().abortControllers.apiStream, null);
   });
+
+  it("set-editor-input-value", () => {
+    dispatch(actions.setEditorInputValue("test content"));
+    assert.equal(getState().appState.editorInputValue, "test content");
+
+    dispatch(actions.setEditorInputValue(null));
+    assert.equal(getState().appState.editorInputValue, null);
+  });
 });
 
 describe("selectors", () => {
@@ -233,5 +241,13 @@ describe("selectors", () => {
     assert.ok(selectors.getApiStreamAbortController() instanceof AbortController);
     dispatch(actions.setApiStreamAbortController(null));
     assert.equal(selectors.getApiStreamAbortController(), null);
+  });
+
+  it("getEditorInputValue", () => {
+    assert.equal(selectors.getEditorInputValue(), null);
+    dispatch(actions.setEditorInputValue("editor content"));
+    assert.equal(selectors.getEditorInputValue(), "editor content");
+    dispatch(actions.setEditorInputValue(null));
+    assert.equal(selectors.getEditorInputValue(), null);
   });
 });

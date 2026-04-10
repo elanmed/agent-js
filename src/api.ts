@@ -40,11 +40,9 @@ export interface CallApiResult {
 
 export async function callApi(
   newMessages: ModelMessage[],
-  { prependNewline }: { prependNewline: boolean } = { prependNewline: false },
   abortSignal?: AbortSignal,
 ): Promise<CallApiResult> {
-  const messageCount =
-    selectors.getMessageParams().length + newMessages.length;
+  const messageCount = selectors.getMessageParams().length + newMessages.length;
   debugLog(
     `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
   );
@@ -87,7 +85,6 @@ export async function callApi(
     clearSpinner();
 
     if (text) {
-      if (prependNewline) process.stdout.write("\n");
       await executeBat(text);
     }
 

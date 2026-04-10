@@ -59,7 +59,12 @@ async function main() {
       if (editorContent) {
         rl.write(null, { ctrl: true, name: "e" });
         rl.write(null, { ctrl: true, name: "u" });
-        rl.write(editorContent);
+        rl.write("[editor]");
+        dispatch(actions.setEditorInputValue(editorContent));
+        const questionAbortController = selectors.getQuestionAbortController();
+        if (questionAbortController) {
+          questionAbortController.abort();
+        }
       }
     }
   });
@@ -95,41 +100,48 @@ async function main() {
     );
     dispatch(actions.setQuestionAbortController(null));
 
+    let inputResultValue: string;
     if (!inputResult.ok) {
       if (!isAbortError(inputResult.error)) {
         console.error(getMessageFromError(inputResult.error));
         continue;
       }
 
-      dispatch(actions.setInterrupted(true));
-      dispatch(actions.setQuestionAbortController(new AbortController()));
-      const exitQuestionAbortController =
-        selectors.getQuestionAbortController();
-      const exitResult = await tryCatchAsync(
-        rl.question("y(es) or <C-c> to exit: ", {
-          signal: exitQuestionAbortController!.signal,
-        }),
-      );
-      dispatch(actions.setQuestionAbortController(null));
-
-      if (exitResult.ok) {
-        if (/^y(es)?$/i.exec(exitResult.value)) {
-          debugLog("user confirmed exit");
-          dispatch(actions.setRunning(false));
-          rl.close();
-        }
+      const editorInputValue = selectors.getEditorInputValue();
+      if (editorInputValue !== null) {
+        dispatch(actions.setEditorInputValue(null));
+        inputResultValue = editorInputValue;
       } else {
-        // second <C-c> during confirmation is already handled by SIGINT
+        dispatch(actions.setInterrupted(true));
+        dispatch(actions.setQuestionAbortController(new AbortController()));
+        const exitQuestionAbortController =
+          selectors.getQuestionAbortController();
+        const exitResult = await tryCatchAsync(
+          rl.question("y(es) or <C-c> to exit: ", {
+            signal: exitQuestionAbortController!.signal,
+          }),
+        );
+        dispatch(actions.setQuestionAbortController(null));
+
+        if (exitResult.ok) {
+          if (/^y(es)?$/i.exec(exitResult.value)) {
+            debugLog("user confirmed exit");
+            dispatch(actions.setRunning(false));
+            rl.close();
+          }
+        } else {
+          // second <C-c> during confirmation is already handled by SIGINT
+        }
+
+        dispatch(actions.setInterrupted(false));
+        continue;
       }
-
-      dispatch(actions.setInterrupted(false));
-      continue;
+    } else {
+      inputResultValue = inputResult.value;
     }
-    logNewline();
 
-    let inputResultValue = inputResult.value;
-    if (inputResult.value.at(0) === "/") {
-      const commandWithoutSlash = inputResult.value.slice(1);
+    if (inputResultValue.at(0) === "/") {
+      const commandWithoutSlash = inputResultValue.slice(1);
       if (commandWithoutSlash === "clear") {
         dispatch(actions.resetMessageUsages());
         dispatch(actions.resetMessageParams());
@@ -137,12 +149,12 @@ async function main() {
         colorLog("Context cleared", "grey");
         continue;
       } else if (availableSlashCommands.includes(commandWithoutSlash)) {
-        colorLog(`Executing slash command: ${inputResult.value}`, "grey");
+        colorLog(`Executing slash command: ${inputResultValue}`, "grey");
         const path = join(
           process.cwd(),
           ".agent-js",
           "commands",
-          inputResult.value.slice(1).concat(".md"),
+          inputResultValue.slice(1).concat(".md"),
         );
         debugLog(`Performing the slash command at ${path}`);
         inputResultValue = `Perform the instructions located at ${path}`;
@@ -169,11 +181,7 @@ async function main() {
     dispatch(actions.setApiStreamAbortController(new AbortController()));
     const apiStreamController = selectors.getApiStreamAbortController();
     const streamResult = await tryCatchAsync(
-      callApi(
-        [inputMessageParam],
-        { prependNewline: false },
-        apiStreamController!.signal,
-      ),
+      callApi([inputMessageParam], apiStreamController!.signal),
     );
     dispatch(actions.setApiStreamAbortController(null));
 
@@ -217,11 +225,7 @@ async function main() {
       dispatch(actions.setApiStreamAbortController(new AbortController()));
       const toolApiStreamController = selectors.getApiStreamAbortController();
       const toolStreamResult = await tryCatchAsync(
-        callApi(
-          [toolMessage],
-          { prependNewline: true },
-          toolApiStreamController!.signal,
-        ),
+        callApi([toolMessage], toolApiStreamController!.signal),
       );
       dispatch(actions.setApiStreamAbortController(null));
 

@@ -73,3 +73,4 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 - [ ] Prefill the editor with the current input when opening
 - [ ] More accurate diffs specific to changes
 - [ ] MCP server
+- [ ] Better newline management

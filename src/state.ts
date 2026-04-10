@@ -11,6 +11,7 @@ interface State {
     running: boolean;
     messageParams: ModelMessage[];
     messageUsages: TokenUsage[];
+    editorInputValue: string | null;
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -32,6 +33,7 @@ const initialState: State = {
     running: true,
     messageParams: [],
     messageUsages: [],
+    editorInputValue: null,
   },
   configState: {
     model: MISSING,
@@ -113,6 +115,10 @@ type Action =
   | {
       type: "set-api-stream-abort-controller";
       payload: AbortController | null;
+    }
+  | {
+      type: "set-editor-input-value";
+      payload: string | null;
     };
 
 export const dispatch = (action: Action) => {
@@ -230,6 +236,15 @@ const reducer = (state: State, action: Action): State => {
         },
       };
     }
+    case "set-editor-input-value": {
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          editorInputValue: action.payload,
+        },
+      };
+    }
   }
 };
 
@@ -309,6 +324,10 @@ const setApiStreamAbortController = (
   return { type: "set-api-stream-abort-controller", payload: controller };
 };
 
+const setEditorInputValue = (value: string | null): Action => {
+  return { type: "set-editor-input-value", payload: value };
+};
+
 export const actions = {
   setInterrupted,
   setRunning,
@@ -325,12 +344,14 @@ export const actions = {
   resetMessageParams,
   setQuestionAbortController,
   setApiStreamAbortController,
+  setEditorInputValue,
 };
 
 const getInterrupted = () => getState().appState.interrupted;
 const getRunning = () => getState().appState.running;
 const getMessageParams = () => getState().appState.messageParams;
 const getMessageUsages = () => getState().appState.messageUsages;
+const getEditorInputValue = () => getState().appState.editorInputValue;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -353,4 +374,5 @@ export const selectors = {
   getDiffStyle,
   getQuestionAbortController,
   getApiStreamAbortController,
+  getEditorInputValue,
 };
