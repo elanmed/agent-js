@@ -1,26 +1,63 @@
 # `agent-js`
 
-A minimal agent implementation for working with claude (my mini claude code)
+A minimal agent implementation for working with LLMs (my own mini claude code)
 
 ![demo](https://elanmed.dev/nvim-plugins/agent-js.png)
 
 ## Features
 
-- **Minimal deps**: 3 packages [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk), [`zod`](https://www.npmjs.com/package/zod)
-- **Strict TypeScript**: all the strictest `tsconfig`, `eslint` settings
-  - Note to future self: probably not worth it
 - **Tools**: execute bash commands, create/edit files, etc. A `git diff` is output when a tool changes a file
-- **Rendering with `bat`**: responses are parsed and rendered as markdown
-- **Configurable**: global and local settings to pick your model, track costs
-- **Recursive AGENTS.md discovery**: automatically includes project context
-- **Slash commands**: trigger a command defined in `./.agent-js/commands/command.md` with `/command`
-  - Builtin `/e` to open your editor and send multi-line content to the LLM
+- **Multiple providers**: Anthropic or OpenAI-compatible APIs
+- **Configuration**: global and local `settings.json`
+- **Cost tracking**: per-model token pricing with usage summary after each response
+- **AGENTS.md discovery**: recursively includes project context from `AGENTS.md` files
+- **Slash commands**: builtin (`/e`, `/clear`) and custom commands from `./.agent-js/commands/`
+- **Rendering**: responses piped through `bat` for markdown formatting
 
 ## Configuration
 
 Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/settings.json` (local overrides)
 
-The global `settings.json` is written if it doesn't exist - see it for configurable options
+### Config Options
+
+| Option                | Type                                   | Description                                              |
+| --------------------- | -------------------------------------- | -------------------------------------------------------- |
+| `model`               | string                                 | Model name (required)                                    |
+| `provider`            | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)              |
+| `baseURL`             | string                                 | API base URL (required for `openai-compatible`)          |
+| `diffStyle`           | `"unified"` \| `"lines"`               | Git diff output style (default: `unified`)               |
+| `disableUsageMessage` | boolean                                | Hide token usage/cost after responses (default: `false`) |
+| `pricingPerModel`     | object                                 | Token pricing per model per million                      |
+
+Example `settings.json`:
+
+```json
+{
+  "model": "claude-sonnet-4-6",
+  "provider": "anthropic",
+  "diffStyle": "lines",
+  "disableUsageMessage": false,
+  "pricingPerModel": {
+    "my-custom-model": {
+      "inputPerToken": 2.5,
+      "outputPerToken": 10
+    }
+  }
+}
+```
+
+## Builtin Slash Commands
+
+Slash commands are triggered with `/command` at the prompt.
+
+| Command  | Description                                          |
+| -------- | ---------------------------------------------------- |
+| `/e`     | Open `$EDITOR` to compose multi-line messages        |
+| `/clear` | Clear conversation context and reset message history |
+
+### Custom Slash Commands
+
+Create custom commands by adding markdown files to `./.agent-js/commands/[command].md`
 
 ## Tools
 
@@ -35,5 +72,5 @@ The global `settings.json` is written if it doesn't exist - see it for configura
 - [ ] Queue messages with an editor
 - [ ] Prefill the editor with the current input when opening
 - [ ] Gracefully handle unknown errors
-- [ ] Swap over to `ai` and `@ai-sdk/openai-compatible` and `@ai-sdk/anthropic`
 - [ ] More accurate diffs specific to changes
+- [ ] MCP server
