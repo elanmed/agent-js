@@ -11,7 +11,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Configuration**: global and local `settings.json`
 - **Cost tracking**: per-model token pricing with usage summary after each response
 - **AGENTS.md discovery**: recursively includes project context from `AGENTS.md` files
-- **Slash commands**: builtin (`/e`, `/clear`) and custom commands from `./.agent-js/commands/`
+- **Slash commands**: builtin (`/edit`, `/clear`) and custom commands from `./.agent-js/commands/`
 - **Rendering**: responses piped through `bat` for markdown formatting
 
 ## Configuration
@@ -50,10 +50,10 @@ Example `settings.json`:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command  | Description                                          |
-| -------- | ---------------------------------------------------- |
-| `/e`     | Open `$EDITOR` to compose multi-line messages        |
-| `/clear` | Clear conversation context and reset message history |
+| Command  | Description                                             |
+| -------- | ------------------------------------------------------- |
+| `/edit`  | Open `$EDITOR` with empty input for multi-line messages |
+| `/clear` | Clear conversation context and reset message history    |
 
 ### Custom Slash Commands
 
