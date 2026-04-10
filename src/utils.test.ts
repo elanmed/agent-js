@@ -7,6 +7,7 @@ import {
   tryCatchAsync,
   calculateSessionUsage,
   executeBat,
+  normalizeLine,
   type TokenUsage,
 } from "./utils.ts";
 
@@ -112,6 +113,28 @@ describe("utils", () => {
       assert.equal(result, "Session usage: $3.5000");
     });
   });
+
+  describe("normalizeLine", () => {
+    it("trims whitespace and appends newline", () => {
+      assert.equal(normalizeLine("  hello  "), "hello\n");
+    });
+
+    it("trims leading whitespace", () => {
+      assert.equal(normalizeLine("\t\tcontent"), "content\n");
+    });
+
+    it("trims trailing whitespace", () => {
+      assert.equal(normalizeLine("content\n\n"), "content\n");
+    });
+
+    it("handles empty string", () => {
+      assert.equal(normalizeLine(""), "\n");
+    });
+
+    it("handles already normalized string", () => {
+      assert.equal(normalizeLine("already\n"), "already\n");
+    });
+  });
 });
 
 describe("executeBat", () => {
@@ -150,7 +173,7 @@ describe("executeBat", () => {
       },
     });
 
-    assert.equal(written.at(-1), "hello world");
+    assert.equal(written.at(-1), "hello world\n");
   });
 
   it("falls back to plain text when bat spawn fails", async () => {
@@ -159,6 +182,6 @@ describe("executeBat", () => {
       spawnBat: () => ({ ok: false, error: new Error("spawn failed") }),
     });
 
-    assert.deepEqual(written, ["some content"]);
+    assert.deepEqual(written, ["some content\n"]);
   });
 });

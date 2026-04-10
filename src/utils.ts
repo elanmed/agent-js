@@ -81,6 +81,10 @@ export function logNewline(repeat = 1) {
   for (let i = 0; i < repeat; i++) console.log("");
 }
 
+export function normalizeLine(content: string): string {
+  return content.trim().concat("\n");
+}
+
 export interface ModelPricing {
   inputPerToken: number;
   outputPerToken: number;
@@ -151,7 +155,7 @@ export function readFromEditor(currentLine: string) {
   const content = fs.readFileSync(tempFile).toString();
   fs.unlinkSync(tempFile);
 
-  return content.trim().concat("\n");
+  return normalizeLine(content);
 }
 
 async function checkBat(): Promise<boolean> {
@@ -186,7 +190,7 @@ export async function executeBat(
     spawnBat?: (input: string) => Result<{ stdout: Buffer | string }>;
   } = {},
 ) {
-  content = content.trim().concat("\n");
+  content = normalizeLine(content);
   debugLog(`executeBat: content.length=${String(content.length)}`);
   const isBatAvailable = await checkBatFn();
   debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
