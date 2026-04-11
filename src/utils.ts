@@ -89,11 +89,15 @@ export function normalizeLine(content: string): string {
 export interface ModelPricing {
   inputPerToken: number;
   outputPerToken: number;
+  cacheReadPerToken: number;
+  cacheWritePerToken: number;
 }
 
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
 }
 
 export function calculateSessionUsage(
@@ -103,12 +107,16 @@ export function calculateSessionUsage(
   const totalUsage = usages.reduce<{
     inputTokens: number;
     outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
   }>(
     (accum, curr) => ({
       inputTokens: accum.inputTokens + curr.inputTokens,
       outputTokens: accum.outputTokens + curr.outputTokens,
+      cacheReadTokens: accum.cacheReadTokens + curr.cacheReadTokens,
+      cacheWriteTokens: accum.cacheWriteTokens + curr.cacheWriteTokens,
     }),
-    { inputTokens: 0, outputTokens: 0 },
+    { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
   );
 
   const pricing = selectors.getPricingPerModel()[model];
@@ -117,13 +125,18 @@ export function calculateSessionUsage(
   }
 
   const DOLLARS_PER_MILLION = 1_000_000;
-  const { inputPerToken, outputPerToken } = pricing;
+  const { inputPerToken, outputPerToken, cacheReadPerToken, cacheWritePerToken } =
+    pricing;
   const inputCost =
     (totalUsage.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
   const outputCost =
     (totalUsage.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
+  const cacheReadCost =
+    (totalUsage.cacheReadTokens * cacheReadPerToken) / DOLLARS_PER_MILLION;
+  const cacheWriteCost =
+    (totalUsage.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
 
-  const cost = inputCost + outputCost;
+  const cost = inputCost + outputCost + cacheReadCost + cacheWriteCost;
   return `Session usage: $${cost.toFixed(4)}`;
 }
 

@@ -1,16 +1,43 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
   isAbortError,
   tryCatch,
   tryCatchAsync,
   calculateSessionUsage,
-  executeBat,
   normalizeLine,
   getMessageFromError,
   type TokenUsage,
 } from "./utils.ts";
+import { resetState, dispatch, actions } from "./state.ts";
+
+beforeEach(() => {
+  resetState();
+  // Set up custom pricing for testing
+  dispatch(
+    actions.setPricingPerModel({
+      "claude-haiku-4-5": {
+        inputPerToken: 1,
+        outputPerToken: 5,
+        cacheReadPerToken: 0.25,
+        cacheWritePerToken: 1.25,
+      },
+      "claude-sonnet-4-6": {
+        inputPerToken: 3,
+        outputPerToken: 15,
+        cacheReadPerToken: 0.75,
+        cacheWritePerToken: 3.75,
+      },
+      "claude-opus-4-6": {
+        inputPerToken: 5,
+        outputPerToken: 25,
+        cacheReadPerToken: 1.25,
+        cacheWritePerToken: 6.25,
+      },
+    }),
+  );
+});
 
 describe("utils", () => {
   describe("getMessageFromError", () => {
@@ -94,7 +121,12 @@ describe("utils", () => {
       // haiku: input=$1/M, output=$5/M
       // 1_000_000 prompt + 1_000_000 completion = $1 + $5 = $6.0000
       const result = calculateSessionUsage("claude-haiku-4-5", [
-        { inputTokens: 1_000_000, outputTokens: 1_000_000 },
+        {
+          inputTokens: 1_000_000,
+          outputTokens: 1_000_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
       ]);
       assert.equal(result, "Session usage: $6.0000");
     });
@@ -103,7 +135,12 @@ describe("utils", () => {
       // sonnet: input=$3/M, output=$15/M
       // 1_000_000 prompt + 1_000_000 completion = $3 + $15 = $18.0000
       const result = calculateSessionUsage("claude-sonnet-4-6", [
-        { inputTokens: 1_000_000, outputTokens: 1_000_000 },
+        {
+          inputTokens: 1_000_000,
+          outputTokens: 1_000_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
       ]);
       assert.equal(result, "Session usage: $18.0000");
     });
@@ -112,7 +149,12 @@ describe("utils", () => {
       // opus: input=$5/M, output=$25/M
       // 1_000_000 prompt + 1_000_000 completion = $5 + $25 = $30.0000
       const result = calculateSessionUsage("claude-opus-4-6", [
-        { inputTokens: 1_000_000, outputTokens: 1_000_000 },
+        {
+          inputTokens: 1_000_000,
+          outputTokens: 1_000_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
       ]);
       assert.equal(result, "Session usage: $30.0000");
     });
@@ -123,10 +165,85 @@ describe("utils", () => {
       // usage2: 500_000 prompt + 300_000 completion = $0.50 + $1.50 = $2.00
       // total = $3.50
       const result = calculateSessionUsage("claude-haiku-4-5", [
-        { inputTokens: 500_000, outputTokens: 200_000 },
-        { inputTokens: 500_000, outputTokens: 300_000 },
+        {
+          inputTokens: 500_000,
+          outputTokens: 200_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+        {
+          inputTokens: 500_000,
+          outputTokens: 300_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
       ]);
       assert.equal(result, "Session usage: $3.5000");
+    });
+
+    it("calculates cache read token costs correctly", () => {
+      // haiku: cacheRead=$0.25/M
+      // 1_000_000 cache read tokens = $0.25
+      const result = calculateSessionUsage("claude-haiku-4-5", [
+        {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 1_000_000,
+          cacheWriteTokens: 0,
+        },
+      ]);
+      assert.equal(result, "Session usage: $0.2500");
+    });
+
+    it("calculates cache write token costs correctly", () => {
+      // haiku: cacheWrite=$1.25/M
+      // 1_000_000 cache write tokens = $1.25
+      const result = calculateSessionUsage("claude-haiku-4-5", [
+        {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 1_000_000,
+        },
+      ]);
+      assert.equal(result, "Session usage: $1.2500");
+    });
+
+    it("calculates combined input, output, and cache costs correctly", () => {
+      // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
+      // 500_000 input + 200_000 output + 300_000 cacheRead + 100_000 cacheWrite
+      // = $0.50 + $1.00 + $0.075 + $0.125 = $1.70
+      const result = calculateSessionUsage("claude-haiku-4-5", [
+        {
+          inputTokens: 500_000,
+          outputTokens: 200_000,
+          cacheReadTokens: 300_000,
+          cacheWriteTokens: 100_000,
+        },
+      ]);
+      assert.equal(result, "Session usage: $1.7000");
+    });
+
+    it("accumulates cache costs across multiple usages", () => {
+      // haiku: cacheRead=$0.25/M, cacheWrite=$1.25/M
+      // usage1: 500_000 cacheRead + 200_000 cacheWrite = $0.125 + $0.25 = $0.375
+      // usage2: 500_000 cacheRead + 300_000 cacheWrite = $0.125 + $0.375 = $0.50
+      // total = $0.875
+      const result = calculateSessionUsage("claude-haiku-4-5", [
+        {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 500_000,
+          cacheWriteTokens: 200_000,
+        },
+        {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 500_000,
+          cacheWriteTokens: 300_000,
+        },
+      ]);
+      assert.equal(result, "Session usage: $0.8750");
     });
   });
 

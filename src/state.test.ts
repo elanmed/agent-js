@@ -88,8 +88,18 @@ describe("state", () => {
   });
 
   it("append-to-message-usages", () => {
-    const usage1: TokenUsage = { inputTokens: 10, outputTokens: 5 };
-    const usage2: TokenUsage = { inputTokens: 20, outputTokens: 8 };
+    const usage1: TokenUsage = {
+      inputTokens: 10,
+      outputTokens: 5,
+      cacheReadTokens: 2,
+      cacheWriteTokens: 1,
+    };
+    const usage2: TokenUsage = {
+      inputTokens: 20,
+      outputTokens: 8,
+      cacheReadTokens: 4,
+      cacheWriteTokens: 2,
+    };
 
     dispatch(actions.appendToMessageUsages(usage1));
     dispatch(actions.appendToMessageUsages(usage2));
@@ -126,7 +136,12 @@ describe("state", () => {
 
   it("set-pricing-per-model", () => {
     const newPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-    newPricing["claude-opus-4-6"]!.inputPerToken = 999;
+    newPricing["test-model"] = {
+      inputPerToken: 999,
+      outputPerToken: 0,
+      cacheReadPerToken: 0,
+      cacheWritePerToken: 0,
+    };
     dispatch(actions.setPricingPerModel(newPricing));
     assert.deepEqual(getState().configState.pricingPerModel, newPricing);
   });
@@ -195,7 +210,12 @@ describe("selectors", () => {
 
   it("getMessageUsages", () => {
     assert.deepEqual(selectors.getMessageUsages(), []);
-    const usage: TokenUsage = { inputTokens: 1, outputTokens: 2 };
+    const usage: TokenUsage = {
+      inputTokens: 1,
+      outputTokens: 2,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    };
     dispatch(actions.appendToMessageUsages(usage));
     assert.deepEqual(selectors.getMessageUsages(), [usage]);
   });
@@ -224,7 +244,12 @@ describe("selectors", () => {
       DEFAULT_CONFIG.pricingPerModel,
     );
     const newPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-    newPricing["claude-sonnet-4-6"]!.outputPerToken = 42;
+    newPricing["test-model"] = {
+      inputPerToken: 0,
+      outputPerToken: 42,
+      cacheReadPerToken: 0,
+      cacheWritePerToken: 0,
+    };
     dispatch(actions.setPricingPerModel(newPricing));
     assert.deepEqual(selectors.getPricingPerModel(), newPricing);
   });

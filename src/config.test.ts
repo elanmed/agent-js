@@ -144,17 +144,20 @@ describe("initStateFromConfig", () => {
 
     it("uses its pricingPerModel over the global config, default config", () => {
       const localPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-      const localOpusPricing = localPricing["claude-opus-4-6"];
-      assert.ok(localOpusPricing);
-      localOpusPricing.inputPerToken = 999;
+      localPricing["test-model"] = {
+        inputPerToken: 999,
+        outputPerToken: 0,
+        cacheReadPerToken: 0,
+        cacheWritePerToken: 0,
+      };
 
       fsState.globalContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "test-model",
         baseURL: "https://api.example.com",
         pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
       });
       fsState.localContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "test-model",
         baseURL: "https://api.example.com",
         pricingPerModel: localPricing,
       });
@@ -212,11 +215,14 @@ describe("initStateFromConfig", () => {
 
       it("uses its pricingPerModel over the default config", () => {
         const globalPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-        const globalOpusPricing = globalPricing["claude-opus-4-6"];
-        assert.ok(globalOpusPricing);
-        globalOpusPricing.inputPerToken = 999;
+        globalPricing["test-model"] = {
+          inputPerToken: 999,
+          outputPerToken: 0,
+          cacheReadPerToken: 0,
+          cacheWritePerToken: 0,
+        };
         fsState.globalContent = JSON.stringify({
-          model: "claude-sonnet-4-6",
+          model: "test-model",
           baseURL: "https://api.example.com",
           pricingPerModel: globalPricing,
         });

@@ -12,6 +12,8 @@ const ModelPricingSchema = z
   .object({
     inputPerToken: z.number(),
     outputPerToken: z.number(),
+    cacheReadPerToken: z.number(),
+    cacheWritePerToken: z.number(),
   })
   .strict();
 
@@ -34,7 +36,12 @@ interface DefaultConfig {
   diffStyle: "unified" | "lines";
   pricingPerModel: Record<
     string,
-    { inputPerToken: number; outputPerToken: number }
+    {
+      inputPerToken: number;
+      outputPerToken: number;
+      cacheReadPerToken: number;
+      cacheWritePerToken: number;
+    }
   >;
 }
 
@@ -45,9 +52,12 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   disableUsageMessage: false,
   diffStyle: "lines",
   pricingPerModel: {
-    "claude-opus-4-6": { inputPerToken: 5, outputPerToken: 25 },
-    "claude-sonnet-4-6": { inputPerToken: 3, outputPerToken: 15 },
-    "claude-haiku-4-5": { inputPerToken: 1, outputPerToken: 5 },
+    MISSING: {
+      inputPerToken: 0,
+      outputPerToken: 0,
+      cacheReadPerToken: 0,
+      cacheWritePerToken: 0,
+    },
   },
 };
 
