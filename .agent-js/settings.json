@@ -1,5 +1,6 @@
 {
   "model": "kimi-k2.5",
-  "baseURL": "https://opencode.ai/zen/go/v1"
+  "baseURL": "https://opencode.ai/zen/go/v1",
+  "diffStyle": "lines"
 }
 

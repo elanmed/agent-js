@@ -139,6 +139,14 @@ describe("state", () => {
     assert.equal(getState().configState.disableUsageMessage, false);
   });
 
+  it("set-diff-style", () => {
+    dispatch(actions.setDiffStyle("lines"));
+    assert.equal(getState().configState.diffStyle, "lines");
+
+    dispatch(actions.setDiffStyle("unified"));
+    assert.equal(getState().configState.diffStyle, "unified");
+  });
+
   it("set-question-abort-controller", () => {
     const controller = new AbortController();
     dispatch(actions.setQuestionAbortController(controller));
@@ -225,6 +233,12 @@ describe("selectors", () => {
     assert.equal(selectors.getDisableUsageMessage(), false);
     dispatch(actions.setDisableUsageMessage(true));
     assert.equal(selectors.getDisableUsageMessage(), true);
+  });
+
+  it("getDiffStyle", () => {
+    assert.equal(selectors.getDiffStyle(), DEFAULT_CONFIG.diffStyle);
+    dispatch(actions.setDiffStyle("lines"));
+    assert.equal(selectors.getDiffStyle(), "lines");
   });
 
   it("getQuestionAbortController", () => {

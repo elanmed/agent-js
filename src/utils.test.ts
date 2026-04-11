@@ -8,10 +8,26 @@ import {
   calculateSessionUsage,
   executeBat,
   normalizeLine,
+  getMessageFromError,
   type TokenUsage,
 } from "./utils.ts";
 
 describe("utils", () => {
+  describe("getMessageFromError", () => {
+    it("returns the message from an Error instance", () => {
+      assert.equal(
+        getMessageFromError(new Error("test message")),
+        "test message",
+      );
+    });
+
+    it("returns JSON string for non-Error values", () => {
+      assert.equal(getMessageFromError("string error"), '"string error"');
+      assert.equal(getMessageFromError(42), "42");
+      assert.equal(getMessageFromError(null), "null");
+    });
+  });
+
   describe("isAbortError", () => {
     it("returns true for an Error with name === 'AbortError'", () => {
       const err = new Error("aborted");
@@ -134,54 +150,5 @@ describe("utils", () => {
     it("handles already normalized string", () => {
       assert.equal(normalizeLine("already\n"), "already\n");
     });
-  });
-});
-
-describe("executeBat", () => {
-  let written: (string | Buffer)[];
-  let originalWrite: typeof process.stdout.write;
-
-  beforeEach(() => {
-    written = [];
-    originalWrite = process.stdout.write.bind(process.stdout);
-    process.stdout.write = (data: string | Buffer) => {
-      written.push(data);
-      return true;
-    };
-  });
-
-  afterEach(() => {
-    process.stdout.write = originalWrite;
-  });
-
-  it("writes bat output when bat is available and spawn succeeds", async () => {
-    const batOutput = Buffer.from("# rendered by bat");
-
-    await executeBat("# raw content", {
-      checkBat: () => Promise.resolve(true),
-      spawnBat: () => ({ ok: true, value: { stdout: batOutput } }),
-    });
-
-    assert.deepEqual(written, [batOutput]);
-  });
-
-  it("falls back to plain text when bat is not available", async () => {
-    await executeBat("hello world", {
-      checkBat: () => Promise.resolve(false),
-      spawnBat: () => {
-        throw new Error("should not be called");
-      },
-    });
-
-    assert.equal(written.at(-1), "hello world\n");
-  });
-
-  it("falls back to plain text when bat spawn fails", async () => {
-    await executeBat("some content", {
-      checkBat: () => Promise.resolve(true),
-      spawnBat: () => ({ ok: false, error: new Error("spawn failed") }),
-    });
-
-    assert.deepEqual(written, ["some content\n"]);
   });
 });

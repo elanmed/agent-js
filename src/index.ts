@@ -9,7 +9,6 @@ import {
   isAbortError,
   colorLog,
   debugLog,
-  logNewline,
   maybePrintUsageMessage,
   tryCatchAsync,
   getAvailableSlashCommands,

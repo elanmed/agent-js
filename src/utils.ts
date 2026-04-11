@@ -149,7 +149,7 @@ export function getAvailableSlashCommands() {
 }
 
 export function readFromEditor(currentLine: string) {
-  const tempFile = join(tmpdir(), `agent-js-editor-${randomUUID()}.txt`);
+  const tempFile = createTempFile();
   const editor =
     process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
   fs.writeFileSync(tempFile, currentLine);
@@ -182,19 +182,10 @@ function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
   );
 }
 
-export async function executeBat(
-  content: string,
-  {
-    checkBat: checkBatFn = checkBat,
-    spawnBat: spawnBatFn = spawnBat,
-  }: {
-    checkBat?: () => Promise<boolean>;
-    spawnBat?: (input: string) => Result<{ stdout: Buffer | string }>;
-  } = {},
-) {
+export async function executeBat(content: string) {
   content = normalizeLine(content);
   debugLog(`executeBat: content.length=${String(content.length)}`);
-  const isBatAvailable = await checkBatFn();
+  const isBatAvailable = await checkBat();
   debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
 
   if (!isBatAvailable) {
@@ -207,7 +198,7 @@ export async function executeBat(
     return;
   }
 
-  const batResult = spawnBatFn(content);
+  const batResult = spawnBat(content);
   debugLog(`executeBat: batResult.ok=${String(batResult.ok)}`);
 
   if (batResult.ok) {
@@ -220,5 +211,44 @@ export async function executeBat(
 
   debugLog("executeBat: bat spawn failed, falling back to plain text");
   process.stdout.write(content);
+}
+
+export function createTempFile(initialContentPath?: string) {
+  const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
+  if (initialContentPath) {
+    const content = fs.readFileSync(initialContentPath).toString();
+    fs.writeFileSync(tempFile, content);
+  }
+  return tempFile;
+}
+
+export async function printGitDiff(pathBefore: string, pathAfter: string) {
+  const diffArgs =
+    selectors.getDiffStyle() === "lines"
+      ? `--no-index --color=always ${pathBefore} ${pathAfter}`
+      : `--no-index --color=always --stat ${pathBefore} ${pathAfter}`;
+
+  const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
+  if (diffResult.ok && diffResult.value.stdout) {
+    logNewline();
+    colorLog("diff start", "grey");
+    process.stdout.write(normalizeLine(diffResult.value.stdout));
+    colorLog("diff end", "grey");
+    logNewline();
+  }
+}
+
+export function execGitDiff(
+  args: string,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    exec(`git diff ${args}`, (error, stdout, stderr) => {
+      if (error && error.code !== 1) {
+        reject(error);
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
 }
 

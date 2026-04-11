@@ -1,13 +1,13 @@
 import { tool } from "ai";
 import fs from "node:fs";
-import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { tmpdir } from "node:os";
 import { z } from "zod";
 import {
   colorLog,
+  createTempFile,
   debugLog,
+  execGitDiff,
   getMessageFromError,
   logNewline,
   normalizeLine,
@@ -15,23 +15,8 @@ import {
   tryCatchAsync,
 } from "./utils.ts";
 import { selectors } from "./state.ts";
-import { randomUUID } from "node:crypto";
 
 const execPromise = promisify(exec);
-
-function execGitDiff(
-  args: string,
-): Promise<{ stdout: string; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    exec(`git diff ${args}`, (error, stdout, stderr) => {
-      if (error && error.code !== 1) {
-        reject(error);
-      } else {
-        resolve({ stdout, stderr });
-      }
-    });
-  });
-}
 
 export interface ToolCall {
   id: string;
@@ -360,13 +345,6 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   };
 }
 
-function createGitDiffTmp(path: string) {
-  const tempFile = join(tmpdir(), `agent-js-git-diff-${randomUUID()}.txt`);
-  const content = fs.readFileSync(path).toString();
-  fs.writeFileSync(tempFile, content);
-  return tempFile;
-}
-
 async function printGitDiff(pathBefore: string, pathAfter: string) {
   const diffArgs =
     selectors.getDiffStyle() === "lines"
@@ -401,25 +379,25 @@ export async function getToolResultBlock(toolCall: ToolCall) {
     }
     case "str_replace": {
       const { path } = StrReplaceToolInputSchema.parse(toolCall.input);
-      const tmpFileBefore = createGitDiffTmp(path);
+      const tempFileBefore = createTempFile(path);
       toolResult = executeStrReplaceTool(toolCall);
       if (!toolResult.is_error) {
-        const tmpFileAfter = createGitDiffTmp(path);
-        await printGitDiff(tmpFileBefore, tmpFileAfter);
-        fs.unlinkSync(tmpFileBefore);
-        fs.unlinkSync(tmpFileAfter);
+        const tempFileAfter = createTempFile(path);
+        await printGitDiff(tempFileBefore, tempFileAfter);
+        fs.unlinkSync(tempFileBefore);
+        fs.unlinkSync(tempFileAfter);
       }
       break;
     }
     case "insert_lines": {
       const { path } = InsertLinesToolInputSchema.parse(toolCall.input);
-      const tmpFileBefore = createGitDiffTmp(path);
+      const tempFileBefore = createTempFile(path);
       toolResult = executeInsertLinesTool(toolCall);
       if (!toolResult.is_error) {
-        const tmpFileAfter = createGitDiffTmp(path);
-        await printGitDiff(tmpFileBefore, tmpFileAfter);
-        fs.unlinkSync(tmpFileBefore);
-        fs.unlinkSync(tmpFileAfter);
+        const tempFileAfter = createTempFile(path);
+        await printGitDiff(tempFileBefore, tempFileAfter);
+        fs.unlinkSync(tempFileBefore);
+        fs.unlinkSync(tempFileAfter);
       }
       break;
     }
