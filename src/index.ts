@@ -100,6 +100,7 @@ async function main() {
     );
     dispatch(actions.setQuestionAbortController(null));
 
+    const editorInputValue = selectors.getEditorInputValue();
     let inputResultValue: string;
     if (!inputResult.ok) {
       if (!isAbortError(inputResult.error)) {
@@ -107,9 +108,7 @@ async function main() {
         continue;
       }
 
-      const editorInputValue = selectors.getEditorInputValue();
       if (editorInputValue !== null) {
-        dispatch(actions.setEditorInputValue(null));
         inputResultValue = editorInputValue;
       } else {
         dispatch(actions.setInterrupted(true));
@@ -140,8 +139,7 @@ async function main() {
       inputResultValue = inputResult.value;
     }
 
-    // TODO: don't apply when using editor
-    if (inputResultValue.at(0) === "/") {
+    if (editorInputValue === null && inputResultValue.at(0) === "/") {
       const commandWithoutSlash = inputResultValue.slice(1);
       if (commandWithoutSlash === "edit") {
         inputResultValue = readFromEditor("");
@@ -170,6 +168,7 @@ async function main() {
         continue;
       }
     }
+    dispatch(actions.setEditorInputValue(null));
 
     if (inputResultValue === "") {
       colorLog("Empty input, aborting", "red");

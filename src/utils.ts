@@ -136,7 +136,7 @@ export function maybePrintUsageMessage() {
   logNewline();
   colorLog(
     calculateSessionUsage(selectors.getModel(), selectors.getMessageUsages()),
-    "green",
+    "grey",
   );
 }
 
