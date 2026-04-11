@@ -116,7 +116,12 @@ export function calculateSessionUsage(
       cacheReadTokens: accum.cacheReadTokens + curr.cacheReadTokens,
       cacheWriteTokens: accum.cacheWriteTokens + curr.cacheWriteTokens,
     }),
-    { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    {
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    },
   );
 
   const pricing = selectors.getPricingPerModel()[model];
@@ -125,8 +130,12 @@ export function calculateSessionUsage(
   }
 
   const DOLLARS_PER_MILLION = 1_000_000;
-  const { inputPerToken, outputPerToken, cacheReadPerToken, cacheWritePerToken } =
-    pricing;
+  const {
+    inputPerToken,
+    outputPerToken,
+    cacheReadPerToken,
+    cacheWritePerToken,
+  } = pricing;
   const inputCost =
     (totalUsage.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
   const outputCost =
@@ -175,6 +184,10 @@ export function readFromEditor(currentLine: string) {
 
 async function checkBat(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("bat --version"))).ok;
+}
+
+async function checkDelta(): Promise<boolean> {
+  return (await tryCatchAsync(execPromise("delta --version"))).ok;
 }
 
 function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
@@ -226,42 +239,76 @@ export async function executeBat(content: string) {
   process.stdout.write(content);
 }
 
-export function createTempFile(initialContentPath?: string) {
+export function createTempFile(args?: { initialContentPath?: string }) {
   const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
-  if (initialContentPath) {
-    const content = fs.readFileSync(initialContentPath).toString();
+  if (args?.initialContentPath) {
+    const content = fs.readFileSync(args.initialContentPath).toString();
     fs.writeFileSync(tempFile, content);
   }
   return tempFile;
 }
 
-export async function printGitDiff(pathBefore: string, pathAfter: string) {
+export async function printGitDiff(args: {
+  tempFileBeforePath: string;
+  tempFileAfterPath: string;
+  path: string;
+}) {
   const diffArgs =
     selectors.getDiffStyle() === "lines"
-      ? `--no-index --color=always ${pathBefore} ${pathAfter}`
-      : `--no-index --color=always --stat ${pathBefore} ${pathAfter}`;
+      ? `${args.tempFileBeforePath} ${args.tempFileAfterPath}`
+      : `--stat ${args.tempFileBeforePath} ${args.tempFileAfterPath}`;
 
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
     logNewline();
-    colorLog("diff start", "grey");
+    colorLog(args.path, "green");
     process.stdout.write(normalizeLine(diffResult.value.stdout));
-    colorLog("diff end", "grey");
     logNewline();
   }
 }
 
-export function execGitDiff(
+export async function execGitDiff(
   args: string,
 ): Promise<{ stdout: string; stderr: string }> {
+  debugLog(`execGitDiff: args=${args}`);
+  const isDeltaAvailable = await checkDelta();
+  debugLog(`execGitDiff: isDeltaAvailable=${String(isDeltaAvailable)}`);
+
   return new Promise((resolve, reject) => {
-    exec(`git diff ${args}`, (error, stdout, stderr) => {
+    const gitDiffCmd = `git diff --no-index ${args}`;
+    debugLog(`execGitDiff: gitDiffCmd=${gitDiffCmd}`);
+
+    if (isDeltaAvailable) {
+      const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
+      exec(`${gitDiffCmd} | ${deltaCmd}`, (error, stdout, stderr) => {
+        if (error && error.code !== 1) {
+          debugLog(
+            `execGitDiff: error with delta, code=${String(error.code)}, message=${error.message}`,
+          );
+          reject(error);
+        } else {
+          debugLog(
+            `execGitDiff: success with delta, stdout.length=${String(stdout.length)}`,
+          );
+          resolve({ stdout, stderr });
+        }
+      });
+      return;
+    }
+
+    const coloredGitDiffCmd = `${gitDiffCmd} --color=always`;
+    exec(coloredGitDiffCmd, (error, stdout, stderr) => {
       if (error && error.code !== 1) {
+        debugLog(
+          `execGitDiff: error without delta, code=${String(error.code)}, message=${error.message}`,
+        );
         reject(error);
       } else {
+        debugLog(
+          `execGitDiff: success without delta, stdout.length=${String(stdout.length)}`,
+        );
         resolve({ stdout, stderr });
       }
     });
   });
 }
-

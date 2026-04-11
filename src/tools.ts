@@ -345,18 +345,21 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   };
 }
 
-async function printGitDiff(pathBefore: string, pathAfter: string) {
+async function printGitDiff(args: {
+  tempFileBeforePath: string;
+  tempFileAfterPath: string;
+  path: string;
+}) {
   const diffArgs =
     selectors.getDiffStyle() === "lines"
-      ? `--no-index --color=always ${pathBefore} ${pathAfter}`
-      : `--no-index --color=always --stat ${pathBefore} ${pathAfter}`;
+      ? `--no-index --color=always ${args.tempFileBeforePath} ${args.tempFileAfterPath}`
+      : `--no-index --color=always --stat ${args.tempFileBeforePath} ${args.tempFileAfterPath}`;
 
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
     logNewline();
-    colorLog("diff start", "grey");
+    colorLog(args.path, "green");
     process.stdout.write(normalizeLine(diffResult.value.stdout));
-    colorLog("diff end", "grey");
     logNewline();
   }
 }
@@ -379,11 +382,11 @@ export async function getToolResultBlock(toolCall: ToolCall) {
     }
     case "str_replace": {
       const { path } = StrReplaceToolInputSchema.parse(toolCall.input);
-      const tempFileBefore = createTempFile(path);
+      const tempFileBefore = createTempFile({ initialContentPath: path });
       toolResult = executeStrReplaceTool(toolCall);
       if (!toolResult.is_error) {
-        const tempFileAfter = createTempFile(path);
-        await printGitDiff(tempFileBefore, tempFileAfter);
+        const tempFileAfter = createTempFile({ initialContentPath: path });
+        await printGitDiff({ tempFileBeforePath: tempFileBefore, tempFileAfterPath: tempFileAfter, path });
         fs.unlinkSync(tempFileBefore);
         fs.unlinkSync(tempFileAfter);
       }
@@ -391,11 +394,11 @@ export async function getToolResultBlock(toolCall: ToolCall) {
     }
     case "insert_lines": {
       const { path } = InsertLinesToolInputSchema.parse(toolCall.input);
-      const tempFileBefore = createTempFile(path);
+      const tempFileBefore = createTempFile({ initialContentPath: path });
       toolResult = executeInsertLinesTool(toolCall);
       if (!toolResult.is_error) {
-        const tempFileAfter = createTempFile(path);
-        await printGitDiff(tempFileBefore, tempFileAfter);
+        const tempFileAfter = createTempFile({ initialContentPath: path });
+        await printGitDiff({ tempFileBeforePath: tempFileBefore, tempFileAfterPath: tempFileAfter, path });
         fs.unlinkSync(tempFileBefore);
         fs.unlinkSync(tempFileAfter);
       }
