@@ -30,63 +30,9 @@ async function main() {
   initStateFromConfig();
   const availableSlashCommands = getAvailableSlashCommands();
 
-  const rl = readline.createInterface({
-    input: stdin,
-    output: stdout,
-    terminal: true,
-  });
-
-  if (stdin.isTTY) {
-    stdin.setRawMode(true);
-  }
-
-  process.on("exit", () => {
-    if (stdin.isTTY) {
-      stdin.setRawMode(false);
-    }
-  });
-
-  emitKeypressEvents(stdin, rl);
-
-  stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
-    debugLog(JSON.stringify(key, null, 2));
-    if (key.ctrl && key.name === "e") {
-      const editorContent = readFromEditor(rl.line);
-      if (editorContent) {
-        rl.write(null, { ctrl: true, name: "e" });
-        rl.write(null, { ctrl: true, name: "u" });
-        rl.write("[editor]");
-        dispatch(actions.setEditorInputValue(editorContent));
-        const questionAbortController = selectors.getQuestionAbortController();
-        if (questionAbortController) {
-          questionAbortController.abort();
-        }
-      }
-    }
-  });
-
-  rl.on("SIGINT", () => {
-    const apiStream = selectors.getApiStreamAbortController();
-    if (apiStream) {
-      apiStream.abort();
-    }
-
-    const questionAbortController = selectors.getQuestionAbortController();
-    if (questionAbortController) {
-      if (rl.line.length > 0) {
-        rl.write(null, { ctrl: true, name: "e" });
-        rl.write(null, { ctrl: true, name: "u" });
-        return;
-      }
-      questionAbortController.abort();
-    }
-
-    // second <C-c> during exit confirmation
-    if (selectors.getInterrupted()) {
-      rl.close();
-      process.exit(0);
-    }
-  });
+  const rl = initReadline();
+  initKeypress(rl);
+  initSigInt(rl);
 
   while (selectors.getRunning()) {
     const resolvedInput = await resolveUserInput(rl, availableSlashCommands);
@@ -121,7 +67,6 @@ async function main() {
     }
 
     await runToolLoop(streamResult.value, messageCountBeforeTurn);
-
     maybePrintUsageMessage();
   }
 }
@@ -130,6 +75,71 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((error: unknown) => {
     colorLog(getMessageFromError(error), "red");
     process.exit(1);
+  });
+}
+
+function initReadline() {
+  const rl = readline.createInterface({
+    input: stdin,
+    output: stdout,
+    terminal: true,
+  });
+
+  if (stdin.isTTY) {
+    stdin.setRawMode(true);
+  }
+
+  process.on("exit", () => {
+    if (stdin.isTTY) {
+      stdin.setRawMode(false);
+    }
+  });
+
+  emitKeypressEvents(stdin, rl);
+  return rl;
+}
+
+function initSigInt(rl: readline.Interface) {
+  rl.on("SIGINT", () => {
+    const apiStream = selectors.getApiStreamAbortController();
+    if (apiStream) {
+      apiStream.abort();
+    }
+
+    const questionAbortController = selectors.getQuestionAbortController();
+    if (questionAbortController) {
+      if (rl.line.length > 0) {
+        rl.write(null, { ctrl: true, name: "e" });
+        rl.write(null, { ctrl: true, name: "u" });
+        return;
+      }
+      questionAbortController.abort();
+    }
+
+    // second <C-c> during exit confirmation
+    if (selectors.getInterrupted()) {
+      rl.close();
+      process.exit(0);
+    }
+  });
+}
+
+function initKeypress(rl: readline.Interface) {
+  stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
+    debugLog(JSON.stringify(key, null, 2));
+    if (key.ctrl && key.name === "e") {
+      const editorContent = readFromEditor(rl.line);
+      if (editorContent) {
+        rl.write(null, { ctrl: true, name: "e" });
+        rl.write(null, { ctrl: true, name: "u" });
+        rl.write("[editor]");
+        dispatch(actions.setEditorInputValue(editorContent));
+        const questionAbortController = selectors.getQuestionAbortController();
+        if (questionAbortController) {
+          questionAbortController.abort();
+        }
+      }
+    }
   });
 }
 
