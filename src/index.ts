@@ -84,6 +84,25 @@ function initReadline() {
   return rl;
 }
 
+function initKeypress(rl: readline.Interface) {
+  stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
+    debugLog(JSON.stringify(key, null, 2));
+    if (key.ctrl && key.name === "e") {
+      const editorContent = readFromEditor(rl.line);
+      if (editorContent) {
+        rl.write(null, { ctrl: true, name: "e" });
+        rl.write(null, { ctrl: true, name: "u" });
+        rl.write("[editor]");
+        dispatch(actions.setEditorInputValue(editorContent));
+        const questionAbortController = selectors.getQuestionAbortController();
+        if (questionAbortController) {
+          questionAbortController.abort();
+        }
+      }
+    }
+  });
+}
+
 function initSigInt(rl: readline.Interface) {
   rl.on("SIGINT", () => {
     const apiStream = selectors.getApiStreamAbortController();
@@ -109,32 +128,132 @@ function initSigInt(rl: readline.Interface) {
   });
 }
 
-function initKeypress(rl: readline.Interface) {
-  stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
-    debugLog(JSON.stringify(key, null, 2));
-    if (key.ctrl && key.name === "e") {
-      const editorContent = readFromEditor(rl.line);
-      if (editorContent) {
-        rl.write(null, { ctrl: true, name: "e" });
-        rl.write(null, { ctrl: true, name: "u" });
-        rl.write("[editor]");
-        dispatch(actions.setEditorInputValue(editorContent));
-        const questionAbortController = selectors.getQuestionAbortController();
-        if (questionAbortController) {
-          questionAbortController.abort();
-        }
-      }
+async function resolveUserInput(rl: readline.Interface) {
+  dispatch(actions.setQuestionAbortController(new AbortController()));
+  const questionAbortController = selectors.getQuestionAbortController();
+  const inputResult = await tryCatchAsync(
+    rl.question("> ", { signal: questionAbortController!.signal }),
+  );
+  dispatch(actions.setQuestionAbortController(null));
+
+  const editorInputValue = selectors.getEditorInputValue();
+  if (!inputResult.ok) {
+    if (!isAbortError(inputResult.error)) {
+      console.error(getMessageFromError(inputResult.error));
+      return null;
     }
-  });
+
+    if (editorInputValue !== null) {
+      return editorInputValue;
+    }
+
+    // TODO: little weird, will either return null or call setRunning(false)
+    return await resolveExitConfirmation(rl);
+  }
+
+  const rawInput = inputResult.value;
+
+  if (editorInputValue === null && rawInput.at(0) === "/") {
+    return resolveSlashCommand(rawInput);
+  }
+
+  dispatch(actions.setEditorInputValue(null));
+  return rawInput;
 }
 
-interface ToolMessage {
-  type: "tool-result";
+async function resolveExitConfirmation(rl: readline.Interface) {
+  dispatch(actions.setInterrupted(true));
+  dispatch(actions.setQuestionAbortController(new AbortController()));
+  const exitQuestionAbortController = selectors.getQuestionAbortController();
+  const exitResult = await tryCatchAsync(
+    rl.question("y(es) or <C-c> to exit: ", {
+      signal: exitQuestionAbortController!.signal,
+    }),
+  );
+  dispatch(actions.setQuestionAbortController(null));
+
+  if (exitResult.ok) {
+    if (/^y(es)?$/i.exec(exitResult.value)) {
+      debugLog("user confirmed exit");
+      dispatch(actions.setRunning(false));
+    }
+  } else {
+    // second <C-c> during confirmation is already handled by SIGINT
+  }
+
+  dispatch(actions.setInterrupted(false));
+  return null;
+}
+
+function resolveSlashCommand(rawInput: string) {
+  const commandWithoutSlash = rawInput.slice(1);
+  if (commandWithoutSlash === "edit") {
+    return readFromEditor("");
+  }
+
+  if (commandWithoutSlash === "clear") {
+    dispatch(actions.resetMessageUsages());
+    dispatch(actions.resetMessageParams());
+    debugLog("Reset message usages and message params");
+    colorLog("Context cleared", "grey");
+    return null;
+  }
+
+  if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
+    colorLog(`Executing slash command: ${rawInput}`, "grey");
+    const path = join(
+      process.cwd(),
+      ".agent-js",
+      "commands",
+      rawInput.slice(1).concat(".md"),
+    );
+    debugLog(`Performing the slash command at ${path}`);
+    return `Perform the instructions located at ${path}`;
+  }
+
+  colorLog(
+    `Invalid / command detected, valid commands: ${selectors.getSlashCommands().join(",")}`,
+    "red",
+  );
+  maybePrintUsageMessage();
+  return null;
+}
+
+async function resolveUserInputApiCall(initialContent: string) {
+  const inputMessageParam: ModelMessage = {
+    role: "user",
+    content: initialContent,
+  };
+  dispatch(actions.setApiStreamAbortController(new AbortController()));
+  const apiStreamController = selectors.getApiStreamAbortController();
+  const apiResult = await tryCatchAsync(
+    callApi([inputMessageParam], apiStreamController!.signal),
+  );
+  dispatch(actions.setApiStreamAbortController(null));
+
+  if (!apiResult.ok) {
+    if (isAbortError(apiResult.error)) {
+      colorLog("Aborted", "red");
+      maybePrintUsageMessage();
+      return null;
+    }
+
+    colorLog(getMessageFromError(apiResult.error), "red");
+    return null;
+  }
+
+  return apiResult.value;
+}
+
+export interface ToolCallInfo {
   toolCallId: string;
   toolName: string;
-  output:
-    | { type: "text"; value: string }
-    | { type: "error-text"; value: string };
+  input: unknown;
+}
+
+export interface CallApiResult {
+  finishReason: string;
+  toolCalls: ToolCallInfo[];
 }
 
 function getLanguageModel() {
@@ -151,17 +270,6 @@ function getLanguageModel() {
     baseURL: selectors.getBaseURL(),
     ...(apiKey && { apiKey }),
   })(modelName);
-}
-
-export interface ToolCallInfo {
-  toolCallId: string;
-  toolName: string;
-  input: unknown;
-}
-
-export interface CallApiResult {
-  finishReason: string;
-  toolCalls: ToolCallInfo[];
 }
 
 export async function callApi(
@@ -242,121 +350,13 @@ export async function callApi(
   }
 }
 
-async function resolveUserInput(rl: readline.Interface) {
-  dispatch(actions.setQuestionAbortController(new AbortController()));
-  const questionAbortController = selectors.getQuestionAbortController();
-  const inputResult = await tryCatchAsync(
-    rl.question("> ", { signal: questionAbortController!.signal }),
-  );
-  dispatch(actions.setQuestionAbortController(null));
-
-  const editorInputValue = selectors.getEditorInputValue();
-  if (!inputResult.ok) {
-    if (!isAbortError(inputResult.error)) {
-      console.error(getMessageFromError(inputResult.error));
-      return null;
-    }
-
-    if (editorInputValue !== null) {
-      return editorInputValue;
-    }
-
-    // TODO: little weird, will either return null or call setRunning(false)
-    return await resolveExitConfirmation(rl);
-  }
-
-  const rawInput = inputResult.value;
-
-  if (editorInputValue === null && rawInput.at(0) === "/") {
-    return resolveSlashCommand(rawInput);
-  }
-
-  dispatch(actions.setEditorInputValue(null));
-  return rawInput;
-}
-
-function resolveSlashCommand(rawInput: string) {
-  const commandWithoutSlash = rawInput.slice(1);
-  if (commandWithoutSlash === "edit") {
-    return readFromEditor("");
-  }
-
-  if (commandWithoutSlash === "clear") {
-    dispatch(actions.resetMessageUsages());
-    dispatch(actions.resetMessageParams());
-    debugLog("Reset message usages and message params");
-    colorLog("Context cleared", "grey");
-    return null;
-  }
-
-  if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
-    colorLog(`Executing slash command: ${rawInput}`, "grey");
-    const path = join(
-      process.cwd(),
-      ".agent-js",
-      "commands",
-      rawInput.slice(1).concat(".md"),
-    );
-    debugLog(`Performing the slash command at ${path}`);
-    return `Perform the instructions located at ${path}`;
-  }
-
-  colorLog(
-    `Invalid / command detected, valid commands: ${selectors.getSlashCommands().join(",")}`,
-    "red",
-  );
-  maybePrintUsageMessage();
-  return null;
-}
-
-async function resolveExitConfirmation(rl: readline.Interface) {
-  dispatch(actions.setInterrupted(true));
-  dispatch(actions.setQuestionAbortController(new AbortController()));
-  const exitQuestionAbortController = selectors.getQuestionAbortController();
-  const exitResult = await tryCatchAsync(
-    rl.question("y(es) or <C-c> to exit: ", {
-      signal: exitQuestionAbortController!.signal,
-    }),
-  );
-  dispatch(actions.setQuestionAbortController(null));
-
-  if (exitResult.ok) {
-    if (/^y(es)?$/i.exec(exitResult.value)) {
-      debugLog("user confirmed exit");
-      dispatch(actions.setRunning(false));
-    }
-  } else {
-    // second <C-c> during confirmation is already handled by SIGINT
-  }
-
-  dispatch(actions.setInterrupted(false));
-  return null;
-}
-
-async function resolveUserInputApiCall(initialContent: string) {
-  const inputMessageParam: ModelMessage = {
-    role: "user",
-    content: initialContent,
-  };
-  dispatch(actions.setApiStreamAbortController(new AbortController()));
-  const apiStreamController = selectors.getApiStreamAbortController();
-  const apiResult = await tryCatchAsync(
-    callApi([inputMessageParam], apiStreamController!.signal),
-  );
-  dispatch(actions.setApiStreamAbortController(null));
-
-  if (!apiResult.ok) {
-    if (isAbortError(apiResult.error)) {
-      colorLog("Aborted", "red");
-      maybePrintUsageMessage();
-      return null;
-    }
-
-    colorLog(getMessageFromError(apiResult.error), "red");
-    return null;
-  }
-
-  return apiResult.value;
+interface ToolMessage {
+  type: "tool-result";
+  toolCallId: string;
+  toolName: string;
+  output:
+    | { type: "text"; value: string }
+    | { type: "error-text"; value: string };
 }
 
 async function runToolLoop(
