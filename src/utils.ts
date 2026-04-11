@@ -46,6 +46,7 @@ export async function tryCatchAsync<T>(
 const COLORS = {
   red: "\x1b[31m",
   green: "\x1b[32m",
+  yellow: "\x1b[33m",
   white: "\x1b[37m",
   grey: "\x1b[90m",
 } as const;

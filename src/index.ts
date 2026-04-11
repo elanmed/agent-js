@@ -39,36 +39,21 @@ async function main() {
     if (resolvedInput === null) continue;
 
     if (resolvedInput === "") {
-      colorLog("Empty input, aborting", "red");
+      colorLog("Empty input", "yellow");
       continue;
     }
 
-    const inputMessageParam: ModelMessage = {
-      role: "user",
-      content: resolvedInput,
-    };
     const messageCountBeforeTurn = selectors.getMessageParams().length;
-    dispatch(actions.setApiStreamAbortController(new AbortController()));
-    const apiStreamController = selectors.getApiStreamAbortController();
-    const streamResult = await tryCatchAsync(
-      callApi([inputMessageParam], apiStreamController!.signal),
-    );
-    dispatch(actions.setApiStreamAbortController(null));
 
-    if (!streamResult.ok) {
-      if (isAbortError(streamResult.error)) {
-        colorLog("Aborted", "red");
-        maybePrintUsageMessage();
-        continue;
-      } else {
-        colorLog(getMessageFromError(streamResult.error), "red");
-        continue;
-      }
-    }
+    const resolvedApiCall = await resolveUserInputApiCall(resolvedInput);
+    if (resolvedApiCall == null) continue;
 
-    await runToolLoop(streamResult.value, messageCountBeforeTurn);
+    await runToolLoop(resolvedApiCall, messageCountBeforeTurn);
+
     maybePrintUsageMessage();
   }
+
+  rl.close();
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -276,6 +261,7 @@ async function resolveUserInput(rl: readline.Interface) {
       return editorInputValue;
     }
 
+    // TODO: little weird, will either return null or call setRunning(false)
     return await resolveExitConfirmation(rl);
   }
 
@@ -293,7 +279,9 @@ function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);
   if (commandWithoutSlash === "edit") {
     return readFromEditor("");
-  } else if (commandWithoutSlash === "clear") {
+  }
+
+  if (commandWithoutSlash === "clear") {
     dispatch(actions.resetMessageUsages());
     dispatch(actions.resetMessageParams());
     debugLog("Reset message usages and message params");
@@ -336,7 +324,6 @@ async function resolveExitConfirmation(rl: readline.Interface) {
     if (/^y(es)?$/i.exec(exitResult.value)) {
       debugLog("user confirmed exit");
       dispatch(actions.setRunning(false));
-      rl.close();
     }
   } else {
     // second <C-c> during confirmation is already handled by SIGINT
@@ -344,6 +331,32 @@ async function resolveExitConfirmation(rl: readline.Interface) {
 
   dispatch(actions.setInterrupted(false));
   return null;
+}
+
+async function resolveUserInputApiCall(initialContent: string) {
+  const inputMessageParam: ModelMessage = {
+    role: "user",
+    content: initialContent,
+  };
+  dispatch(actions.setApiStreamAbortController(new AbortController()));
+  const apiStreamController = selectors.getApiStreamAbortController();
+  const apiResult = await tryCatchAsync(
+    callApi([inputMessageParam], apiStreamController!.signal),
+  );
+  dispatch(actions.setApiStreamAbortController(null));
+
+  if (!apiResult.ok) {
+    if (isAbortError(apiResult.error)) {
+      colorLog("Aborted", "red");
+      maybePrintUsageMessage();
+      return null;
+    }
+
+    colorLog(getMessageFromError(apiResult.error), "red");
+    return null;
+  }
+
+  return apiResult.value;
 }
 
 async function runToolLoop(
