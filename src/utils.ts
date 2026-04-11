@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { glob } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 
 const execPromise = promisify(exec);
 
@@ -127,11 +128,12 @@ export function calculateSessionUsage(
 }
 
 export const BASE_SYSTEM_PROMPT =
-  "You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. CRITICAL: All your responses will be parsed by bat as markdown, your responses must be formatted as valid markdown.";
+  "You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown.";
 
 export function maybePrintUsageMessage() {
   if (selectors.getDisableUsageMessage()) return;
 
+  logNewline();
   colorLog(
     calculateSessionUsage(selectors.getModel(), selectors.getMessageUsages()),
     "green",
@@ -147,7 +149,7 @@ export function getAvailableSlashCommands() {
 }
 
 export function readFromEditor(currentLine: string) {
-  const tempFile = join(tmpdir(), `agent-js-${String(Date.now())}.txt`);
+  const tempFile = join(tmpdir(), `agent-js-editor-${randomUUID()}.txt`);
   const editor =
     process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
   fs.writeFileSync(tempFile, currentLine);

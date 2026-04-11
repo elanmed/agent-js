@@ -1,7 +1,9 @@
 import { tool } from "ai";
 import fs from "node:fs";
+import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { tmpdir } from "node:os";
 import { z } from "zod";
 import {
   colorLog,
@@ -11,8 +13,23 @@ import {
   tryCatchAsync,
 } from "./utils.ts";
 import { selectors } from "./state.ts";
+import { randomUUID } from "node:crypto";
 
 const execPromise = promisify(exec);
+
+function execGitDiff(
+  args: string,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    exec(`git diff ${args}`, (error, stdout, stderr) => {
+      if (error && error.code !== 1) {
+        reject(error);
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+}
 
 export interface ToolCall {
   id: string;
@@ -341,15 +358,24 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   };
 }
 
-async function printGitDiff(path: string) {
+function createGitDiffTmp(path: string) {
+  const tempFile = join(tmpdir(), `agent-js-git-diff-${randomUUID()}.txt`);
+  const content = fs.readFileSync(path).toString();
+  fs.writeFileSync(tempFile, content);
+  return tempFile;
+}
+
+async function printGitDiff(pathBefore: string, pathAfter: string) {
   const diffArgs =
     selectors.getDiffStyle() === "lines"
-      ? `git diff --color=always ${path}`
-      : `git diff --color=always --stat ${path}`;
-  const diffResult = await tryCatchAsync(execPromise(diffArgs));
+      ? `--no-index --color=always ${pathBefore} ${pathAfter}`
+      : `--no-index --color=always --stat ${pathBefore} ${pathAfter}`;
+
+  const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
-    colorLog("diff:", "grey");
+    colorLog("diff start:", "grey");
     console.log(diffResult.value.stdout);
+    colorLog("diff end", "grey");
   }
 }
 
@@ -370,18 +396,26 @@ export async function getToolResultBlock(toolCall: ToolCall) {
       break;
     }
     case "str_replace": {
+      const { path } = StrReplaceToolInputSchema.parse(toolCall.input);
+      const tmpFileBefore = createGitDiffTmp(path);
       toolResult = executeStrReplaceTool(toolCall);
       if (!toolResult.is_error) {
-        const { path } = toolCall.input as { path: string };
-        await printGitDiff(path);
+        const tmpFileAfter = createGitDiffTmp(path);
+        await printGitDiff(tmpFileBefore, tmpFileAfter);
+        fs.unlinkSync(tmpFileBefore);
+        fs.unlinkSync(tmpFileAfter);
       }
       break;
     }
     case "insert_lines": {
+      const { path } = InsertLinesToolInputSchema.parse(toolCall.input);
+      const tmpFileBefore = createGitDiffTmp(path);
       toolResult = executeInsertLinesTool(toolCall);
       if (!toolResult.is_error) {
-        const { path } = toolCall.input as { path: string };
-        await printGitDiff(path);
+        const tmpFileAfter = createGitDiffTmp(path);
+        await printGitDiff(tmpFileBefore, tmpFileAfter);
+        fs.unlinkSync(tmpFileBefore);
+        fs.unlinkSync(tmpFileAfter);
       }
       break;
     }
@@ -395,3 +429,4 @@ export async function getToolResultBlock(toolCall: ToolCall) {
 
   return toolResult;
 }
+

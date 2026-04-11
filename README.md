@@ -70,7 +70,6 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 ## TODO
 
 - [ ] Queue messages with an editor
-- [ ] Prefill the editor with the current input when opening
-- [ ] More accurate diffs specific to changes
+- [ ] Cleaner diffs with sections filtered
 - [ ] MCP server
 - [ ] Better newline management
