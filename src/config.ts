@@ -43,7 +43,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   baseURL: "MISSING",
   provider: "openai-compatible",
   disableUsageMessage: false,
-  diffStyle: "unified",
+  diffStyle: "lines",
   pricingPerModel: {
     "claude-opus-4-6": { inputPerToken: 5, outputPerToken: 25 },
     "claude-sonnet-4-6": { inputPerToken: 3, outputPerToken: 15 },
