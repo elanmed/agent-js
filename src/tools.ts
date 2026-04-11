@@ -9,6 +9,8 @@ import {
   colorLog,
   debugLog,
   getMessageFromError,
+  logNewline,
+  normalizeLine,
   tryCatch,
   tryCatchAsync,
 } from "./utils.ts";
@@ -373,9 +375,11 @@ async function printGitDiff(pathBefore: string, pathAfter: string) {
 
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
-    colorLog("diff start:", "grey");
-    console.log(diffResult.value.stdout);
+    logNewline();
+    colorLog("diff start", "grey");
+    process.stdout.write(normalizeLine(diffResult.value.stdout));
     colorLog("diff end", "grey");
+    logNewline();
   }
 }
 
