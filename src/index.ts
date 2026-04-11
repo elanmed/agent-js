@@ -245,13 +245,13 @@ async function resolveUserInputApiCall(initialContent: string) {
   return apiResult.value;
 }
 
-export interface ToolCallInfo {
+interface ToolCallInfo {
   toolCallId: string;
   toolName: string;
   input: unknown;
 }
 
-export interface CallApiResult {
+interface CallApiResult {
   finishReason: string;
   toolCalls: ToolCallInfo[];
 }
@@ -272,7 +272,7 @@ function getLanguageModel() {
   })(modelName);
 }
 
-export async function callApi(
+async function callApi(
   newMessages: ModelMessage[],
   abortSignal?: AbortSignal,
 ): Promise<CallApiResult> {
