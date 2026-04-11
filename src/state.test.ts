@@ -187,6 +187,14 @@ describe("state", () => {
     dispatch(actions.setEditorInputValue(null));
     assert.equal(getState().appState.editorInputValue, null);
   });
+
+  it("set-slash-commands", () => {
+    dispatch(actions.setSlashCommands(["test", "deploy"]));
+    assert.deepEqual(getState().appState.slashCommands, ["test", "deploy"]);
+
+    dispatch(actions.setSlashCommands([]));
+    assert.deepEqual(getState().appState.slashCommands, []);
+  });
 });
 
 describe("selectors", () => {
@@ -288,5 +296,11 @@ describe("selectors", () => {
     assert.equal(selectors.getEditorInputValue(), "editor content");
     dispatch(actions.setEditorInputValue(null));
     assert.equal(selectors.getEditorInputValue(), null);
+  });
+
+  it("getSlashCommands", () => {
+    assert.deepEqual(selectors.getSlashCommands(), []);
+    dispatch(actions.setSlashCommands(["cmd1", "cmd2"]));
+    assert.deepEqual(selectors.getSlashCommands(), ["cmd1", "cmd2"]);
   });
 });

@@ -28,14 +28,14 @@ import { TOOLS } from "./tools.ts";
 
 async function main() {
   initStateFromConfig();
-  const availableSlashCommands = getAvailableSlashCommands();
+  dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
 
   const rl = initReadline();
   initKeypress(rl);
   initSigInt(rl);
 
   while (selectors.getRunning()) {
-    const resolvedInput = await resolveUserInput(rl, availableSlashCommands);
+    const resolvedInput = await resolveUserInput(rl);
     if (resolvedInput === null) continue;
 
     if (resolvedInput === "") {
@@ -257,10 +257,7 @@ export async function callApi(
   }
 }
 
-async function resolveUserInput(
-  rl: readline.Interface,
-  availableSlashCommands: string[],
-) {
+async function resolveUserInput(rl: readline.Interface) {
   dispatch(actions.setQuestionAbortController(new AbortController()));
   const questionAbortController = selectors.getQuestionAbortController();
   const inputResult = await tryCatchAsync(
@@ -285,17 +282,14 @@ async function resolveUserInput(
   const rawInput = inputResult.value;
 
   if (editorInputValue === null && rawInput.at(0) === "/") {
-    return resolveSlashCommand(rawInput, availableSlashCommands);
+    return resolveSlashCommand(rawInput);
   }
 
   dispatch(actions.setEditorInputValue(null));
   return rawInput;
 }
 
-function resolveSlashCommand(
-  rawInput: string,
-  availableSlashCommands: string[],
-) {
+function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);
   if (commandWithoutSlash === "edit") {
     return readFromEditor("");
@@ -307,7 +301,7 @@ function resolveSlashCommand(
     return null;
   }
 
-  if (availableSlashCommands.includes(commandWithoutSlash)) {
+  if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
     colorLog(`Executing slash command: ${rawInput}`, "grey");
     const path = join(
       process.cwd(),
@@ -320,7 +314,7 @@ function resolveSlashCommand(
   }
 
   colorLog(
-    `Invalid / command detected, valid commands: ${availableSlashCommands.join(",")}`,
+    `Invalid / command detected, valid commands: ${selectors.getSlashCommands().join(",")}`,
     "red",
   );
   maybePrintUsageMessage();

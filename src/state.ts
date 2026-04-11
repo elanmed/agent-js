@@ -12,6 +12,7 @@ interface State {
     messageParams: ModelMessage[];
     messageUsages: TokenUsage[];
     editorInputValue: string | null;
+    slashCommands: string[];
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -34,6 +35,7 @@ const initialState: State = {
     messageParams: [],
     messageUsages: [],
     editorInputValue: null,
+    slashCommands: [],
   },
   configState: {
     model: MISSING,
@@ -119,6 +121,10 @@ type Action =
   | {
       type: "set-editor-input-value";
       payload: string | null;
+    }
+  | {
+      type: "set-slash-commands";
+      payload: string[];
     };
 
 export const dispatch = (action: Action) => {
@@ -245,6 +251,15 @@ const reducer = (state: State, action: Action): State => {
         },
       };
     }
+    case "set-slash-commands": {
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          slashCommands: action.payload,
+        },
+      };
+    }
   }
 };
 
@@ -328,6 +343,10 @@ const setEditorInputValue = (value: string | null): Action => {
   return { type: "set-editor-input-value", payload: value };
 };
 
+const setSlashCommands = (commands: string[]): Action => {
+  return { type: "set-slash-commands", payload: commands };
+};
+
 export const actions = {
   setInterrupted,
   setRunning,
@@ -345,6 +364,7 @@ export const actions = {
   setQuestionAbortController,
   setApiStreamAbortController,
   setEditorInputValue,
+  setSlashCommands,
 };
 
 const getInterrupted = () => getState().appState.interrupted;
@@ -352,6 +372,7 @@ const getRunning = () => getState().appState.running;
 const getMessageParams = () => getState().appState.messageParams;
 const getMessageUsages = () => getState().appState.messageUsages;
 const getEditorInputValue = () => getState().appState.editorInputValue;
+const getSlashCommands = () => getState().appState.slashCommands;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -375,4 +396,5 @@ export const selectors = {
   getQuestionAbortController,
   getApiStreamAbortController,
   getEditorInputValue,
+  getSlashCommands,
 };
