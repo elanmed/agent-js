@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import type { TokenUsage } from "./utils.ts";
+import { MISSING, type TokenUsage } from "./utils.ts";
 import { getState, dispatch, actions, selectors } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 
@@ -16,6 +16,7 @@ describe("state", () => {
     dispatch(actions.setQuestionAbortController(new AbortController()));
     dispatch(actions.setApiStreamAbortController(new AbortController()));
     dispatch(actions.resetState());
+
     const s = getState();
     assert.equal(s.appState.running, true);
     assert.equal(s.appState.interrupted, false);
@@ -36,23 +37,20 @@ describe("state", () => {
   });
 
   it("set-interrupted", () => {
+    assert.equal(getState().appState.interrupted, false);
     dispatch(actions.setInterrupted(true));
     assert.equal(getState().appState.interrupted, true);
-
-    dispatch(actions.setInterrupted(false));
-    assert.equal(getState().appState.interrupted, false);
   });
 
   it("set-running", () => {
+    assert.equal(getState().appState.running, true);
     dispatch(actions.setRunning(false));
     assert.equal(getState().appState.running, false);
-
-    dispatch(actions.setRunning(true));
-    assert.equal(getState().appState.running, true);
   });
 
   describe("append-to-message-params", () => {
     it("appends new message to the list", () => {
+      assert.deepEqual(getState().appState.messageParams, []);
       dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
       assert.equal(getState().appState.messageParams.length, 1);
       assert.deepEqual(getState().appState.messageParams[0], {
@@ -62,6 +60,7 @@ describe("state", () => {
     });
 
     it("appends multiple messages in order", () => {
+      assert.deepEqual(getState().appState.messageParams, []);
       dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
       dispatch(
         actions.appendToMessageParams({ role: "assistant", content: "hello" }),
@@ -72,21 +71,10 @@ describe("state", () => {
       assert.equal(params[0]!.role, "user");
       assert.equal(params[1]!.role, "assistant");
     });
-
-    it("passes through messages with string content untouched", () => {
-      dispatch(
-        actions.appendToMessageParams({ role: "user", content: "hello" }),
-      );
-      dispatch(
-        actions.appendToMessageParams({ role: "assistant", content: "world" }),
-      );
-
-      const params = getState().appState.messageParams;
-      assert.equal(params[0]!.content, "hello");
-    });
   });
 
   it("append-to-message-usages", () => {
+    assert.deepEqual(getState().appState.messageUsages, []);
     const usage1: TokenUsage = {
       inputTokens: 10,
       outputTokens: 5,
@@ -107,30 +95,21 @@ describe("state", () => {
   });
 
   it("set-model", () => {
-    dispatch(actions.setModel("claude-sonnet-4-6"));
-    assert.equal(getState().configState.model, "claude-sonnet-4-6");
-
+    assert.equal(getState().configState.model, MISSING);
     dispatch(actions.setModel("claude-haiku-4-5"));
     assert.equal(getState().configState.model, "claude-haiku-4-5");
   });
 
   it("set-provider", () => {
+    assert.equal(getState().configState.provider, "openai-compatible");
     dispatch(actions.setProvider("anthropic"));
     assert.equal(getState().configState.provider, "anthropic");
-
-    dispatch(actions.setProvider("openai-compatible"));
-    assert.equal(getState().configState.provider, "openai-compatible");
   });
 
   it("set-base-url", () => {
+    assert.equal(getState().configState.baseURL, null);
     dispatch(actions.setBaseURL("https://api.example.com/v1"));
-    assert.equal(
-      getState().configState.baseURL,
-      "https://api.example.com/v1",
-    );
-
-    dispatch(actions.setBaseURL("MISSING"));
-    assert.equal(getState().configState.baseURL, "MISSING");
+    assert.equal(getState().configState.baseURL, "https://api.example.com/v1");
   });
 
   it("set-pricing-per-model", () => {
@@ -146,53 +125,41 @@ describe("state", () => {
   });
 
   it("set-disable-usage-message", () => {
+    assert.equal(getState().configState.disableUsageMessage, false);
     dispatch(actions.setDisableUsageMessage(true));
     assert.equal(getState().configState.disableUsageMessage, true);
-
-    dispatch(actions.setDisableUsageMessage(false));
-    assert.equal(getState().configState.disableUsageMessage, false);
   });
 
   it("set-diff-style", () => {
-    dispatch(actions.setDiffStyle("lines"));
     assert.equal(getState().configState.diffStyle, "lines");
-
     dispatch(actions.setDiffStyle("unified"));
     assert.equal(getState().configState.diffStyle, "unified");
   });
 
   it("set-question-abort-controller", () => {
+    assert.equal(getState().abortControllers.question, null);
     const controller = new AbortController();
     dispatch(actions.setQuestionAbortController(controller));
     assert.equal(getState().abortControllers.question, controller);
-
-    dispatch(actions.setQuestionAbortController(null));
-    assert.equal(getState().abortControllers.question, null);
   });
 
   it("set-api-stream-abort-controller", () => {
+    assert.equal(getState().abortControllers.apiStream, null);
     const controller = new AbortController();
     dispatch(actions.setApiStreamAbortController(controller));
     assert.equal(getState().abortControllers.apiStream, controller);
-
-    dispatch(actions.setApiStreamAbortController(null));
-    assert.equal(getState().abortControllers.apiStream, null);
   });
 
   it("set-editor-input-value", () => {
+    assert.equal(getState().appState.editorInputValue, null);
     dispatch(actions.setEditorInputValue("test content"));
     assert.equal(getState().appState.editorInputValue, "test content");
-
-    dispatch(actions.setEditorInputValue(null));
-    assert.equal(getState().appState.editorInputValue, null);
   });
 
   it("set-slash-commands", () => {
+    assert.deepEqual(getState().appState.slashCommands, []);
     dispatch(actions.setSlashCommands(["test", "deploy"]));
     assert.deepEqual(getState().appState.slashCommands, ["test", "deploy"]);
-
-    dispatch(actions.setSlashCommands([]));
-    assert.deepEqual(getState().appState.slashCommands, []);
   });
 });
 
@@ -240,7 +207,7 @@ describe("selectors", () => {
   });
 
   it("getBaseURL", () => {
-    assert.equal(selectors.getBaseURL(), "MISSING");
+    assert.equal(selectors.getBaseURL(), null);
     dispatch(actions.setBaseURL("https://api.example.com/v1"));
     assert.equal(selectors.getBaseURL(), "https://api.example.com/v1");
   });
@@ -276,7 +243,9 @@ describe("selectors", () => {
   it("getQuestionAbortController", () => {
     assert.equal(selectors.getQuestionAbortController(), null);
     dispatch(actions.setQuestionAbortController(new AbortController()));
-    assert.ok(selectors.getQuestionAbortController() instanceof AbortController);
+    assert.ok(
+      selectors.getQuestionAbortController() instanceof AbortController,
+    );
     dispatch(actions.setQuestionAbortController(null));
     assert.equal(selectors.getQuestionAbortController(), null);
   });
@@ -284,7 +253,9 @@ describe("selectors", () => {
   it("getApiStreamAbortController", () => {
     assert.equal(selectors.getApiStreamAbortController(), null);
     dispatch(actions.setApiStreamAbortController(new AbortController()));
-    assert.ok(selectors.getApiStreamAbortController() instanceof AbortController);
+    assert.ok(
+      selectors.getApiStreamAbortController() instanceof AbortController,
+    );
     dispatch(actions.setApiStreamAbortController(null));
     assert.equal(selectors.getApiStreamAbortController(), null);
   });

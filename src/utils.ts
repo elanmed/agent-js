@@ -8,6 +8,8 @@ import { promisify } from "node:util";
 import { glob } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 
+export const MISSING = "MISSING";
+
 const execPromise = promisify(exec);
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };

@@ -3,7 +3,9 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import { colorLog, debugLog, getAvailableSlashCommands } from "./utils.ts";
-import { actions, dispatch, MISSING } from "./state.ts";
+import { actions, dispatch } from "./state.ts";
+
+export const MISSING = "MISSING";
 
 export type DiffStyle = "unified" | "lines";
 export type Provider = "anthropic" | "openai-compatible";
@@ -30,7 +32,6 @@ type Config = z.infer<typeof ConfigSchema>;
 
 interface DefaultConfig {
   model: string;
-  baseURL: string;
   provider: Provider;
   disableUsageMessage: boolean;
   diffStyle: "unified" | "lines";
@@ -46,19 +47,11 @@ interface DefaultConfig {
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
-  model: "MISSING",
-  baseURL: "MISSING",
   provider: "openai-compatible",
   disableUsageMessage: false,
   diffStyle: "lines",
-  pricingPerModel: {
-    MISSING: {
-      inputPerToken: 0,
-      outputPerToken: 0,
-      cacheReadPerToken: 0,
-      cacheWritePerToken: 0,
-    },
-  },
+  pricingPerModel: {},
+  model: MISSING,
 };
 
 export const GLOBAL_CONFIG_PATH = join(
@@ -126,10 +119,9 @@ export function initState(deps: InitStateDeps = initStateDeps) {
 
   const defaultedProvider =
     localConfig.provider ?? globalConfig.provider ?? DEFAULT_CONFIG.provider;
-  const defaultedBaseURL =
-    localConfig.baseURL ?? globalConfig.baseURL ?? DEFAULT_CONFIG.baseURL;
+  const defaultedBaseURL = localConfig.baseURL ?? globalConfig.baseURL;
   if (
-    defaultedBaseURL === MISSING &&
+    defaultedBaseURL === undefined &&
     defaultedProvider === "openai-compatible"
   ) {
     throw new Error(
@@ -138,7 +130,7 @@ export function initState(deps: InitStateDeps = initStateDeps) {
   }
 
   dispatch(actions.setModel(defaultedModel));
-  dispatch(actions.setBaseURL(defaultedBaseURL));
+  if (defaultedBaseURL) dispatch(actions.setBaseURL(defaultedBaseURL));
   dispatch(actions.setProvider(defaultedProvider));
   dispatch(
     actions.setDisableUsageMessage(

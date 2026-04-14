@@ -16,6 +16,7 @@ import {
 } from "./utils.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
 import { TOOLS } from "./tools.ts";
+import assert from "node:assert";
 
 interface ToolCallInfo {
   toolCallId: string;
@@ -37,9 +38,12 @@ function getLanguageModel() {
     return createAnthropic({ ...(apiKey && { apiKey }) })(modelName);
   }
 
+  const baseURL = selectors.getBaseURL();
+  assert(baseURL !== null);
+
   return createOpenAICompatible({
     name: "openai-compatible",
-    baseURL: selectors.getBaseURL(),
+    baseURL: baseURL,
     ...(apiKey && { apiKey }),
   })(modelName);
 }

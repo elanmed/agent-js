@@ -1,9 +1,7 @@
 import type { ModelMessage } from "ai";
-import { DEFAULT_CONFIG, type DiffStyle, type Provider } from "./config.ts";
+import { DEFAULT_CONFIG, MISSING, type DiffStyle, type Provider } from "./config.ts";
 import { debugLog } from "./utils.ts";
 import type { ModelPricing, TokenUsage } from "./utils.ts";
-
-export const MISSING = "MISSING" as const;
 
 interface State {
   appState: {
@@ -17,8 +15,8 @@ interface State {
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
     model: string;
+    baseURL: string | null;
     provider: Provider;
-    baseURL: string;
     disableUsageMessage: boolean;
     diffStyle: DiffStyle;
   };
@@ -40,7 +38,7 @@ const initialState: State = {
   configState: {
     model: MISSING,
     provider: DEFAULT_CONFIG.provider,
-    baseURL: MISSING,
+    baseURL: null,
     disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
     diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
