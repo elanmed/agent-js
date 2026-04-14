@@ -136,7 +136,7 @@ async function resolveExitConfirmation(rl: readline.Interface) {
 }
 
 function resolveSlashCommand(rawInput: string) {
-  const commandWithoutSlash = rawInput.slice(1);
+  const commandWithoutSlash = rawInput.slice(1).trim();
   if (commandWithoutSlash === "edit") {
     return readFromEditor("");
   }
