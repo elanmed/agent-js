@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import { colorLog, debugLog } from "./utils.ts";
+import { colorLog, debugLog, getAvailableSlashCommands } from "./utils.ts";
 import { actions, dispatch, MISSING } from "./state.ts";
 
 export type DiffStyle = "unified" | "lines";
@@ -73,7 +73,7 @@ export const LOCAL_CONFIG_PATH = join(
   "settings.json",
 );
 
-export function initStateFromConfig() {
+export function initState() {
   const globalConfig: Config = (() => {
     if (fs.existsSync(GLOBAL_CONFIG_PATH)) {
       debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
@@ -148,6 +148,8 @@ export function initStateFromConfig() {
         DEFAULT_CONFIG.pricingPerModel,
     ),
   );
+
+  dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
 }
 
 function parseConfigStr(configStr: string): Config {

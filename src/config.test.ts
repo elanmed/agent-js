@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { resetState, selectors } from "./state.ts";
 import {
-  initStateFromConfig,
+  initState,
   DEFAULT_CONFIG,
   GLOBAL_CONFIG_PATH,
   LOCAL_CONFIG_PATH,
@@ -22,7 +22,7 @@ let originalReadFileSync = fs.readFileSync;
 let originalMkdirSync = fs.mkdirSync;
 let originalWriteFileSync = fs.writeFileSync;
 
-describe("initStateFromConfig", () => {
+describe("initState", () => {
   let writeFileArgs: [string, string] | null = null;
 
   beforeEach(() => {
@@ -88,7 +88,7 @@ describe("initStateFromConfig", () => {
         model: "claude-haiku-4-5",
         baseURL: "https://api.example.com",
       });
-      initStateFromConfig();
+      initState();
 
       assert.equal(selectors.getModel(), "claude-haiku-4-5");
     });
@@ -103,7 +103,7 @@ describe("initStateFromConfig", () => {
         provider: "anthropic",
       });
 
-      initStateFromConfig();
+      initState();
 
       assert.equal(selectors.getProvider(), "anthropic");
     });
@@ -120,7 +120,7 @@ describe("initStateFromConfig", () => {
         disableUsageMessage: true,
       });
 
-      initStateFromConfig();
+      initState();
 
       assert.equal(selectors.getDisableUsageMessage(), true);
     });
@@ -137,7 +137,7 @@ describe("initStateFromConfig", () => {
         diffStyle: "unified",
       });
 
-      initStateFromConfig();
+      initState();
 
       assert.equal(selectors.getDiffStyle(), "unified");
     });
@@ -162,7 +162,7 @@ describe("initStateFromConfig", () => {
         pricingPerModel: localPricing,
       });
 
-      initStateFromConfig();
+      initState();
 
       assert.deepEqual(selectors.getPricingPerModel(), localPricing);
     });
@@ -180,7 +180,7 @@ describe("initStateFromConfig", () => {
           model: "claude-haiku-4-5",
           baseURL: "https://api.example.com",
         });
-        initStateFromConfig();
+        initState();
         assert.equal(selectors.getModel(), "claude-haiku-4-5");
       });
 
@@ -189,7 +189,7 @@ describe("initStateFromConfig", () => {
           model: "claude-sonnet-4-6",
           provider: "anthropic",
         });
-        initStateFromConfig();
+        initState();
         assert.equal(selectors.getProvider(), "anthropic");
       });
 
@@ -199,7 +199,7 @@ describe("initStateFromConfig", () => {
           baseURL: "https://api.example.com",
           disableUsageMessage: true,
         });
-        initStateFromConfig();
+        initState();
         assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
@@ -209,7 +209,7 @@ describe("initStateFromConfig", () => {
           baseURL: "https://api.example.com",
           diffStyle: "unified",
         });
-        initStateFromConfig();
+        initState();
         assert.equal(selectors.getDiffStyle(), "unified");
       });
 
@@ -226,7 +226,7 @@ describe("initStateFromConfig", () => {
           baseURL: "https://api.example.com",
           pricingPerModel: globalPricing,
         });
-        initStateFromConfig();
+        initState();
         assert.deepEqual(selectors.getPricingPerModel(), globalPricing);
       });
     });
@@ -238,7 +238,7 @@ describe("initStateFromConfig", () => {
 
       it("writes the global config as the default config", () => {
         try {
-          initStateFromConfig();
+          initState();
         } catch {
           // Expected to throw due to missing model
         }
@@ -249,7 +249,7 @@ describe("initStateFromConfig", () => {
 
       it("throws when model is not configured", () => {
         assert.throws(() => {
-          initStateFromConfig();
+          initState();
         }, /A `model` is required/);
       });
 
@@ -257,7 +257,7 @@ describe("initStateFromConfig", () => {
         fsState.globalContent = JSON.stringify({ model: "some-model" });
         fsState.globalExists = true;
         assert.throws(() => {
-          initStateFromConfig();
+          initState();
         }, /A `baseURL` is required when `provider=openai-compatible`/);
       });
     });
@@ -268,7 +268,7 @@ describe("initStateFromConfig", () => {
     fsState.globalContent = "not valid json";
 
     assert.throws(() => {
-      initStateFromConfig();
+      initState();
     }, /Failed to parse config as JSON/);
   });
 
@@ -277,7 +277,7 @@ describe("initStateFromConfig", () => {
     fsState.localContent = "not valid json";
 
     assert.throws(() => {
-      initStateFromConfig();
+      initState();
     }, /Failed to parse config as JSON/);
   });
 });
