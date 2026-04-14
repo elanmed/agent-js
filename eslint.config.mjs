@@ -16,4 +16,10 @@ export default [
       "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
+  {
+    files: ["**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-floating-promises": "off",
+    },
+  },
 ];
