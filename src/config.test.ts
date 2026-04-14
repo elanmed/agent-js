@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import { dispatch, actions, selectors } from "./state.ts";
 import {
   initState,
@@ -9,135 +7,131 @@ import {
   GLOBAL_CONFIG_PATH,
   LOCAL_CONFIG_PATH,
 } from "./config.ts";
+import type { InitStateDeps } from "./config.ts";
 
-const fsState = {
-  globalExists: false,
-  globalContent: "{}",
-  localExists: false,
-  localContent: "{}",
-};
+interface FsState {
+  globalExists: boolean;
+  globalContent: string;
+  localExists: boolean;
+  localContent: string;
+}
 
-let originalExistsSync = fs.existsSync;
-let originalReadFileSync = fs.readFileSync;
-let originalMkdirSync = fs.mkdirSync;
-let originalWriteFileSync = fs.writeFileSync;
+function makeFs(overrides: Partial<FsState> = {}): {
+  fs: InitStateDeps;
+  state: FsState;
+  written: [string, string][];
+} {
+  const state: FsState = {
+    globalExists: false,
+    globalContent: "{}",
+    localExists: false,
+    localContent: "{}",
+    ...overrides,
+  };
+  const written: [string, string][] = [];
+
+  return {
+    fs: {
+      existsSync: (path: string): boolean =>
+        path === GLOBAL_CONFIG_PATH ? state.globalExists : state.localExists,
+      readFileSync: (path: string): string =>
+        path === GLOBAL_CONFIG_PATH ? state.globalContent : state.localContent,
+      mkdirSync: () => {
+        /* noop */
+      },
+      writeFileSync: (path: string, content: string) => {
+        written.push([path, content]);
+        if (path === LOCAL_CONFIG_PATH) state.localContent = content;
+        if (path === GLOBAL_CONFIG_PATH) state.globalContent = content;
+      },
+    } satisfies InitStateDeps,
+    state,
+    written,
+  };
+}
 
 describe("initState", () => {
-  let writeFileArgs: [string, string] | null = null;
-
   beforeEach(() => {
     dispatch(actions.resetState());
-    writeFileArgs = null;
-    fsState.globalExists = false;
-    fsState.globalContent = "{}";
-    fsState.localExists = false;
-    fsState.localContent = "{}";
-
-    originalExistsSync = fs.existsSync;
-    originalReadFileSync = fs.readFileSync;
-    originalMkdirSync = fs.mkdirSync;
-    originalWriteFileSync = fs.writeFileSync;
-
-    fs.existsSync = ((path: unknown): boolean => {
-      return path === GLOBAL_CONFIG_PATH
-        ? fsState.globalExists
-        : fsState.localExists;
-    }) as typeof fs.existsSync;
-
-    fs.readFileSync = ((path: unknown) => ({
-      toString: (): string => {
-        return path === GLOBAL_CONFIG_PATH
-          ? fsState.globalContent
-          : fsState.localContent;
-      },
-    })) as typeof fs.readFileSync;
-
-    fs.mkdirSync = (() => undefined) as typeof fs.mkdirSync;
-    fs.writeFileSync = ((path: string, content: string) => {
-      if (path === GLOBAL_CONFIG_PATH || path === LOCAL_CONFIG_PATH) {
-        writeFileArgs = [path, content];
-      }
-      if (path === LOCAL_CONFIG_PATH) {
-        fsState.localContent = content;
-      }
-      if (path === GLOBAL_CONFIG_PATH) {
-        fsState.globalContent = content;
-      }
-    }) as typeof fs.writeFileSync;
-  });
-
-  afterEach(() => {
-    fs.existsSync = originalExistsSync;
-    fs.readFileSync = originalReadFileSync;
-    fs.mkdirSync = originalMkdirSync;
-    fs.writeFileSync = originalWriteFileSync;
   });
 
   describe("when local config exists", () => {
-    beforeEach(() => {
-      fsState.localExists = true;
-      fsState.globalExists = true;
-    });
-
     it("uses its model over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
+      const { fs } = makeFs({
+        globalExists: true,
+        globalContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+        }),
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "claude-haiku-4-5",
+          baseURL: "https://api.example.com",
+        }),
       });
-      fsState.localContent = JSON.stringify({
-        model: "claude-haiku-4-5",
-        baseURL: "https://api.example.com",
-      });
-      initState();
+
+      initState(fs);
 
       assert.equal(selectors.getModel(), "claude-haiku-4-5");
     });
 
     it("uses its provider over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
-        provider: "openai-compatible",
-      });
-      fsState.localContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
-        provider: "anthropic",
+      const { fs } = makeFs({
+        globalExists: true,
+        globalContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          provider: "openai-compatible",
+        }),
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          provider: "anthropic",
+        }),
       });
 
-      initState();
+      initState(fs);
 
       assert.equal(selectors.getProvider(), "anthropic");
     });
 
     it("uses its disableUsageMessage over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
-        disableUsageMessage: false,
-      });
-      fsState.localContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
-        disableUsageMessage: true,
+      const { fs } = makeFs({
+        globalExists: true,
+        globalContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          disableUsageMessage: false,
+        }),
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          disableUsageMessage: true,
+        }),
       });
 
-      initState();
+      initState(fs);
 
       assert.equal(selectors.getDisableUsageMessage(), true);
     });
 
     it("uses its diffStyle over the global config, default config", () => {
-      fsState.globalContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
-        diffStyle: "lines",
-      });
-      fsState.localContent = JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
-        diffStyle: "unified",
+      const { fs } = makeFs({
+        globalExists: true,
+        globalContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          diffStyle: "lines",
+        }),
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          diffStyle: "unified",
+        }),
       });
 
-      initState();
+      initState(fs);
 
       assert.equal(selectors.getDiffStyle(), "unified");
     });
@@ -151,65 +145,80 @@ describe("initState", () => {
         cacheWritePerToken: 0,
       };
 
-      fsState.globalContent = JSON.stringify({
-        model: "test-model",
-        baseURL: "https://api.example.com",
-        pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
-      });
-      fsState.localContent = JSON.stringify({
-        model: "test-model",
-        baseURL: "https://api.example.com",
-        pricingPerModel: localPricing,
+      const { fs } = makeFs({
+        globalExists: true,
+        globalContent: JSON.stringify({
+          model: "test-model",
+          baseURL: "https://api.example.com",
+          pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
+        }),
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "test-model",
+          baseURL: "https://api.example.com",
+          pricingPerModel: localPricing,
+        }),
       });
 
-      initState();
+      initState(fs);
 
       assert.deepEqual(selectors.getPricingPerModel(), localPricing);
     });
   });
 
   describe("when local config does not exist", () => {
-    beforeEach(() => {
-      fsState.localExists = false;
-      fsState.globalExists = true;
-    });
-
     describe("when the global config exists", () => {
       it("uses its model over the default config", () => {
-        fsState.globalContent = JSON.stringify({
-          model: "claude-haiku-4-5",
-          baseURL: "https://api.example.com",
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({
+            model: "claude-haiku-4-5",
+            baseURL: "https://api.example.com",
+          }),
         });
-        initState();
+
+        initState(fs);
         assert.equal(selectors.getModel(), "claude-haiku-4-5");
       });
 
       it("uses its provider over the default config", () => {
-        fsState.globalContent = JSON.stringify({
-          model: "claude-sonnet-4-6",
-          provider: "anthropic",
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            provider: "anthropic",
+          }),
         });
-        initState();
+
+        initState(fs);
         assert.equal(selectors.getProvider(), "anthropic");
       });
 
       it("uses its disableUsageMessage over the default config", () => {
-        fsState.globalContent = JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
-          disableUsageMessage: true,
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            baseURL: "https://api.example.com",
+            disableUsageMessage: true,
+          }),
         });
-        initState();
+
+        initState(fs);
         assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
       it("uses its diffStyle over the default config", () => {
-        fsState.globalContent = JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
-          diffStyle: "unified",
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            baseURL: "https://api.example.com",
+            diffStyle: "unified",
+          }),
         });
-        initState();
+
+        initState(fs);
         assert.equal(selectors.getDiffStyle(), "unified");
       });
 
@@ -221,63 +230,73 @@ describe("initState", () => {
           cacheReadPerToken: 0,
           cacheWritePerToken: 0,
         };
-        fsState.globalContent = JSON.stringify({
-          model: "test-model",
-          baseURL: "https://api.example.com",
-          pricingPerModel: globalPricing,
+
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({
+            model: "test-model",
+            baseURL: "https://api.example.com",
+            pricingPerModel: globalPricing,
+          }),
         });
-        initState();
+
+        initState(fs);
         assert.deepEqual(selectors.getPricingPerModel(), globalPricing);
       });
     });
 
     describe("when the global config does not exist", () => {
-      beforeEach(() => {
-        fsState.globalExists = false;
-      });
-
       it("writes the global config as the default config", () => {
+        const { fs, written } = makeFs();
+
         try {
-          initState();
+          initState(fs);
         } catch {
           // Expected to throw due to missing model
         }
 
-        assert.ok(writeFileArgs !== null);
-        assert.deepEqual(JSON.parse(writeFileArgs[1]), DEFAULT_CONFIG);
+        assert.ok(written.length > 0);
+        assert.deepEqual(JSON.parse(written[0]![1]), DEFAULT_CONFIG);
       });
 
       it("throws when model is not configured", () => {
+        const { fs } = makeFs();
         assert.throws(() => {
-          initState();
+          initState(fs);
         }, /A `model` is required/);
       });
 
       it("throws when baseURL is not configured for openai-compatible provider", () => {
-        fsState.globalContent = JSON.stringify({ model: "some-model" });
-        fsState.globalExists = true;
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({ model: "some-model" }),
+        });
         assert.throws(() => {
-          initState();
+          initState(fs);
         }, /A `baseURL` is required when `provider=openai-compatible`/);
       });
     });
   });
 
   it("throws on invalid JSON in global config", () => {
-    fsState.globalExists = true;
-    fsState.globalContent = "not valid json";
+    const { fs } = makeFs({
+      globalExists: true,
+      globalContent: "not valid json",
+    });
 
     assert.throws(() => {
-      initState();
+      initState(fs);
     }, /Failed to parse config as JSON/);
   });
 
   it("throws on invalid JSON in local config", () => {
-    fsState.localExists = true;
-    fsState.localContent = "not valid json";
+    const { fs } = makeFs({
+      localExists: true,
+      localContent: "not valid json",
+    });
 
     assert.throws(() => {
-      initState();
+      initState(fs);
     }, /Failed to parse config as JSON/);
   });
 });

@@ -1,4 +1,4 @@
-import fs from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
@@ -73,11 +73,24 @@ export const LOCAL_CONFIG_PATH = join(
   "settings.json",
 );
 
-export function initState() {
+const initStateDeps = {
+  existsSync: (path: string): boolean => existsSync(path),
+  readFileSync: (path: string): string => readFileSync(path).toString(),
+  mkdirSync: (path: string, options?: { recursive: boolean }): void => {
+    mkdirSync(path, options);
+  },
+  writeFileSync: (path: string, content: string): void => {
+    writeFileSync(path, content);
+  },
+};
+
+export type InitStateDeps = typeof initStateDeps;
+
+export function initState(deps: InitStateDeps = initStateDeps) {
   const globalConfig: Config = (() => {
-    if (fs.existsSync(GLOBAL_CONFIG_PATH)) {
+    if (deps.existsSync(GLOBAL_CONFIG_PATH)) {
       debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
-      return parseConfigStr(fs.readFileSync(GLOBAL_CONFIG_PATH).toString());
+      return parseConfigStr(deps.readFileSync(GLOBAL_CONFIG_PATH));
     }
 
     debugLog(`${GLOBAL_CONFIG_PATH} does not exist`);
@@ -85,13 +98,13 @@ export function initState() {
   })();
 
   const localConfig: Config = (() => {
-    if (fs.existsSync(LOCAL_CONFIG_PATH)) {
+    if (deps.existsSync(LOCAL_CONFIG_PATH)) {
       debugLog(`${LOCAL_CONFIG_PATH} exists, reading`);
-      return parseConfigStr(fs.readFileSync(LOCAL_CONFIG_PATH).toString());
+      return parseConfigStr(deps.readFileSync(LOCAL_CONFIG_PATH));
     }
 
-    fs.mkdirSync(dirname(LOCAL_CONFIG_PATH), { recursive: true });
-    fs.writeFileSync(
+    deps.mkdirSync(dirname(LOCAL_CONFIG_PATH), { recursive: true });
+    deps.writeFileSync(
       LOCAL_CONFIG_PATH,
       JSON.stringify(DEFAULT_CONFIG, null, 2),
     );
