@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ModelMessage, ToolSet } from "ai";
 import { generateText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
