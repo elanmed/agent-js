@@ -1,8 +1,17 @@
 import { fileURLToPath } from "node:url";
 import { selectors } from "./state.ts";
-import { colorLog, getMessageFromError, maybePrintUsageMessage } from "./utils.ts";
+import {
+  colorLog,
+  maybePrintUsageMessage,
+  getMessageFromError,
+} from "./utils.ts";
 import { initState } from "./config.ts";
-import { initReadline, initKeypress, initSigInt, resolveUserInput } from "./input.ts";
+import {
+  initKeypress,
+  initReadline,
+  initSigInt,
+  resolveUserInput,
+} from "./input.ts";
 import { resolveUserInputApiCall, runToolLoop } from "./api.ts";
 
 async function main() {
@@ -40,4 +49,3 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(1);
   });
 }
-
