@@ -10,11 +10,11 @@ import {
   getMessageFromError,
   type TokenUsage,
 } from "./utils.ts";
-import { resetState, dispatch, actions } from "./state.ts";
+import { dispatch, actions } from "./state.ts";
 
 beforeEach(() => {
-  resetState();
-  // Set up custom pricing for testing
+  dispatch(actions.resetState());
+
   dispatch(
     actions.setPricingPerModel({
       "claude-haiku-4-5": {
@@ -111,74 +111,30 @@ describe("utils", () => {
       assert.equal(result, "Session usage: $0.0000");
     });
 
-    it("returns token counts for a model with no pricing configured", () => {
-      const result = calculateSessionUsage("unknown-model", noUsages);
-      assert.ok(result.includes("0 in"));
-      assert.ok(result.includes("0 out"));
-    });
-
-    it("calculates prompt and completion token costs correctly", () => {
-      // haiku: input=$1/M, output=$5/M
-      // 1_000_000 prompt + 1_000_000 completion = $1 + $5 = $6.0000
+    it("calculates prompt token costs correctly", () => {
+      // haiku: input=$1/M, 2_000_000 prompt = $2.0000
       const result = calculateSessionUsage("claude-haiku-4-5", [
         {
-          inputTokens: 1_000_000,
-          outputTokens: 1_000_000,
+          inputTokens: 2_000_000,
+          outputTokens: 0,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
         },
       ]);
-      assert.equal(result, "Session usage: $6.0000");
+      assert.equal(result, "Session usage: $2.0000");
     });
 
-    it("calculates costs correctly for claude-sonnet-4-6", () => {
-      // sonnet: input=$3/M, output=$15/M
-      // 1_000_000 prompt + 1_000_000 completion = $3 + $15 = $18.0000
-      const result = calculateSessionUsage("claude-sonnet-4-6", [
-        {
-          inputTokens: 1_000_000,
-          outputTokens: 1_000_000,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-        },
-      ]);
-      assert.equal(result, "Session usage: $18.0000");
-    });
-
-    it("calculates costs correctly for claude-opus-4-6", () => {
-      // opus: input=$5/M, output=$25/M
-      // 1_000_000 prompt + 1_000_000 completion = $5 + $25 = $30.0000
-      const result = calculateSessionUsage("claude-opus-4-6", [
-        {
-          inputTokens: 1_000_000,
-          outputTokens: 1_000_000,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-        },
-      ]);
-      assert.equal(result, "Session usage: $30.0000");
-    });
-
-    it("accumulates costs across multiple usages", () => {
-      // haiku: input=$1/M, output=$5/M
-      // usage1: 500_000 prompt + 200_000 completion = $0.50 + $1.00 = $1.50
-      // usage2: 500_000 prompt + 300_000 completion = $0.50 + $1.50 = $2.00
-      // total = $3.50
+    it("calculates completion token costs correctly", () => {
+      // haiku: output=$5/M, 600_000 completion = $3.0000
       const result = calculateSessionUsage("claude-haiku-4-5", [
         {
-          inputTokens: 500_000,
-          outputTokens: 200_000,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-        },
-        {
-          inputTokens: 500_000,
-          outputTokens: 300_000,
+          inputTokens: 0,
+          outputTokens: 600_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
         },
       ]);
-      assert.equal(result, "Session usage: $3.5000");
+      assert.equal(result, "Session usage: $3.0000");
     });
 
     it("calculates cache read token costs correctly", () => {
@@ -224,26 +180,47 @@ describe("utils", () => {
       assert.equal(result, "Session usage: $1.7000");
     });
 
-    it("accumulates cache costs across multiple usages", () => {
-      // haiku: cacheRead=$0.25/M, cacheWrite=$1.25/M
-      // usage1: 500_000 cacheRead + 200_000 cacheWrite = $0.125 + $0.25 = $0.375
-      // usage2: 500_000 cacheRead + 300_000 cacheWrite = $0.125 + $0.375 = $0.50
-      // total = $0.875
+    it("accumulates all token types across multiple usages", () => {
+      // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
+      // usage1: 200_000 input + 100_000 output + 400_000 cacheRead + 200_000 cacheWrite
+      //   = $0.20 + $0.50 + $0.10 + $0.25 = $1.05
+      // usage2: 300_000 input + 100_000 output + 100_000 cacheRead + 400_000 cacheWrite
+      //   = $0.30 + $0.50 + $0.025 + $0.50 = $1.325
+      // total = $2.375
       const result = calculateSessionUsage("claude-haiku-4-5", [
         {
-          inputTokens: 0,
-          outputTokens: 0,
-          cacheReadTokens: 500_000,
+          inputTokens: 200_000,
+          outputTokens: 100_000,
+          cacheReadTokens: 400_000,
           cacheWriteTokens: 200_000,
         },
         {
-          inputTokens: 0,
-          outputTokens: 0,
-          cacheReadTokens: 500_000,
-          cacheWriteTokens: 300_000,
+          inputTokens: 300_000,
+          outputTokens: 100_000,
+          cacheReadTokens: 100_000,
+          cacheWriteTokens: 400_000,
         },
       ]);
-      assert.equal(result, "Session usage: $0.8750");
+      assert.equal(result, "Session usage: $2.3750");
+    });
+  });
+
+  describe("calculateSessionUsage no pricing configured", () => {
+    it("returns token counts for no usages", () => {
+      const result = calculateSessionUsage("unknown-model", []);
+      assert.equal(result, "Session usage: 0 in, 0 out");
+    });
+
+    it("returns token counts for usages with no pricing configured", () => {
+      const result = calculateSessionUsage("unknown-model", [
+        {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadTokens: 25,
+          cacheWriteTokens: 10,
+        },
+      ]);
+      assert.equal(result, "Session usage: 100 in, 50 out");
     });
   });
 

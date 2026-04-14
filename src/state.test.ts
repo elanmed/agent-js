@@ -2,11 +2,11 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import type { TokenUsage } from "./utils.ts";
-import { getState, resetState, dispatch, actions, selectors } from "./state.ts";
+import { getState, dispatch, actions, selectors } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 
 beforeEach(() => {
-  resetState();
+  dispatch(actions.resetState());
 });
 
 describe("state", () => {
@@ -16,7 +16,7 @@ describe("state", () => {
     dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
     dispatch(actions.setQuestionAbortController(new AbortController()));
     dispatch(actions.setApiStreamAbortController(new AbortController()));
-    resetState();
+    dispatch(actions.resetState());
     const s = getState();
     assert.equal(s.appState.running, true);
     assert.equal(s.appState.interrupted, false);

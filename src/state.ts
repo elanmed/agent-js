@@ -55,10 +55,6 @@ let state: State = structuredClone(initialState);
 
 export const getState = () => state;
 
-export const resetState = () => {
-  state = structuredClone(initialState);
-};
-
 type Action =
   | {
       type: "set-interrupted";
@@ -125,6 +121,9 @@ type Action =
   | {
       type: "set-slash-commands";
       payload: string[];
+    }
+  | {
+      type: "reset-state";
     };
 
 export const dispatch = (action: Action) => {
@@ -260,6 +259,9 @@ const reducer = (state: State, action: Action): State => {
         },
       };
     }
+    case "reset-state": {
+      return structuredClone(initialState);
+    }
   }
 };
 
@@ -347,6 +349,10 @@ const setSlashCommands = (commands: string[]): Action => {
   return { type: "set-slash-commands", payload: commands };
 };
 
+const resetState = (): Action => {
+  return { type: "reset-state" };
+};
+
 export const actions = {
   setInterrupted,
   setRunning,
@@ -365,6 +371,7 @@ export const actions = {
   setApiStreamAbortController,
   setEditorInputValue,
   setSlashCommands,
+  resetState,
 };
 
 const getInterrupted = () => getState().appState.interrupted;

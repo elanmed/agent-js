@@ -2,7 +2,7 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { resetState, selectors } from "./state.ts";
+import { dispatch, actions, selectors } from "./state.ts";
 import {
   initState,
   DEFAULT_CONFIG,
@@ -26,7 +26,7 @@ describe("initState", () => {
   let writeFileArgs: [string, string] | null = null;
 
   beforeEach(() => {
-    resetState();
+    dispatch(actions.resetState());
     writeFileArgs = null;
     fsState.globalExists = false;
     fsState.globalContent = "{}";
