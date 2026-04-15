@@ -124,7 +124,7 @@ async function resolveExitConfirmation(rl: readline.Interface) {
 
   if (exitResult.ok) {
     if (/^y(es)?$/i.exec(exitResult.value)) {
-      debugLog("user confirmed exit");
+      debugLog("User confirmed exit");
       dispatch(actions.setRunning(false));
     }
   } else {
@@ -144,7 +144,7 @@ function resolveSlashCommand(rawInput: string) {
   if (commandWithoutSlash === "clear") {
     dispatch(actions.resetMessageUsages());
     dispatch(actions.resetMessageParams());
-    debugLog("Reset message usages and message params");
+    debugLog("Performing the `clear` slash command");
     colorLog("Context cleared", "grey");
     return null;
   }

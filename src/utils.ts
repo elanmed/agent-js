@@ -89,8 +89,9 @@ export function debugLog(content: string) {
   fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
 }
 
-export function logNewline(repeat = 1) {
-  for (let i = 0; i < repeat; i++) colorLog("\n");
+export function logNewline() {
+  if (selectors.getStdout().endsWith("\n\n")) return;
+  colorLog("\n");
 }
 
 export function normalizeLine(content: string): string {
@@ -221,7 +222,6 @@ function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
 
 export async function executeBat(content: string) {
   content = normalizeLine(content);
-  debugLog(`executeBat: content.length=${String(content.length)}`);
   const isBatAvailable = await checkBat();
   debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
 
@@ -231,13 +231,10 @@ export async function executeBat(content: string) {
       "red",
     );
     colorLog(content);
-    debugLog("executeBat: rendered as plain text (bat unavailable)");
     return;
   }
 
   const batResult = spawnBat(content);
-  debugLog(`executeBat: batResult.ok=${String(batResult.ok)}`);
-
   if (batResult.ok) {
     debugLog(
       `executeBat: writing bat output, bytes=${String(batResult.value.stdout.length)}`,

@@ -54,7 +54,7 @@ async function callApi(
 ): Promise<CallApiResult> {
   const messageCount = selectors.getMessageParams().length + newMessages.length;
   debugLog(
-    `callApi: model=${selectors.getModel()}, messages=${String(messageCount)}`,
+    `callApi: model=${selectors.getModel()}, messageCount=${String(messageCount)}`,
   );
 
   const spinnerFrames = ["|", "/", "-", "\\"];
@@ -88,9 +88,7 @@ async function callApi(
         ...(abortSignal && { abortSignal }),
       });
 
-    debugLog(
-      `callApi: finish_reason=${finishReason}, prompt_tokens=${String(usage.inputTokens)}, completion_tokens=${String(usage.outputTokens)}`,
-    );
+    debugLog(`callApi: finishReason=${finishReason}`);
 
     clearSpinner();
 
@@ -193,20 +191,20 @@ export async function runToolLoop(
 
     dispatch(actions.setApiStreamAbortController(new AbortController()));
     const toolApiStreamController = selectors.getApiStreamAbortController();
-    const toolStreamResult = await tryCatchAsync(
+    const toolApiCallResult = await tryCatchAsync(
       callApi([toolMessage], toolApiStreamController!.signal),
     );
     dispatch(actions.setApiStreamAbortController(null));
 
-    if (toolStreamResult.ok) {
-      currentResult = toolStreamResult.value;
+    if (toolApiCallResult.ok) {
+      currentResult = toolApiCallResult.value;
     } else {
-      if (isAbortError(toolStreamResult.error)) {
+      if (isAbortError(toolApiCallResult.error)) {
         colorLog("Aborted", "red");
         dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
         break;
       } else {
-        colorLog(getMessageFromError(toolStreamResult.error), "red");
+        colorLog(getMessageFromError(toolApiCallResult.error), "red");
         continue;
       }
     }

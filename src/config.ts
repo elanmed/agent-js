@@ -101,6 +101,7 @@ export function initState(deps: InitStateDeps = initStateDeps) {
       LOCAL_CONFIG_PATH,
       JSON.stringify(DEFAULT_CONFIG, null, 2),
     );
+    debugLog(`${LOCAL_CONFIG_PATH} does not exist`);
     colorLog(
       `${LOCAL_CONFIG_PATH} does not exist, writing default config`,
       "grey",
