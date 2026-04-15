@@ -359,7 +359,7 @@ async function printGitDiff(args: {
   if (diffResult.ok && diffResult.value.stdout) {
     logNewline();
     colorLog(args.path, "green");
-    process.stdout.write(normalizeLine(diffResult.value.stdout));
+    colorLog(normalizeLine(diffResult.value.stdout));
     logNewline();
   }
 }
@@ -386,7 +386,11 @@ export async function getToolResultBlock(toolCall: ToolCall) {
       toolResult = executeStrReplaceTool(toolCall);
       if (!toolResult.is_error) {
         const tempFileAfter = createTempFile({ initialContentPath: path });
-        await printGitDiff({ tempFileBeforePath: tempFileBefore, tempFileAfterPath: tempFileAfter, path });
+        await printGitDiff({
+          tempFileBeforePath: tempFileBefore,
+          tempFileAfterPath: tempFileAfter,
+          path,
+        });
         fs.unlinkSync(tempFileBefore);
         fs.unlinkSync(tempFileAfter);
       }
@@ -398,7 +402,11 @@ export async function getToolResultBlock(toolCall: ToolCall) {
       toolResult = executeInsertLinesTool(toolCall);
       if (!toolResult.is_error) {
         const tempFileAfter = createTempFile({ initialContentPath: path });
-        await printGitDiff({ tempFileBeforePath: tempFileBefore, tempFileAfterPath: tempFileAfter, path });
+        await printGitDiff({
+          tempFileBeforePath: tempFileBefore,
+          tempFileAfterPath: tempFileAfter,
+          path,
+        });
         fs.unlinkSync(tempFileBefore);
         fs.unlinkSync(tempFileAfter);
       }

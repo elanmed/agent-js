@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { dirname, join, parse } from "node:path";
-import { selectors } from "./state.ts";
+import { actions, dispatch, selectors } from "./state.ts";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { exec } from "node:child_process";
@@ -53,10 +53,18 @@ const COLORS = {
   grey: "\x1b[90m",
 } as const;
 
-export function colorLog(text: string, color: keyof typeof COLORS = "white") {
+export function colorLog(
+  text: Uint8Array | string,
+  color?: keyof typeof COLORS,
+) {
   const reset = "\x1b[0m";
-  const colorCode = COLORS[color];
-  console.log(`${colorCode}${text}${reset}`);
+  let out = text.toString();
+  if (color) {
+    const colorCode = COLORS[color];
+    out = `${colorCode}${text.toString()}${reset}\n`;
+  }
+  process.stdout.write(out);
+  dispatch(actions.appendToStdout(out));
 }
 
 export async function getRecursiveAgentsMdFilesStr() {
@@ -82,7 +90,7 @@ export function debugLog(content: string) {
 }
 
 export function logNewline(repeat = 1) {
-  for (let i = 0; i < repeat; i++) console.log("");
+  for (let i = 0; i < repeat; i++) colorLog("\n");
 }
 
 export function normalizeLine(content: string): string {
@@ -222,7 +230,7 @@ export async function executeBat(content: string) {
       "`bat` is not available, falling back to plain text rendering",
       "red",
     );
-    process.stdout.write(content);
+    colorLog(content);
     debugLog("executeBat: rendered as plain text (bat unavailable)");
     return;
   }
@@ -234,12 +242,12 @@ export async function executeBat(content: string) {
     debugLog(
       `executeBat: writing bat output, bytes=${String(batResult.value.stdout.length)}`,
     );
-    process.stdout.write(batResult.value.stdout);
+    colorLog(batResult.value.stdout);
     return;
   }
 
   debugLog("executeBat: bat spawn failed, falling back to plain text");
-  process.stdout.write(content);
+  colorLog(content);
 }
 
 export function createTempFile(args?: { initialContentPath?: string }) {
@@ -265,7 +273,7 @@ export async function printGitDiff(args: {
   if (diffResult.ok && diffResult.value.stdout) {
     logNewline();
     colorLog(args.path, "green");
-    process.stdout.write(normalizeLine(diffResult.value.stdout));
+    colorLog(normalizeLine(diffResult.value.stdout));
     logNewline();
   }
 }

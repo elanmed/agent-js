@@ -89,7 +89,7 @@ export async function resolveUserInput(rl: readline.Interface) {
   const editorInputValue = selectors.getEditorInputValue();
   if (!inputResult.ok) {
     if (!isAbortError(inputResult.error)) {
-      console.error(getMessageFromError(inputResult.error));
+      colorLog(getMessageFromError(inputResult.error), "red");
       return null;
     }
 

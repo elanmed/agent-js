@@ -1,5 +1,10 @@
 import type { ModelMessage } from "ai";
-import { DEFAULT_CONFIG, MISSING, type DiffStyle, type Provider } from "./config.ts";
+import {
+  DEFAULT_CONFIG,
+  MISSING,
+  type DiffStyle,
+  type Provider,
+} from "./config.ts";
 import { debugLog } from "./utils.ts";
 import type { ModelPricing, TokenUsage } from "./utils.ts";
 
@@ -11,6 +16,7 @@ interface State {
     messageUsages: TokenUsage[];
     editorInputValue: string | null;
     slashCommands: string[];
+    stdout: string;
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -34,6 +40,7 @@ const initialState: State = {
     messageUsages: [],
     editorInputValue: null,
     slashCommands: [],
+    stdout: "",
   },
   configState: {
     model: MISSING,
@@ -119,6 +126,13 @@ type Action =
   | {
       type: "set-slash-commands";
       payload: string[];
+    }
+  | {
+      type: "reset-stdout";
+    }
+  | {
+      type: "append-to-stdout";
+      payload: string;
     }
   | {
       type: "reset-state";
@@ -257,6 +271,21 @@ const reducer = (state: State, action: Action): State => {
         },
       };
     }
+    case "reset-stdout": {
+      return {
+        ...state,
+        appState: { ...state.appState, stdout: "" },
+      };
+    }
+    case "append-to-stdout": {
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          stdout: state.appState.stdout + action.payload,
+        },
+      };
+    }
     case "reset-state": {
       return structuredClone(initialState);
     }
@@ -347,6 +376,14 @@ const setSlashCommands = (commands: string[]): Action => {
   return { type: "set-slash-commands", payload: commands };
 };
 
+const resetStdout = (): Action => {
+  return { type: "reset-stdout" };
+};
+
+const appendToStdout = (line: string): Action => {
+  return { type: "append-to-stdout", payload: line };
+};
+
 const resetState = (): Action => {
   return { type: "reset-state" };
 };
@@ -369,6 +406,8 @@ export const actions = {
   setApiStreamAbortController,
   setEditorInputValue,
   setSlashCommands,
+  resetStdout,
+  appendToStdout,
   resetState,
 };
 
@@ -378,6 +417,7 @@ const getMessageParams = () => getState().appState.messageParams;
 const getMessageUsages = () => getState().appState.messageUsages;
 const getEditorInputValue = () => getState().appState.editorInputValue;
 const getSlashCommands = () => getState().appState.slashCommands;
+const getStdout = () => getState().appState.stdout;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -402,4 +442,5 @@ export const selectors = {
   getApiStreamAbortController,
   getEditorInputValue,
   getSlashCommands,
+  getStdout,
 };

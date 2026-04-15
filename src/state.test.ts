@@ -159,4 +159,28 @@ describe("state", () => {
     dispatch(actions.setSlashCommands(["test", "deploy"]));
     assert.deepEqual(selectors.getSlashCommands(), ["test", "deploy"]);
   });
+
+  it("reset-stdout", () => {
+    dispatch(actions.appendToStdout("line1\n"));
+    dispatch(actions.appendToStdout("line2\n"));
+    assert.equal(selectors.getStdout(), "line1\nline2\n");
+    dispatch(actions.resetStdout());
+    assert.equal(selectors.getStdout(), "");
+  });
+
+  describe("append-to-stdout", () => {
+    it("appends single line", () => {
+      assert.equal(selectors.getStdout(), "");
+      dispatch(actions.appendToStdout("line1\n"));
+      assert.equal(selectors.getStdout(), "line1\n");
+    });
+
+    it("appends multiple lines in order", () => {
+      assert.equal(selectors.getStdout(), "");
+      dispatch(actions.appendToStdout("line1\n"));
+      dispatch(actions.appendToStdout("line2\n"));
+      dispatch(actions.appendToStdout("line3\n"));
+      assert.equal(selectors.getStdout(), "line1\nline2\nline3\n");
+    });
+  });
 });
