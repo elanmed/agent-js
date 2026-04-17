@@ -139,12 +139,11 @@ type Action =
     };
 
 export const dispatch = (action: Action) => {
-  debugLog(`dispatch: ${action.type}`);
   state = reducer(getState(), action);
 };
 
 const logStateChange = (actionType: string, key: string, value: unknown) => {
-  debugLog(`state ${actionType}: ${key}=${JSON.stringify(value)}`);
+  debugLog(`dispatch ${actionType}: ${key}=${JSON.stringify(value)}`);
 };
 
 const reducer = (state: State, action: Action): State => {

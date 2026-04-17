@@ -36,7 +36,6 @@ export function initReadline() {
 
 export function initKeypress(rl: readline.Interface) {
   stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
-    debugLog(JSON.stringify(key, null, 2));
     if (key.ctrl && key.name === "e") {
       const editorContent = readFromEditor(rl.line);
       if (editorContent) {
