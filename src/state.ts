@@ -143,151 +143,195 @@ export const dispatch = (action: Action) => {
   state = reducer(getState(), action);
 };
 
+const logStateChange = (actionType: string, key: string, value: unknown) => {
+  debugLog(`state ${actionType}: ${key}=${JSON.stringify(value)}`);
+};
+
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "set-interrupted": {
-      return {
+      const next = {
         ...state,
         appState: { ...state.appState, interrupted: action.payload },
       };
+      logStateChange(action.type, "interrupted", action.payload);
+      return next;
     }
     case "set-running": {
-      return {
+      const next = {
         ...state,
         appState: { ...state.appState, running: action.payload },
       };
+      logStateChange(action.type, "running", action.payload);
+      return next;
     }
     case "append-to-message-params": {
-      return {
+      const next = {
         ...state,
         appState: {
           ...state.appState,
           messageParams: [...state.appState.messageParams, action.payload],
         },
       };
+      logStateChange(action.type, "messageParams", next.appState.messageParams);
+      return next;
     }
     case "append-to-message-usages": {
-      return {
+      const next = {
         ...state,
         appState: {
           ...state.appState,
           messageUsages: [...state.appState.messageUsages, action.payload],
         },
       };
+      logStateChange(action.type, "messageUsages", next.appState.messageUsages);
+      return next;
     }
     case "set-model": {
-      return {
+      const next = {
         ...state,
         configState: { ...state.configState, model: action.payload },
       };
+      logStateChange(action.type, "model", action.payload);
+      return next;
     }
     case "set-provider": {
-      return {
+      const next = {
         ...state,
         configState: { ...state.configState, provider: action.payload },
       };
+      logStateChange(action.type, "provider", action.payload);
+      return next;
     }
     case "set-base-url": {
-      return {
+      const next = {
         ...state,
         configState: { ...state.configState, baseURL: action.payload },
       };
+      logStateChange(action.type, "baseURL", action.payload);
+      return next;
     }
     case "set-pricing-per-model": {
-      return {
+      const next = {
         ...state,
         configState: { ...state.configState, pricingPerModel: action.payload },
       };
+      logStateChange(action.type, "pricingPerModel", action.payload);
+      return next;
     }
     case "set-disable-usage-message": {
-      return {
+      const next = {
         ...state,
         configState: {
           ...state.configState,
           disableUsageMessage: action.payload,
         },
       };
+      logStateChange(action.type, "disableUsageMessage", action.payload);
+      return next;
     }
     case "set-diff-style": {
-      return {
+      const next = {
         ...state,
         configState: { ...state.configState, diffStyle: action.payload },
       };
+      logStateChange(action.type, "diffStyle", action.payload);
+      return next;
     }
     case "truncate-message-params": {
-      return {
+      const next = {
         ...state,
         appState: {
           ...state.appState,
           messageParams: state.appState.messageParams.slice(0, action.payload),
         },
       };
+      logStateChange(action.type, "messageParams", next.appState.messageParams);
+      return next;
     }
     case "reset-message-usages": {
-      return {
+      const next = {
         ...state,
         appState: { ...state.appState, messageUsages: [] },
       };
+      logStateChange(action.type, "messageUsages", []);
+      return next;
     }
     case "reset-message-params": {
-      return {
+      const next = {
         ...state,
         appState: { ...state.appState, messageParams: [] },
       };
+      logStateChange(action.type, "messageParams", []);
+      return next;
     }
     case "set-question-abort-controller": {
-      return {
+      const next = {
         ...state,
         abortControllers: {
           ...state.abortControllers,
           question: action.payload,
         },
       };
+      logStateChange(action.type, "question", action.payload);
+      return next;
     }
     case "set-api-stream-abort-controller": {
-      return {
+      const next = {
         ...state,
         abortControllers: {
           ...state.abortControllers,
           apiStream: action.payload,
         },
       };
+      logStateChange(action.type, "apiStream", action.payload);
+      return next;
     }
     case "set-editor-input-value": {
-      return {
+      const next = {
         ...state,
         appState: {
           ...state.appState,
           editorInputValue: action.payload,
         },
       };
+      logStateChange(action.type, "editorInputValue", action.payload);
+      return next;
     }
     case "set-slash-commands": {
-      return {
+      const next = {
         ...state,
         appState: {
           ...state.appState,
           slashCommands: action.payload,
         },
       };
+      logStateChange(action.type, "slashCommands", action.payload);
+      return next;
     }
     case "reset-stdout": {
-      return {
+      const next = {
         ...state,
         appState: { ...state.appState, stdout: "" },
       };
+      logStateChange(action.type, "stdout", "");
+      return next;
     }
     case "append-to-stdout": {
-      return {
+      const next = {
         ...state,
         appState: {
           ...state.appState,
           stdout: state.appState.stdout + action.payload,
         },
       };
+      logStateChange(action.type, "stdout", next.appState.stdout);
+      return next;
     }
     case "reset-state": {
-      return structuredClone(initialState);
+      const next = structuredClone(initialState);
+      logStateChange(action.type, "state", next);
+      return next;
     }
   }
 };
