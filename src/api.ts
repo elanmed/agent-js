@@ -7,7 +7,6 @@ import {
   isAbortError,
   colorLog,
   debugLog,
-  maybePrintUsageMessage,
   tryCatchAsync,
   getMessageFromError,
   executeBat,
@@ -92,13 +91,6 @@ async function callApi(
 
     clearSpinner();
 
-    if (text) {
-      logNewline();
-      fenceLog("Output");
-      await executeBat(text);
-      logNewline();
-    }
-
     for (const message of newMessages) {
       dispatch(actions.appendToMessageParams(message));
     }
@@ -112,6 +104,13 @@ async function callApi(
     );
     for (const msg of response.messages) {
       dispatch(actions.appendToMessageParams(msg));
+    }
+
+    if (text) {
+      logNewline();
+      fenceLog("Output");
+      await executeBat(text);
+      logNewline();
     }
 
     return {
@@ -142,7 +141,6 @@ export async function resolveUserInputApiCall(initialContent: string) {
   if (!apiResult.ok) {
     if (isAbortError(apiResult.error)) {
       colorLog("Aborted", "red");
-      maybePrintUsageMessage();
       return null;
     }
 

@@ -82,7 +82,14 @@ export function fenceLog(text: string, deps: FenceLogDeps = fenceLogDeps) {
   const fenceWidth = deps.getColumns();
   const leftPad = 2;
   const rightPad = 2;
-  const label = ` ${text} `;
+  let sessionUsage = "";
+  if (!selectors.getDisableUsageMessage()) {
+    sessionUsage = ` (${calculateSessionUsage(
+      selectors.getModel(),
+      selectors.getMessageUsages(),
+    )})`;
+  }
+  const label = ` ${text}${sessionUsage} `;
   const usedWidth = leftPad + label.length + rightPad;
   const rightFill = Math.max(fenceWidth - usedWidth, 0);
   const line = `${"─".repeat(leftPad)}${label}${"─".repeat(rightFill)}`;
@@ -160,7 +167,7 @@ export function calculateSessionUsage(
 
   const pricing = selectors.getPricingPerModel()[model];
   if (!pricing) {
-    return `Session usage: ${String(totalUsage.inputTokens)} in, ${String(totalUsage.outputTokens)} out`;
+    return `${String(totalUsage.inputTokens)} in, ${String(totalUsage.outputTokens)} out`;
   }
 
   const DOLLARS_PER_MILLION = 1_000_000;
@@ -180,7 +187,7 @@ export function calculateSessionUsage(
     (totalUsage.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
 
   const cost = inputCost + outputCost + cacheReadCost + cacheWriteCost;
-  return `Session usage: $${cost.toFixed(4)}`;
+  return `$${cost.toFixed(4)}`;
 }
 
 export const BASE_SYSTEM_PROMPT =

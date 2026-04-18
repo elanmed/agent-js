@@ -1,10 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { selectors } from "./state.ts";
-import {
-  colorLog,
-  maybePrintUsageMessage,
-  getMessageFromError,
-} from "./utils.ts";
+import { colorLog, getMessageFromError } from "./utils.ts";
 import { initState } from "./config.ts";
 import {
   initKeypress,
@@ -41,8 +37,6 @@ async function main() {
     if (toolLoopApiCall.finishReason === "length") {
       colorLog("Response truncated, output hit the token limit", "yellow");
     }
-
-    maybePrintUsageMessage();
   }
 
   rl.close();

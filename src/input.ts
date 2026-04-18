@@ -9,7 +9,6 @@ import {
   getMessageFromError,
   readFromEditor,
   colorLog,
-  maybePrintUsageMessage,
   normalizeLine,
 } from "./utils.ts";
 import { join } from "node:path";
@@ -111,12 +110,16 @@ export async function resolveUserInput(rl: readline.Interface) {
 
   if (!inputResult.ok) {
     if (!isAbortError(inputResult.error)) {
+      dispatch(
+        actions.appendToStdout(`>[unable to read rl.question result]\n`),
+      );
       colorLog(getMessageFromError(inputResult.error), "red");
       return null;
     }
 
     // only aborts if there's an active questionAbortController, which is when there's a question, not when a tool call or api call is ongoing
     if (selectors.getEditorInputValue() !== null) {
+      dispatch(actions.appendToStdout(`>[editor]\n`));
       const editorInputValue = selectors.getEditorInputValue()!;
       dispatch(actions.setEditorInputValue(null));
       return editorInputValue;
@@ -127,6 +130,7 @@ export async function resolveUserInput(rl: readline.Interface) {
   }
 
   const rawInput = inputResult.value;
+  dispatch(actions.appendToStdout(`>${rawInput}\n`));
 
   if (selectors.getEditorInputValue() === null && rawInput.at(0) === "/") {
     return resolveSlashCommand(rawInput);
@@ -149,6 +153,7 @@ async function resolveExitConfirmation(rl: readline.Interface) {
 
   if (exitResult.ok) {
     if (/^y(es)?$/i.exec(exitResult.value)) {
+      dispatch(actions.appendToStdout(`>${exitResult.value}\n`));
       debugLog("User confirmed exit");
       dispatch(actions.setRunning(false));
     }
@@ -190,6 +195,5 @@ function resolveSlashCommand(rawInput: string) {
     `Invalid / command detected, valid commands: ${selectors.getSlashCommands().join(",")}`,
     "red",
   );
-  maybePrintUsageMessage();
   return null;
 }
