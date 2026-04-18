@@ -25,9 +25,25 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 | `model`               | string                                 | Model name (required)                                    |
 | `provider`            | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)              |
 | `baseURL`             | string                                 | API base URL (required for `openai-compatible`)          |
-| `diffStyle`           | `"unified"` \| `"lines"`               | Git diff output style (default: `unified`)               |
+| `diffStyle`           | `"unified"` \| `"lines"`               | Git diff output style (default: `lines`)                 |
 | `disableUsageMessage` | boolean                                | Hide token usage/cost after responses (default: `false`) |
 | `pricingPerModel`     | object                                 | Token pricing per model per million                      |
+| `keymaps`             | object                                 | Custom keybindings (see below)                           |
+
+### Keymaps
+
+| Key      | Type    | Default | Description              |
+| -------- | ------- | ------- | ------------------------ |
+| `editor` | `Key`   | `{ name: "x", ctrl: false, meta: false, shift: false }` | Keybinding to open `$EDITOR` |
+
+Each `Key` object has:
+
+| Field   | Type    | Default   |
+| ------- | ------- | --------- |
+| `name`  | string  | required  |
+| `ctrl`  | boolean | `false`   |
+| `meta`  | boolean | `false`   |
+| `shift` | boolean | `false`   |
 
 Example `settings.json`:
 
@@ -37,10 +53,20 @@ Example `settings.json`:
   "provider": "anthropic",
   "diffStyle": "lines",
   "disableUsageMessage": false,
+  "keymaps": {
+    "editor": {
+      "name": "e",
+      "ctrl": true,
+      "meta": false,
+      "shift": false
+    }
+  },
   "pricingPerModel": {
     "my-custom-model": {
       "inputPerToken": 2.5,
-      "outputPerToken": 10
+      "outputPerToken": 10,
+      "cacheReadPerToken": 1.25,
+      "cacheWritePerToken": 3.75
     }
   }
 }
@@ -76,4 +102,3 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 - [ ] Web fetch tool
 - [ ] Spinner for tool calls
 - [ ] Tool call interrupt
-- [ ] Better session usage output
