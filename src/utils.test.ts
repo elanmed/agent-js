@@ -8,6 +8,7 @@ import {
   normalizeLine,
   getMessageFromError,
   fenceLog,
+  isSameKey,
   type TokenUsage,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
@@ -108,7 +109,7 @@ describe("utils", () => {
   describe("calculateSessionUsage", () => {
     it("known model with no usages returns $0.0000", () => {
       const result = calculateSessionUsage("claude-haiku-4-5", noUsages);
-      assert.equal(result, "Session usage: $0.0000");
+      assert.equal(result, "$0.0000");
     });
 
     it("calculates prompt token costs correctly", () => {
@@ -121,7 +122,7 @@ describe("utils", () => {
           cacheWriteTokens: 0,
         },
       ]);
-      assert.equal(result, "Session usage: $2.0000");
+      assert.equal(result, "$2.0000");
     });
 
     it("calculates completion token costs correctly", () => {
@@ -134,7 +135,7 @@ describe("utils", () => {
           cacheWriteTokens: 0,
         },
       ]);
-      assert.equal(result, "Session usage: $3.0000");
+      assert.equal(result, "$3.0000");
     });
 
     it("calculates cache read token costs correctly", () => {
@@ -148,7 +149,7 @@ describe("utils", () => {
           cacheWriteTokens: 0,
         },
       ]);
-      assert.equal(result, "Session usage: $0.2500");
+      assert.equal(result, "$0.2500");
     });
 
     it("calculates cache write token costs correctly", () => {
@@ -162,7 +163,7 @@ describe("utils", () => {
           cacheWriteTokens: 1_000_000,
         },
       ]);
-      assert.equal(result, "Session usage: $1.2500");
+      assert.equal(result, "$1.2500");
     });
 
     it("calculates combined input, output, and cache costs correctly", () => {
@@ -177,7 +178,7 @@ describe("utils", () => {
           cacheWriteTokens: 100_000,
         },
       ]);
-      assert.equal(result, "Session usage: $1.7000");
+      assert.equal(result, "$1.7000");
     });
 
     it("accumulates all token types across multiple usages", () => {
@@ -201,14 +202,14 @@ describe("utils", () => {
           cacheWriteTokens: 400_000,
         },
       ]);
-      assert.equal(result, "Session usage: $2.3750");
+      assert.equal(result, "$2.3750");
     });
   });
 
   describe("calculateSessionUsage no pricing configured", () => {
     it("returns token counts for no usages", () => {
       const result = calculateSessionUsage("unknown-model", []);
-      assert.equal(result, "Session usage: 0 in, 0 out");
+      assert.equal(result, "0 in, 0 out");
     });
 
     it("returns token counts for usages with no pricing configured", () => {
@@ -220,7 +221,7 @@ describe("utils", () => {
           cacheWriteTokens: 10,
         },
       ]);
-      assert.equal(result, "Session usage: 100 in, 50 out");
+      assert.equal(result, "100 in, 50 out");
     });
   });
 
@@ -260,6 +261,58 @@ describe("utils", () => {
 
     it("handles already normalized string", () => {
       assert.equal(normalizeLine("already\n"), "already\n");
+    });
+  });
+
+  describe("isSameKey", () => {
+    it("returns true when all fields match", () => {
+      assert.equal(
+        isSameKey(
+          { name: "e", ctrl: true, meta: false, shift: false },
+          { name: "e", ctrl: true, meta: false, shift: false },
+        ),
+        true,
+      );
+    });
+
+    it("returns false when name differs", () => {
+      assert.equal(
+        isSameKey(
+          { name: "e", ctrl: true, meta: false, shift: false },
+          { name: "x", ctrl: true, meta: false, shift: false },
+        ),
+        false,
+      );
+    });
+
+    it("returns false when ctrl differs", () => {
+      assert.equal(
+        isSameKey(
+          { name: "e", ctrl: true, meta: false, shift: false },
+          { name: "e", ctrl: false, meta: false, shift: false },
+        ),
+        false,
+      );
+    });
+
+    it("returns false when meta differs", () => {
+      assert.equal(
+        isSameKey(
+          { name: "x", ctrl: false, meta: true, shift: false },
+          { name: "x", ctrl: false, meta: false, shift: false },
+        ),
+        false,
+      );
+    });
+
+    it("returns false when shift differs", () => {
+      assert.equal(
+        isSameKey(
+          { name: "x", ctrl: false, meta: false, shift: true },
+          { name: "x", ctrl: false, meta: false, shift: false },
+        ),
+        false,
+      );
     });
   });
 });

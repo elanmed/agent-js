@@ -4,6 +4,7 @@ import {
   DEFAULT_CONFIG,
   MISSING,
   type DiffStyle,
+  type Key,
   type Provider,
 } from "./config.ts";
 import { debugLog, stringify } from "./utils.ts";
@@ -26,6 +27,7 @@ interface State {
     provider: Provider;
     disableUsageMessage: boolean;
     diffStyle: DiffStyle;
+    keymaps: { editor: Key };
   };
   abortControllers: {
     question: AbortController | null;
@@ -50,6 +52,7 @@ const initialState: State = {
     disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
     diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
+    keymaps: structuredClone(DEFAULT_CONFIG.keymaps),
   },
   abortControllers: {
     question: null,
@@ -101,6 +104,10 @@ type Action =
   | {
       type: "set-diff-style";
       payload: "unified" | "lines";
+    }
+  | {
+      type: "set-keymaps";
+      payload: { editor: Key };
     }
   | {
       type: "truncate-message-params";
@@ -254,6 +261,15 @@ const reducer = (state: State, action: Action): State => {
         configState: { ...state.configState, diffStyle: action.payload },
       };
       logStateChange(action.type, before, action.payload);
+      return next;
+    }
+    case "set-keymaps": {
+      const before = state.configState.keymaps;
+      const next = {
+        ...state,
+        configState: { ...state.configState, keymaps: action.payload },
+      };
+      logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
     case "truncate-message-params": {
@@ -423,6 +439,10 @@ const setDiffStyle = (diffStyle: DiffStyle): Action => {
   return { type: "set-diff-style", payload: diffStyle };
 };
 
+const setKeymaps = (keymaps: { editor: Key }): Action => {
+  return { type: "set-keymaps", payload: keymaps };
+};
+
 const truncateMessageParams = (count: number): Action => {
   return { type: "truncate-message-params", payload: count };
 };
@@ -478,6 +498,7 @@ export const actions = {
   setPricingPerModel,
   setDisableUsageMessage,
   setDiffStyle,
+  setKeymaps,
   truncateMessageParams,
   resetMessageUsages,
   resetMessageParams,
@@ -503,6 +524,7 @@ const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
 const getDisableUsageMessage = () => getState().configState.disableUsageMessage;
 const getDiffStyle = () => getState().configState.diffStyle;
+const getKeymaps = () => getState().configState.keymaps;
 const getQuestionAbortController = () => getState().abortControllers.question;
 const getApiStreamAbortController = () => getState().abortControllers.apiStream;
 
@@ -517,6 +539,7 @@ export const selectors = {
   getPricingPerModel,
   getDisableUsageMessage,
   getDiffStyle,
+  getKeymaps,
   getQuestionAbortController,
   getApiStreamAbortController,
   getEditorInputValue,

@@ -7,6 +7,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { glob } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import type { Key } from "./config.ts";
 
 export const MISSING = "MISSING";
 
@@ -351,4 +352,13 @@ export async function execGitDiff(
 
 export function stringify(val: unknown) {
   return JSON.stringify(val, null, 2);
+}
+
+export function isSameKey(a: Key, b: Key) {
+  return (
+    a.name === b.name &&
+    (a.ctrl ?? false) === (b.ctrl ?? false) &&
+    (a.meta ?? false) === (b.meta ?? false) &&
+    (a.shift ?? false) === (b.shift ?? false)
+  );
 }

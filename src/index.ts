@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { getState, selectors } from "./state.ts";
-import { colorLog, debugLog, getMessageFromError, stringify } from "./utils.ts";
+import { selectors } from "./state.ts";
+import { colorLog, getMessageFromError } from "./utils.ts";
 import { initState } from "./config.ts";
 import {
   initKeypress,

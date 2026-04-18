@@ -134,6 +134,12 @@ describe("state", () => {
     assert.equal(selectors.getDiffStyle(), "unified");
   });
 
+  it("set-keymaps", () => {
+    assert.deepEqual(selectors.getKeymaps(), DEFAULT_CONFIG.keymaps);
+    dispatch(actions.setKeymaps({ editor: { name: "e", ctrl: true, meta: false, shift: false } }));
+    assert.deepEqual(selectors.getKeymaps(), { editor: { name: "e", ctrl: true, meta: false, shift: false } });
+  });
+
   it("set-question-abort-controller", () => {
     assert.equal(selectors.getQuestionAbortController(), null);
     const controller = new AbortController();

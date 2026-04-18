@@ -10,8 +10,10 @@ import {
   readFromEditor,
   colorLog,
   normalizeLine,
+  isSameKey,
 } from "./utils.ts";
 import { join } from "node:path";
+import type { Key } from "./config.ts";
 
 export function initReadline() {
   const rl = readline.createInterface({
@@ -35,8 +37,9 @@ export function initReadline() {
 }
 
 export function initKeypress(rl: readline.Interface) {
-  stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
-    if (key.ctrl && key.name === "e") {
+  stdin.on("keypress", (_char, key: Key) => {
+    const editorKeymap = selectors.getKeymaps().editor;
+    if (isSameKey(key, editorKeymap)) {
       let initialContentPrefix = "";
       if (selectors.getEditorInputValue() !== null) {
         initialContentPrefix = selectors.getEditorInputValue()!;

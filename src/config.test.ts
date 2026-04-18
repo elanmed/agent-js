@@ -164,6 +164,27 @@ describe("initState", () => {
 
       assert.deepEqual(selectors.getPricingPerModel(), localPricing);
     });
+
+    it("uses its keymaps over the global config, default config", () => {
+      const { fs } = makeFs({
+        globalExists: true,
+        globalContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          keymaps: { editor: { name: "e", ctrl: true, meta: false, shift: false } },
+        }),
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          keymaps: { editor: { name: "v", ctrl: false, meta: false, shift: false } },
+        }),
+      });
+
+      initState(fs);
+
+      assert.deepEqual(selectors.getKeymaps(), { editor: { name: "v", ctrl: false, meta: false, shift: false } });
+    });
   });
 
   describe("when local config does not exist", () => {
@@ -242,6 +263,20 @@ describe("initState", () => {
 
         initState(fs);
         assert.deepEqual(selectors.getPricingPerModel(), globalPricing);
+      });
+
+      it("uses its keymaps over the default config", () => {
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            baseURL: "https://api.example.com",
+            keymaps: { editor: { name: "e", ctrl: true, meta: false, shift: false } },
+          }),
+        });
+
+        initState(fs);
+        assert.deepEqual(selectors.getKeymaps(), { editor: { name: "e", ctrl: true, meta: false, shift: false } });
       });
     });
 

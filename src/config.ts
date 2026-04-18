@@ -10,6 +10,13 @@ export const MISSING = "MISSING";
 export type DiffStyle = "unified" | "lines";
 export type Provider = "anthropic" | "openai-compatible";
 
+const KeySchema = z.object({
+  name: z.string().length(1),
+  ctrl: z.boolean().optional(),
+  meta: z.boolean().optional(),
+  shift: z.boolean().optional(),
+});
+
 const ModelPricingSchema = z
   .object({
     inputPerToken: z.number(),
@@ -26,9 +33,15 @@ const ConfigSchema = z.object({
   disableUsageMessage: z.boolean().optional(),
   diffStyle: z.enum(["unified", "lines"]).optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
+  keymaps: z
+    .object({
+      editor: KeySchema,
+    })
+    .optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
+export type Key = z.infer<typeof KeySchema>;
 
 interface DefaultConfig {
   model: string;
@@ -44,6 +57,9 @@ interface DefaultConfig {
       cacheWritePerToken: number;
     }
   >;
+  keymaps: {
+    editor: Key;
+  };
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -52,6 +68,14 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   diffStyle: "lines",
   pricingPerModel: {},
   model: MISSING,
+  keymaps: {
+    editor: {
+      name: "x",
+      ctrl: false,
+      meta: false,
+      shift: false,
+    },
+  },
 };
 
 export const GLOBAL_CONFIG_PATH = join(
@@ -156,6 +180,11 @@ export function initState(deps: InitStateDeps = initStateDeps) {
   );
 
   dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
+  dispatch(
+    actions.setKeymaps(
+      localConfig.keymaps ?? globalConfig.keymaps ?? DEFAULT_CONFIG.keymaps,
+    ),
+  );
 }
 
 function parseConfigStr(configStr: string): Config {
