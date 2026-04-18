@@ -358,6 +358,7 @@ async function printGitDiff(args: {
 
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
+    logNewline();
     fenceLog(`File change: ${args.path}`);
     colorLog(normalizeLine(diffResult.value.stdout));
     logNewline();

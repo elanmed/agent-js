@@ -95,6 +95,7 @@ async function callApi(
     clearSpinner();
 
     if (text) {
+      logNewline();
       fenceLog("Output");
       await executeBat(text);
       logNewline();

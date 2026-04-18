@@ -79,7 +79,6 @@ const fenceLogDeps = {
 type FenceLogDeps = typeof fenceLogDeps;
 
 export function fenceLog(text: string, deps: FenceLogDeps = fenceLogDeps) {
-  logNewline();
   const fenceWidth = deps.getColumns();
   const leftPad = 2;
   const rightPad = 2;
