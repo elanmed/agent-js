@@ -69,10 +69,8 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 
 ## TODO
 
-- [ ] Queue messages with an editor
 - [ ] MCP server
 - [ ] Resume session
-- [ ] Avoid duplicate reliable newlines
-  - [ ] Store stdout in memory
 - [ ] View last temp file
 - [ ] Update screenshot
+- [ ] Web fetch tool

@@ -58,6 +58,10 @@ export function initKeypress(rl: readline.Interface) {
         dispatch(actions.setEditorInputValue(editorContent));
         const questionAbortController = selectors.getQuestionAbortController();
         if (questionAbortController) {
+          rl.write(null, { ctrl: true, name: "e" });
+          rl.write(null, { ctrl: true, name: "u" });
+          rl.write("[editor]");
+
           questionAbortController.abort();
         }
       }
@@ -111,11 +115,11 @@ export async function resolveUserInput(rl: readline.Interface) {
       return null;
     }
 
+    // only aborts if there's an active questionAbortController, which is when there's a question, not when a tool call or api call is ongoing
     if (selectors.getEditorInputValue() !== null) {
-      rl.write(null, { ctrl: true, name: "e" });
-      rl.write(null, { ctrl: true, name: "u" });
-      rl.write("[editor]");
-      return selectors.getEditorInputValue()!;
+      const editorInputValue = selectors.getEditorInputValue()!;
+      dispatch(actions.setEditorInputValue(null));
+      return editorInputValue;
     }
 
     // TODO: little weird, will either return null or call setRunning(false)
