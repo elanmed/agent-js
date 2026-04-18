@@ -7,6 +7,7 @@ import {
   calculateSessionUsage,
   normalizeLine,
   getMessageFromError,
+  fenceLog,
   type TokenUsage,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
@@ -220,6 +221,23 @@ describe("utils", () => {
         },
       ]);
       assert.equal(result, "Session usage: 100 in, 50 out");
+    });
+  });
+
+  describe("fenceLog", () => {
+    it("produces a single grey line with the label inline", () => {
+      const written: string[] = [];
+      const deps = {
+        colorLog: (text: Uint8Array | string) => {
+          written.push(text.toString());
+        },
+        getColumns: () => 80,
+      };
+      fenceLog("Output", deps);
+      const output = written.join("");
+      assert.ok(output.includes(" Output "));
+      assert.ok(output.includes("─"));
+      assert.ok(!output.includes("=".repeat(5)));
     });
   });
 

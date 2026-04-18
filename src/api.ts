@@ -13,6 +13,8 @@ import {
   executeBat,
   BASE_SYSTEM_PROMPT,
   getRecursiveAgentsMdFilesStr,
+  fenceLog,
+  logNewline,
 } from "./utils.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
 import { TOOLS } from "./tools.ts";
@@ -93,7 +95,9 @@ async function callApi(
     clearSpinner();
 
     if (text) {
+      fenceLog("Output");
       await executeBat(text);
+      logNewline();
     }
 
     for (const message of newMessages) {
@@ -164,7 +168,13 @@ export async function runToolLoop(
   messageCountBeforeTurn: number,
 ) {
   let currentResult = initialResult;
+  let logged = false;
   while (currentResult.finishReason === "tool-calls") {
+    if (!logged) {
+      fenceLog("Tool calls");
+      logged = true;
+    }
+
     const toolMessages: ToolMessage[] = [];
 
     for (const toolCall of currentResult.toolCalls) {
@@ -209,6 +219,11 @@ export async function runToolLoop(
       }
     }
   }
+
+  if (logged) {
+    logNewline();
+  }
+
   return currentResult;
 }
 

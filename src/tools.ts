@@ -8,6 +8,7 @@ import {
   createTempFile,
   debugLog,
   execGitDiff,
+  fenceLog,
   getMessageFromError,
   logNewline,
   normalizeLine,
@@ -35,7 +36,7 @@ const BashToolInputSchema = z.object({ command: z.string() });
 
 export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
   const { command: bashCommand } = BashToolInputSchema.parse(toolCall.input);
-  colorLog(`bash: ${bashCommand}`, "grey");
+  colorLog(`bash: ${bashCommand}`, "blue");
   debugLog(`executeBashTool: command=${bashCommand}`);
 
   const bashResult = await tryCatchAsync(execPromise(bashCommand));
@@ -114,7 +115,7 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
   const { path, start_line, end_line } = ViewFileToolInputSchema.parse(
     toolCall.input,
   );
-  colorLog(`view_file: ${path}`, "grey");
+  colorLog(`view_file: ${path}`, "blue");
   debugLog(`executeViewFileTool: path=${path}`);
 
   const statResult = tryCatch(() => fs.statSync(path));
@@ -191,7 +192,7 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
   const { path, old_str, new_str } = StrReplaceToolInputSchema.parse(
     toolCall.input,
   );
-  colorLog(`str_replace: ${path}`, "grey");
+  colorLog(`str_replace: ${path}`, "blue");
   debugLog(`executeStrReplaceTool: path=${path}`);
 
   const readResult = tryCatch(() => fs.readFileSync(path));
@@ -290,7 +291,7 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   const { path, after_line, content } = InsertLinesToolInputSchema.parse(
     toolCall.input,
   );
-  colorLog(`insert_lines: ${path}`, "grey");
+  colorLog(`insert_lines: ${path}`, "blue");
   debugLog(
     `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
   );
@@ -357,8 +358,7 @@ async function printGitDiff(args: {
 
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
-    logNewline();
-    colorLog(args.path, "green");
+    fenceLog(`File change: ${args.path}`);
     colorLog(normalizeLine(diffResult.value.stdout));
     logNewline();
   }
@@ -422,4 +422,3 @@ export async function getToolResultBlock(toolCall: ToolCall) {
 
   return toolResult;
 }
-

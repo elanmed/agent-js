@@ -49,6 +49,7 @@ const COLORS = {
   red: "\x1b[31m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
+  blue: "\x1b[34m",
   white: "\x1b[37m",
   grey: "\x1b[90m",
 } as const;
@@ -58,13 +59,35 @@ export function colorLog(
   color?: keyof typeof COLORS,
 ) {
   const reset = "\x1b[0m";
-  let out = text.toString();
+  let out: string;
   if (color) {
     const colorCode = COLORS[color];
     out = `${colorCode}${text.toString()}${reset}\n`;
+  } else {
+    out = `${text.toString()}\n`;
   }
+
   process.stdout.write(out);
   dispatch(actions.appendToStdout(out));
+}
+
+const fenceLogDeps = {
+  colorLog,
+  getColumns: () => (process.stdout.isTTY ? process.stdout.columns : 25),
+};
+
+type FenceLogDeps = typeof fenceLogDeps;
+
+export function fenceLog(text: string, deps: FenceLogDeps = fenceLogDeps) {
+  logNewline();
+  const fenceWidth = deps.getColumns();
+  const leftPad = 2;
+  const rightPad = 2;
+  const label = ` ${text} `;
+  const usedWidth = leftPad + label.length + rightPad;
+  const rightFill = Math.max(fenceWidth - usedWidth, 0);
+  const line = `${"─".repeat(leftPad)}${label}${"─".repeat(rightFill)}`;
+  deps.colorLog(line, "grey");
 }
 
 export async function getRecursiveAgentsMdFilesStr() {
@@ -91,7 +114,7 @@ export function debugLog(content: string) {
 
 export function logNewline() {
   if (selectors.getStdout().endsWith("\n\n")) return;
-  colorLog("\n");
+  colorLog("");
 }
 
 export function normalizeLine(content: string): string {
@@ -268,10 +291,9 @@ export async function printGitDiff(args: {
 
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
-    logNewline();
-    colorLog(args.path, "green");
+    fenceLog("File edit");
+    colorLog(args.path, "blue");
     colorLog(normalizeLine(diffResult.value.stdout));
-    logNewline();
   }
 }
 
