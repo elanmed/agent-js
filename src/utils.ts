@@ -348,3 +348,7 @@ export async function execGitDiff(
     });
   });
 }
+
+export function stringify(val: unknown) {
+  return JSON.stringify(val, null, 2);
+}

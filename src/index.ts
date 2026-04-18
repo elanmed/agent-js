@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { selectors } from "./state.ts";
-import { colorLog, getMessageFromError } from "./utils.ts";
+import { getState, selectors } from "./state.ts";
+import { colorLog, debugLog, getMessageFromError, stringify } from "./utils.ts";
 import { initState } from "./config.ts";
 import {
   initKeypress,
@@ -18,6 +18,8 @@ async function main() {
   initSigInt(rl);
 
   while (selectors.getRunning()) {
+    // debugLog(stringify(getState()));
+
     const userInput = await resolveUserInput(rl);
     if (userInput === null) continue;
 

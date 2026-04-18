@@ -74,3 +74,6 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 - [ ] View last temp file
 - [ ] Update screenshot
 - [ ] Web fetch tool
+- [ ] Spinner for tool calls
+- [ ] Tool call interrupt
+- [ ] Better session usage output

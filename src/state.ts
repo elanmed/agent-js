@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import type { ModelMessage } from "ai";
 import {
   DEFAULT_CONFIG,
@@ -5,7 +6,7 @@ import {
   type DiffStyle,
   type Provider,
 } from "./config.ts";
-import { debugLog } from "./utils.ts";
+import { debugLog, stringify } from "./utils.ts";
 import type { ModelPricing, TokenUsage } from "./utils.ts";
 
 interface State {
@@ -142,29 +143,32 @@ export const dispatch = (action: Action) => {
   state = reducer(getState(), action);
 };
 
-const logStateChange = (actionType: string, key: string, value: unknown) => {
-  debugLog(`dispatch ${actionType}: ${key}=${JSON.stringify(value)}`);
+const logStateChange = (actionType: string, before: string, after: string) => {
+  debugLog(`dispatch ${actionType}: before=${before}, after=${after}`);
 };
 
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "set-interrupted": {
+      const before = state.appState.interrupted;
       const next = {
         ...state,
         appState: { ...state.appState, interrupted: action.payload },
       };
-      logStateChange(action.type, "interrupted", action.payload);
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-running": {
+      const before = state.appState.running;
       const next = {
         ...state,
         appState: { ...state.appState, running: action.payload },
       };
-      logStateChange(action.type, "running", action.payload);
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "append-to-message-params": {
+      const before = state.appState.messageParams;
       const next = {
         ...state,
         appState: {
@@ -172,10 +176,15 @@ const reducer = (state: State, action: Action): State => {
           messageParams: [...state.appState.messageParams, action.payload],
         },
       };
-      logStateChange(action.type, "messageParams", next.appState.messageParams);
+      logStateChange(
+        action.type,
+        String(before.length),
+        String(next.appState.messageParams.length),
+      );
       return next;
     }
     case "append-to-message-usages": {
+      const before = state.appState.messageUsages;
       const next = {
         ...state,
         appState: {
@@ -183,42 +192,51 @@ const reducer = (state: State, action: Action): State => {
           messageUsages: [...state.appState.messageUsages, action.payload],
         },
       };
-      logStateChange(action.type, "messageUsages", next.appState.messageUsages);
+      logStateChange(
+        action.type,
+        String(before.length),
+        String(next.appState.messageUsages.length),
+      );
       return next;
     }
     case "set-model": {
+      const before = state.configState.model;
       const next = {
         ...state,
         configState: { ...state.configState, model: action.payload },
       };
-      logStateChange(action.type, "model", action.payload);
+      logStateChange(action.type, before, action.payload);
       return next;
     }
     case "set-provider": {
+      const before = state.configState.provider;
       const next = {
         ...state,
         configState: { ...state.configState, provider: action.payload },
       };
-      logStateChange(action.type, "provider", action.payload);
+      logStateChange(action.type, before, action.payload);
       return next;
     }
     case "set-base-url": {
+      const before = state.configState.baseURL;
       const next = {
         ...state,
         configState: { ...state.configState, baseURL: action.payload },
       };
-      logStateChange(action.type, "baseURL", action.payload);
+      logStateChange(action.type, String(before), action.payload);
       return next;
     }
     case "set-pricing-per-model": {
+      const before = state.configState.pricingPerModel;
       const next = {
         ...state,
         configState: { ...state.configState, pricingPerModel: action.payload },
       };
-      logStateChange(action.type, "pricingPerModel", action.payload);
+      logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
     case "set-disable-usage-message": {
+      const before = state.configState.disableUsageMessage;
       const next = {
         ...state,
         configState: {
@@ -226,18 +244,20 @@ const reducer = (state: State, action: Action): State => {
           disableUsageMessage: action.payload,
         },
       };
-      logStateChange(action.type, "disableUsageMessage", action.payload);
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-diff-style": {
+      const before = state.configState.diffStyle;
       const next = {
         ...state,
         configState: { ...state.configState, diffStyle: action.payload },
       };
-      logStateChange(action.type, "diffStyle", action.payload);
+      logStateChange(action.type, before, action.payload);
       return next;
     }
     case "truncate-message-params": {
+      const before = state.appState.messageParams.length;
       const next = {
         ...state,
         appState: {
@@ -245,26 +265,33 @@ const reducer = (state: State, action: Action): State => {
           messageParams: state.appState.messageParams.slice(0, action.payload),
         },
       };
-      logStateChange(action.type, "messageParams", next.appState.messageParams);
+      logStateChange(
+        action.type,
+        String(before),
+        String(next.appState.messageParams.length),
+      );
       return next;
     }
     case "reset-message-usages": {
+      const before = state.appState.messageUsages.length;
       const next = {
         ...state,
         appState: { ...state.appState, messageUsages: [] },
       };
-      logStateChange(action.type, "messageUsages", []);
+      logStateChange(action.type, String(before), "0");
       return next;
     }
     case "reset-message-params": {
+      const before = state.appState.messageParams.length;
       const next = {
         ...state,
         appState: { ...state.appState, messageParams: [] },
       };
-      logStateChange(action.type, "messageParams", []);
+      logStateChange(action.type, String(before), "0");
       return next;
     }
     case "set-question-abort-controller": {
+      const before = state.abortControllers.question;
       const next = {
         ...state,
         abortControllers: {
@@ -272,10 +299,11 @@ const reducer = (state: State, action: Action): State => {
           question: action.payload,
         },
       };
-      logStateChange(action.type, "question", action.payload);
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-api-stream-abort-controller": {
+      const before = state.abortControllers.apiStream;
       const next = {
         ...state,
         abortControllers: {
@@ -283,10 +311,11 @@ const reducer = (state: State, action: Action): State => {
           apiStream: action.payload,
         },
       };
-      logStateChange(action.type, "apiStream", action.payload);
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-editor-input-value": {
+      const before = state.appState.editorInputValue;
       const next = {
         ...state,
         appState: {
@@ -294,10 +323,11 @@ const reducer = (state: State, action: Action): State => {
           editorInputValue: action.payload,
         },
       };
-      logStateChange(action.type, "editorInputValue", action.payload);
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-slash-commands": {
+      const before = state.appState.slashCommands;
       const next = {
         ...state,
         appState: {
@@ -305,18 +335,20 @@ const reducer = (state: State, action: Action): State => {
           slashCommands: action.payload,
         },
       };
-      logStateChange(action.type, "slashCommands", action.payload);
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "reset-stdout": {
+      const before = state.appState.stdout;
       const next = {
         ...state,
         appState: { ...state.appState, stdout: "" },
       };
-      logStateChange(action.type, "stdout", "");
+      logStateChange(action.type, before, "");
       return next;
     }
     case "append-to-stdout": {
+      const before = state.appState.stdout;
       const next = {
         ...state,
         appState: {
@@ -324,12 +356,16 @@ const reducer = (state: State, action: Action): State => {
           stdout: state.appState.stdout + action.payload,
         },
       };
-      logStateChange(action.type, "stdout", next.appState.stdout);
+      logStateChange(
+        action.type,
+        String(before.length),
+        String(next.appState.stdout.length),
+      );
       return next;
     }
     case "reset-state": {
       const next = structuredClone(initialState);
-      logStateChange(action.type, "state", next);
+      logStateChange(action.type, "[truncating]", stringify(next));
       return next;
     }
   }
