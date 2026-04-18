@@ -28,13 +28,13 @@ async function main() {
       continue;
     }
 
+    const messageCountBefore = selectors.getMessageParams().length;
     const userInputApiCall = await resolveUserInputApiCall(userInput);
     if (userInputApiCall == null) continue;
 
-    const messageCountBeforeToolLoop = selectors.getMessageParams().length;
     const toolLoopApiCall = await runToolLoop(
       userInputApiCall,
-      messageCountBeforeToolLoop,
+      messageCountBefore,
     );
     if (toolLoopApiCall.finishReason === "length") {
       colorLog("Response truncated, output hit the token limit", "yellow");
