@@ -42,12 +42,9 @@ async function main() {
       userInputApiCall,
       messageCountBeforeToolLoop,
     );
-
-    const messageCountBeforeMaxLengthLoop = selectors.getMessageParams().length;
-    await runReachedMaxLengthLoop(
-      toolLoopApiCall,
-      messageCountBeforeMaxLengthLoop,
-    );
+    if (toolLoopApiCall.finishReason === "length") {
+      colorLog("Response truncated, output hit the token limit", "yellow");
+    }
 
     maybePrintUsageMessage();
   }

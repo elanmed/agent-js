@@ -74,6 +74,7 @@ async function callApi(
 
   const systemContent = [
     BASE_SYSTEM_PROMPT,
+    // TODO: do this once
     await getRecursiveAgentsMdFilesStr(),
   ].join("\n");
 
@@ -84,7 +85,6 @@ async function callApi(
         system: systemContent,
         messages: [...selectors.getMessageParams(), ...newMessages],
         tools: TOOLS as unknown as ToolSet,
-        maxOutputTokens: 8192,
         ...(abortSignal && { abortSignal }),
       });
 
@@ -205,38 +205,10 @@ export async function runToolLoop(
         break;
       } else {
         colorLog(getMessageFromError(toolApiCallResult.error), "red");
-        continue;
-      }
-    }
-  }
-  return currentResult;
-}
-
-export async function runReachedMaxLengthLoop(
-  initialResult: CallApiResult,
-  messageCountBeforeTurn: number,
-) {
-  let currentResult = initialResult;
-  while (currentResult.finishReason === "length") {
-    dispatch(actions.setApiStreamAbortController(new AbortController()));
-    const toolApiStreamController = selectors.getApiStreamAbortController();
-    const toolApiCallResult = await tryCatchAsync(
-      callApi([], toolApiStreamController!.signal),
-    );
-    dispatch(actions.setApiStreamAbortController(null));
-
-    if (toolApiCallResult.ok) {
-      currentResult = toolApiCallResult.value;
-    } else {
-      if (isAbortError(toolApiCallResult.error)) {
-        colorLog("Aborted", "red");
-        dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
         break;
-      } else {
-        colorLog(getMessageFromError(toolApiCallResult.error), "red");
-        continue;
       }
     }
   }
   return currentResult;
 }
+
