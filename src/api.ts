@@ -32,12 +32,10 @@ interface CallApiResult {
 }
 
 function getLanguageModel() {
-  const provider = selectors.getProvider();
-  const modelName = selectors.getModel();
   const apiKey = process.env["AGENT_JS_API_KEY"];
 
-  if (provider === "anthropic") {
-    return createAnthropic({ ...(apiKey && { apiKey }) })(modelName);
+  if (selectors.getProvider() === "anthropic") {
+    return createAnthropic({ ...(apiKey && { apiKey }) })(selectors.getModel());
   }
 
   const baseURL = selectors.getBaseURL();
@@ -47,7 +45,7 @@ function getLanguageModel() {
     name: "openai-compatible",
     baseURL: baseURL,
     ...(apiKey && { apiKey }),
-  })(modelName);
+  })(selectors.getModel());
 }
 
 async function callApi(

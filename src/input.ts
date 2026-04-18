@@ -10,6 +10,7 @@ import {
   readFromEditor,
   colorLog,
   maybePrintUsageMessage,
+  normalizeLine,
 } from "./utils.ts";
 import { join } from "node:path";
 
@@ -37,7 +38,22 @@ export function initReadline() {
 export function initKeypress(rl: readline.Interface) {
   stdin.on("keypress", (_char, key: { ctrl?: boolean; name?: string }) => {
     if (key.ctrl && key.name === "e") {
-      const editorContent = readFromEditor(rl.line);
+      let initialContentPrefix = "";
+      if (selectors.getEditorInputValue() !== null) {
+        initialContentPrefix = selectors.getEditorInputValue()!;
+      }
+
+      let initialContentSuffix = "";
+      if (rl.line.length) {
+        initialContentSuffix = rl.line;
+      }
+
+      let initialContent = initialContentSuffix;
+      if (initialContentPrefix.length) {
+        initialContent = `${normalizeLine(initialContentPrefix)}\n\n${initialContentSuffix}`;
+      }
+
+      const editorContent = readFromEditor(initialContent);
       if (editorContent) {
         rl.write(null, { ctrl: true, name: "e" });
         rl.write(null, { ctrl: true, name: "u" });
@@ -78,22 +94,26 @@ export function initSigInt(rl: readline.Interface) {
 }
 
 export async function resolveUserInput(rl: readline.Interface) {
+  if (selectors.getEditorInputValue() !== null) {
+    return selectors.getEditorInputValue()!;
+  }
+
   dispatch(actions.setQuestionAbortController(new AbortController()));
-  const questionAbortController = selectors.getQuestionAbortController();
   const inputResult = await tryCatchAsync(
-    rl.question("> ", { signal: questionAbortController!.signal }),
+    rl.question("> ", {
+      signal: selectors.getQuestionAbortController()!.signal,
+    }),
   );
   dispatch(actions.setQuestionAbortController(null));
 
-  const editorInputValue = selectors.getEditorInputValue();
   if (!inputResult.ok) {
     if (!isAbortError(inputResult.error)) {
       colorLog(getMessageFromError(inputResult.error), "red");
       return null;
     }
 
-    if (editorInputValue !== null) {
-      return editorInputValue;
+    if (selectors.getEditorInputValue() !== null) {
+      return selectors.getEditorInputValue()!;
     }
 
     // TODO: little weird, will either return null or call setRunning(false)
@@ -102,7 +122,7 @@ export async function resolveUserInput(rl: readline.Interface) {
 
   const rawInput = inputResult.value;
 
-  if (editorInputValue === null && rawInput.at(0) === "/") {
+  if (selectors.getEditorInputValue() === null && rawInput.at(0) === "/") {
     return resolveSlashCommand(rawInput);
   }
 
