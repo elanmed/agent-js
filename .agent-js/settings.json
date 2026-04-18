@@ -1,5 +1,5 @@
 {
-  "model": "kimi-k2.5",
+  "model": "glm-5.1",
   "baseURL": "https://opencode.ai/zen/go/v1"
 }
 
