@@ -55,9 +55,6 @@ export function initKeypress(rl: readline.Interface) {
 
       const editorContent = readFromEditor(initialContent);
       if (editorContent) {
-        rl.write(null, { ctrl: true, name: "e" });
-        rl.write(null, { ctrl: true, name: "u" });
-        rl.write("[editor]");
         dispatch(actions.setEditorInputValue(editorContent));
         const questionAbortController = selectors.getQuestionAbortController();
         if (questionAbortController) {
@@ -95,7 +92,9 @@ export function initSigInt(rl: readline.Interface) {
 
 export async function resolveUserInput(rl: readline.Interface) {
   if (selectors.getEditorInputValue() !== null) {
-    return selectors.getEditorInputValue()!;
+    const editorInputValue = selectors.getEditorInputValue()!;
+    dispatch(actions.setEditorInputValue(null));
+    return editorInputValue;
   }
 
   dispatch(actions.setQuestionAbortController(new AbortController()));
@@ -113,6 +112,9 @@ export async function resolveUserInput(rl: readline.Interface) {
     }
 
     if (selectors.getEditorInputValue() !== null) {
+      rl.write(null, { ctrl: true, name: "e" });
+      rl.write(null, { ctrl: true, name: "u" });
+      rl.write("[editor]");
       return selectors.getEditorInputValue()!;
     }
 

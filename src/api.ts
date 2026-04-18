@@ -170,6 +170,7 @@ export async function runToolLoop(
   let logged = false;
   while (currentResult.finishReason === "tool-calls") {
     if (!logged) {
+      logNewline();
       fenceLog("Tool calls");
       logged = true;
     }
