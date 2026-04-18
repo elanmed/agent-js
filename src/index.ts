@@ -12,7 +12,11 @@ import {
   initSigInt,
   resolveUserInput,
 } from "./input.ts";
-import { resolveUserInputApiCall, runToolLoop } from "./api.ts";
+import {
+  resolveUserInputApiCall,
+  runReachedMaxLengthLoop,
+  runToolLoop,
+} from "./api.ts";
 
 async function main() {
   initState();
@@ -30,12 +34,20 @@ async function main() {
       continue;
     }
 
-    const messageCountBeforeTurn = selectors.getMessageParams().length;
+    const userInputApiCall = await resolveUserInputApiCall(userInput);
+    if (userInputApiCall == null) continue;
 
-    const apiCallResult = await resolveUserInputApiCall(userInput);
-    if (apiCallResult == null) continue;
+    const messageCountBeforeToolLoop = selectors.getMessageParams().length;
+    const toolLoopApiCall = await runToolLoop(
+      userInputApiCall,
+      messageCountBeforeToolLoop,
+    );
 
-    await runToolLoop(apiCallResult, messageCountBeforeTurn);
+    const messageCountBeforeMaxLengthLoop = selectors.getMessageParams().length;
+    await runReachedMaxLengthLoop(
+      toolLoopApiCall,
+      messageCountBeforeMaxLengthLoop,
+    );
 
     maybePrintUsageMessage();
   }
