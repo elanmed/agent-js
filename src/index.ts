@@ -12,11 +12,7 @@ import {
   initSigInt,
   resolveUserInput,
 } from "./input.ts";
-import {
-  resolveUserInputApiCall,
-  runReachedMaxLengthLoop,
-  runToolLoop,
-} from "./api.ts";
+import { resolveUserInputApiCall, runToolLoop } from "./api.ts";
 
 async function main() {
   initState();
