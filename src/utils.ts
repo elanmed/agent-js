@@ -11,6 +11,7 @@ import type { Key } from "./config.ts";
 import { format } from "prettier";
 import { debugLog } from "./log.ts";
 import type readline from "node:readline/promises";
+import assert from "node:assert";
 
 export const MISSING = "MISSING";
 
@@ -336,7 +337,7 @@ export function isSameKey(a: Key, b: Key) {
 
 export function clearRlLine(): readline.Interface | null {
   const rl = selectors.getRl();
-  if (rl === null) return null;
+  assert(rl !== null);
   rl.write(null, { ctrl: true, name: "e" });
   rl.write(null, { ctrl: true, name: "u" });
   return rl;
