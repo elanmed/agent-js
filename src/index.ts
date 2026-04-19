@@ -1,6 +1,12 @@
 import { fileURLToPath } from "node:url";
 import { actions, dispatch, selectors } from "./state.ts";
-import { colorLog, getMessageFromError } from "./utils.ts";
+import {
+  colorLog,
+  executeBat,
+  fenceLog,
+  getMessageFromError,
+  logNewline,
+} from "./utils.ts";
 import { initState } from "./config.ts";
 import {
   initKeypress,
@@ -32,6 +38,13 @@ async function main() {
     const messageCountBefore = selectors.getMessageParams().length;
     const userInputApiCall = await resolveUserInputApiCall(userInput);
     if (userInputApiCall == null) continue;
+
+    if (userInputApiCall.text) {
+      logNewline();
+      fenceLog("Output");
+      await executeBat(userInputApiCall.text);
+      logNewline();
+    }
 
     const toolLoopApiCall = await runToolLoop(
       userInputApiCall,

@@ -27,6 +27,7 @@ interface ToolCallInfo {
 interface CallApiResult {
   finishReason: string;
   toolCalls: ToolCallInfo[];
+  text: string;
 }
 
 function getLanguageModel() {
@@ -104,14 +105,8 @@ async function callApi(
       dispatch(actions.appendToMessageParams(msg));
     }
 
-    if (text) {
-      logNewline();
-      fenceLog("Output");
-      await executeBat(text);
-      logNewline();
-    }
-
     return {
+      text,
       finishReason,
       toolCalls: toolCalls.map((toolCall) => ({
         toolCallId: toolCall.toolCallId,
@@ -203,6 +198,12 @@ export async function runToolLoop(
     dispatch(actions.setApiStreamAbortController(null));
 
     if (toolApiCallResult.ok) {
+      if (toolApiCallResult.value.text) {
+        logNewline();
+        await executeBat(toolApiCallResult.value.text);
+        logNewline();
+      }
+
       currentResult = toolApiCallResult.value;
     } else {
       if (isAbortError(toolApiCallResult.error)) {
