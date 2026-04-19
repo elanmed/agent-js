@@ -1,11 +1,16 @@
 {
-  "model": "glm-5.1",
+  "model": "kimi-k2.5",
   "baseURL": "https://opencode.ai/zen/go/v1",
   "pricingPerModel": {
     "glm-5.1": {
       "inputPerToken": 1.4,
       "outputPerToken": 4.4,
       "cacheReadPerToken": 0.26
+    },
+    "kimi-k2.5": {
+      "inputPerToken": 0.6,
+      "outputPerToken": 3.0,
+      "cacheReadPerToken": 0.1
     }
   }
 }
