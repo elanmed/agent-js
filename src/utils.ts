@@ -113,7 +113,8 @@ export async function getRecursiveAgentsMdFilesStr() {
 }
 
 export function debugLog(content: string) {
-  if (process.env["AGENT_JS_DEBUG"] !== "true") return;
+  if (!selectors.getDebug()) return;
+
   const path = join(process.cwd(), ".agent-js", "debug.log");
   fs.mkdirSync(dirname(path), { recursive: true });
   fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
