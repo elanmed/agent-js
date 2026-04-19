@@ -21,7 +21,7 @@ async function main() {
   initLogs();
   await initState();
 
-  const rl = initReadline();
+  initReadline();
   initKeypress();
   initSigInt();
 
@@ -54,7 +54,7 @@ async function main() {
     }
   }
 
-  rl.close();
+  selectors.getRl()!.close();
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
