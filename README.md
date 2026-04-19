@@ -88,10 +88,10 @@ Example `settings.json`:
 
 ## CLI Arguments
 
-| Flag                 | Description               |
-| -------------------- | ------------------------- |
-| `--debug`            | Enable debug logging      |
-| `--resume=sessionId` | Resume a previous session |
+| Flag                 | Description                                          |
+| -------------------- | ---------------------------------------------------- |
+| `--debug`            | Enable debug logging                                 |
+| `--resume=sessionId` | Resume a previous session (not currently functional) |
 
 ## Builtin Slash Commands
 
