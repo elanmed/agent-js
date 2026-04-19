@@ -11,6 +11,8 @@ import {
   colorLog,
   normalizeLine,
   isSameKey,
+  logNewline,
+  fenceLog,
 } from "./utils.ts";
 import { join } from "node:path";
 import type { Key } from "./config.ts";
@@ -103,6 +105,9 @@ export async function resolveUserInput(rl: readline.Interface) {
     return editorInputValue;
   }
 
+  logNewline();
+  fenceLog("Input", { skipSessionUsage: true });
+  dispatch(actions.resetStdout());
   dispatch(actions.setQuestionAbortController(new AbortController()));
   const inputResult = await tryCatchAsync(
     rl.question("> ", {

@@ -312,7 +312,7 @@ describe("utils", () => {
         },
         getColumns: () => 80,
       };
-      fenceLog("Output", deps);
+      fenceLog("Output", { skipSessionUsage: true }, deps);
       const output = written.join("");
       assert.ok(output.includes(" Output "));
       assert.ok(output.includes("─"));

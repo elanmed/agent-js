@@ -79,12 +79,21 @@ const fenceLogDeps = {
 
 type FenceLogDeps = typeof fenceLogDeps;
 
-export function fenceLog(text: string, deps: FenceLogDeps = fenceLogDeps) {
+const fenceLogOpts = {
+  skipSessionUsage: false,
+};
+type FenceLogOpts = typeof fenceLogOpts;
+
+export function fenceLog(
+  text: string,
+  opts: FenceLogOpts = fenceLogOpts,
+  deps: FenceLogDeps = fenceLogDeps,
+) {
   const fenceWidth = deps.getColumns();
   const leftPad = 2;
   const rightPad = 2;
   let sessionUsage = "";
-  if (!selectors.getDisableUsageMessage()) {
+  if (!opts.skipSessionUsage && !selectors.getDisableUsageMessage()) {
     sessionUsage = ` (${calculateSessionUsage(
       selectors.getModel(),
       selectors.getMessageUsages(),
@@ -185,16 +194,6 @@ export function calculateSessionUsage(
 
 export const BASE_SYSTEM_PROMPT =
   "You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown.";
-
-export function maybePrintUsageMessage() {
-  if (selectors.getDisableUsageMessage()) return;
-
-  logNewline();
-  colorLog(
-    calculateSessionUsage(selectors.getModel(), selectors.getMessageUsages()),
-    "grey",
-  );
-}
 
 export function getAvailableSlashCommands() {
   const path = join(process.cwd(), ".agent-js", "commands");
