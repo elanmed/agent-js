@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import { colorLog, debugLog, getAvailableSlashCommands } from "./utils.ts";
+import { colorLog, debugLog, getAvailableSlashCommands, getRecursiveAgentsMdFilesStr } from "./utils.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 
@@ -101,11 +101,12 @@ const initStateDeps = {
     writeFileSync(path, content);
   },
   parseCliArgs,
+  getRecursiveAgentsMdFilesStr,
 };
 
 export type InitStateDeps = typeof initStateDeps;
 
-export function initState(deps: InitStateDeps = initStateDeps) {
+export async function initState(deps: InitStateDeps = initStateDeps) {
   const globalConfig: Config = (() => {
     if (deps.existsSync(GLOBAL_CONFIG_PATH)) {
       debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
@@ -190,6 +191,9 @@ export function initState(deps: InitStateDeps = initStateDeps) {
 
   const args = deps.parseCliArgs();
   dispatch(actions.setDebug(args.debug));
+
+  const agentsMdFilesStr = await deps.getRecursiveAgentsMdFilesStr();
+  dispatch(actions.setAgentsMdFilesStr(agentsMdFilesStr));
 }
 
 function parseConfigStr(configStr: string): Config {

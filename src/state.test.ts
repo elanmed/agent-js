@@ -166,6 +166,12 @@ describe("state", () => {
     assert.equal(selectors.getDebug(), true);
   });
 
+  it("set-agents-md-files-str", () => {
+    assert.equal(selectors.getAgentsMdFilesStr(), "");
+    dispatch(actions.setAgentsMdFilesStr("FILEPATH: AGENTS.md\nhello"));
+    assert.equal(selectors.getAgentsMdFilesStr(), "FILEPATH: AGENTS.md\nhello");
+  });
+
   it("set-slash-commands", () => {
     assert.deepEqual(selectors.getSlashCommands(), []);
     dispatch(actions.setSlashCommands(["test", "deploy"]));

@@ -11,7 +11,6 @@ import {
   getMessageFromError,
   executeBat,
   BASE_SYSTEM_PROMPT,
-  getRecursiveAgentsMdFilesStr,
   fenceLog,
   logNewline,
 } from "./utils.ts";
@@ -73,8 +72,7 @@ async function callApi(
 
   const systemContent = [
     BASE_SYSTEM_PROMPT,
-    // TODO: do this once
-    await getRecursiveAgentsMdFilesStr(),
+    selectors.getAgentsMdFilesStr(),
   ].join("\n");
 
   try {

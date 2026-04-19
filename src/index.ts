@@ -11,7 +11,7 @@ import {
 import { resolveUserInputApiCall, runToolLoop } from "./api.ts";
 
 async function main() {
-  initState();
+  await initState();
 
   const rl = initReadline();
   initKeypress(rl);

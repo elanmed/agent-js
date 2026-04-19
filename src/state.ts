@@ -21,6 +21,7 @@ interface State {
     slashCommands: string[];
     stdout: string;
     debug: boolean;
+    agentsMdFilesStr: string;
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -47,6 +48,7 @@ const initialState: State = {
     slashCommands: [],
     stdout: "",
     debug: false,
+    agentsMdFilesStr: "",
   },
   configState: {
     model: MISSING,
@@ -148,6 +150,10 @@ type Action =
   | {
       type: "set-debug";
       payload: boolean;
+    }
+  | {
+      type: "set-agents-md-files-str";
+      payload: string;
     }
   | {
       type: "reset-state";
@@ -395,6 +401,15 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
+    case "set-agents-md-files-str": {
+      const before = state.appState.agentsMdFilesStr;
+      const next = {
+        ...state,
+        appState: { ...state.appState, agentsMdFilesStr: action.payload },
+      };
+      logStateChange(action.type, String(before.length), String(action.payload.length));
+      return next;
+    }
     case "reset-state": {
       const next = structuredClone(initialState);
       logStateChange(action.type, "[truncating]", stringify(next));
@@ -503,6 +518,10 @@ const setDebug = (debug: boolean): Action => {
   return { type: "set-debug", payload: debug };
 };
 
+const setAgentsMdFilesStr = (agentsMdFilesStr: string): Action => {
+  return { type: "set-agents-md-files-str", payload: agentsMdFilesStr };
+};
+
 const resetState = (): Action => {
   return { type: "reset-state" };
 };
@@ -529,6 +548,7 @@ export const actions = {
   resetStdout,
   appendToStdout,
   setDebug,
+  setAgentsMdFilesStr,
   resetState,
 };
 
@@ -540,6 +560,7 @@ const getEditorInputValue = () => getState().appState.editorInputValue;
 const getSlashCommands = () => getState().appState.slashCommands;
 const getStdout = () => getState().appState.stdout;
 const getDebug = () => getState().appState.debug;
+const getAgentsMdFilesStr = () => getState().appState.agentsMdFilesStr;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -568,4 +589,5 @@ export const selectors = {
   getSlashCommands,
   getStdout,
   getDebug,
+  getAgentsMdFilesStr,
 };
