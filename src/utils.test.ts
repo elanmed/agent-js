@@ -9,6 +9,7 @@ import {
   getMessageFromError,
   fenceLog,
   isSameKey,
+  formatMarkdown,
   type TokenUsage,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
@@ -391,6 +392,20 @@ describe("utils", () => {
         ),
         false,
       );
+    });
+  });
+
+  describe("formatMarkdown", () => {
+    it("formats markdown tables with aligned columns", async () => {
+      const unaligned = "|a|b|\n|-|-|\n|x|y|";
+      const result = await formatMarkdown(unaligned);
+      assert.ok(result.includes("| a   | b   |"));
+    });
+
+    it("returns original content when formatting fails", async () => {
+      const invalid = null as unknown as string;
+      const result = await formatMarkdown(invalid);
+      assert.equal(result, invalid);
     });
   });
 });

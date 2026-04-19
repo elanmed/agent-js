@@ -104,7 +104,7 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 
 ## Dependencies
 
-Minimal runtime dependencies (6 total):
+Minimal runtime dependencies (7 total):
 
 | Package                     | Purpose                            |
 | --------------------------- | ---------------------------------- |
@@ -114,6 +114,7 @@ Minimal runtime dependencies (6 total):
 | `zod`                       | Schema validation                  |
 | `jsdom`                     | DOM parsing for `web_fetch`        |
 | `@mozilla/readability`      | Content extraction for `web_fetch` |
+| `prettier`                  | Markdown formatting                |
 
 ## TODO
 

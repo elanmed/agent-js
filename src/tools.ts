@@ -433,9 +433,9 @@ export async function executeWebFetchTool(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(
-        `HTTP ${String(response.status)}: ${response.statusText}`,
-      );
+      const error = `HTTP ${String(response.status)}: ${response.statusText}`;
+      colorLog(error, "yellow");
+      throw new Error(error);
     }
 
     const htmlStr = await response.text();
@@ -443,7 +443,9 @@ export async function executeWebFetchTool(
     const reader = new Readability(doc.window.document);
     const article = reader.parse();
     if (!article) {
-      throw new Error(`Failed to parse article from ${href}`);
+      const error = `Failed to parse article from ${href}`;
+      colorLog(error, "yellow");
+      throw new Error(error);
     }
 
     deps.debugLog(

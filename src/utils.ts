@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import { glob } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import type { Key } from "./config.ts";
+import { format } from "prettier";
 
 export const MISSING = "MISSING";
 
@@ -245,7 +246,16 @@ function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
   );
 }
 
+export async function formatMarkdown(content: string): Promise<string> {
+  try {
+    return await format(content, { parser: "markdown" });
+  } catch {
+    return content;
+  }
+}
+
 export async function executeBat(content: string) {
+  content = await formatMarkdown(content);
   content = normalizeLine(content);
   const isBatAvailable = await checkBat();
   debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
