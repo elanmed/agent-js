@@ -12,10 +12,13 @@ import {
   getMessageFromError,
   logNewline,
   normalizeLine,
+  stringify,
   tryCatch,
   tryCatchAsync,
 } from "./utils.ts";
 import { selectors } from "./state.ts";
+import { JSDOM } from "jsdom";
+import { Readability } from "@mozilla/readability";
 
 const execPromise = promisify(exec);
 
@@ -260,33 +263,6 @@ const InsertLinesToolInputSchema = z.object({
   content: z.string(),
 });
 
-export const TOOLS = {
-  bash: tool({
-    description: "Execute a bash command and return its output.",
-    inputSchema: BashToolInputSchema,
-  }),
-  create_file: tool({
-    description:
-      "Create a new file with the given content. Fails if the file already exists.",
-    inputSchema: CreateFileToolSchema,
-  }),
-  view_file: tool({
-    description:
-      "View the contents of a file or list a directory. File contents are returned with line numbers.",
-    inputSchema: ViewFileToolInputSchema,
-  }),
-  str_replace: tool({
-    description:
-      "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
-    inputSchema: StrReplaceToolInputSchema,
-  }),
-  insert_lines: tool({
-    description:
-      "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
-    inputSchema: InsertLinesToolInputSchema,
-  }),
-};
-
 export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   const { path, after_line, content } = InsertLinesToolInputSchema.parse(
     toolCall.input,
@@ -346,24 +322,71 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   };
 }
 
-async function printGitDiff(args: {
-  tempFileBeforePath: string;
-  tempFileAfterPath: string;
-  path: string;
-}) {
-  const diffArgs =
-    selectors.getDiffStyle() === "lines"
-      ? `--no-index --color=always ${args.tempFileBeforePath} ${args.tempFileAfterPath}`
-      : `--no-index --color=always --stat ${args.tempFileBeforePath} ${args.tempFileAfterPath}`;
+const WebFetchToolSchema = z.object({
+  href: z.string(),
+});
 
-  const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
-  if (diffResult.ok && diffResult.value.stdout) {
-    logNewline();
-    fenceLog(`File change: ${args.path}`);
-    colorLog(normalizeLine(diffResult.value.stdout));
-    logNewline();
+export async function executeWebFetchTool(
+  toolCall: ToolCall,
+): Promise<ToolResult> {
+  const { href } = WebFetchToolSchema.parse(toolCall.input);
+  try {
+    const headers = new Headers();
+    headers.append(
+      "User-Agent",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    );
+    headers.append("Accept", "text/html");
+    const response = await fetch(href, { headers });
+    const htmlStr = await response.text();
+    const doc = new JSDOM(htmlStr);
+    const reader = new Readability(doc.window.document);
+    const article = reader.parse();
+    return {
+      content: stringify(article),
+      tool_use_id: toolCall.id,
+      type: "tool_result",
+    };
+  } catch (error: unknown) {
+    return {
+      is_error: true,
+      type: "tool_result",
+      content: getMessageFromError(error),
+      tool_use_id: toolCall.id,
+    };
   }
 }
+
+export const TOOLS = {
+  bash: tool({
+    description: "Execute a bash command and return its output.",
+    inputSchema: BashToolInputSchema,
+  }),
+  create_file: tool({
+    description:
+      "Create a new file with the given content. Fails if the file already exists.",
+    inputSchema: CreateFileToolSchema,
+  }),
+  view_file: tool({
+    description:
+      "View the contents of a file or list a directory. File contents are returned with line numbers.",
+    inputSchema: ViewFileToolInputSchema,
+  }),
+  str_replace: tool({
+    description:
+      "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
+    inputSchema: StrReplaceToolInputSchema,
+  }),
+  insert_lines: tool({
+    description:
+      "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
+    inputSchema: InsertLinesToolInputSchema,
+  }),
+  web_fetch: tool({
+    description: "TODO",
+    inputSchema: WebFetchToolSchema,
+  }),
+};
 
 export async function getToolResultBlock(toolCall: ToolCall) {
   let toolResult: ToolResult | null = null;
@@ -413,6 +436,10 @@ export async function getToolResultBlock(toolCall: ToolCall) {
       }
       break;
     }
+    case "web_fetch": {
+      toolResult = await executeWebFetchTool(toolCall);
+      break;
+    }
   }
 
   if (!toolResult) {
@@ -423,3 +450,23 @@ export async function getToolResultBlock(toolCall: ToolCall) {
 
   return toolResult;
 }
+
+async function printGitDiff(args: {
+  tempFileBeforePath: string;
+  tempFileAfterPath: string;
+  path: string;
+}) {
+  const diffArgs =
+    selectors.getDiffStyle() === "lines"
+      ? `--no-index --color=always ${args.tempFileBeforePath} ${args.tempFileAfterPath}`
+      : `--no-index --color=always --stat ${args.tempFileBeforePath} ${args.tempFileAfterPath}`;
+
+  const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
+  if (diffResult.ok && diffResult.value.stdout) {
+    logNewline();
+    fenceLog(`File change: ${args.path}`);
+    colorLog(normalizeLine(diffResult.value.stdout));
+    logNewline();
+  }
+}
+
