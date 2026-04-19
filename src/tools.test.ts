@@ -462,7 +462,7 @@ describe("tools", () => {
         } as Response);
       };
 
-      const deps = { ...debugDeps, fetch: fakeFetch, JSDOM, Readability };
+      const deps = { ...debugDeps, fetch: fakeFetch, Readability };
       const call = makeToolCall({
         name: "web_fetch",
         input: { href: "https://example.com/article" },
@@ -480,7 +480,7 @@ describe("tools", () => {
       const fakeFetch = () => {
         throw new Error("network error");
       };
-      const deps = { ...debugDeps, fetch: fakeFetch, JSDOM, Readability };
+      const deps = { ...debugDeps, fetch: fakeFetch, Readability };
       const call = makeToolCall({
         name: "web_fetch",
         input: { href: "https://example.com/fail" },

@@ -31,7 +31,11 @@ const toolLogDeps: ToolLogDeps = {
   colorLog,
 };
 
-function toolLog(label: string, detail: string, deps: ToolLogDeps = toolLogDeps) {
+function toolLog(
+  label: string,
+  detail: string,
+  deps: ToolLogDeps = toolLogDeps,
+) {
   deps.colorLog(`${label}: ${detail}`, "blue");
 }
 
@@ -392,8 +396,6 @@ export function executeInsertLinesTool(
 
 const executeWebFetchToolDeps = {
   fetch: (href: string, init?: RequestInit) => fetch(href, init),
-  JSDOM,
-  Readability,
   debugLog,
   toolLog,
 };
@@ -437,14 +439,16 @@ export async function executeWebFetchTool(
     }
 
     const htmlStr = await response.text();
-    const doc = new deps.JSDOM(htmlStr);
-    const reader = new deps.Readability(doc.window.document);
+    const doc = new JSDOM(htmlStr);
+    const reader = new Readability(doc.window.document);
     const article = reader.parse();
     if (!article) {
       throw new Error(`Failed to parse article from ${href}`);
     }
 
-    deps.debugLog(`executeWebFetchTool: success, title=${article.title ?? "null"}`);
+    deps.debugLog(
+      `executeWebFetchTool: success, title=${article.title ?? "null"}`,
+    );
     return {
       content: stringify(article),
       tool_use_id: toolCall.id,

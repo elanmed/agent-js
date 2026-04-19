@@ -107,6 +107,7 @@ const initStateDeps = {
   },
   parseCliArgs,
   getRecursiveAgentsMdFilesStr,
+  colorLog,
 };
 
 export type InitStateDeps = typeof initStateDeps;
@@ -128,7 +129,7 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
       return parseConfigStr(deps.readFileSync(LOCAL_CONFIG_PATH));
     }
 
-    colorLog(`${LOCAL_CONFIG_PATH} does not exist`, "grey");
+    deps.colorLog(`${LOCAL_CONFIG_PATH} does not exist`, "grey");
     return {};
   })();
 
