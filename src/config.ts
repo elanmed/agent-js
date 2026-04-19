@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { z } from "zod";
 import { colorLog, debugLog, getAvailableSlashCommands } from "./utils.ts";
 import { actions, dispatch } from "./state.ts";
+import { parseCliArgs } from "./args.ts";
 
 export const MISSING = "MISSING";
 
@@ -99,6 +100,7 @@ const initStateDeps = {
   writeFileSync: (path: string, content: string): void => {
     writeFileSync(path, content);
   },
+  parseCliArgs,
 };
 
 export type InitStateDeps = typeof initStateDeps;
@@ -185,6 +187,9 @@ export function initState(deps: InitStateDeps = initStateDeps) {
       localConfig.keymaps ?? globalConfig.keymaps ?? DEFAULT_CONFIG.keymaps,
     ),
   );
+
+  const args = deps.parseCliArgs();
+  dispatch(actions.setDebug(args.debug));
 }
 
 function parseConfigStr(configStr: string): Config {

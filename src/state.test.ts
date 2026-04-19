@@ -160,6 +160,12 @@ describe("state", () => {
     assert.equal(selectors.getEditorInputValue(), "test content");
   });
 
+  it("set-debug", () => {
+    assert.equal(selectors.getDebug(), false);
+    dispatch(actions.setDebug(true));
+    assert.equal(selectors.getDebug(), true);
+  });
+
   it("set-slash-commands", () => {
     assert.deepEqual(selectors.getSlashCommands(), []);
     dispatch(actions.setSlashCommands(["test", "deploy"]));

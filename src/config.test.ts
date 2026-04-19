@@ -8,6 +8,7 @@ import {
   LOCAL_CONFIG_PATH,
 } from "./config.ts";
 import type { InitStateDeps } from "./config.ts";
+import { parseCliArgs } from "./args.ts";
 
 interface FsState {
   globalExists: boolean;
@@ -44,6 +45,7 @@ function makeFs(overrides: Partial<FsState> = {}): {
         if (path === LOCAL_CONFIG_PATH) state.localContent = content;
         if (path === GLOBAL_CONFIG_PATH) state.globalContent = content;
       },
+      parseCliArgs,
     } satisfies InitStateDeps,
     state,
     written,
@@ -171,19 +173,25 @@ describe("initState", () => {
         globalContent: JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
-          keymaps: { editor: { name: "e", ctrl: true, meta: false, shift: false } },
+          keymaps: {
+            editor: { name: "e", ctrl: true, meta: false, shift: false },
+          },
         }),
         localExists: true,
         localContent: JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
-          keymaps: { editor: { name: "v", ctrl: false, meta: false, shift: false } },
+          keymaps: {
+            editor: { name: "v", ctrl: false, meta: false, shift: false },
+          },
         }),
       });
 
       initState(fs);
 
-      assert.deepEqual(selectors.getKeymaps(), { editor: { name: "v", ctrl: false, meta: false, shift: false } });
+      assert.deepEqual(selectors.getKeymaps(), {
+        editor: { name: "v", ctrl: false, meta: false, shift: false },
+      });
     });
   });
 
@@ -271,12 +279,16 @@ describe("initState", () => {
           globalContent: JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
-            keymaps: { editor: { name: "e", ctrl: true, meta: false, shift: false } },
+            keymaps: {
+              editor: { name: "e", ctrl: true, meta: false, shift: false },
+            },
           }),
         });
 
         initState(fs);
-        assert.deepEqual(selectors.getKeymaps(), { editor: { name: "e", ctrl: true, meta: false, shift: false } });
+        assert.deepEqual(selectors.getKeymaps(), {
+          editor: { name: "e", ctrl: true, meta: false, shift: false },
+        });
       });
     });
 
@@ -333,5 +345,18 @@ describe("initState", () => {
     assert.throws(() => {
       initState(fs);
     }, /Failed to parse config as JSON/);
+  });
+
+  it("sets debug from args", () => {
+    const { fs } = makeFs({
+      globalExists: true,
+      globalContent: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+      }),
+    });
+
+    initState({ ...fs, parseCliArgs: () => ({ debug: true, resumeSessionId: null }) });
+    assert.equal(selectors.getDebug(), true);
   });
 });

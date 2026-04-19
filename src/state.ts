@@ -20,6 +20,7 @@ interface State {
     editorInputValue: string | null;
     slashCommands: string[];
     stdout: string;
+    debug: boolean;
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -45,6 +46,7 @@ const initialState: State = {
     editorInputValue: null,
     slashCommands: [],
     stdout: "",
+    debug: false,
   },
   configState: {
     model: MISSING,
@@ -142,6 +144,10 @@ type Action =
   | {
       type: "append-to-stdout";
       payload: string;
+    }
+  | {
+      type: "set-debug";
+      payload: boolean;
     }
   | {
       type: "reset-state";
@@ -380,6 +386,15 @@ const reducer = (state: State, action: Action): State => {
       );
       return next;
     }
+    case "set-debug": {
+      const before = state.appState.debug;
+      const next = {
+        ...state,
+        appState: { ...state.appState, debug: action.payload },
+      };
+      logStateChange(action.type, String(before), String(action.payload));
+      return next;
+    }
     case "reset-state": {
       const next = structuredClone(initialState);
       logStateChange(action.type, "[truncating]", stringify(next));
@@ -484,6 +499,10 @@ const appendToStdout = (line: string): Action => {
   return { type: "append-to-stdout", payload: line };
 };
 
+const setDebug = (debug: boolean): Action => {
+  return { type: "set-debug", payload: debug };
+};
+
 const resetState = (): Action => {
   return { type: "reset-state" };
 };
@@ -509,6 +528,7 @@ export const actions = {
   setSlashCommands,
   resetStdout,
   appendToStdout,
+  setDebug,
   resetState,
 };
 
@@ -519,6 +539,7 @@ const getMessageUsages = () => getState().appState.messageUsages;
 const getEditorInputValue = () => getState().appState.editorInputValue;
 const getSlashCommands = () => getState().appState.slashCommands;
 const getStdout = () => getState().appState.stdout;
+const getDebug = () => getState().appState.debug;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -546,4 +567,5 @@ export const selectors = {
   getEditorInputValue,
   getSlashCommands,
   getStdout,
+  getDebug,
 };

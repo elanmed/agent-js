@@ -32,18 +32,18 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Keymaps
 
-| Key      | Type    | Default | Description              |
-| -------- | ------- | ------- | ------------------------ |
-| `editor` | `Key`   | `{ name: "x", ctrl: true, meta: false, shift: false }` | Keybinding to open `$EDITOR` |
+| Key      | Type  | Default                                                | Description                  |
+| -------- | ----- | ------------------------------------------------------ | ---------------------------- |
+| `editor` | `Key` | `{ name: "x", ctrl: true, meta: false, shift: false }` | Keybinding to open `$EDITOR` |
 
 Each `Key` object has:
 
-| Field   | Type    | Default   |
-| ------- | ------- | --------- |
-| `name`  | string  | required  |
-| `ctrl`  | boolean | `false`   |
-| `meta`  | boolean | `false`   |
-| `shift` | boolean | `false`   |
+| Field   | Type    | Default  |
+| ------- | ------- | -------- |
+| `name`  | string  | required |
+| `ctrl`  | boolean | `false`  |
+| `meta`  | boolean | `false`  |
+| `shift` | boolean | `false`  |
 
 Example `settings.json`:
 
@@ -71,6 +71,13 @@ Example `settings.json`:
   }
 }
 ```
+
+## CLI Arguments
+
+| Flag                 | Description               |
+| -------------------- | ------------------------- |
+| `--debug`            | Enable debug logging      |
+| `--resume=sessionId` | Resume a previous session |
 
 ## Builtin Slash Commands
 
