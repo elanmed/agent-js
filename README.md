@@ -49,6 +49,16 @@ Each `Key` object has:
 | `meta`  | boolean | `false`  |
 | `shift` | boolean | `false`  |
 
+You can configure individual keymaps while keeping defaults for others:
+
+```json
+{
+  "keymaps": {
+    "edit": { "name": "v", "ctrl": false }
+  }
+}
+```
+
 Example `settings.json`:
 
 ```json
