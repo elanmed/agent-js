@@ -122,6 +122,6 @@ Minimal runtime dependencies (7 total):
 - [ ] MCP server
 - [ ] Resume session
 - [ ] View last temp file
-- [ ] Update screenshot
 - [ ] Spinner for tool calls
 - [ ] Tool call interrupt
+- [ ] Look into tanstack ai (codemode?)

@@ -75,7 +75,7 @@ export async function executeBashTool(
   const bashResult = await tryCatchAsync(deps.exec(bashCommand));
 
   if (bashResult.ok) {
-    debugLog(
+    deps.debugLog(
       `executeBashTool: stdout=${bashResult.value.stdout}, stderr=${bashResult.value.stderr}`,
     );
     return {
@@ -89,7 +89,7 @@ export async function executeBashTool(
   }
 
   const error = getMessageFromError(bashResult.error);
-  debugLog(`executeBashTool: error=${error}`);
+  deps.debugLog(`executeBashTool: error=${error}`);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
@@ -219,15 +219,67 @@ export function executeViewFileTool(
   }
 
   const lines = readResult.value.toString().split("\n");
+
+  if (start_line !== undefined && start_line < 1) {
+    deps.debugLog(`executeViewFileTool: start_line ${String(start_line)} is less than 1`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolCall.id,
+      content: `start_line must be at least 1, got ${String(start_line)}`,
+      is_error: true,
+    };
+  }
+
+  if (end_line !== undefined && end_line !== -1 && end_line < 1) {
+    deps.debugLog(`executeViewFileTool: end_line ${String(end_line)} is less than 1`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolCall.id,
+      content: `end_line must be at least 1 or -1, got ${String(end_line)}`,
+      is_error: true,
+    };
+  }
+
   const start = (start_line ?? 1) - 1;
   const end =
     end_line === undefined || end_line === -1 ? lines.length : end_line;
+
+  if (start >= lines.length) {
+    deps.debugLog(`executeViewFileTool: start_line ${String(start_line)} is past end of file`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolCall.id,
+      content: `start_line ${String(start_line)} is past end of file (file has ${String(lines.length)} lines)`,
+      is_error: true,
+    };
+  }
+
+  if (end > lines.length) {
+    deps.debugLog(`executeViewFileTool: end_line ${String(end_line)} is past end of file`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolCall.id,
+      content: `end_line ${String(end_line)} is past end of file (file has ${String(lines.length)} lines)`,
+      is_error: true,
+    };
+  }
+
+  if (start >= end) {
+    deps.debugLog(`executeViewFileTool: start_line ${String(start_line)} is greater than or equal to end_line ${String(end_line)}`);
+    return {
+      type: "tool_result",
+      tool_use_id: toolCall.id,
+      content: `start_line (${String(start_line)}) must be less than end_line (${String(end_line)})`,
+      is_error: true,
+    };
+  }
+
   const slice = lines.slice(start, end);
   const numbered = slice
     .map((line, i) => `${String(start + i + 1)}\t${line}`)
     .join("\n");
 
-  debugLog(
+  deps.debugLog(
     `executeViewFileTool: ${path} lines ${String(start + 1)}-${String(end)}`,
   );
   return {
@@ -277,7 +329,7 @@ export function executeStrReplaceTool(
   const occurrences = content.split(old_str).length - 1;
 
   if (occurrences === 0) {
-    debugLog(`executeStrReplaceTool: old_str not found in ${path}`);
+    deps.debugLog(`executeStrReplaceTool: old_str not found in ${path}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -287,7 +339,7 @@ export function executeStrReplaceTool(
   }
 
   if (occurrences > 1) {
-    debugLog(
+    deps.debugLog(
       `executeStrReplaceTool: old_str matched ${String(occurrences)} times in ${path}`,
     );
     return {

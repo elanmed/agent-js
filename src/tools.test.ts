@@ -15,7 +15,6 @@ import {
   executeWebFetchJsonTool,
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
-import type { ToolLogDeps } from "./tools.ts";
 import type { DebugLog } from "./utils.ts";
 
 const execPromise = promisify(exec);
@@ -25,7 +24,7 @@ const noop: DebugLog = () => {
 };
 const debugDeps = {
   debugLog: noop,
-  toolLog: noop as (label: string, detail: string, deps?: ToolLogDeps) => void,
+  toolLog: noop,
 };
 const bashDeps = { ...debugDeps, exec: execPromise };
 
@@ -245,6 +244,107 @@ describe("tools", () => {
         input: { wrong: 123 },
       });
       assert.throws(() => executeViewFileTool(call, { ...debugDeps, fs }));
+    });
+
+    it("returns is_error when start_line is less than 1", () => {
+      const dir = getTmpDir();
+      const filePath = path.join(dir, "lines.txt");
+      fs.writeFileSync(filePath, "line1\nline2\nline3");
+      const call = makeToolCall({
+        name: "view_file",
+        input: { path: filePath, start_line: 0 },
+      });
+      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "start_line must be at least 1, got 0",
+      });
+    });
+
+    it("returns is_error when end_line is less than 1 (and not -1)", () => {
+      const dir = getTmpDir();
+      const filePath = path.join(dir, "lines.txt");
+      fs.writeFileSync(filePath, "line1\nline2\nline3");
+      const call = makeToolCall({
+        name: "view_file",
+        input: { path: filePath, end_line: 0 },
+      });
+      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "end_line must be at least 1 or -1, got 0",
+      });
+    });
+
+    it("returns is_error when start_line is past end of file", () => {
+      const dir = getTmpDir();
+      const filePath = path.join(dir, "lines.txt");
+      fs.writeFileSync(filePath, "line1\nline2");
+      const call = makeToolCall({
+        name: "view_file",
+        input: { path: filePath, start_line: 5 },
+      });
+      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "start_line 5 is past end of file (file has 2 lines)",
+      });
+    });
+
+    it("returns is_error when end_line is past end of file", () => {
+      const dir = getTmpDir();
+      const filePath = path.join(dir, "lines.txt");
+      fs.writeFileSync(filePath, "line1\nline2");
+      const call = makeToolCall({
+        name: "view_file",
+        input: { path: filePath, end_line: 10 },
+      });
+      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "end_line 10 is past end of file (file has 2 lines)",
+      });
+    });
+
+    it("returns is_error when start_line is greater than or equal to end_line", () => {
+      const dir = getTmpDir();
+      const filePath = path.join(dir, "lines.txt");
+      fs.writeFileSync(filePath, "line1\nline2\nline3");
+      const call = makeToolCall({
+        name: "view_file",
+        input: { path: filePath, start_line: 3, end_line: 2 },
+      });
+      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "start_line (3) must be less than end_line (2)",
+      });
+    });
+
+    it("returns single line when start_line equals end_line", () => {
+      const dir = getTmpDir();
+      const filePath = path.join(dir, "lines.txt");
+      fs.writeFileSync(filePath, "line1\nline2\nline3");
+      const call = makeToolCall({
+        name: "view_file",
+        input: { path: filePath, start_line: 2, end_line: 2 },
+      });
+      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        content: "2\tline2",
+      });
     });
   });
 

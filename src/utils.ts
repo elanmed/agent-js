@@ -295,24 +295,6 @@ export function createTempFile(args?: { initialContentPath?: string }) {
   return tempFile;
 }
 
-export async function printGitDiff(args: {
-  tempFileBeforePath: string;
-  tempFileAfterPath: string;
-  path: string;
-}) {
-  const diffArgs =
-    selectors.getDiffStyle() === "lines"
-      ? `${args.tempFileBeforePath} ${args.tempFileAfterPath}`
-      : `--stat ${args.tempFileBeforePath} ${args.tempFileAfterPath}`;
-
-  const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
-  if (diffResult.ok && diffResult.value.stdout) {
-    fenceLog("File edit");
-    colorLog(args.path, "blue");
-    colorLog(normalizeLine(diffResult.value.stdout));
-  }
-}
-
 export async function execGitDiff(
   args: string,
 ): Promise<{ stdout: string; stderr: string }> {
