@@ -6,6 +6,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 
 ## Features
 
+- **Minimal**: 1,800 lines of source code, 1,200 lines of tests
 - **Tools**: execute bash commands, create/edit files, etc. A `git diff` is output when a tool changes a file
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
 - **Configuration**: global and local `settings.json`
