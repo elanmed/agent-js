@@ -24,8 +24,6 @@ async function main() {
   initSigInt(rl);
 
   while (selectors.getRunning()) {
-    // debugLog(stringify(getState()));
-
     const userInput = await resolveUserInput(rl);
     if (userInput === null) continue;
 

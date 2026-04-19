@@ -211,10 +211,13 @@ export function readFromEditor(currentLine: string) {
     process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
   fs.writeFileSync(tempFile, currentLine);
   spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
-  const content = fs.readFileSync(tempFile).toString();
+  let content = fs.readFileSync(tempFile).toString();
+  content = normalizeLine(content);
   fs.unlinkSync(tempFile);
 
-  return normalizeLine(content);
+  editorLog(content);
+
+  return content;
 }
 
 async function checkBat(): Promise<boolean> {

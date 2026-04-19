@@ -37,6 +37,7 @@ const ConfigSchema = z.object({
   baseURL: z.string().optional(),
   provider: z.enum(["anthropic", "openai-compatible"]).optional(),
   disableUsageMessage: z.boolean().optional(),
+  editorLog: z.boolean().optional(),
   diffStyle: z.enum(["unified", "lines"]).optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
   keymaps: z
@@ -53,6 +54,7 @@ interface DefaultConfig {
   model: string;
   provider: Provider;
   disableUsageMessage: boolean;
+  editorLog: boolean;
   diffStyle: "unified" | "lines";
   pricingPerModel: Record<
     string,
@@ -71,6 +73,7 @@ interface DefaultConfig {
 export const DEFAULT_CONFIG: DefaultConfig = {
   provider: "openai-compatible",
   disableUsageMessage: false,
+  editorLog: false,
   diffStyle: "lines",
   pricingPerModel: {},
   model: MISSING,
@@ -161,6 +164,13 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
       localConfig.disableUsageMessage ??
         globalConfig.disableUsageMessage ??
         DEFAULT_CONFIG.disableUsageMessage,
+    ),
+  );
+  dispatch(
+    actions.setEditorLog(
+      localConfig.editorLog ??
+        globalConfig.editorLog ??
+        DEFAULT_CONFIG.editorLog,
     ),
   );
   dispatch(

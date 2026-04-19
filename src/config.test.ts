@@ -121,6 +121,27 @@ describe("initState", () => {
       assert.equal(selectors.getDisableUsageMessage(), true);
     });
 
+    it("uses its editorLog over the global config, default config", async () => {
+      const { fs } = makeFs({
+        globalExists: true,
+        globalContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          editorLog: false,
+        }),
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          editorLog: true,
+        }),
+      });
+
+      await initState(fs);
+
+      assert.equal(selectors.getEditorLog(), true);
+    });
+
     it("uses its diffStyle over the global config, default config", async () => {
       const { fs } = makeFs({
         globalExists: true,
@@ -239,6 +260,20 @@ describe("initState", () => {
 
         await initState(fs);
         assert.equal(selectors.getDisableUsageMessage(), true);
+      });
+
+      it("uses its editorLog over the default config", async () => {
+        const { fs } = makeFs({
+          globalExists: true,
+          globalContent: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            baseURL: "https://api.example.com",
+            editorLog: true,
+          }),
+        });
+
+        await initState(fs);
+        assert.equal(selectors.getEditorLog(), true);
       });
 
       it("uses its diffStyle over the default config", async () => {
