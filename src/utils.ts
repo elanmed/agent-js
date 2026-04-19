@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 import type { Key } from "./config.ts";
 import { format } from "prettier";
 import { debugLog } from "./log.ts";
+import type readline from "node:readline/promises";
 
 export const MISSING = "MISSING";
 
@@ -331,4 +332,12 @@ export function isSameKey(a: Key, b: Key) {
     (a.meta ?? false) === (b.meta ?? false) &&
     (a.shift ?? false) === (b.shift ?? false)
   );
+}
+
+export function clearRlLine(): readline.Interface | null {
+  const rl = selectors.getRl();
+  if (rl === null) return null;
+  rl.write(null, { ctrl: true, name: "e" });
+  rl.write(null, { ctrl: true, name: "u" });
+  return rl;
 }

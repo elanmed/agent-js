@@ -12,6 +12,7 @@ import {
   logNewline,
   fenceLog,
   createTempFile,
+  clearRlLine,
 } from "./utils.ts";
 import fs from "node:fs";
 import { join } from "node:path";
@@ -67,8 +68,7 @@ export function initKeypress() {
         dispatch(actions.setEditorInputValue(editorContent));
         const questionAbortController = selectors.getQuestionAbortController();
         if (questionAbortController) {
-          rl.write(null, { ctrl: true, name: "e" });
-          rl.write(null, { ctrl: true, name: "u" });
+          const rl = clearRlLine()!;
           rl.write("[editor]");
           dispatch(actions.appendToStdout("[editor]"));
 
@@ -97,8 +97,7 @@ export function initSigInt() {
     const questionAbortController = selectors.getQuestionAbortController();
     if (questionAbortController) {
       if (rl.line.length > 0) {
-        rl.write(null, { ctrl: true, name: "e" });
-        rl.write(null, { ctrl: true, name: "u" });
+        clearRlLine();
         return;
       }
       questionAbortController.abort();
@@ -216,7 +215,7 @@ function resolveSlashCommand(rawInput: string) {
   }
 
   colorLog(
-    `Invalid / command detected, valid commands: ${selectors.getSlashCommands().join(",")}`,
+    `Invalid / command detected, valid commands: ${selectors.getSlashCommands().concat(["edit", "edit-log", "clear"]).join(",")}`,
     "red",
   );
   return null;
@@ -247,7 +246,8 @@ export function editCommand(currentLine: string) {
 
 export function editLogCommand() {
   if (!fs.existsSync(EDITOR_LOG_PATH)) {
-    colorLog("Edit log does not exist", "yellow");
+    colorLog("[Edit log does not exist]", "yellow");
+    clearRlLine()!.prompt();
     return;
   }
   const editor =
