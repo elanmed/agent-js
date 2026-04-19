@@ -503,8 +503,6 @@ describe("tools", () => {
         executeWebFetchTool(call, {
           ...debugDeps,
           fetch: fetch,
-          JSDOM,
-          Readability,
         }),
       );
     });
