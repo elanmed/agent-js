@@ -86,7 +86,7 @@ Slash commands are triggered with `/command` at the prompt.
 
 | Command  | Description                                             |
 | -------- | ------------------------------------------------------- |
-| `/edit`  | Open `$EDITOR` with empty input for multi-line messages |
+| `/edit`  | Open `$AGENT_JS_EDITOR` or `$EDITOR` with empty input for multi-line messages |
 | `/clear` | Clear conversation context and reset message history    |
 
 ### Custom Slash Commands
@@ -100,6 +100,7 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 - `view_file` — view files or list directories
 - `str_replace` — replace strings in files
 - `insert_lines` — insert text at a line
+- `web_fetch` — fetch a URL and return its readable content
 
 ## TODO
 
@@ -107,6 +108,5 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 - [ ] Resume session
 - [ ] View last temp file
 - [ ] Update screenshot
-- [ ] Web fetch tool
 - [ ] Spinner for tool calls
 - [ ] Tool call interrupt

@@ -55,6 +55,8 @@ const COLORS = {
   grey: "\x1b[90m",
 } as const;
 
+export type ColorLog = typeof colorLog;
+
 export function colorLog(
   text: Uint8Array | string,
   color?: keyof typeof COLORS,
@@ -128,6 +130,8 @@ export function debugLog(content: string) {
   fs.mkdirSync(dirname(path), { recursive: true });
   fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
 }
+
+export type DebugLog = typeof debugLog;
 
 export function logNewline() {
   if (selectors.getStdout().endsWith("\n\n")) return;

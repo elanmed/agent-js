@@ -16,11 +16,24 @@ import {
   tryCatch,
   tryCatchAsync,
 } from "./utils.ts";
+import type { ColorLog } from "./utils.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 
 const execPromise = promisify(exec);
+
+export interface ToolLogDeps {
+  colorLog: ColorLog;
+}
+
+const toolLogDeps: ToolLogDeps = {
+  colorLog,
+};
+
+function toolLog(label: string, detail: string, deps: ToolLogDeps = toolLogDeps) {
+  deps.colorLog(`${label}: ${detail}`, "blue");
+}
 
 export interface ToolCall {
   id: string;
@@ -35,14 +48,25 @@ export interface ToolResult {
   is_error?: boolean;
 }
 
+const executeBashToolDeps = {
+  exec: (cmd: string) => execPromise(cmd),
+  debugLog,
+  toolLog,
+};
+
+type ExecuteBashToolDeps = typeof executeBashToolDeps;
+
 const BashToolInputSchema = z.object({ command: z.string() });
 
-export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
+export async function executeBashTool(
+  toolCall: ToolCall,
+  deps: ExecuteBashToolDeps = executeBashToolDeps,
+): Promise<ToolResult> {
   const { command: bashCommand } = BashToolInputSchema.parse(toolCall.input);
-  colorLog(`bash: ${bashCommand}`, "blue");
-  debugLog(`executeBashTool: command=${bashCommand}`);
+  deps.toolLog("bash", bashCommand);
+  deps.debugLog(`executeBashTool: command=${bashCommand}`);
 
-  const bashResult = await tryCatchAsync(execPromise(bashCommand));
+  const bashResult = await tryCatchAsync(deps.exec(bashCommand));
 
   if (bashResult.ok) {
     debugLog(
@@ -68,15 +92,26 @@ export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
   };
 }
 
+const executeCreateFileToolDeps = {
+  fs,
+  debugLog,
+  toolLog,
+};
+
+type ExecuteCreateFileToolDeps = typeof executeCreateFileToolDeps;
+
 const CreateFileToolSchema = z.object({
   path: z.string(),
   content: z.string(),
 });
 
-export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
+export function executeCreateFileTool(
+  toolCall: ToolCall,
+  deps: ExecuteCreateFileToolDeps = executeCreateFileToolDeps,
+): ToolResult {
   const { content, path } = CreateFileToolSchema.parse(toolCall.input);
-  if (fs.existsSync(path)) {
-    debugLog(`executeCreatefileTool: ${path} already exists`);
+  if (deps.fs.existsSync(path)) {
+    deps.debugLog(`executeCreatefileTool: ${path} already exists`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -86,12 +121,12 @@ export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
   }
 
   const createFileResult = tryCatch(() => {
-    fs.writeFileSync(path, content);
+    deps.fs.writeFileSync(path, content);
   });
 
   if (!createFileResult.ok) {
     const error = getMessageFromError(createFileResult.error);
-    debugLog(`executeCreateFileTool: error=${error}`);
+    deps.debugLog(`executeCreateFileTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -100,7 +135,7 @@ export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
     };
   }
 
-  debugLog(`executeCreateFileTool: ${path} created successfully `);
+  deps.debugLog(`executeCreateFileTool: ${path} created successfully `);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
@@ -108,23 +143,34 @@ export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
   };
 }
 
+const executeViewFileToolDeps = {
+  fs,
+  debugLog,
+  toolLog,
+};
+
+type ExecuteViewFileToolDeps = typeof executeViewFileToolDeps;
+
 const ViewFileToolInputSchema = z.object({
   path: z.string(),
   start_line: z.number().int().optional(),
   end_line: z.number().int().optional(),
 });
 
-export function executeViewFileTool(toolCall: ToolCall): ToolResult {
+export function executeViewFileTool(
+  toolCall: ToolCall,
+  deps: ExecuteViewFileToolDeps = executeViewFileToolDeps,
+): ToolResult {
   const { path, start_line, end_line } = ViewFileToolInputSchema.parse(
     toolCall.input,
   );
-  colorLog(`view_file: ${path}`, "blue");
-  debugLog(`executeViewFileTool: path=${path}`);
+  deps.toolLog("view_file", path);
+  deps.debugLog(`executeViewFileTool: path=${path}`);
 
-  const statResult = tryCatch(() => fs.statSync(path));
+  const statResult = tryCatch(() => deps.fs.statSync(path));
   if (!statResult.ok) {
     const error = getMessageFromError(statResult.error);
-    debugLog(`executeViewFileTool: error=${error}`);
+    deps.debugLog(`executeViewFileTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -134,10 +180,10 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
   }
 
   if (statResult.value.isDirectory()) {
-    const readdirResult = tryCatch(() => fs.readdirSync(path));
+    const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
     if (!readdirResult.ok) {
       const error = getMessageFromError(readdirResult.error);
-      debugLog(`executeViewFileTool: error=${error}`);
+      deps.debugLog(`executeViewFileTool: error=${error}`);
       return {
         type: "tool_result",
         tool_use_id: toolCall.id,
@@ -146,7 +192,7 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
       };
     }
     const listing = readdirResult.value.join("\n");
-    debugLog(`executeViewFileTool: directory listing for ${path}`);
+    deps.debugLog(`executeViewFileTool: directory listing for ${path}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -154,10 +200,10 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
     };
   }
 
-  const readResult = tryCatch(() => fs.readFileSync(path));
+  const readResult = tryCatch(() => deps.fs.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    debugLog(`executeViewFileTool: error=${error}`);
+    deps.debugLog(`executeViewFileTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -185,23 +231,34 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
   };
 }
 
+const executeStrReplaceToolDeps = {
+  fs,
+  debugLog,
+  toolLog,
+};
+
+type ExecuteStrReplaceToolDeps = typeof executeStrReplaceToolDeps;
+
 const StrReplaceToolInputSchema = z.object({
   path: z.string(),
   old_str: z.string(),
   new_str: z.string(),
 });
 
-export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
+export function executeStrReplaceTool(
+  toolCall: ToolCall,
+  deps: ExecuteStrReplaceToolDeps = executeStrReplaceToolDeps,
+): ToolResult {
   const { path, old_str, new_str } = StrReplaceToolInputSchema.parse(
     toolCall.input,
   );
-  colorLog(`str_replace: ${path}`, "blue");
-  debugLog(`executeStrReplaceTool: path=${path}`);
+  deps.toolLog("str_replace", path);
+  deps.debugLog(`executeStrReplaceTool: path=${path}`);
 
-  const readResult = tryCatch(() => fs.readFileSync(path));
+  const readResult = tryCatch(() => deps.fs.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    debugLog(`executeStrReplaceTool: error=${error}`);
+    deps.debugLog(`executeStrReplaceTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -236,11 +293,11 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
   }
 
   const writeResult = tryCatch(() => {
-    fs.writeFileSync(path, content.replace(old_str, new_str));
+    deps.fs.writeFileSync(path, content.replace(old_str, new_str));
   });
   if (!writeResult.ok) {
     const error = getMessageFromError(writeResult.error);
-    debugLog(`executeStrReplaceTool: error=${error}`);
+    deps.debugLog(`executeStrReplaceTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -249,7 +306,7 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
     };
   }
 
-  debugLog(`executeStrReplaceTool: ${path} updated successfully`);
+  deps.debugLog(`executeStrReplaceTool: ${path} updated successfully`);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
@@ -257,25 +314,36 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
   };
 }
 
+const executeInsertLinesToolDeps = {
+  fs,
+  debugLog,
+  toolLog,
+};
+
+type ExecuteInsertLinesToolDeps = typeof executeInsertLinesToolDeps;
+
 const InsertLinesToolInputSchema = z.object({
   path: z.string(),
   after_line: z.number().int(),
   content: z.string(),
 });
 
-export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
+export function executeInsertLinesTool(
+  toolCall: ToolCall,
+  deps: ExecuteInsertLinesToolDeps = executeInsertLinesToolDeps,
+): ToolResult {
   const { path, after_line, content } = InsertLinesToolInputSchema.parse(
     toolCall.input,
   );
-  colorLog(`insert_lines: ${path}`, "blue");
-  debugLog(
+  deps.toolLog("insert_lines", path);
+  deps.debugLog(
     `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
   );
 
-  const readResult = tryCatch(() => fs.readFileSync(path));
+  const readResult = tryCatch(() => deps.fs.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    debugLog(`executeInsertLinesTool: error=${error}`);
+    deps.debugLog(`executeInsertLinesTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -287,7 +355,7 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   const lines = readResult.value.toString().split("\n");
 
   if (after_line < 0 || after_line > lines.length) {
-    debugLog(
+    deps.debugLog(
       `executeInsertLinesTool: after_line ${String(after_line)} out of range`,
     );
     return {
@@ -301,11 +369,11 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   lines.splice(after_line, 0, content);
 
   const writeResult = tryCatch(() => {
-    fs.writeFileSync(path, lines.join("\n"));
+    deps.fs.writeFileSync(path, lines.join("\n"));
   });
   if (!writeResult.ok) {
     const error = getMessageFromError(writeResult.error);
-    debugLog(`executeInsertLinesTool: error=${error}`);
+    deps.debugLog(`executeInsertLinesTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -314,7 +382,7 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
     };
   }
 
-  debugLog(`executeInsertLinesTool: ${path} updated successfully`);
+  deps.debugLog(`executeInsertLinesTool: ${path} updated successfully`);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
@@ -322,14 +390,27 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   };
 }
 
+const executeWebFetchToolDeps = {
+  fetch: (href: string, init?: RequestInit) => fetch(href, init),
+  JSDOM,
+  Readability,
+  debugLog,
+  toolLog,
+};
+
+type ExecuteWebFetchToolDeps = typeof executeWebFetchToolDeps;
+
 const WebFetchToolSchema = z.object({
   href: z.string(),
 });
 
 export async function executeWebFetchTool(
   toolCall: ToolCall,
+  deps: ExecuteWebFetchToolDeps = executeWebFetchToolDeps,
 ): Promise<ToolResult> {
   const { href } = WebFetchToolSchema.parse(toolCall.input);
+  deps.toolLog("web_fetch", href);
+  deps.debugLog(`executeWebFetchTool: href=${href}`);
   try {
     const headers = new Headers();
     headers.append(
@@ -337,21 +418,45 @@ export async function executeWebFetchTool(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     );
     headers.append("Accept", "text/html");
-    const response = await fetch(href, { headers });
+
+    const fetchController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      fetchController.abort();
+    }, 10_000);
+
+    const response = await deps.fetch(href, {
+      headers,
+      signal: fetchController.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${String(response.status)}: ${response.statusText}`,
+      );
+    }
+
     const htmlStr = await response.text();
-    const doc = new JSDOM(htmlStr);
-    const reader = new Readability(doc.window.document);
+    const doc = new deps.JSDOM(htmlStr);
+    const reader = new deps.Readability(doc.window.document);
     const article = reader.parse();
+    if (!article) {
+      throw new Error(`Failed to parse article from ${href}`);
+    }
+
+    deps.debugLog(`executeWebFetchTool: success, title=${article.title ?? "null"}`);
     return {
       content: stringify(article),
       tool_use_id: toolCall.id,
       type: "tool_result",
     };
   } catch (error: unknown) {
+    const msg = getMessageFromError(error);
+    deps.debugLog(`executeWebFetchTool: error=${msg}`);
     return {
       is_error: true,
       type: "tool_result",
-      content: getMessageFromError(error),
+      content: msg,
       tool_use_id: toolCall.id,
     };
   }
@@ -383,7 +488,8 @@ export const TOOLS = {
     inputSchema: InsertLinesToolInputSchema,
   }),
   web_fetch: tool({
-    description: "TODO",
+    description:
+      "Fetch a web page by URL and return its readable content, parsed to extract the main article.",
     inputSchema: WebFetchToolSchema,
   }),
 };
@@ -469,4 +575,3 @@ async function printGitDiff(args: {
     logNewline();
   }
 }
-
