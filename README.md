@@ -84,10 +84,10 @@ Example `settings.json`:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command  | Description                                             |
-| -------- | ------------------------------------------------------- |
+| Command  | Description                                                                   |
+| -------- | ----------------------------------------------------------------------------- |
 | `/edit`  | Open `$AGENT_JS_EDITOR` or `$EDITOR` with empty input for multi-line messages |
-| `/clear` | Clear conversation context and reset message history    |
+| `/clear` | Clear conversation context and reset message history                          |
 
 ### Custom Slash Commands
 
@@ -101,6 +101,19 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 - `str_replace` — replace strings in files
 - `insert_lines` — insert text at a line
 - `web_fetch` — fetch a URL and return its readable content
+
+## Dependencies
+
+Minimal runtime dependencies (6 total):
+
+| Package                     | Purpose                            |
+| --------------------------- | ---------------------------------- |
+| `ai`                        | AI SDK core                        |
+| `@ai-sdk/anthropic`         | Anthropic provider                 |
+| `@ai-sdk/openai-compatible` | OpenAI-compatible provider         |
+| `zod`                       | Schema validation                  |
+| `jsdom`                     | DOM parsing for `web_fetch`        |
+| `@mozilla/readability`      | Content extraction for `web_fetch` |
 
 ## TODO
 
