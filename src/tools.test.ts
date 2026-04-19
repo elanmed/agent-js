@@ -5,15 +5,14 @@ import os from "node:os";
 import path from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
 import {
   executeBashTool,
   executeCreateFileTool,
   executeViewFileTool,
   executeStrReplaceTool,
   executeInsertLinesTool,
-  executeWebFetchTool,
+  executeWebFetchHtmlTool,
+  executeWebFetchJsonTool,
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
 import type { ToolLogDeps } from "./tools.ts";
@@ -447,7 +446,7 @@ describe("tools", () => {
     });
   });
 
-  describe("executeWebFetchTool", () => {
+  describe("executeWebFetchHtmlTool", () => {
     it("returns parsed article content on success", async () => {
       const html = `
         <html>
@@ -462,12 +461,12 @@ describe("tools", () => {
         } as Response);
       };
 
-      const deps = { ...debugDeps, fetch: fakeFetch, Readability };
+      const deps = { ...debugDeps, fetch: fakeFetch };
       const call = makeToolCall({
-        name: "web_fetch",
+        name: "web_fetch_html",
         input: { href: "https://example.com/article" },
       });
-      const result = await executeWebFetchTool(call, deps);
+      const result = await executeWebFetchHtmlTool(call, deps);
       assert.equal(result.type, "tool_result");
       assert.equal(result.tool_use_id, "tool_1");
       assert.equal(result.is_error, undefined);
@@ -480,12 +479,12 @@ describe("tools", () => {
       const fakeFetch = () => {
         throw new Error("network error");
       };
-      const deps = { ...debugDeps, fetch: fakeFetch, Readability };
+      const deps = { ...debugDeps, fetch: fakeFetch };
       const call = makeToolCall({
-        name: "web_fetch",
+        name: "web_fetch_html",
         input: { href: "https://example.com/fail" },
       });
-      const result = await executeWebFetchTool(call, deps);
+      const result = await executeWebFetchHtmlTool(call, deps);
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -494,15 +493,15 @@ describe("tools", () => {
       });
     });
 
-    it("returns is_error for invalid input schema", async () => {
+    it("throws on invalid input schema", async () => {
       const call = makeToolCall({
-        name: "web_fetch",
+        name: "web_fetch_html",
         input: { bad: true },
       });
       await assert.rejects(() =>
-        executeWebFetchTool(call, {
+        executeWebFetchHtmlTool(call, {
           ...debugDeps,
-          fetch: fetch,
+          fetch: () => Promise.resolve({ ok: true } as Response),
         }),
       );
     });
@@ -516,17 +515,115 @@ describe("tools", () => {
           text: () => Promise.resolve("server error"),
         } as Response);
       };
-      const deps = { ...debugDeps, fetch: fakeFetch, JSDOM, Readability };
+      const deps = { ...debugDeps, fetch: fakeFetch };
       const call = makeToolCall({
-        name: "web_fetch",
+        name: "web_fetch_html",
         input: { href: "https://example.com/broken" },
       });
-      const result = await executeWebFetchTool(call, deps);
+      const result = await executeWebFetchHtmlTool(call, deps);
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
         is_error: true,
         content: "HTTP 500: Internal Server Error",
+      });
+    });
+  });
+
+  describe("executeWebFetchJsonTool", () => {
+    it("returns parsed JSON content on success", async () => {
+      const jsonData = { name: "test", value: 42 };
+      const fakeFetch = () => {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(jsonData),
+        } as Response);
+      };
+
+      const deps = { ...debugDeps, fetch: fakeFetch };
+      const call = makeToolCall({
+        name: "web_fetch_json",
+        input: { href: "https://api.example.com/data" },
+      });
+      const result = await executeWebFetchJsonTool(call, deps);
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        content: JSON.stringify(jsonData, null, 2),
+      });
+    });
+
+    it("returns is_error when fetch throws", async () => {
+      const fakeFetch = () => {
+        throw new Error("network error");
+      };
+      const deps = { ...debugDeps, fetch: fakeFetch };
+      const call = makeToolCall({
+        name: "web_fetch_json",
+        input: { href: "https://api.example.com/fail" },
+      });
+      const result = await executeWebFetchJsonTool(call, deps);
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "network error",
+      });
+    });
+
+    it("throws on invalid input schema", async () => {
+      const call = makeToolCall({
+        name: "web_fetch_json",
+        input: { bad: true },
+      });
+      await assert.rejects(() =>
+        executeWebFetchJsonTool(call, {
+          ...debugDeps,
+          fetch: () => Promise.resolve({ ok: true } as Response),
+        }),
+      );
+    });
+
+    it("returns is_error when response is not ok", async () => {
+      const fakeFetch = () => {
+        return Promise.resolve({
+          ok: false,
+          status: 404,
+          statusText: "Not Found",
+        } as Response);
+      };
+      const deps = { ...debugDeps, fetch: fakeFetch };
+      const call = makeToolCall({
+        name: "web_fetch_json",
+        input: { href: "https://api.example.com/missing" },
+      });
+      const result = await executeWebFetchJsonTool(call, deps);
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "HTTP 404: Not Found",
+      });
+    });
+
+    it("returns is_error when JSON parsing fails", async () => {
+      const fakeFetch = () => {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.reject(new Error("Invalid JSON")),
+        } as Response);
+      };
+      const deps = { ...debugDeps, fetch: fakeFetch };
+      const call = makeToolCall({
+        name: "web_fetch_json",
+        input: { href: "https://api.example.com/bad-json" },
+      });
+      const result = await executeWebFetchJsonTool(call, deps);
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "Invalid JSON",
       });
     });
   });

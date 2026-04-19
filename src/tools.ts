@@ -22,6 +22,8 @@ import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 
 const execPromise = promisify(exec);
+const userAgent =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 export interface ToolLogDeps {
   colorLog: ColorLog;
@@ -406,19 +408,16 @@ const WebFetchToolSchema = z.object({
   href: z.string(),
 });
 
-export async function executeWebFetchTool(
+export async function executeWebFetchHtmlTool(
   toolCall: ToolCall,
   deps: ExecuteWebFetchToolDeps = executeWebFetchToolDeps,
 ): Promise<ToolResult> {
   const { href } = WebFetchToolSchema.parse(toolCall.input);
-  deps.toolLog("web_fetch", href);
-  deps.debugLog(`executeWebFetchTool: href=${href}`);
+  deps.toolLog("web_fetch_html", href);
+  deps.debugLog(`executeWebFetchHtmlTool: href=${href}`);
   try {
     const headers = new Headers();
-    headers.append(
-      "User-Agent",
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    );
+    headers.append("User-Agent", userAgent);
     headers.append("Accept", "text/html");
 
     const fetchController = new AbortController();
@@ -449,7 +448,7 @@ export async function executeWebFetchTool(
     }
 
     deps.debugLog(
-      `executeWebFetchTool: success, title=${article.title ?? "null"}`,
+      `executeWebFetchHtmlTool: success, title=${article.title ?? "null"}`,
     );
     return {
       content: stringify(article),
@@ -458,7 +457,55 @@ export async function executeWebFetchTool(
     };
   } catch (error: unknown) {
     const msg = getMessageFromError(error);
-    deps.debugLog(`executeWebFetchTool: error=${msg}`);
+    deps.debugLog(`executeWebFetchHtmlTool: error=${msg}`);
+    return {
+      is_error: true,
+      type: "tool_result",
+      content: msg,
+      tool_use_id: toolCall.id,
+    };
+  }
+}
+
+export async function executeWebFetchJsonTool(
+  toolCall: ToolCall,
+  deps: ExecuteWebFetchToolDeps = executeWebFetchToolDeps,
+): Promise<ToolResult> {
+  const { href } = WebFetchToolSchema.parse(toolCall.input);
+  deps.toolLog("web_fetch_json", href);
+  deps.debugLog(`executeWebFetchJsonTool: href=${href}`);
+  try {
+    const headers = new Headers();
+    headers.append("User-Agent", userAgent);
+    headers.append("Accept", "application/json");
+
+    const fetchController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      fetchController.abort();
+    }, 10_000);
+
+    const response = await deps.fetch(href, {
+      headers,
+      signal: fetchController.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = `HTTP ${String(response.status)}: ${response.statusText}`;
+      colorLog(error, "yellow");
+      throw new Error(error);
+    }
+
+    const json = (await response.json()) as unknown;
+    deps.debugLog(`executeWebFetchJsonTool: success`);
+    return {
+      content: stringify(json),
+      tool_use_id: toolCall.id,
+      type: "tool_result",
+    };
+  } catch (error: unknown) {
+    const msg = getMessageFromError(error);
+    deps.debugLog(`executeWebFetchJsonTool: error=${msg}`);
     return {
       is_error: true,
       type: "tool_result",
@@ -493,9 +540,14 @@ export const TOOLS = {
       "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
     inputSchema: InsertLinesToolInputSchema,
   }),
-  web_fetch: tool({
+  web_fetch_html: tool({
     description:
       "Fetch a web page by URL and return its readable content, parsed to extract the main article.",
+    inputSchema: WebFetchToolSchema,
+  }),
+  web_fetch_json: tool({
+    description:
+      "Fetch a JSON API endpoint by URL and return the parsed JSON response.",
     inputSchema: WebFetchToolSchema,
   }),
 };
@@ -548,8 +600,12 @@ export async function getToolResultBlock(toolCall: ToolCall) {
       }
       break;
     }
-    case "web_fetch": {
-      toolResult = await executeWebFetchTool(toolCall);
+    case "web_fetch_html": {
+      toolResult = await executeWebFetchHtmlTool(toolCall);
+      break;
+    }
+    case "web_fetch_json": {
+      toolResult = await executeWebFetchJsonTool(toolCall);
       break;
     }
   }
