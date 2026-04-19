@@ -26,6 +26,7 @@ export function initReadline() {
     output: stdout,
     terminal: true,
   });
+  dispatch(actions.setRl(rl));
 
   if (stdin.isTTY) {
     stdin.setRawMode(true);
