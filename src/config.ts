@@ -1,8 +1,13 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { z } from "zod";
-import { colorLog, debugLog, getAvailableSlashCommands, getRecursiveAgentsMdFilesStr } from "./utils.ts";
+import {
+  colorLog,
+  debugLog,
+  getAvailableSlashCommands,
+  getRecursiveAgentsMdFilesStr,
+} from "./utils.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 
@@ -123,17 +128,7 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
       return parseConfigStr(deps.readFileSync(LOCAL_CONFIG_PATH));
     }
 
-    deps.mkdirSync(dirname(LOCAL_CONFIG_PATH), { recursive: true });
-    deps.writeFileSync(
-      LOCAL_CONFIG_PATH,
-      JSON.stringify(DEFAULT_CONFIG, null, 2),
-    );
-    debugLog(`${LOCAL_CONFIG_PATH} does not exist`);
-    colorLog(
-      `${LOCAL_CONFIG_PATH} does not exist, writing default config`,
-      "grey",
-    );
-
+    colorLog(`${LOCAL_CONFIG_PATH} does not exist`, "grey");
     return {};
   })();
 

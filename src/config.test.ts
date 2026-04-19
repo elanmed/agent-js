@@ -294,19 +294,6 @@ describe("initState", () => {
     });
 
     describe("when the global config does not exist", () => {
-      it("writes the global config as the default config", async () => {
-        const { fs, written } = makeFs();
-
-        try {
-          await initState(fs);
-        } catch {
-          // Expected to throw due to missing model
-        }
-
-        assert.ok(written.length > 0);
-        assert.deepEqual(JSON.parse(written[0]![1]), DEFAULT_CONFIG);
-      });
-
       it("throws when model is not configured", async () => {
         const { fs } = makeFs();
         await assert.rejects(async () => {
@@ -357,7 +344,10 @@ describe("initState", () => {
       }),
     });
 
-    await initState({ ...fs, parseCliArgs: () => ({ debug: true, resumeSessionId: null }) });
+    await initState({
+      ...fs,
+      parseCliArgs: () => ({ debug: true, resumeSessionId: null }),
+    });
     assert.equal(selectors.getDebug(), true);
   });
 
@@ -370,7 +360,11 @@ describe("initState", () => {
       }),
     });
 
-    await initState({ ...fs, getRecursiveAgentsMdFilesStr: () => Promise.resolve("FILEPATH: AGENTS.md\nhello") });
+    await initState({
+      ...fs,
+      getRecursiveAgentsMdFilesStr: () =>
+        Promise.resolve("FILEPATH: AGENTS.md\nhello"),
+    });
     assert.equal(selectors.getAgentsMdFilesStr(), "FILEPATH: AGENTS.md\nhello");
   });
 });
