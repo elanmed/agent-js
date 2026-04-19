@@ -1,6 +1,7 @@
 import { dirname, join } from "node:path";
 import { selectors } from "./state.ts";
 import fs from "node:fs";
+import { normalizeLine } from "./utils.ts";
 
 const DEBUG_LOG_PATH = join(process.cwd(), ".agent-js", "debug.log");
 const EDITOR_LOG_PATH = join(process.cwd(), ".agent-js", "editor.log");
@@ -48,7 +49,7 @@ export function editorLog(content: string, deps: DebugLogDeps = debugLogDeps) {
   }
   deps.fs.appendFileSync(
     path,
-    `${new Date().toISOString()}\n${"-".repeat(25)}\n${content}\n`,
+    `${new Date().toISOString()}\n${"-".repeat(25)}\n${normalizeLine(content)}\n`,
   );
 }
 
