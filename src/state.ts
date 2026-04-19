@@ -5,10 +5,11 @@ import {
   MISSING,
   type DiffStyle,
   type Key,
+  type ModelPricing,
   type Provider,
 } from "./config.ts";
 import { debugLog, stringify } from "./utils.ts";
-import type { ModelPricing, TokenUsage } from "./utils.ts";
+import type { TokenUsage } from "./utils.ts";
 
 interface State {
   appState: {

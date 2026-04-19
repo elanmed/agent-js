@@ -1,5 +1,12 @@
 {
   "model": "glm-5.1",
-  "baseURL": "https://opencode.ai/zen/go/v1"
+  "baseURL": "https://opencode.ai/zen/go/v1",
+  "pricingPerModel": {
+    "glm-5.1": {
+      "inputPerToken": 1.4,
+      "outputPerToken": 4.4,
+      "cacheReadPerToken": 0.26
+    }
+  }
 }
 

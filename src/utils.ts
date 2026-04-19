@@ -128,13 +128,6 @@ export function normalizeLine(content: string): string {
   return content.trim().concat("\n");
 }
 
-export interface ModelPricing {
-  inputPerToken: number;
-  outputPerToken: number;
-  cacheReadPerToken: number;
-  cacheWritePerToken: number;
-}
-
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
@@ -168,16 +161,14 @@ export function calculateSessionUsage(
 
   const pricing = selectors.getPricingPerModel()[model];
   if (!pricing) {
-    return `${String(totalUsage.inputTokens)} in, ${String(totalUsage.outputTokens)} out`;
+    return `${totalUsage.inputTokens.toLocaleString()} in, ${totalUsage.outputTokens.toLocaleString()} out`;
   }
 
   const DOLLARS_PER_MILLION = 1_000_000;
-  const {
-    inputPerToken,
-    outputPerToken,
-    cacheReadPerToken,
-    cacheWritePerToken,
-  } = pricing;
+  const { inputPerToken, outputPerToken } = pricing;
+  const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
+  const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
+
   const inputCost =
     (totalUsage.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
   const outputCost =
@@ -188,7 +179,7 @@ export function calculateSessionUsage(
     (totalUsage.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
 
   const cost = inputCost + outputCost + cacheReadCost + cacheWriteCost;
-  return `$${cost.toFixed(4)}`;
+  return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
 
 export const BASE_SYSTEM_PROMPT =

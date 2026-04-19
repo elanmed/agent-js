@@ -34,7 +34,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 | Key      | Type    | Default | Description              |
 | -------- | ------- | ------- | ------------------------ |
-| `editor` | `Key`   | `{ name: "x", ctrl: false, meta: false, shift: false }` | Keybinding to open `$EDITOR` |
+| `editor` | `Key`   | `{ name: "x", ctrl: true, meta: false, shift: false }` | Keybinding to open `$EDITOR` |
 
 Each `Key` object has:
 

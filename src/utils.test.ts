@@ -204,6 +204,42 @@ describe("utils", () => {
       ]);
       assert.equal(result, "$2.3750");
     });
+
+    it("formats cost with commas for large totals", () => {
+      // opus: input=$5/M
+      // 200_000_000 input tokens = (200_000_000 * 5) / 1_000_000 = $1,000.0000
+      const result = calculateSessionUsage("claude-opus-4-6", [
+        {
+          inputTokens: 200_000_000,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      ]);
+      assert.equal(result, "$1,000.0000");
+    });
+
+    it("formats cost with commas for very large totals across multiple usages", () => {
+      // opus: input=$5/M, output=$25/M
+      // usage1: 300_000_000 input + 40_000_000 output = $1,500 + $1,000 = $2,500
+      // usage2: 100_000_000 input + 80_000_000 output = $500 + $2,000 = $2,500
+      // total = $5,000.0000
+      const result = calculateSessionUsage("claude-opus-4-6", [
+        {
+          inputTokens: 300_000_000,
+          outputTokens: 40_000_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+        {
+          inputTokens: 100_000_000,
+          outputTokens: 80_000_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      ]);
+      assert.equal(result, "$5,000.0000");
+    });
   });
 
   describe("calculateSessionUsage no pricing configured", () => {
@@ -222,6 +258,48 @@ describe("utils", () => {
         },
       ]);
       assert.equal(result, "100 in, 50 out");
+    });
+
+    it("formats token counts with commas for numbers above 999", () => {
+      const result = calculateSessionUsage("unknown-model", [
+        {
+          inputTokens: 1_500,
+          outputTokens: 2_500,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      ]);
+      assert.equal(result, "1,500 in, 2,500 out");
+    });
+
+    it("formats token counts with commas for very large numbers", () => {
+      const result = calculateSessionUsage("unknown-model", [
+        {
+          inputTokens: 1_234_567,
+          outputTokens: 9_876_543,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      ]);
+      assert.equal(result, "1,234,567 in, 9,876,543 out");
+    });
+
+    it("accumulates token counts across multiple usages and formats with commas", () => {
+      const result = calculateSessionUsage("unknown-model", [
+        {
+          inputTokens: 50_000,
+          outputTokens: 10_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+        {
+          inputTokens: 75_000,
+          outputTokens: 15_000,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      ]);
+      assert.equal(result, "125,000 in, 25,000 out");
     });
   });
 

@@ -17,14 +17,14 @@ const KeySchema = z.object({
   shift: z.boolean().optional(),
 });
 
-const ModelPricingSchema = z
-  .object({
-    inputPerToken: z.number(),
-    outputPerToken: z.number(),
-    cacheReadPerToken: z.number(),
-    cacheWritePerToken: z.number(),
-  })
-  .strict();
+const ModelPricingSchema = z.object({
+  inputPerToken: z.number(),
+  outputPerToken: z.number(),
+  cacheReadPerToken: z.number().optional(),
+  cacheWritePerToken: z.number().optional(),
+});
+
+export type ModelPricing = z.infer<typeof ModelPricingSchema>;
 
 const ConfigSchema = z.object({
   model: z.string().optional(),
@@ -71,7 +71,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   keymaps: {
     editor: {
       name: "x",
-      ctrl: false,
+      ctrl: true,
       meta: false,
       shift: false,
     },
