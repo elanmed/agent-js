@@ -9,9 +9,7 @@ import { glob } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import type { Key } from "./config.ts";
 import { format } from "prettier";
-import { debugLog, editorLog } from "./log.ts";
-
-export { debugLog, editorLog };
+import { debugLog } from "./log.ts";
 
 export const MISSING = "MISSING";
 
@@ -203,21 +201,6 @@ export function getAvailableSlashCommands() {
 
   const files = fs.readdirSync(path);
   return files.map((file) => parse(file).name);
-}
-
-export function readFromEditor(currentLine: string) {
-  const tempFile = createTempFile();
-  const editor =
-    process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
-  fs.writeFileSync(tempFile, currentLine);
-  spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
-  let content = fs.readFileSync(tempFile).toString();
-  content = normalizeLine(content);
-  fs.unlinkSync(tempFile);
-
-  editorLog(content);
-
-  return content;
 }
 
 async function checkBat(): Promise<boolean> {

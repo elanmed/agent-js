@@ -199,7 +199,9 @@ describe("initState", () => {
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           keymaps: {
-            editor: { name: "e", ctrl: true, meta: false, shift: false },
+            edit: { name: "e", ctrl: true, meta: false, shift: false },
+            editLog: { name: "l", ctrl: true, meta: false, shift: false },
+            clear: { name: "k", ctrl: true, meta: false, shift: false },
           },
         }),
         localExists: true,
@@ -207,7 +209,9 @@ describe("initState", () => {
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           keymaps: {
-            editor: { name: "v", ctrl: false, meta: false, shift: false },
+            edit: { name: "v", ctrl: false, meta: false, shift: false },
+            editLog: { name: "o", ctrl: false, meta: false, shift: false },
+            clear: { name: "j", ctrl: false, meta: false, shift: false },
           },
         }),
       });
@@ -215,7 +219,9 @@ describe("initState", () => {
       await initState(fs);
 
       assert.deepEqual(selectors.getKeymaps(), {
-        editor: { name: "v", ctrl: false, meta: false, shift: false },
+        edit: { name: "v", ctrl: false, meta: false, shift: false },
+        editLog: { name: "o", ctrl: false, meta: false, shift: false },
+        clear: { name: "j", ctrl: false, meta: false, shift: false },
       });
     });
   });
@@ -319,14 +325,18 @@ describe("initState", () => {
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
             keymaps: {
-              editor: { name: "e", ctrl: true, meta: false, shift: false },
+              edit: { name: "e", ctrl: true, meta: false, shift: false },
+              editLog: { name: "l", ctrl: true, meta: false, shift: false },
+              clear: { name: "k", ctrl: true, meta: false, shift: false },
             },
           }),
         });
 
         await initState(fs);
         assert.deepEqual(selectors.getKeymaps(), {
-          editor: { name: "e", ctrl: true, meta: false, shift: false },
+          edit: { name: "e", ctrl: true, meta: false, shift: false },
+          editLog: { name: "l", ctrl: true, meta: false, shift: false },
+          clear: { name: "k", ctrl: true, meta: false, shift: false },
         });
       });
     });

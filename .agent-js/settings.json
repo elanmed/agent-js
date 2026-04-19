@@ -12,7 +12,6 @@
       "outputPerToken": 3.0,
       "cacheReadPerToken": 0.1
     }
-  },
-  "editorLog": true
+  }
 }
 

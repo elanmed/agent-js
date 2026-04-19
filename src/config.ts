@@ -4,10 +4,10 @@ import { join } from "node:path";
 import { z } from "zod";
 import {
   colorLog,
-  debugLog,
   getAvailableSlashCommands,
   getRecursiveAgentsMdFilesStr,
 } from "./utils.ts";
+import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 
@@ -42,7 +42,9 @@ const ConfigSchema = z.object({
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
   keymaps: z
     .object({
-      editor: KeySchema,
+      edit: KeySchema,
+      editLog: KeySchema,
+      clear: KeySchema,
     })
     .optional(),
 });
@@ -66,20 +68,34 @@ interface DefaultConfig {
     }
   >;
   keymaps: {
-    editor: Key;
+    edit: Key;
+    editLog: Key;
+    clear: Key;
   };
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
   provider: "openai-compatible",
   disableUsageMessage: false,
-  editorLog: false,
+  editorLog: true,
   diffStyle: "lines",
   pricingPerModel: {},
   model: MISSING,
   keymaps: {
-    editor: {
-      name: "x",
+    edit: {
+      name: "e",
+      ctrl: true,
+      meta: false,
+      shift: false,
+    },
+    editLog: {
+      name: "l",
+      ctrl: true,
+      meta: false,
+      shift: false,
+    },
+    clear: {
+      name: "u",
       ctrl: true,
       meta: false,
       shift: false,
@@ -116,6 +132,10 @@ const initStateDeps = {
 export type InitStateDeps = typeof initStateDeps;
 
 export async function initState(deps: InitStateDeps = initStateDeps) {
+  const args = deps.parseCliArgs();
+  dispatch(actions.setDebugLog(args.debug));
+  dispatch(actions.setDebugLog(args.debug)); // second time so it's logged
+
   const globalConfig: Config = (() => {
     if (deps.existsSync(GLOBAL_CONFIG_PATH)) {
       debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
@@ -194,9 +214,6 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
       localConfig.keymaps ?? globalConfig.keymaps ?? DEFAULT_CONFIG.keymaps,
     ),
   );
-
-  const args = deps.parseCliArgs();
-  dispatch(actions.setDebugLog(args.debug));
 
   const agentsMdFilesStr = await deps.getRecursiveAgentsMdFilesStr();
   dispatch(actions.setAgentsMdFilesStr(agentsMdFilesStr));

@@ -1,10 +1,16 @@
 import { dirname, join } from "node:path";
 import { selectors } from "./state.ts";
+import { homedir } from "node:os";
 import fs from "node:fs";
 import { normalizeLine } from "./utils.ts";
 
 const DEBUG_LOG_PATH = join(process.cwd(), ".agent-js", "debug.log");
-const EDITOR_LOG_PATH = join(process.cwd(), ".agent-js", "editor.log");
+export const EDITOR_LOG_PATH = join(
+  homedir(),
+  ".config",
+  ".agent-js",
+  "editor.log",
+);
 
 export const debugLogDeps = {
   getDebugLog: () => selectors.getDebugLog(),

@@ -136,8 +136,18 @@ describe("state", () => {
 
   it("set-keymaps", () => {
     assert.deepEqual(selectors.getKeymaps(), DEFAULT_CONFIG.keymaps);
-    dispatch(actions.setKeymaps({ editor: { name: "e", ctrl: true, meta: false, shift: false } }));
-    assert.deepEqual(selectors.getKeymaps(), { editor: { name: "e", ctrl: true, meta: false, shift: false } });
+    dispatch(
+      actions.setKeymaps({
+        edit: { name: "e", ctrl: true, meta: false, shift: false },
+        editLog: { name: "l", ctrl: true, meta: false, shift: false },
+        clear: { name: "k", ctrl: true, meta: false, shift: false },
+      }),
+    );
+    assert.deepEqual(selectors.getKeymaps(), {
+      edit: { name: "e", ctrl: true, meta: false, shift: false },
+      editLog: { name: "l", ctrl: true, meta: false, shift: false },
+      clear: { name: "k", ctrl: true, meta: false, shift: false },
+    });
   });
 
   it("set-question-abort-controller", () => {
@@ -206,5 +216,12 @@ describe("state", () => {
       dispatch(actions.appendToStdout("line3\n"));
       assert.equal(selectors.getStdout(), "line1\nline2\nline3\n");
     });
+  });
+
+  it("set-rl", () => {
+    assert.equal(selectors.getRl(), null);
+    const fakeRl = { close: () => undefined, question: () => Promise.resolve("") } as unknown as NonNullable<ReturnType<typeof selectors.getRl>>;
+    dispatch(actions.setRl(fakeRl));
+    assert.equal(selectors.getRl(), fakeRl);
   });
 });

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-base-to-string */
+import type * as readline from "node:readline/promises";
 import type { ModelMessage } from "ai";
 import {
   DEFAULT_CONFIG,
@@ -8,7 +9,8 @@ import {
   type ModelPricing,
   type Provider,
 } from "./config.ts";
-import { debugLog, stringify } from "./utils.ts";
+import { stringify } from "./utils.ts";
+import { debugLog } from "./log.ts";
 import type { TokenUsage } from "./utils.ts";
 export type { DebugLog, EditorLog } from "./log.ts";
 export type { ToolLog } from "./tools.ts";
@@ -25,6 +27,7 @@ interface State {
     debugLog: boolean;
     editorLog: boolean;
     agentsMdFilesStr: string;
+    rl: readline.Interface | null;
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -33,7 +36,7 @@ interface State {
     provider: Provider;
     disableUsageMessage: boolean;
     diffStyle: DiffStyle;
-    keymaps: { editor: Key };
+    keymaps: { edit: Key; editLog: Key; clear: Key };
   };
   abortControllers: {
     question: AbortController | null;
@@ -53,6 +56,7 @@ const initialState: State = {
     debugLog: false,
     editorLog: false,
     agentsMdFilesStr: "",
+    rl: null,
   },
   configState: {
     model: MISSING,
@@ -116,7 +120,7 @@ type Action =
     }
   | {
       type: "set-keymaps";
-      payload: { editor: Key };
+      payload: { edit: Key; editLog: Key; clear: Key };
     }
   | {
       type: "truncate-message-params";
@@ -162,6 +166,10 @@ type Action =
   | {
       type: "set-agents-md-files-str";
       payload: string;
+    }
+  | {
+      type: "set-rl";
+      payload: readline.Interface | null;
     }
   | {
       type: "reset-state";
@@ -401,12 +409,11 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-debug-log": {
-      const before = state.appState.debugLog;
       const next = {
         ...state,
         appState: { ...state.appState, debugLog: action.payload },
       };
-      logStateChange(action.type, String(before), String(action.payload));
+      logStateChange(action.type, "", String(action.payload));
       return next;
     }
     case "set-editor-log": {
@@ -424,7 +431,20 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         appState: { ...state.appState, agentsMdFilesStr: action.payload },
       };
-      logStateChange(action.type, String(before.length), String(action.payload.length));
+      logStateChange(
+        action.type,
+        String(before.length),
+        String(action.payload.length),
+      );
+      return next;
+    }
+    case "set-rl": {
+      const before = state.appState.rl;
+      const next = {
+        ...state,
+        appState: { ...state.appState, rl: action.payload },
+      };
+      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "reset-state": {
@@ -487,7 +507,11 @@ const setDiffStyle = (diffStyle: DiffStyle): Action => {
   return { type: "set-diff-style", payload: diffStyle };
 };
 
-const setKeymaps = (keymaps: { editor: Key }): Action => {
+const setKeymaps = (keymaps: {
+  edit: Key;
+  editLog: Key;
+  clear: Key;
+}): Action => {
   return { type: "set-keymaps", payload: keymaps };
 };
 
@@ -543,6 +567,10 @@ const setAgentsMdFilesStr = (agentsMdFilesStr: string): Action => {
   return { type: "set-agents-md-files-str", payload: agentsMdFilesStr };
 };
 
+const setRl = (rl: readline.Interface | null): Action => {
+  return { type: "set-rl", payload: rl };
+};
+
 const resetState = (): Action => {
   return { type: "reset-state" };
 };
@@ -571,6 +599,7 @@ export const actions = {
   setDebugLog,
   setEditorLog,
   setAgentsMdFilesStr,
+  setRl,
   resetState,
 };
 
@@ -584,6 +613,7 @@ const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
 const getEditorLog = () => getState().appState.editorLog;
 const getAgentsMdFilesStr = () => getState().appState.agentsMdFilesStr;
+const getRl = () => getState().appState.rl;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -614,4 +644,5 @@ export const selectors = {
   getDebugLog,
   getEditorLog,
   getAgentsMdFilesStr,
+  getRl,
 };

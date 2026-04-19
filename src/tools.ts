@@ -6,7 +6,6 @@ import { z } from "zod";
 import {
   colorLog,
   createTempFile,
-  debugLog,
   execGitDiff,
   fenceLog,
   getMessageFromError,
@@ -17,6 +16,7 @@ import {
   tryCatchAsync,
 } from "./utils.ts";
 import type { ColorLog } from "./utils.ts";
+import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";

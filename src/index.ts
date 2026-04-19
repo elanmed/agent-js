@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { selectors } from "./state.ts";
+import { actions, dispatch, selectors } from "./state.ts";
 import {
   colorLog,
   executeBat,
@@ -22,11 +22,11 @@ async function main() {
   await initState();
 
   const rl = initReadline();
-  initKeypress(rl);
-  initSigInt(rl);
+  initKeypress();
+  initSigInt();
 
   while (selectors.getRunning()) {
-    const userInput = await resolveUserInput(rl);
+    const userInput = await resolveUserInput();
     if (userInput === null) continue;
 
     if (userInput === "") {

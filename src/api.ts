@@ -6,7 +6,6 @@ import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
   colorLog,
-  debugLog,
   tryCatchAsync,
   getMessageFromError,
   executeBat,
@@ -14,6 +13,7 @@ import {
   fenceLog,
   logNewline,
 } from "./utils.ts";
+import { debugLog } from "./log.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
 import { TOOLS } from "./tools.ts";
 import assert from "node:assert";

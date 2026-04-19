@@ -12,7 +12,8 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Configuration**: global and local `settings.json`
 - **Cost tracking**: per-model token pricing with usage summary after each response
 - **AGENTS.md discovery**: recursively includes project context from `AGENTS.md` files
-- **Slash commands**: builtin (`/edit`, `/clear`) and custom commands from `./.agent-js/commands/`
+- **Slash commands**: builtin (`/edit`, `/clear`, `/edit-log`) and custom commands from `./.agent-js/commands/`
+- **Keymaps**: customizable shortcuts for common actions
 - **Rendering**: responses piped through `bat` for markdown formatting
 
 ## Configuration
@@ -33,9 +34,11 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Keymaps
 
-| Key      | Type  | Default                                                | Description                  |
-| -------- | ----- | ------------------------------------------------------ | ---------------------------- |
-| `editor` | `Key` | `{ name: "x", ctrl: true, meta: false, shift: false }` | Keybinding to open `$EDITOR` |
+| Key       | Type  | Default                                                | Description                      |
+| --------- | ----- | ------------------------------------------------------ | -------------------------------- |
+| `edit`    | `Key` | `{ name: "e", ctrl: true, meta: false, shift: false }` | Open `$EDITOR` for multi-line    |
+| `editLog` | `Key` | `{ name: "l", ctrl: true, meta: false, shift: false }` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view editor log |
+| `clear`   | `Key` | `{ name: "u", ctrl: true, meta: false, shift: false }` | Clear conversation context       |
 
 Each `Key` object has:
 
@@ -55,8 +58,20 @@ Example `settings.json`:
   "diffStyle": "lines",
   "disableUsageMessage": false,
   "keymaps": {
-    "editor": {
+    "edit": {
       "name": "e",
+      "ctrl": true,
+      "meta": false,
+      "shift": false
+    },
+    "editLog": {
+      "name": "l",
+      "ctrl": true,
+      "meta": false,
+      "shift": false
+    },
+    "clear": {
+      "name": "u",
       "ctrl": true,
       "meta": false,
       "shift": false
@@ -84,10 +99,11 @@ Example `settings.json`:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command  | Description                                                                   |
-| -------- | ----------------------------------------------------------------------------- |
-| `/edit`  | Open `$AGENT_JS_EDITOR` or `$EDITOR` with empty input for multi-line messages |
-| `/clear` | Clear conversation context and reset message history                          |
+| Command    | Description                                                                   |
+| ---------- | ----------------------------------------------------------------------------- |
+| `/edit`    | Open `$AGENT_JS_EDITOR` or `$EDITOR` with empty input for multi-line messages |
+| `/clear`   | Clear conversation context and reset message history                          |
+| `/edit-log` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view the editor log              |
 
 ### Custom Slash Commands
 
@@ -121,7 +137,6 @@ Minimal runtime dependencies (7 total):
 
 - [ ] MCP server
 - [ ] Resume session
-- [ ] View last temp file
 - [ ] Spinner for tool calls
 - [ ] Tool call interrupt
 - [ ] Look into tanstack ai (codemode?)

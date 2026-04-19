@@ -1,21 +1,24 @@
 import * as readline from "node:readline/promises";
 import { emitKeypressEvents } from "node:readline";
 import { stdin, stdout } from "node:process";
-import { actions, dispatch, selectors } from "./state.ts";
+import assert from "node:assert";
 import {
   isAbortError,
-  debugLog,
   tryCatchAsync,
   getMessageFromError,
-  readFromEditor,
   colorLog,
   normalizeLine,
   isSameKey,
   logNewline,
   fenceLog,
+  createTempFile,
 } from "./utils.ts";
+import fs from "node:fs";
 import { join } from "node:path";
+import { actions, dispatch, selectors } from "./state.ts";
+import { spawnSync } from "node:child_process";
 import type { Key } from "./config.ts";
+import { debugLog, EDITOR_LOG_PATH, editorLog } from "./log.ts";
 
 export function initReadline() {
   const rl = readline.createInterface({
@@ -38,10 +41,11 @@ export function initReadline() {
   return rl;
 }
 
-export function initKeypress(rl: readline.Interface) {
+export function initKeypress() {
+  const rl = selectors.getRl();
+  assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
-    const editorKeymap = selectors.getKeymaps().editor;
-    if (isSameKey(key, editorKeymap)) {
+    if (isSameKey(key, selectors.getKeymaps().edit)) {
       let initialContentPrefix = "";
       if (selectors.getEditorInputValue() !== null) {
         initialContentPrefix = selectors.getEditorInputValue()!;
@@ -57,7 +61,7 @@ export function initKeypress(rl: readline.Interface) {
         initialContent = `${normalizeLine(initialContentPrefix)}\n\n${initialContentSuffix}`;
       }
 
-      const editorContent = readFromEditor(initialContent);
+      const editorContent = editCommand(initialContent);
       if (editorContent) {
         dispatch(actions.setEditorInputValue(editorContent));
         const questionAbortController = selectors.getQuestionAbortController();
@@ -65,15 +69,24 @@ export function initKeypress(rl: readline.Interface) {
           rl.write(null, { ctrl: true, name: "e" });
           rl.write(null, { ctrl: true, name: "u" });
           rl.write("[editor]");
+          dispatch(actions.appendToStdout("[editor]"));
 
           questionAbortController.abort();
         }
       }
+    } else if (isSameKey(key, selectors.getKeymaps().clear)) {
+      if (selectors.getQuestionAbortController() === null) return;
+      rl.write("/clear\n");
+      dispatch(actions.appendToStdout("/clear\n"));
+    } else if (isSameKey(key, selectors.getKeymaps().editLog)) {
+      editLogCommand();
     }
   });
 }
 
-export function initSigInt(rl: readline.Interface) {
+export function initSigInt() {
+  const rl = selectors.getRl();
+  assert(rl !== null);
   rl.on("SIGINT", () => {
     const apiStream = selectors.getApiStreamAbortController();
     if (apiStream) {
@@ -98,7 +111,9 @@ export function initSigInt(rl: readline.Interface) {
   });
 }
 
-export async function resolveUserInput(rl: readline.Interface) {
+export async function resolveUserInput() {
+  const rl = selectors.getRl();
+  assert(rl !== null);
   if (selectors.getEditorInputValue() !== null) {
     const editorInputValue = selectors.getEditorInputValue()!;
     dispatch(actions.setEditorInputValue(null));
@@ -134,7 +149,7 @@ export async function resolveUserInput(rl: readline.Interface) {
     }
 
     // TODO: little weird, will either return null or call setRunning(false)
-    return await resolveExitConfirmation(rl);
+    return await resolveExitConfirmation();
   }
 
   const rawInput = inputResult.value;
@@ -148,7 +163,9 @@ export async function resolveUserInput(rl: readline.Interface) {
   return rawInput;
 }
 
-async function resolveExitConfirmation(rl: readline.Interface) {
+async function resolveExitConfirmation() {
+  const rl = selectors.getRl();
+  assert(rl !== null);
   dispatch(actions.setInterrupted(true));
   dispatch(actions.setQuestionAbortController(new AbortController()));
   const exitQuestionAbortController = selectors.getQuestionAbortController();
@@ -176,14 +193,12 @@ async function resolveExitConfirmation(rl: readline.Interface) {
 function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1).trim();
   if (commandWithoutSlash === "edit") {
-    return readFromEditor("");
-  }
-
-  if (commandWithoutSlash === "clear") {
-    dispatch(actions.resetMessageUsages());
-    dispatch(actions.resetMessageParams());
-    debugLog("Performing the `clear` slash command");
-    colorLog("Context cleared", "grey");
+    return editCommand("");
+  } else if (commandWithoutSlash === "clear") {
+    clearCommand();
+    return null;
+  } else if (commandWithoutSlash === "edit-log") {
+    editLogCommand();
     return null;
   }
 
@@ -204,4 +219,46 @@ function resolveSlashCommand(rawInput: string) {
     "red",
   );
   return null;
+}
+
+export function clearCommand() {
+  dispatch(actions.resetMessageUsages());
+  dispatch(actions.resetMessageParams());
+  debugLog("Performing the `clear` slash command");
+  colorLog("Context cleared", "grey");
+}
+
+export function editCommand(currentLine: string) {
+  const tempFile = createTempFile();
+  const editor =
+    process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
+  fs.writeFileSync(tempFile, currentLine);
+  spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
+
+  // Re-enable raw mode if it was disabled by the editor
+  if (stdin.isTTY) {
+    stdin.setRawMode(true);
+  }
+
+  let content = fs.readFileSync(tempFile).toString();
+  content = normalizeLine(content);
+  fs.unlinkSync(tempFile);
+
+  editorLog(content);
+
+  return content;
+}
+
+export function editLogCommand() {
+  if (!fs.existsSync(EDITOR_LOG_PATH)) {
+    colorLog("Edit log does not exist", "yellow");
+    return;
+  }
+  const editor =
+    process.env["AGENT_JS_EDITOR_LOG"] ?? process.env["EDITOR"] ?? "vi";
+
+  spawnSync(`${editor} "${EDITOR_LOG_PATH}"`, {
+    shell: true,
+    stdio: "inherit",
+  });
 }
