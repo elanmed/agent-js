@@ -199,9 +199,9 @@ describe("initState", () => {
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           keymaps: {
-            edit: { name: "e", ctrl: true, meta: false, shift: false },
-            editLog: { name: "l", ctrl: true, meta: false, shift: false },
-            clear: { name: "k", ctrl: true, meta: false, shift: false },
+            edit: { name: "v", ctrl: false, meta: false, shift: false },
+            editLog: { name: "o", ctrl: false, meta: false, shift: false },
+            clear: { name: "j", ctrl: false, meta: false, shift: false },
           },
         }),
         localExists: true,
@@ -209,20 +209,60 @@ describe("initState", () => {
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           keymaps: {
-            edit: { name: "v", ctrl: false, meta: false, shift: false },
-            editLog: { name: "o", ctrl: false, meta: false, shift: false },
-            clear: { name: "j", ctrl: false, meta: false, shift: false },
+            edit: { name: "e", ctrl: true, meta: false, shift: false },
+            editLog: { name: "l", ctrl: true, meta: false, shift: false },
+            clear: { name: "k", ctrl: true, meta: false, shift: false },
           },
         }),
       });
 
       await initState(fs);
 
-      assert.deepEqual(selectors.getKeymaps(), {
-        edit: { name: "v", ctrl: false, meta: false, shift: false },
-        editLog: { name: "o", ctrl: false, meta: false, shift: false },
-        clear: { name: "j", ctrl: false, meta: false, shift: false },
+      assert.deepEqual(selectors.getKeymapEdit(), {
+        name: "e",
+        ctrl: true,
+        meta: false,
+        shift: false,
       });
+      assert.deepEqual(selectors.getKeymapEditLog(), {
+        name: "l",
+        ctrl: true,
+        meta: false,
+        shift: false,
+      });
+      assert.deepEqual(selectors.getKeymapClear(), {
+        name: "k",
+        ctrl: true,
+        meta: false,
+        shift: false,
+      });
+    });
+
+    it("merges partial keymaps with defaults", async () => {
+      const { fs } = makeFs({
+        localExists: true,
+        localContent: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          keymaps: {
+            edit: { name: "v", ctrl: false, meta: false, shift: false },
+          },
+        }),
+      });
+
+      await initState(fs);
+
+      // Custom edit keymap
+      assert.deepEqual(selectors.getKeymapEdit(), {
+        name: "v",
+        ctrl: false,
+        meta: false,
+        shift: false,
+      });
+      // Default editLog keymap
+      assert.deepEqual(selectors.getKeymapEditLog(), DEFAULT_CONFIG.keymaps.editLog);
+      // Default clear keymap
+      assert.deepEqual(selectors.getKeymapClear(), DEFAULT_CONFIG.keymaps.clear);
     });
   });
 
@@ -325,18 +365,32 @@ describe("initState", () => {
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
             keymaps: {
-              edit: { name: "e", ctrl: true, meta: false, shift: false },
-              editLog: { name: "l", ctrl: true, meta: false, shift: false },
-              clear: { name: "k", ctrl: true, meta: false, shift: false },
+              edit: { name: "v", ctrl: false, meta: false, shift: false },
+              editLog: { name: "o", ctrl: false, meta: false, shift: false },
+              clear: { name: "j", ctrl: false, meta: false, shift: false },
             },
           }),
         });
 
         await initState(fs);
-        assert.deepEqual(selectors.getKeymaps(), {
-          edit: { name: "e", ctrl: true, meta: false, shift: false },
-          editLog: { name: "l", ctrl: true, meta: false, shift: false },
-          clear: { name: "k", ctrl: true, meta: false, shift: false },
+
+        assert.deepEqual(selectors.getKeymapEdit(), {
+          name: "v",
+          ctrl: false,
+          meta: false,
+          shift: false,
+        });
+        assert.deepEqual(selectors.getKeymapEditLog(), {
+          name: "o",
+          ctrl: false,
+          meta: false,
+          shift: false,
+        });
+        assert.deepEqual(selectors.getKeymapClear(), {
+          name: "j",
+          ctrl: false,
+          meta: false,
+          shift: false,
         });
       });
     });

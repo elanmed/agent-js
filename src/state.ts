@@ -36,7 +36,9 @@ interface State {
     provider: Provider;
     disableUsageMessage: boolean;
     diffStyle: DiffStyle;
-    keymaps: { edit: Key; editLog: Key; clear: Key };
+    keymapEdit: Key;
+    keymapEditLog: Key;
+    keymapClear: Key;
   };
   abortControllers: {
     question: AbortController | null;
@@ -65,7 +67,9 @@ const initialState: State = {
     disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
     diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
-    keymaps: structuredClone(DEFAULT_CONFIG.keymaps),
+    keymapEdit: structuredClone(DEFAULT_CONFIG.keymaps.edit),
+    keymapEditLog: structuredClone(DEFAULT_CONFIG.keymaps.editLog),
+    keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
   },
   abortControllers: {
     question: null,
@@ -119,8 +123,16 @@ type Action =
       payload: "unified" | "lines";
     }
   | {
-      type: "set-keymaps";
-      payload: { edit: Key; editLog: Key; clear: Key };
+      type: "set-keymap-edit";
+      payload: Key;
+    }
+  | {
+      type: "set-keymap-edit-log";
+      payload: Key;
+    }
+  | {
+      type: "set-keymap-clear";
+      payload: Key;
     }
   | {
       type: "truncate-message-params";
@@ -292,11 +304,29 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, before, action.payload);
       return next;
     }
-    case "set-keymaps": {
-      const before = state.configState.keymaps;
+    case "set-keymap-edit": {
+      const before = state.configState.keymapEdit;
       const next = {
         ...state,
-        configState: { ...state.configState, keymaps: action.payload },
+        configState: { ...state.configState, keymapEdit: action.payload },
+      };
+      logStateChange(action.type, stringify(before), stringify(action.payload));
+      return next;
+    }
+    case "set-keymap-edit-log": {
+      const before = state.configState.keymapEditLog;
+      const next = {
+        ...state,
+        configState: { ...state.configState, keymapEditLog: action.payload },
+      };
+      logStateChange(action.type, stringify(before), stringify(action.payload));
+      return next;
+    }
+    case "set-keymap-clear": {
+      const before = state.configState.keymapClear;
+      const next = {
+        ...state,
+        configState: { ...state.configState, keymapClear: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
@@ -507,12 +537,16 @@ const setDiffStyle = (diffStyle: DiffStyle): Action => {
   return { type: "set-diff-style", payload: diffStyle };
 };
 
-const setKeymaps = (keymaps: {
-  edit: Key;
-  editLog: Key;
-  clear: Key;
-}): Action => {
-  return { type: "set-keymaps", payload: keymaps };
+const setKeymapEdit = (keymap: Key): Action => {
+  return { type: "set-keymap-edit", payload: keymap };
+};
+
+const setKeymapEditLog = (keymap: Key): Action => {
+  return { type: "set-keymap-edit-log", payload: keymap };
+};
+
+const setKeymapClear = (keymap: Key): Action => {
+  return { type: "set-keymap-clear", payload: keymap };
 };
 
 const truncateMessageParams = (count: number): Action => {
@@ -586,7 +620,9 @@ export const actions = {
   setPricingPerModel,
   setDisableUsageMessage,
   setDiffStyle,
-  setKeymaps,
+  setKeymapEdit,
+  setKeymapEditLog,
+  setKeymapClear,
   truncateMessageParams,
   resetMessageUsages,
   resetMessageParams,
@@ -620,7 +656,9 @@ const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
 const getDisableUsageMessage = () => getState().configState.disableUsageMessage;
 const getDiffStyle = () => getState().configState.diffStyle;
-const getKeymaps = () => getState().configState.keymaps;
+const getKeymapEdit = () => getState().configState.keymapEdit;
+const getKeymapEditLog = () => getState().configState.keymapEditLog;
+const getKeymapClear = () => getState().configState.keymapClear;
 const getQuestionAbortController = () => getState().abortControllers.question;
 const getApiStreamAbortController = () => getState().abortControllers.apiStream;
 
@@ -635,7 +673,9 @@ export const selectors = {
   getPricingPerModel,
   getDisableUsageMessage,
   getDiffStyle,
-  getKeymaps,
+  getKeymapEdit,
+  getKeymapEditLog,
+  getKeymapClear,
   getQuestionAbortController,
   getApiStreamAbortController,
   getEditorInputValue,

@@ -46,7 +46,7 @@ export function initKeypress() {
   const rl = selectors.getRl();
   assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
-    if (isSameKey(key, selectors.getKeymaps().edit)) {
+    if (isSameKey(key, selectors.getKeymapEdit())) {
       let initialContentPrefix = "";
       if (selectors.getEditorInputValue() !== null) {
         initialContentPrefix = selectors.getEditorInputValue()!;
@@ -75,11 +75,11 @@ export function initKeypress() {
           questionAbortController.abort();
         }
       }
-    } else if (isSameKey(key, selectors.getKeymaps().clear)) {
+    } else if (isSameKey(key, selectors.getKeymapClear())) {
       if (selectors.getQuestionAbortController() === null) return;
       rl.write("/clear\n");
       dispatch(actions.appendToStdout("/clear\n"));
-    } else if (isSameKey(key, selectors.getKeymaps().editLog)) {
+    } else if (isSameKey(key, selectors.getKeymapEditLog())) {
       editLogCommand();
     }
   });
@@ -235,11 +235,6 @@ export function editCommand(currentLine: string) {
     process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
   fs.writeFileSync(tempFile, currentLine);
   spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
-
-  // Re-enable raw mode if it was disabled by the editor
-  if (stdin.isTTY) {
-    stdin.setRawMode(true);
-  }
 
   let content = fs.readFileSync(tempFile).toString();
   content = normalizeLine(content);

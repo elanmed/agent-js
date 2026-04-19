@@ -134,19 +134,57 @@ describe("state", () => {
     assert.equal(selectors.getDiffStyle(), "unified");
   });
 
-  it("set-keymaps", () => {
-    assert.deepEqual(selectors.getKeymaps(), DEFAULT_CONFIG.keymaps);
+  it("set-keymap-edit", () => {
+    assert.deepEqual(selectors.getKeymapEdit(), DEFAULT_CONFIG.keymaps.edit);
     dispatch(
-      actions.setKeymaps({
-        edit: { name: "e", ctrl: true, meta: false, shift: false },
-        editLog: { name: "l", ctrl: true, meta: false, shift: false },
-        clear: { name: "k", ctrl: true, meta: false, shift: false },
+      actions.setKeymapEdit({
+        name: "v",
+        ctrl: false,
+        meta: false,
+        shift: false,
       }),
     );
-    assert.deepEqual(selectors.getKeymaps(), {
-      edit: { name: "e", ctrl: true, meta: false, shift: false },
-      editLog: { name: "l", ctrl: true, meta: false, shift: false },
-      clear: { name: "k", ctrl: true, meta: false, shift: false },
+    assert.deepEqual(selectors.getKeymapEdit(), {
+      name: "v",
+      ctrl: false,
+      meta: false,
+      shift: false,
+    });
+  });
+
+  it("set-keymap-edit-log", () => {
+    assert.deepEqual(selectors.getKeymapEditLog(), DEFAULT_CONFIG.keymaps.editLog);
+    dispatch(
+      actions.setKeymapEditLog({
+        name: "o",
+        ctrl: false,
+        meta: false,
+        shift: false,
+      }),
+    );
+    assert.deepEqual(selectors.getKeymapEditLog(), {
+      name: "o",
+      ctrl: false,
+      meta: false,
+      shift: false,
+    });
+  });
+
+  it("set-keymap-clear", () => {
+    assert.deepEqual(selectors.getKeymapClear(), DEFAULT_CONFIG.keymaps.clear);
+    dispatch(
+      actions.setKeymapClear({
+        name: "k",
+        ctrl: false,
+        meta: false,
+        shift: false,
+      }),
+    );
+    assert.deepEqual(selectors.getKeymapClear(), {
+      name: "k",
+      ctrl: false,
+      meta: false,
+      shift: false,
     });
   });
 

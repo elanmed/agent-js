@@ -42,9 +42,9 @@ const ConfigSchema = z.object({
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
   keymaps: z
     .object({
-      edit: KeySchema,
-      editLog: KeySchema,
-      clear: KeySchema,
+      edit: KeySchema.optional(),
+      editLog: KeySchema.optional(),
+      clear: KeySchema.optional(),
     })
     .optional(),
 });
@@ -210,8 +210,24 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
 
   dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
   dispatch(
-    actions.setKeymaps(
-      localConfig.keymaps ?? globalConfig.keymaps ?? DEFAULT_CONFIG.keymaps,
+    actions.setKeymapEdit(
+      localConfig.keymaps?.edit ??
+        globalConfig.keymaps?.edit ??
+        DEFAULT_CONFIG.keymaps.edit,
+    ),
+  );
+  dispatch(
+    actions.setKeymapEditLog(
+      localConfig.keymaps?.editLog ??
+        globalConfig.keymaps?.editLog ??
+        DEFAULT_CONFIG.keymaps.editLog,
+    ),
+  );
+  dispatch(
+    actions.setKeymapClear(
+      localConfig.keymaps?.clear ??
+        globalConfig.keymaps?.clear ??
+        DEFAULT_CONFIG.keymaps.clear,
     ),
   );
 
