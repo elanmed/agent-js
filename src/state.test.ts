@@ -160,10 +160,16 @@ describe("state", () => {
     assert.equal(selectors.getEditorInputValue(), "test content");
   });
 
-  it("set-debug", () => {
-    assert.equal(selectors.getDebug(), false);
-    dispatch(actions.setDebug(true));
-    assert.equal(selectors.getDebug(), true);
+  it("set-debug-log", () => {
+    assert.equal(selectors.getDebugLog(), false);
+    dispatch(actions.setDebugLog(true));
+    assert.equal(selectors.getDebugLog(), true);
+  });
+
+  it("set-editor-log", () => {
+    assert.equal(selectors.getEditorLog(), false);
+    dispatch(actions.setEditorLog(true));
+    assert.equal(selectors.getEditorLog(), true);
   });
 
   it("set-agents-md-files-str", () => {

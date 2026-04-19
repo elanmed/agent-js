@@ -186,7 +186,7 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
   );
 
   const args = deps.parseCliArgs();
-  dispatch(actions.setDebug(args.debug));
+  dispatch(actions.setDebugLog(args.debug));
 
   const agentsMdFilesStr = await deps.getRecursiveAgentsMdFilesStr();
   dispatch(actions.setAgentsMdFilesStr(agentsMdFilesStr));

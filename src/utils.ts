@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { dirname, join, parse } from "node:path";
+import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -9,6 +9,9 @@ import { glob } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import type { Key } from "./config.ts";
 import { format } from "prettier";
+import { debugLog, editorLog } from "./log.ts";
+
+export { debugLog, editorLog };
 
 export const MISSING = "MISSING";
 
@@ -75,6 +78,11 @@ export function colorLog(
   dispatch(actions.appendToStdout(out));
 }
 
+export function logNewline() {
+  if (selectors.getStdout().endsWith("\n\n")) return;
+  colorLog("");
+}
+
 const fenceLogDeps = {
   colorLog,
   getColumns: () => (process.stdout.isTTY ? process.stdout.columns : 25),
@@ -122,21 +130,6 @@ export async function getRecursiveAgentsMdFilesStr() {
     filesContents.push(`FILEPATH: ${filePath}`, fileContent);
   }
   return filesContents.join("\n");
-}
-
-export function debugLog(content: string) {
-  if (!selectors.getDebug()) return;
-
-  const path = join(process.cwd(), ".agent-js", "debug.log");
-  fs.mkdirSync(dirname(path), { recursive: true });
-  fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
-}
-
-export type DebugLog = typeof debugLog;
-
-export function logNewline() {
-  if (selectors.getStdout().endsWith("\n\n")) return;
-  colorLog("");
 }
 
 export function normalizeLine(content: string): string {

@@ -15,16 +15,19 @@ import {
   executeWebFetchJsonTool,
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
-import type { DebugLog } from "./utils.ts";
+import type { DebugLog, ToolLog } from "./state.ts";
 
 const execPromise = promisify(exec);
 
-const noop: DebugLog = () => {
+const debugNoop: DebugLog = () => {
+  void 0;
+};
+const toolNoop: ToolLog = () => {
   void 0;
 };
 const debugDeps = {
-  debugLog: noop,
-  toolLog: noop,
+  debugLog: debugNoop,
+  toolLog: toolNoop,
 };
 const bashDeps = { ...debugDeps, exec: execPromise };
 

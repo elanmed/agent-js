@@ -41,6 +41,8 @@ function toolLog(
   deps.colorLog(`${label}: ${detail}`, "blue");
 }
 
+export type ToolLog = typeof toolLog;
+
 export interface ToolCall {
   id: string;
   name: string;

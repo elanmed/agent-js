@@ -10,6 +10,8 @@ import {
 } from "./config.ts";
 import { debugLog, stringify } from "./utils.ts";
 import type { TokenUsage } from "./utils.ts";
+export type { DebugLog, EditorLog } from "./log.ts";
+export type { ToolLog } from "./tools.ts";
 
 interface State {
   appState: {
@@ -20,7 +22,8 @@ interface State {
     editorInputValue: string | null;
     slashCommands: string[];
     stdout: string;
-    debug: boolean;
+    debugLog: boolean;
+    editorLog: boolean;
     agentsMdFilesStr: string;
   };
   configState: {
@@ -47,7 +50,8 @@ const initialState: State = {
     editorInputValue: null,
     slashCommands: [],
     stdout: "",
-    debug: false,
+    debugLog: false,
+    editorLog: false,
     agentsMdFilesStr: "",
   },
   configState: {
@@ -148,7 +152,11 @@ type Action =
       payload: string;
     }
   | {
-      type: "set-debug";
+      type: "set-debug-log";
+      payload: boolean;
+    }
+  | {
+      type: "set-editor-log";
       payload: boolean;
     }
   | {
@@ -392,11 +400,20 @@ const reducer = (state: State, action: Action): State => {
       );
       return next;
     }
-    case "set-debug": {
-      const before = state.appState.debug;
+    case "set-debug-log": {
+      const before = state.appState.debugLog;
       const next = {
         ...state,
-        appState: { ...state.appState, debug: action.payload },
+        appState: { ...state.appState, debugLog: action.payload },
+      };
+      logStateChange(action.type, String(before), String(action.payload));
+      return next;
+    }
+    case "set-editor-log": {
+      const before = state.appState.editorLog;
+      const next = {
+        ...state,
+        appState: { ...state.appState, editorLog: action.payload },
       };
       logStateChange(action.type, String(before), String(action.payload));
       return next;
@@ -514,8 +531,12 @@ const appendToStdout = (line: string): Action => {
   return { type: "append-to-stdout", payload: line };
 };
 
-const setDebug = (debug: boolean): Action => {
-  return { type: "set-debug", payload: debug };
+const setDebugLog = (debugLog: boolean): Action => {
+  return { type: "set-debug-log", payload: debugLog };
+};
+
+const setEditorLog = (editorLog: boolean): Action => {
+  return { type: "set-editor-log", payload: editorLog };
 };
 
 const setAgentsMdFilesStr = (agentsMdFilesStr: string): Action => {
@@ -547,7 +568,8 @@ export const actions = {
   setSlashCommands,
   resetStdout,
   appendToStdout,
-  setDebug,
+  setDebugLog,
+  setEditorLog,
   setAgentsMdFilesStr,
   resetState,
 };
@@ -559,7 +581,8 @@ const getMessageUsages = () => getState().appState.messageUsages;
 const getEditorInputValue = () => getState().appState.editorInputValue;
 const getSlashCommands = () => getState().appState.slashCommands;
 const getStdout = () => getState().appState.stdout;
-const getDebug = () => getState().appState.debug;
+const getDebugLog = () => getState().appState.debugLog;
+const getEditorLog = () => getState().appState.editorLog;
 const getAgentsMdFilesStr = () => getState().appState.agentsMdFilesStr;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
@@ -588,6 +611,7 @@ export const selectors = {
   getEditorInputValue,
   getSlashCommands,
   getStdout,
-  getDebug,
+  getDebugLog,
+  getEditorLog,
   getAgentsMdFilesStr,
 };

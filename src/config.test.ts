@@ -351,7 +351,7 @@ describe("initState", () => {
       ...fs,
       parseCliArgs: () => ({ debug: true, resumeSessionId: null }),
     });
-    assert.equal(selectors.getDebug(), true);
+    assert.equal(selectors.getDebugLog(), true);
   });
 
   it("sets agentsMdFilesStr from dep", async () => {
