@@ -89,7 +89,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
       shift: false,
     },
     editLog: {
-      name: "l",
+      name: "k",
       ctrl: true,
       meta: false,
       shift: false,
