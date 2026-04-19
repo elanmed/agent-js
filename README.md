@@ -63,7 +63,7 @@ Example `settings.json`:
     }
   },
   "pricingPerModel": {
-    "my-custom-model": {
+    "claude-sonnet-4-6": {
       "inputPerToken": 2.5,
       "outputPerToken": 10,
       "cacheReadPerToken": 1.25,
@@ -100,21 +100,22 @@ Create custom commands by adding markdown files to `./.agent-js/commands/[comman
 - `view_file` — view files or list directories
 - `str_replace` — replace strings in files
 - `insert_lines` — insert text at a line
-- `web_fetch` — fetch a URL and return its readable content
+- `web_fetch_html` — fetch a URL and return extracted article content
+- `web_fetch_json` — fetch a JSON API endpoint and return parsed data
 
 ## Dependencies
 
 Minimal runtime dependencies (7 total):
 
-| Package                     | Purpose                            |
-| --------------------------- | ---------------------------------- |
-| `ai`                        | AI SDK core                        |
-| `@ai-sdk/anthropic`         | Anthropic provider                 |
-| `@ai-sdk/openai-compatible` | OpenAI-compatible provider         |
-| `zod`                       | Schema validation                  |
-| `jsdom`                     | DOM parsing for `web_fetch`        |
-| `@mozilla/readability`      | Content extraction for `web_fetch` |
-| `prettier`                  | Markdown formatting                |
+| Package                     | Purpose                                 |
+| --------------------------- | --------------------------------------- |
+| `ai`                        | AI SDK core                             |
+| `@ai-sdk/anthropic`         | Anthropic provider                      |
+| `@ai-sdk/openai-compatible` | OpenAI-compatible provider              |
+| `zod`                       | Schema validation                       |
+| `jsdom`                     | DOM parsing for `web_fetch_html`        |
+| `@mozilla/readability`      | Content extraction for `web_fetch_html` |
+| `prettier`                  | Markdown formatting                     |
 
 ## TODO
 
