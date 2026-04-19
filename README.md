@@ -34,11 +34,11 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Keymaps
 
-| Key       | Type  | Default                                                | Description                      |
-| --------- | ----- | ------------------------------------------------------ | -------------------------------- |
-| `edit`    | `Key` | `{ name: "e", ctrl: true, meta: false, shift: false }` | Open `$EDITOR` for multi-line    |
-| `editLog` | `Key` | `{ name: "l", ctrl: true, meta: false, shift: false }` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view editor log |
-| `clear`   | `Key` | `{ name: "u", ctrl: true, meta: false, shift: false }` | Clear conversation context       |
+| Key       | Type  | Default                     | Description                                                 |
+| --------- | ----- | --------------------------- | ----------------------------------------------------------- |
+| `edit`    | `Key` | `{ name: "e", ctrl: true }` | Open `$EDITOR` for multi-line                               |
+| `editLog` | `Key` | `{ name: "l", ctrl: true }` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view editor log |
+| `clear`   | `Key` | `{ name: "u", ctrl: true }` | Clear conversation context                                  |
 
 Each `Key` object has:
 
@@ -69,19 +69,7 @@ Example `settings.json`:
   "disableUsageMessage": false,
   "keymaps": {
     "edit": {
-      "name": "e",
-      "ctrl": true,
-      "meta": false,
-      "shift": false
-    },
-    "editLog": {
-      "name": "l",
-      "ctrl": true,
-      "meta": false,
-      "shift": false
-    },
-    "clear": {
-      "name": "u",
+      "name": "x",
       "ctrl": true,
       "meta": false,
       "shift": false
@@ -109,11 +97,11 @@ Example `settings.json`:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command    | Description                                                                   |
-| ---------- | ----------------------------------------------------------------------------- |
-| `/edit`    | Open `$AGENT_JS_EDITOR` or `$EDITOR` with empty input for multi-line messages |
-| `/clear`   | Clear conversation context and reset message history                          |
-| `/edit-log` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view the editor log              |
+| Command     | Description                                                                   |
+| ----------- | ----------------------------------------------------------------------------- |
+| `/edit`     | Open `$AGENT_JS_EDITOR` or `$EDITOR` with empty input for multi-line messages |
+| `/clear`    | Clear conversation context and reset message history                          |
+| `/edit-log` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view the editor log               |
 
 ### Custom Slash Commands
 
