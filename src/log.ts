@@ -36,10 +36,7 @@ export function debugLog(content: string, deps: DebugLogDeps = debugLogDeps) {
   if (!deps.fs.existsSync(path)) {
     deps.fs.mkdirSync(dirname(path), { recursive: true });
   }
-  deps.fs.appendFileSync(
-    path,
-    `${new Date().toISOString()} :: ${content}\n`,
-  );
+  deps.fs.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
 }
 
 export function editorLog(content: string, deps: DebugLogDeps = debugLogDeps) {
@@ -72,3 +69,7 @@ export function resetEditorLog(deps: DebugLogDeps = debugLogDeps) {
 export type DebugLog = typeof debugLog;
 export type EditorLog = typeof editorLog;
 
+export function initLogs() {
+  resetDebugLog();
+  resetEditorLog();
+}

@@ -15,8 +15,10 @@ import {
   resolveUserInput,
 } from "./input.ts";
 import { resolveUserInputApiCall, runToolLoop } from "./api.ts";
+import { initLogs } from "./log.ts";
 
 async function main() {
+  initLogs();
   await initState();
 
   const rl = initReadline();
