@@ -197,8 +197,12 @@ export function calculateSessionUsage(
   return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
 
-export const BASE_SYSTEM_PROMPT =
-  "You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown.";
+export const BASE_SYSTEM_PROMPT = `You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. 
+
+  When outputting content from web fetch tools, reference relevant source links.
+
+  CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown. 
+  `;
 
 export function getAvailableSlashCommands() {
   const path = join(process.cwd(), ".agent-js", "commands");
