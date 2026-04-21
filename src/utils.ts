@@ -7,7 +7,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { glob } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import type { Key } from "./config.ts";
+import type { Key, ModelPricing } from "./config.ts";
 import { format } from "prettier";
 import { debugLog } from "./log.ts";
 import type readline from "node:readline/promises";
@@ -88,15 +88,14 @@ const fencePrintDeps = {
 
 type FencePrintDeps = typeof fencePrintDeps;
 
-const fencePrintOpts = {
-  skipSessionUsage: false,
-  color: "grey" as Color,
-};
-type FencePrintOpts = typeof fencePrintOpts;
+interface FencePrintOpts {
+  skipSessionUsage?: boolean;
+  color?: Color;
+}
 
 export function fencePrint(
   text: string,
-  opts: FencePrintOpts = fencePrintOpts,
+  opts: FencePrintOpts = {},
   deps: FencePrintDeps = fencePrintDeps,
 ) {
   const fenceWidth = deps.getColumns();
@@ -104,16 +103,13 @@ export function fencePrint(
   const rightPad = 2;
   let sessionUsage = "";
   if (!opts.skipSessionUsage && !selectors.getDisableUsageMessage()) {
-    sessionUsage = ` (${calculateSessionUsage(
-      selectors.getModel(),
-      selectors.getMessageUsages(),
-    )})`;
+    sessionUsage = ` (${calculateSessionUsage()})`;
   }
   const label = ` ${text}${sessionUsage} `;
   const usedWidth = leftPad + label.length + rightPad;
   const rightFill = Math.max(fenceWidth - usedWidth, 0);
   const line = `${"─".repeat(leftPad)}${label}${"─".repeat(rightFill)}`;
-  deps.colorPrint(line, opts.color);
+  deps.colorPrint(line, opts.color ?? "grey");
 }
 
 export async function getRecursiveAgentsMdFilesStr() {
@@ -142,10 +138,11 @@ export interface TokenUsage {
   cacheWriteTokens: number;
 }
 
-export function calculateSessionUsage(
-  model: string,
-  usages: TokenUsage[],
-): string {
+export function calculateSessionUsage(): string {
+  const model = selectors.getModel();
+  const usages = selectors.getMessageUsages();
+  const pricingPerModel = selectors.getPricingPerModel();
+
   const totalUsage = usages.reduce<{
     inputTokens: number;
     outputTokens: number;
@@ -166,13 +163,14 @@ export function calculateSessionUsage(
     },
   );
 
-  const pricing = selectors.getPricingPerModel()[model];
+  const pricing: ModelPricing | undefined = pricingPerModel[model];
   if (!pricing) {
     return `${totalUsage.inputTokens.toLocaleString()} in, ${totalUsage.outputTokens.toLocaleString()} out`;
   }
 
   const DOLLARS_PER_MILLION = 1_000_000;
-  const { inputPerToken, outputPerToken } = pricing;
+  const inputPerToken = pricing.inputPerToken;
+  const outputPerToken = pricing.outputPerToken;
   const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
   const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
 

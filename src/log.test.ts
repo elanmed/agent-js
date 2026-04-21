@@ -48,16 +48,12 @@ function makeMockFs(): {
 
 function makeTestDeps(
   overrides: {
-    getDebugLog?: () => boolean;
-    getEditorLog?: () => boolean;
     getDebugLogPath?: () => string;
     getEditorLogPath?: () => string;
   } = {},
 ): DebugLogDeps {
   const { fs: mockFs } = makeMockFs();
   return {
-    getDebugLog: overrides.getDebugLog ?? (() => true),
-    getEditorLog: overrides.getEditorLog ?? (() => true),
     fs: mockFs,
     getDebugLogPath: overrides.getDebugLogPath ?? (() => "/test/debug.log"),
     getEditorLogPath: overrides.getEditorLogPath ?? (() => "/test/editor.log"),
@@ -70,13 +66,15 @@ describe("log", () => {
   });
 
   describe("debugLog", () => {
-    it("does nothing when getDebugLog returns false", () => {
-      const deps = makeTestDeps({ getDebugLog: () => false });
+    it("does nothing when debugLog is disabled", () => {
+      dispatch(actions.setDebugLog(false));
+      const deps = makeTestDeps();
       debugLog("test message", deps);
       assert.equal(deps.fs.existsSync("/test/debug.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
+      dispatch(actions.setDebugLog(true));
       const deps = makeTestDeps();
       const mkdirCalls: string[] = [];
       const originalMkdirSync = deps.fs.mkdirSync;
@@ -90,6 +88,7 @@ describe("log", () => {
     });
 
     it("appends content to log file with timestamp", () => {
+      dispatch(actions.setDebugLog(true));
       const depsWithTracking = makeTestDeps();
 
       const appendCalls: { path: string; content: string }[] = [];
@@ -109,6 +108,7 @@ describe("log", () => {
     });
 
     it("appends multiple messages", () => {
+      dispatch(actions.setDebugLog(true));
       const deps = makeTestDeps();
       const appendCalls: { path: string; content: string }[] = [];
       const originalAppend = deps.fs.appendFileSync;
@@ -127,13 +127,15 @@ describe("log", () => {
   });
 
   describe("editorLog", () => {
-    it("does nothing when getEditorLog returns false", () => {
-      const deps = makeTestDeps({ getEditorLog: () => false });
+    it("does nothing when editorLog is disabled", () => {
+      dispatch(actions.setEditorLog(false));
+      const deps = makeTestDeps();
       editorLog("test message", deps);
       assert.equal(deps.fs.existsSync("/test/editor.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
+      dispatch(actions.setEditorLog(true));
       const deps = makeTestDeps();
       const mkdirCalls: string[] = [];
       const originalMkdirSync = deps.fs.mkdirSync;
@@ -147,6 +149,7 @@ describe("log", () => {
     });
 
     it("appends content with timestamp and separator", () => {
+      dispatch(actions.setEditorLog(true));
       const deps = makeTestDeps();
       const appendCalls: { path: string; content: string }[] = [];
       const originalAppend = deps.fs.appendFileSync;
@@ -167,6 +170,7 @@ describe("log", () => {
     });
 
     it("appends multiple messages with separators", () => {
+      dispatch(actions.setEditorLog(true));
       const deps = makeTestDeps();
       const appendCalls: { path: string; content: string }[] = [];
       const originalAppend = deps.fs.appendFileSync;
@@ -201,8 +205,6 @@ describe("log", () => {
     it("clears the log file when it exists", () => {
       const { fs: realMockFs } = makeMockFs();
       const deps: DebugLogDeps = {
-        getDebugLog: () => true,
-        getEditorLog: () => false,
         fs: realMockFs,
         getDebugLogPath: () => "/test/debug.log",
         getEditorLogPath: () => "/test/editor.log",
@@ -236,8 +238,6 @@ describe("log", () => {
     it("clears the log file when it exists", () => {
       const { fs: realMockFs } = makeMockFs();
       const deps: DebugLogDeps = {
-        getDebugLog: () => false,
-        getEditorLog: () => true,
         fs: realMockFs,
         getDebugLogPath: () => "/test/debug.log",
         getEditorLogPath: () => "/test/editor.log",

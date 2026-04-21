@@ -10,7 +10,6 @@ import {
   fencePrint,
   isSameKey,
   formatMarkdown,
-  type TokenUsage,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
 
@@ -105,65 +104,72 @@ describe("utils", () => {
     });
   });
 
-  const noUsages: TokenUsage[] = [];
-
   describe("calculateSessionUsage", () => {
     it("known model with no usages returns $0.0000", () => {
-      const result = calculateSessionUsage("claude-haiku-4-5", noUsages);
+      dispatch(actions.setModel("claude-haiku-4-5"));
+      const result = calculateSessionUsage();
       assert.equal(result, "$0.0000");
     });
 
     it("calculates prompt token costs correctly", () => {
       // haiku: input=$1/M, 2_000_000 prompt = $2.0000
-      const result = calculateSessionUsage("claude-haiku-4-5", [
-        {
+      dispatch(actions.setModel("claude-haiku-4-5"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 2_000_000,
           outputTokens: 0,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$2.0000");
     });
 
     it("calculates completion token costs correctly", () => {
       // haiku: output=$5/M, 600_000 completion = $3.0000
-      const result = calculateSessionUsage("claude-haiku-4-5", [
-        {
+      dispatch(actions.setModel("claude-haiku-4-5"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 0,
           outputTokens: 600_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$3.0000");
     });
 
     it("calculates cache read token costs correctly", () => {
       // haiku: cacheRead=$0.25/M
       // 1_000_000 cache read tokens = $0.25
-      const result = calculateSessionUsage("claude-haiku-4-5", [
-        {
+      dispatch(actions.setModel("claude-haiku-4-5"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 0,
           outputTokens: 0,
           cacheReadTokens: 1_000_000,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$0.2500");
     });
 
     it("calculates cache write token costs correctly", () => {
       // haiku: cacheWrite=$1.25/M
       // 1_000_000 cache write tokens = $1.25
-      const result = calculateSessionUsage("claude-haiku-4-5", [
-        {
+      dispatch(actions.setModel("claude-haiku-4-5"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 0,
           outputTokens: 0,
           cacheReadTokens: 0,
           cacheWriteTokens: 1_000_000,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$1.2500");
     });
 
@@ -171,14 +177,16 @@ describe("utils", () => {
       // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
       // 500_000 input + 200_000 output + 300_000 cacheRead + 100_000 cacheWrite
       // = $0.50 + $1.00 + $0.075 + $0.125 = $1.70
-      const result = calculateSessionUsage("claude-haiku-4-5", [
-        {
+      dispatch(actions.setModel("claude-haiku-4-5"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 500_000,
           outputTokens: 200_000,
           cacheReadTokens: 300_000,
           cacheWriteTokens: 100_000,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$1.7000");
     });
 
@@ -189,34 +197,40 @@ describe("utils", () => {
       // usage2: 300_000 input + 100_000 output + 100_000 cacheRead + 400_000 cacheWrite
       //   = $0.30 + $0.50 + $0.025 + $0.50 = $1.325
       // total = $2.375
-      const result = calculateSessionUsage("claude-haiku-4-5", [
-        {
+      dispatch(actions.setModel("claude-haiku-4-5"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 200_000,
           outputTokens: 100_000,
           cacheReadTokens: 400_000,
           cacheWriteTokens: 200_000,
-        },
-        {
+        }),
+      );
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 300_000,
           outputTokens: 100_000,
           cacheReadTokens: 100_000,
           cacheWriteTokens: 400_000,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$2.3750");
     });
 
     it("formats cost with commas for large totals", () => {
       // opus: input=$5/M
       // 200_000_000 input tokens = (200_000_000 * 5) / 1_000_000 = $1,000.0000
-      const result = calculateSessionUsage("claude-opus-4-6", [
-        {
+      dispatch(actions.setModel("claude-opus-4-6"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 200_000_000,
           outputTokens: 0,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$1,000.0000");
     });
 
@@ -225,81 +239,96 @@ describe("utils", () => {
       // usage1: 300_000_000 input + 40_000_000 output = $1,500 + $1,000 = $2,500
       // usage2: 100_000_000 input + 80_000_000 output = $500 + $2,000 = $2,500
       // total = $5,000.0000
-      const result = calculateSessionUsage("claude-opus-4-6", [
-        {
+      dispatch(actions.setModel("claude-opus-4-6"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 300_000_000,
           outputTokens: 40_000_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-        {
+        }),
+      );
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 100_000_000,
           outputTokens: 80_000_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "$5,000.0000");
     });
   });
 
   describe("calculateSessionUsage no pricing configured", () => {
     it("returns token counts for no usages", () => {
-      const result = calculateSessionUsage("unknown-model", []);
+      dispatch(actions.setModel("unknown-model"));
+      const result = calculateSessionUsage();
       assert.equal(result, "0 in, 0 out");
     });
 
     it("returns token counts for usages with no pricing configured", () => {
-      const result = calculateSessionUsage("unknown-model", [
-        {
+      dispatch(actions.setModel("unknown-model"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 100,
           outputTokens: 50,
           cacheReadTokens: 25,
           cacheWriteTokens: 10,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "100 in, 50 out");
     });
 
     it("formats token counts with commas for numbers above 999", () => {
-      const result = calculateSessionUsage("unknown-model", [
-        {
+      dispatch(actions.setModel("unknown-model"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 1_500,
           outputTokens: 2_500,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "1,500 in, 2,500 out");
     });
 
     it("formats token counts with commas for very large numbers", () => {
-      const result = calculateSessionUsage("unknown-model", [
-        {
+      dispatch(actions.setModel("unknown-model"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 1_234_567,
           outputTokens: 9_876_543,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "1,234,567 in, 9,876,543 out");
     });
 
     it("accumulates token counts across multiple usages and formats with commas", () => {
-      const result = calculateSessionUsage("unknown-model", [
-        {
+      dispatch(actions.setModel("unknown-model"));
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 50_000,
           outputTokens: 10_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-        {
+        }),
+      );
+      dispatch(
+        actions.appendToMessageUsages({
           inputTokens: 75_000,
           outputTokens: 15_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0,
-        },
-      ]);
+        }),
+      );
+      const result = calculateSessionUsage();
       assert.equal(result, "125,000 in, 25,000 out");
     });
   });
@@ -308,7 +337,7 @@ describe("utils", () => {
     it("produces a single grey line with the label inline", () => {
       const written: string[] = [];
       const deps = {
-        colorPrint: (text: Uint8Array 
+        colorPrint: (text: Uint8Array | string) => {
           written.push(text.toString());
         },
         getColumns: () => 80,

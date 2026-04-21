@@ -13,8 +13,6 @@ export const EDITOR_LOG_PATH = join(
 );
 
 export const debugLogDeps = {
-  getDebugLog: () => selectors.getDebugLog(),
-  getEditorLog: () => selectors.getEditorLog(),
   fs: {
     existsSync: (path: string): boolean => fs.existsSync(path),
     mkdirSync: (path: string, options?: { recursive: boolean }): void => {
@@ -37,7 +35,7 @@ export const debugLogDeps = {
 export type DebugLogDeps = typeof debugLogDeps;
 
 export function debugLog(content: string, deps: DebugLogDeps = debugLogDeps) {
-  if (!deps.getDebugLog()) return;
+  if (!selectors.getDebugLog()) return;
 
   const path = deps.getDebugLogPath();
   if (!deps.fs.existsSync(path)) {
@@ -47,7 +45,7 @@ export function debugLog(content: string, deps: DebugLogDeps = debugLogDeps) {
 }
 
 export function editorLog(content: string, deps: DebugLogDeps = debugLogDeps) {
-  if (!deps.getEditorLog()) return;
+  if (!selectors.getEditorLog()) return;
 
   const path = deps.getEditorLogPath();
   if (!deps.fs.existsSync(path)) {

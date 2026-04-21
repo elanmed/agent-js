@@ -13,6 +13,7 @@ import {
   fencePrint,
   createTempFile,
   clearRlLine,
+  calculateSessionUsage,
 } from "./utils.ts";
 import fs from "node:fs";
 import { join } from "node:path";
@@ -222,10 +223,13 @@ function resolveSlashCommand(rawInput: string) {
 }
 
 export function clearCommand() {
+  debugLog("Performing the `clear` slash command");
+  colorPrint(
+    `Context cleared (${calculateSessionUsage()})`,
+    "grey",
+  );
   dispatch(actions.resetMessageUsages());
   dispatch(actions.resetMessageParams());
-  debugLog("Performing the `clear` slash command");
-  colorPrint("Context cleared", "grey");
 }
 
 export function editCommand(currentLine: string) {
