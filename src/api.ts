@@ -5,13 +5,13 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
-  colorLog,
+  colorPrint,
   tryCatchAsync,
   getMessageFromError,
   executeBat,
   BASE_SYSTEM_PROMPT,
-  fenceLog,
-  logNewline,
+  fencePrint,
+  printNewline,
 } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
@@ -133,11 +133,11 @@ export async function resolveUserInputApiCall(initialContent: string) {
 
   if (!apiResult.ok) {
     if (isAbortError(apiResult.error)) {
-      colorLog("Aborted", "red");
+      colorPrint("Aborted", "red");
       return null;
     }
 
-    colorLog(getMessageFromError(apiResult.error), "red");
+    colorPrint(getMessageFromError(apiResult.error), "red");
     return null;
   }
 
@@ -161,8 +161,8 @@ export async function runToolLoop(
   let logged = false;
   while (currentResult.finishReason === "tool-calls") {
     if (!logged) {
-      logNewline();
-      fenceLog("Tool calls");
+      printNewline();
+      fencePrint("Tool calls");
       logged = true;
     }
 
@@ -199,26 +199,26 @@ export async function runToolLoop(
 
     if (toolApiCallResult.ok) {
       if (toolApiCallResult.value.text) {
-        logNewline();
+        printNewline();
         await executeBat(toolApiCallResult.value.text);
-        logNewline();
+        printNewline();
       }
 
       currentResult = toolApiCallResult.value;
     } else {
       if (isAbortError(toolApiCallResult.error)) {
-        colorLog("Aborted", "red");
+        colorPrint("Aborted", "red");
         dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
         break;
       } else {
-        colorLog(getMessageFromError(toolApiCallResult.error), "red");
+        colorPrint(getMessageFromError(toolApiCallResult.error), "red");
         break;
       }
     }
   }
 
   if (logged) {
-    logNewline();
+    printNewline();
   }
 
   return currentResult;

@@ -47,7 +47,7 @@ function makeFs(overrides: Partial<FsState> = {}): {
       },
       parseCliArgs,
       getRecursiveAgentsMdFilesStr: () => Promise.resolve(""),
-      colorLog: () => {
+      colorPrint: () => {
         /* noop */
       },
     } satisfies InitStateDeps,

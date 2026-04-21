@@ -7,7 +7,7 @@ import {
   calculateSessionUsage,
   normalizeLine,
   getMessageFromError,
-  fenceLog,
+  fencePrint,
   isSameKey,
   formatMarkdown,
   type TokenUsage,
@@ -304,16 +304,16 @@ describe("utils", () => {
     });
   });
 
-  describe("fenceLog", () => {
+  describe("fencePrint", () => {
     it("produces a single grey line with the label inline", () => {
       const written: string[] = [];
       const deps = {
-        colorLog: (text: Uint8Array | string) => {
+        colorPrint: (text: Uint8Array 
           written.push(text.toString());
         },
         getColumns: () => 80,
       };
-      fenceLog("Output", { skipSessionUsage: true }, deps);
+      fencePrint("Output", { skipSessionUsage: true }, deps);
       const output = written.join("");
       assert.ok(output.includes(" Output "));
       assert.ok(output.includes("─"));

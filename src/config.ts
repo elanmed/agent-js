@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
 import {
-  colorLog,
+  colorPrint,
   getAvailableSlashCommands,
   getRecursiveAgentsMdFilesStr,
 } from "./utils.ts";
@@ -126,7 +126,7 @@ const initStateDeps = {
   },
   parseCliArgs,
   getRecursiveAgentsMdFilesStr,
-  colorLog,
+  colorPrint,
 };
 
 export type InitStateDeps = typeof initStateDeps;
@@ -152,7 +152,7 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
       return parseConfigStr(deps.readFileSync(LOCAL_CONFIG_PATH));
     }
 
-    deps.colorLog(`${LOCAL_CONFIG_PATH} does not exist`, "grey");
+    deps.colorPrint(`${LOCAL_CONFIG_PATH} does not exist`, "grey");
     return {};
   })();
 

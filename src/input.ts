@@ -6,11 +6,11 @@ import {
   isAbortError,
   tryCatchAsync,
   getMessageFromError,
-  colorLog,
+  colorPrint,
   normalizeLine,
   isSameKey,
-  logNewline,
-  fenceLog,
+  printNewline,
+  fencePrint,
   createTempFile,
   clearRlLine,
 } from "./utils.ts";
@@ -120,8 +120,8 @@ export async function resolveUserInput() {
     return editorInputValue;
   }
 
-  logNewline();
-  fenceLog("Input", { skipSessionUsage: true });
+  printNewline();
+  fencePrint("Input", { skipSessionUsage: true });
   dispatch(actions.resetStdout());
   dispatch(actions.setQuestionAbortController(new AbortController()));
   const inputResult = await tryCatchAsync(
@@ -136,7 +136,7 @@ export async function resolveUserInput() {
       dispatch(
         actions.appendToStdout(`>[unable to read rl.question result]\n`),
       );
-      colorLog(getMessageFromError(inputResult.error), "red");
+      colorPrint(getMessageFromError(inputResult.error), "red");
       return null;
     }
 
@@ -203,7 +203,7 @@ function resolveSlashCommand(rawInput: string) {
   }
 
   if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
-    colorLog(`Executing slash command: ${rawInput}`, "grey");
+    colorPrint(`Executing slash command: ${rawInput}`, "grey");
     const path = join(
       process.cwd(),
       ".agent-js",
@@ -214,7 +214,7 @@ function resolveSlashCommand(rawInput: string) {
     return `Perform the instructions located at ${path}`;
   }
 
-  colorLog(
+  colorPrint(
     `Invalid / command detected, valid commands: ${selectors.getSlashCommands().concat(["edit", "edit-log", "clear"]).join(",")}`,
     "red",
   );
@@ -225,7 +225,7 @@ export function clearCommand() {
   dispatch(actions.resetMessageUsages());
   dispatch(actions.resetMessageParams());
   debugLog("Performing the `clear` slash command");
-  colorLog("Context cleared", "grey");
+  colorPrint("Context cleared", "grey");
 }
 
 export function editCommand(currentLine: string) {
@@ -246,7 +246,7 @@ export function editCommand(currentLine: string) {
 
 export function editLogCommand() {
   if (!fs.existsSync(EDITOR_LOG_PATH)) {
-    colorLog("[Edit log does not exist]", "yellow");
+    colorPrint("[Edit log does not exist]", "yellow");
     clearRlLine()!.prompt();
     return;
   }

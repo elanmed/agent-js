@@ -1,11 +1,11 @@
 import { fileURLToPath } from "node:url";
 import { selectors } from "./state.ts";
 import {
-  colorLog,
+  colorPrint,
   executeBat,
-  fenceLog,
+  fencePrint,
   getMessageFromError,
-  logNewline,
+  printNewline,
 } from "./utils.ts";
 import { initState } from "./config.ts";
 import {
@@ -30,7 +30,7 @@ async function main() {
     if (userInput === null) continue;
 
     if (userInput === "") {
-      colorLog("Empty input", "yellow");
+      colorPrint("Empty input", "yellow");
       continue;
     }
 
@@ -39,10 +39,10 @@ async function main() {
     if (userInputApiCall == null) continue;
 
     if (userInputApiCall.text) {
-      logNewline();
-      fenceLog("Output");
+      printNewline();
+      fencePrint("Output");
       await executeBat(userInputApiCall.text);
-      logNewline();
+      printNewline();
     }
 
     const toolLoopApiCall = await runToolLoop(
@@ -50,7 +50,7 @@ async function main() {
       messageCountBefore,
     );
     if (toolLoopApiCall.finishReason === "length") {
-      colorLog("Response truncated, output hit the token limit", "yellow");
+      colorPrint("Response truncated, output hit the token limit", "yellow");
     }
   }
 
@@ -59,7 +59,7 @@ async function main() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((error: unknown) => {
-    colorLog(getMessageFromError(error), "red");
+    colorPrint(getMessageFromError(error), "red");
     process.exit(1);
   });
 }

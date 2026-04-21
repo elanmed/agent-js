@@ -59,9 +59,9 @@ const COLORS = {
   grey: "\x1b[90m",
 } as const;
 
-export type ColorLog = typeof colorLog;
+export type ColorPrint = typeof colorPrint;
 
-export function colorLog(
+export function colorPrint(
   text: Uint8Array | string,
   color?: keyof typeof COLORS,
 ) {
@@ -78,27 +78,27 @@ export function colorLog(
   dispatch(actions.appendToStdout(out));
 }
 
-export function logNewline() {
+export function printNewline() {
   if (selectors.getStdout().endsWith("\n\n")) return;
-  colorLog("");
+  colorPrint("");
 }
 
-const fenceLogDeps = {
-  colorLog,
+const fencePrintDeps = {
+  colorPrint,
   getColumns: () => (process.stdout.isTTY ? process.stdout.columns : 25),
 };
 
-type FenceLogDeps = typeof fenceLogDeps;
+type FencePrintDeps = typeof fencePrintDeps;
 
-const fenceLogOpts = {
+const fencePrintOpts = {
   skipSessionUsage: false,
 };
-type FenceLogOpts = typeof fenceLogOpts;
+type FencePrintOpts = typeof fencePrintOpts;
 
-export function fenceLog(
+export function fencePrint(
   text: string,
-  opts: FenceLogOpts = fenceLogOpts,
-  deps: FenceLogDeps = fenceLogDeps,
+  opts: FencePrintOpts = fencePrintOpts,
+  deps: FencePrintDeps = fencePrintDeps,
 ) {
   const fenceWidth = deps.getColumns();
   const leftPad = 2;
@@ -114,7 +114,7 @@ export function fenceLog(
   const usedWidth = leftPad + label.length + rightPad;
   const rightFill = Math.max(fenceWidth - usedWidth, 0);
   const line = `${"─".repeat(leftPad)}${label}${"─".repeat(rightFill)}`;
-  deps.colorLog(line, "grey");
+  deps.colorPrint(line, "grey");
 }
 
 export async function getRecursiveAgentsMdFilesStr() {
@@ -246,11 +246,11 @@ export async function executeBat(content: string) {
   debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
 
   if (!isBatAvailable) {
-    colorLog(
+    colorPrint(
       "`bat` is not available, falling back to plain text rendering",
       "red",
     );
-    colorLog(content);
+    colorPrint(content);
     return;
   }
 
@@ -259,12 +259,12 @@ export async function executeBat(content: string) {
     debugLog(
       `executeBat: writing bat output, bytes=${String(batResult.value.stdout.length)}`,
     );
-    colorLog(batResult.value.stdout);
+    colorPrint(batResult.value.stdout);
     return;
   }
 
   debugLog("executeBat: bat spawn failed, falling back to plain text");
-  colorLog(content);
+  colorPrint(content);
 }
 
 export function createTempFile(args?: { initialContentPath?: string }) {

@@ -4,18 +4,18 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
 import {
-  colorLog,
+  colorPrint,
   createTempFile,
   execGitDiff,
-  fenceLog,
+  fencePrint,
   getMessageFromError,
-  logNewline,
+  printNewline,
   normalizeLine,
   stringify,
   tryCatch,
   tryCatchAsync,
 } from "./utils.ts";
-import type { ColorLog } from "./utils.ts";
+import type { ColorPrint } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
@@ -26,11 +26,11 @@ const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 export interface ToolLogDeps {
-  colorLog: ColorLog;
+  colorPrint: ColorPrint;
 }
 
 const toolLogDeps: ToolLogDeps = {
-  colorLog,
+  colorPrint,
 };
 
 function toolLog(
@@ -38,7 +38,7 @@ function toolLog(
   detail: string,
   deps: ToolLogDeps = toolLogDeps,
 ) {
-  deps.colorLog(`${label}: ${detail}`, "blue");
+  deps.colorPrint(`${label}: ${detail}`, "blue");
 }
 
 export type ToolLog = typeof toolLog;
@@ -487,7 +487,7 @@ export async function executeWebFetchHtmlTool(
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      colorLog(error, "yellow");
+      colorPrint(error, "yellow");
       throw new Error(error);
     }
 
@@ -497,7 +497,7 @@ export async function executeWebFetchHtmlTool(
     const article = reader.parse();
     if (!article) {
       const error = `Failed to parse article from ${href}`;
-      colorLog(error, "yellow");
+      colorPrint(error, "yellow");
       throw new Error(error);
     }
 
@@ -546,7 +546,7 @@ export async function executeWebFetchJsonTool(
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      colorLog(error, "yellow");
+      colorPrint(error, "yellow");
       throw new Error(error);
     }
 
@@ -685,9 +685,9 @@ async function printGitDiff(args: {
 
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
-    logNewline();
-    fenceLog(`File change: ${args.path}`);
-    colorLog(normalizeLine(diffResult.value.stdout));
-    logNewline();
+    printNewline();
+    fencePrint(`File change: ${args.path}`);
+    colorPrint(normalizeLine(diffResult.value.stdout));
+    printNewline();
   }
 }
