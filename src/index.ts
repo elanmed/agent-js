@@ -5,6 +5,7 @@ import {
   executeBat,
   fencePrint,
   getMessageFromError,
+  initPrint,
   printNewline,
 } from "./utils.ts";
 import { initState } from "./config.ts";
@@ -20,6 +21,7 @@ import { initLogs } from "./log.ts";
 async function main() {
   initLogs();
   await initState();
+  initPrint();
 
   initReadline();
   initKeypress();

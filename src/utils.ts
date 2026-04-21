@@ -60,11 +60,9 @@ const COLORS = {
 } as const;
 
 export type ColorPrint = typeof colorPrint;
+export type Color = keyof typeof COLORS;
 
-export function colorPrint(
-  text: Uint8Array | string,
-  color?: keyof typeof COLORS,
-) {
+export function colorPrint(text: Uint8Array | string, color?: Color) {
   const reset = "\x1b[0m";
   let out: string;
   if (color) {
@@ -92,6 +90,7 @@ type FencePrintDeps = typeof fencePrintDeps;
 
 const fencePrintOpts = {
   skipSessionUsage: false,
+  color: "grey" as Color,
 };
 type FencePrintOpts = typeof fencePrintOpts;
 
@@ -114,7 +113,7 @@ export function fencePrint(
   const usedWidth = leftPad + label.length + rightPad;
   const rightFill = Math.max(fenceWidth - usedWidth, 0);
   const line = `${"─".repeat(leftPad)}${label}${"─".repeat(rightFill)}`;
-  deps.colorPrint(line, "grey");
+  deps.colorPrint(line, opts.color);
 }
 
 export async function getRecursiveAgentsMdFilesStr() {
@@ -341,4 +340,22 @@ export function clearRlLine(): readline.Interface | null {
   rl.write(null, { ctrl: true, name: "e" });
   rl.write(null, { ctrl: true, name: "u" });
   return rl;
+}
+
+export function initPrint() {
+  fencePrint("agent-js", { color: "green", skipSessionUsage: true });
+  colorPrint(`model: ${selectors.getModel()}`, "grey");
+  colorPrint(`diff-style: ${selectors.getDiffStyle()}`, "grey");
+  colorPrint(
+    `keymap-edit: ${JSON.stringify(selectors.getKeymapEdit())}`,
+    "grey",
+  );
+  colorPrint(
+    `keymap-edit-log: ${JSON.stringify(selectors.getKeymapEditLog())}`,
+    "grey",
+  );
+  colorPrint(
+    `keymap-clear: ${JSON.stringify(selectors.getKeymapClear())}`,
+    "grey",
+  );
 }

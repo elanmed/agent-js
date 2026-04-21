@@ -85,20 +85,14 @@ export const DEFAULT_CONFIG: DefaultConfig = {
     edit: {
       name: "e",
       ctrl: true,
-      meta: false,
-      shift: false,
     },
     editLog: {
       name: "k",
       ctrl: true,
-      meta: false,
-      shift: false,
     },
     clear: {
       name: "u",
       ctrl: true,
-      meta: false,
-      shift: false,
     },
   },
 };
