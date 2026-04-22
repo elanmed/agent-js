@@ -163,7 +163,11 @@ export async function runToolLoop(
         name: toolCall.toolName,
         input: toolCall.input,
       };
+
+      startSpinner();
       const toolResult = await getToolResultBlock(localToolCall);
+      stopSpinner();
+
       toolMessages.push({
         type: "tool-result",
         toolCallId: toolCall.toolCallId,
