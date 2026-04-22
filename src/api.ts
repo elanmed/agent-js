@@ -12,6 +12,8 @@ import {
   BASE_SYSTEM_PROMPT,
   fencePrint,
   printNewline,
+  startSpinner,
+  stopSpinner,
 } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
@@ -56,20 +58,7 @@ async function callApi(
     `callApi: model=${selectors.getModel()}, messageCount=${String(messageCount)}`,
   );
 
-  const spinnerFrames = ["|", "/", "-", "\\"];
-  let spinnerIdx = 0;
-  const spinnerInterval = setInterval(() => {
-    process.stdout.write(
-      `\r${String(spinnerFrames[spinnerIdx++ % spinnerFrames.length])}`,
-    );
-  }, 80);
-  let spinnerCleared = false;
-  const clearSpinner = () => {
-    if (spinnerCleared) return;
-    clearInterval(spinnerInterval);
-    process.stdout.write("\r \r");
-    spinnerCleared = true;
-  };
+  startSpinner();
 
   const systemContent = [
     BASE_SYSTEM_PROMPT,
@@ -88,7 +77,7 @@ async function callApi(
 
     debugLog(`callApi: finishReason=${finishReason}`);
 
-    clearSpinner();
+    stopSpinner();
 
     for (const message of newMessages) {
       dispatch(actions.appendToMessageParams(message));
@@ -115,7 +104,7 @@ async function callApi(
       })),
     };
   } finally {
-    clearSpinner();
+    stopSpinner();
   }
 }
 

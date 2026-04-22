@@ -15,6 +15,7 @@ describe("state", () => {
     dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
     dispatch(actions.setQuestionAbortController(new AbortController()));
     dispatch(actions.setApiStreamAbortController(new AbortController()));
+    dispatch(actions.setSpinnerTimeout(setTimeout(() => undefined, 1000)));
     dispatch(actions.resetState());
 
     assert.equal(selectors.getRunning(), true);
@@ -23,6 +24,7 @@ describe("state", () => {
     assert.deepEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
+    assert.equal(selectors.getSpinnerTimeout(), null);
   });
 
   it("initial state", () => {
@@ -261,5 +263,15 @@ describe("state", () => {
     const fakeRl = { close: () => undefined, question: () => Promise.resolve("") } as unknown as NonNullable<ReturnType<typeof selectors.getRl>>;
     dispatch(actions.setRl(fakeRl));
     assert.equal(selectors.getRl(), fakeRl);
+  });
+
+  it("set-spinner-timeout", () => {
+    assert.equal(selectors.getSpinnerTimeout(), null);
+    const timeout = setTimeout(() => undefined, 1000);
+    dispatch(actions.setSpinnerTimeout(timeout));
+    assert.equal(selectors.getSpinnerTimeout(), timeout);
+    clearTimeout(timeout);
+    dispatch(actions.setSpinnerTimeout(null));
+    assert.equal(selectors.getSpinnerTimeout(), null);
   });
 });
