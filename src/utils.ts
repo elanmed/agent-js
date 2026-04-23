@@ -192,6 +192,8 @@ export const BASE_SYSTEM_PROMPT = `You are an AI agent being called from a minim
   When outputting content from web fetch tools, reference relevant source links.
 
   CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown. 
+
+  Paging is difficult in the terminal - be concise and output as little text as necessary.
   `;
 
 export function getAvailableSlashCommands() {
