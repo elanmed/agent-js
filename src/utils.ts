@@ -193,7 +193,7 @@ export const BASE_SYSTEM_PROMPT = `You are an AI agent being called from a minim
 
   CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown. 
 
-  Paging is difficult in the terminal - be concise and output as little text as necessary.
+  Paging is difficult in the terminal - be concise and output as little text as necessary. When you want to give a command for the user to run (i.e. for debugging purposes), only give one command at a time - not multiple.
   `;
 
 export function getAvailableSlashCommands() {
