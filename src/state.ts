@@ -28,6 +28,7 @@ interface State {
     editorLog: boolean;
     agentsMdFilesStr: string;
     rl: readline.Interface | null;
+    spinnerTimeout: NodeJS.Timeout | null;
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -59,6 +60,7 @@ const initialState: State = {
     editorLog: false,
     agentsMdFilesStr: "",
     rl: null,
+    spinnerTimeout: null,
   },
   configState: {
     model: MISSING,
@@ -182,6 +184,10 @@ type Action =
   | {
       type: "set-rl";
       payload: readline.Interface | null;
+    }
+  | {
+      type: "set-spinner-timeout";
+      payload: NodeJS.Timeout | null;
     }
   | {
       type: "reset-state";
@@ -477,6 +483,15 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
+    case "set-spinner-timeout": {
+      const before = state.appState.spinnerTimeout;
+      const next = {
+        ...state,
+        appState: { ...state.appState, spinnerTimeout: action.payload },
+      };
+      logStateChange(action.type, String(before), String(action.payload));
+      return next;
+    }
     case "reset-state": {
       const next = structuredClone(initialState);
       logStateChange(action.type, "[truncating]", stringify(next));
@@ -605,6 +620,10 @@ const setRl = (rl: readline.Interface | null): Action => {
   return { type: "set-rl", payload: rl };
 };
 
+const setSpinnerTimeout = (timeout: NodeJS.Timeout | null): Action => {
+  return { type: "set-spinner-timeout", payload: timeout };
+};
+
 const resetState = (): Action => {
   return { type: "reset-state" };
 };
@@ -636,6 +655,7 @@ export const actions = {
   setEditorLog,
   setAgentsMdFilesStr,
   setRl,
+  setSpinnerTimeout,
   resetState,
 };
 
@@ -650,6 +670,7 @@ const getDebugLog = () => getState().appState.debugLog;
 const getEditorLog = () => getState().appState.editorLog;
 const getAgentsMdFilesStr = () => getState().appState.agentsMdFilesStr;
 const getRl = () => getState().appState.rl;
+const getSpinnerTimeout = () => getState().appState.spinnerTimeout;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -685,4 +706,5 @@ export const selectors = {
   getEditorLog,
   getAgentsMdFilesStr,
   getRl,
+  getSpinnerTimeout,
 };

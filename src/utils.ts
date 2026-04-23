@@ -359,3 +359,23 @@ export function initPrint() {
     "grey",
   );
 }
+
+const SPINNER_FRAMES = ["|", "/", "-", "\\"];
+
+export function startSpinner() {
+  let spinnerIdx = 0;
+  const timeout = setInterval(() => {
+    process.stdout.write(
+      `\r${String(SPINNER_FRAMES[spinnerIdx++ % SPINNER_FRAMES.length])}`,
+    );
+  }, 80);
+  dispatch(actions.setSpinnerTimeout(timeout));
+}
+
+export function stopSpinner() {
+  const timeout = selectors.getSpinnerTimeout();
+  if (timeout === null) return;
+  clearInterval(timeout);
+  process.stdout.write("\r \r");
+  dispatch(actions.setSpinnerTimeout(null));
+}

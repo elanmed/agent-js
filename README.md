@@ -49,15 +49,7 @@ Each `Key` object has:
 | `meta`  | boolean | `false`  |
 | `shift` | boolean | `false`  |
 
-You can configure individual keymaps while keeping defaults for others:
-
-```json
-{
-  "keymaps": {
-    "edit": { "name": "v", "ctrl": false }
-  }
-}
-```
+You can configure individual keymaps while keeping defaults for others
 
 Example `settings.json`:
 
@@ -70,9 +62,7 @@ Example `settings.json`:
   "keymaps": {
     "edit": {
       "name": "x",
-      "ctrl": true,
-      "meta": false,
-      "shift": false
+      "ctrl": true
     }
   },
   "pricingPerModel": {
@@ -135,6 +125,7 @@ Minimal runtime dependencies (7 total):
 
 - [ ] MCP server
 - [ ] Resume session
-- [ ] Spinner for tool calls
 - [ ] Tool call interrupt
 - [ ] Look into tanstack ai (codemode?)
+- [ ] More try catch blocks around tool calls
+- [ ] Separate editor log per session? local editor log?
