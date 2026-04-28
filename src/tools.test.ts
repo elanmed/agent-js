@@ -110,7 +110,11 @@ describe("tools", () => {
         name: "create_file",
         input: { path: filePath, content: "hello world" },
       });
-      const result = executeCreateFileTool(call, { ...debugDeps, fs });
+      const result = executeCreateFileTool(call, {
+        ...debugDeps,
+        existsSync: fs.existsSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -127,7 +131,11 @@ describe("tools", () => {
         name: "create_file",
         input: { path: filePath, content: "new content" },
       });
-      const result = executeCreateFileTool(call, { ...debugDeps, fs });
+      const result = executeCreateFileTool(call, {
+        ...debugDeps,
+        existsSync: fs.existsSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -144,7 +152,11 @@ describe("tools", () => {
           content: "x",
         },
       });
-      const result = executeCreateFileTool(call, { ...debugDeps, fs });
+      const result = executeCreateFileTool(call, {
+        ...debugDeps,
+        existsSync: fs.existsSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -158,7 +170,13 @@ describe("tools", () => {
         name: "create_file",
         input: { bad: true },
       });
-      assert.throws(() => executeCreateFileTool(call, { ...debugDeps, fs }));
+      assert.throws(() =>
+        executeCreateFileTool(call, {
+          ...debugDeps,
+          existsSync: fs.existsSync,
+          writeFileSync: fs.writeFileSync,
+        }),
+      );
     });
   });
 
@@ -171,7 +189,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -187,7 +210,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, start_line: 2, end_line: 4 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -203,7 +231,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, start_line: 2, end_line: -1 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -219,7 +252,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: dir },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -232,7 +270,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: "/no/such/path/file.txt" },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -246,7 +289,14 @@ describe("tools", () => {
         name: "view_file",
         input: { wrong: 123 },
       });
-      assert.throws(() => executeViewFileTool(call, { ...debugDeps, fs }));
+      assert.throws(() =>
+        executeViewFileTool(call, {
+          ...debugDeps,
+          statSync: fs.statSync,
+          readdirSync: fs.readdirSync,
+          readFileSync: fs.readFileSync,
+        }),
+      );
     });
 
     it("returns is_error when start_line is less than 1", () => {
@@ -257,7 +307,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, start_line: 0 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -274,7 +329,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, end_line: 0 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -291,7 +351,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, start_line: 5 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -308,7 +373,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, end_line: 10 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -325,7 +395,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, start_line: 3, end_line: 2 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -342,7 +417,12 @@ describe("tools", () => {
         name: "view_file",
         input: { path: filePath, start_line: 2, end_line: 2 },
       });
-      const result = executeViewFileTool(call, { ...debugDeps, fs });
+      const result = executeViewFileTool(call, {
+        ...debugDeps,
+        statSync: fs.statSync,
+        readdirSync: fs.readdirSync,
+        readFileSync: fs.readFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -360,7 +440,11 @@ describe("tools", () => {
         name: "str_replace",
         input: { path: filePath, old_str: "bar", new_str: "qux" },
       });
-      const result = executeStrReplaceTool(call, { ...debugDeps, fs });
+      const result = executeStrReplaceTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -377,7 +461,11 @@ describe("tools", () => {
         name: "str_replace",
         input: { path: filePath, old_str: "missing", new_str: "x" },
       });
-      const result = executeStrReplaceTool(call, { ...debugDeps, fs });
+      const result = executeStrReplaceTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -394,7 +482,11 @@ describe("tools", () => {
         name: "str_replace",
         input: { path: filePath, old_str: "aaa", new_str: "x" },
       });
-      const result = executeStrReplaceTool(call, { ...debugDeps, fs });
+      const result = executeStrReplaceTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -412,7 +504,11 @@ describe("tools", () => {
           new_str: "b",
         },
       });
-      const result = executeStrReplaceTool(call, { ...debugDeps, fs });
+      const result = executeStrReplaceTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -426,7 +522,13 @@ describe("tools", () => {
         name: "str_replace",
         input: { path: "/tmp/x" },
       });
-      assert.throws(() => executeStrReplaceTool(call, { ...debugDeps, fs }));
+      assert.throws(() =>
+        executeStrReplaceTool(call, {
+          ...debugDeps,
+          readFileSync: fs.readFileSync,
+          writeFileSync: fs.writeFileSync,
+        }),
+      );
     });
   });
 
@@ -439,7 +541,11 @@ describe("tools", () => {
         name: "insert_lines",
         input: { path: filePath, after_line: 2, content: "inserted" },
       });
-      const result = executeInsertLinesTool(call, { ...debugDeps, fs });
+      const result = executeInsertLinesTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -459,7 +565,11 @@ describe("tools", () => {
         name: "insert_lines",
         input: { path: filePath, after_line: 0, content: "top" },
       });
-      const result = executeInsertLinesTool(call, { ...debugDeps, fs });
+      const result = executeInsertLinesTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -476,7 +586,11 @@ describe("tools", () => {
         name: "insert_lines",
         input: { path: filePath, after_line: 2, content: "bottom" },
       });
-      const result = executeInsertLinesTool(call, { ...debugDeps, fs });
+      const result = executeInsertLinesTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -496,7 +610,11 @@ describe("tools", () => {
         name: "insert_lines",
         input: { path: filePath, after_line: -1, content: "x" },
       });
-      const result = executeInsertLinesTool(call, { ...debugDeps, fs });
+      const result = executeInsertLinesTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -513,7 +631,11 @@ describe("tools", () => {
         name: "insert_lines",
         input: { path: filePath, after_line: 5, content: "x" },
       });
-      const result = executeInsertLinesTool(call, { ...debugDeps, fs });
+      const result = executeInsertLinesTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -531,7 +653,11 @@ describe("tools", () => {
           content: "x",
         },
       });
-      const result = executeInsertLinesTool(call, { ...debugDeps, fs });
+      const result = executeInsertLinesTool(call, {
+        ...debugDeps,
+        readFileSync: fs.readFileSync,
+        writeFileSync: fs.writeFileSync,
+      });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -545,7 +671,13 @@ describe("tools", () => {
         name: "insert_lines",
         input: { path: "/tmp/x" },
       });
-      assert.throws(() => executeInsertLinesTool(call, { ...debugDeps, fs }));
+      assert.throws(() =>
+        executeInsertLinesTool(call, {
+          ...debugDeps,
+          readFileSync: fs.readFileSync,
+          writeFileSync: fs.writeFileSync,
+        }),
+      );
     });
   });
 

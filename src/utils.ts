@@ -1,4 +1,4 @@
-import fs from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { tmpdir } from "node:os";
@@ -121,7 +121,7 @@ export async function getRecursiveAgentsMdFilesStr() {
   debugLog(`AGENTS.md found: ${agentFiles.join(",")}`);
   const filesContents = [];
   for (const filePath of agentFiles) {
-    const fileContent = fs.readFileSync(filePath).toString();
+    const fileContent = readFileSync(filePath).toString();
     filesContents.push(`FILEPATH: ${filePath}`, fileContent);
   }
   return filesContents.join("\n");
@@ -198,9 +198,9 @@ export const BASE_SYSTEM_PROMPT = `You are an AI agent being called from a minim
 
 export function getAvailableSlashCommands() {
   const path = join(process.cwd(), ".agent-js", "commands");
-  if (!fs.existsSync(path)) return [];
+  if (!existsSync(path)) return [];
 
-  const files = fs.readdirSync(path);
+  const files = readdirSync(path);
   return files.map((file) => parse(file).name);
 }
 
@@ -269,8 +269,8 @@ export async function executeBat(content: string) {
 export function createTempFile(args?: { initialContentPath?: string }) {
   const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
   if (args?.initialContentPath) {
-    const content = fs.readFileSync(args.initialContentPath).toString();
-    fs.writeFileSync(tempFile, content);
+    const content = readFileSync(args.initialContentPath).toString();
+    writeFileSync(tempFile, content);
   }
   return tempFile;
 }

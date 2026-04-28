@@ -129,3 +129,4 @@ Minimal runtime dependencies (7 total):
 - [ ] Look into tanstack ai (codemode?)
 - [ ] More try catch blocks around tool calls
 - [ ] Separate editor log per session? local editor log?
+- [ ] More robust handling for failed tool calls

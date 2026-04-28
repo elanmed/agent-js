@@ -15,7 +15,7 @@ import {
   clearRlLine,
   calculateSessionUsage,
 } from "./utils.ts";
-import fs from "node:fs";
+import { writeFileSync, readFileSync, unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { spawnSync } from "node:child_process";
@@ -236,12 +236,12 @@ export function editCommand(currentLine: string) {
   const tempFile = createTempFile();
   const editor =
     process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
-  fs.writeFileSync(tempFile, currentLine);
+  writeFileSync(tempFile, currentLine);
   spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
 
-  let content = fs.readFileSync(tempFile).toString();
+  let content = readFileSync(tempFile).toString();
   content = normalizeLine(content);
-  fs.unlinkSync(tempFile);
+  unlinkSync(tempFile);
 
   editorLog(content);
 
@@ -249,7 +249,7 @@ export function editCommand(currentLine: string) {
 }
 
 export function editLogCommand() {
-  if (!fs.existsSync(EDITOR_LOG_PATH)) {
+  if (!existsSync(EDITOR_LOG_PATH)) {
     colorPrint("[Edit log does not exist]", "yellow");
     clearRlLine()!.prompt();
     return;

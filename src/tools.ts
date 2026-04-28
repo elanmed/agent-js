@@ -1,5 +1,12 @@
 import { tool } from "ai";
-import fs from "node:fs";
+import {
+  existsSync,
+  writeFileSync,
+  readFileSync,
+  statSync,
+  readdirSync,
+  unlinkSync,
+} from "node:fs";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
@@ -101,7 +108,8 @@ export async function executeBashTool(
 }
 
 const executeCreateFileToolDeps = {
-  fs,
+  existsSync,
+  writeFileSync,
   debugLog,
   toolLog,
 };
@@ -118,7 +126,7 @@ export function executeCreateFileTool(
   deps: ExecuteCreateFileToolDeps = executeCreateFileToolDeps,
 ): ToolResult {
   const { content, path } = CreateFileToolSchema.parse(toolCall.input);
-  if (deps.fs.existsSync(path)) {
+  if (deps.existsSync(path)) {
     deps.debugLog(`executeCreatefileTool: ${path} already exists`);
     return {
       type: "tool_result",
@@ -129,7 +137,7 @@ export function executeCreateFileTool(
   }
 
   const createFileResult = tryCatch(() => {
-    deps.fs.writeFileSync(path, content);
+    deps.writeFileSync(path, content);
   });
 
   if (!createFileResult.ok) {
@@ -152,7 +160,9 @@ export function executeCreateFileTool(
 }
 
 const executeViewFileToolDeps = {
-  fs,
+  statSync,
+  readdirSync,
+  readFileSync,
   debugLog,
   toolLog,
 };
@@ -175,7 +185,7 @@ export function executeViewFileTool(
   deps.toolLog("view_file", path);
   deps.debugLog(`executeViewFileTool: path=${path}`);
 
-  const statResult = tryCatch(() => deps.fs.statSync(path));
+  const statResult = tryCatch(() => deps.statSync(path));
   if (!statResult.ok) {
     const error = getMessageFromError(statResult.error);
     deps.debugLog(`executeViewFileTool: error=${error}`);
@@ -188,7 +198,7 @@ export function executeViewFileTool(
   }
 
   if (statResult.value.isDirectory()) {
-    const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
+    const readdirResult = tryCatch(() => deps.readdirSync(path));
     if (!readdirResult.ok) {
       const error = getMessageFromError(readdirResult.error);
       deps.debugLog(`executeViewFileTool: error=${error}`);
@@ -208,7 +218,7 @@ export function executeViewFileTool(
     };
   }
 
-  const readResult = tryCatch(() => deps.fs.readFileSync(path));
+  const readResult = tryCatch(() => deps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
     deps.debugLog(`executeViewFileTool: error=${error}`);
@@ -223,7 +233,9 @@ export function executeViewFileTool(
   const lines = readResult.value.toString().split("\n");
 
   if (start_line !== undefined && start_line < 1) {
-    deps.debugLog(`executeViewFileTool: start_line ${String(start_line)} is less than 1`);
+    deps.debugLog(
+      `executeViewFileTool: start_line ${String(start_line)} is less than 1`,
+    );
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -233,7 +245,9 @@ export function executeViewFileTool(
   }
 
   if (end_line !== undefined && end_line !== -1 && end_line < 1) {
-    deps.debugLog(`executeViewFileTool: end_line ${String(end_line)} is less than 1`);
+    deps.debugLog(
+      `executeViewFileTool: end_line ${String(end_line)} is less than 1`,
+    );
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -247,7 +261,9 @@ export function executeViewFileTool(
     end_line === undefined || end_line === -1 ? lines.length : end_line;
 
   if (start >= lines.length) {
-    deps.debugLog(`executeViewFileTool: start_line ${String(start_line)} is past end of file`);
+    deps.debugLog(
+      `executeViewFileTool: start_line ${String(start_line)} is past end of file`,
+    );
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -257,7 +273,9 @@ export function executeViewFileTool(
   }
 
   if (end > lines.length) {
-    deps.debugLog(`executeViewFileTool: end_line ${String(end_line)} is past end of file`);
+    deps.debugLog(
+      `executeViewFileTool: end_line ${String(end_line)} is past end of file`,
+    );
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -267,7 +285,9 @@ export function executeViewFileTool(
   }
 
   if (start >= end) {
-    deps.debugLog(`executeViewFileTool: start_line ${String(start_line)} is greater than or equal to end_line ${String(end_line)}`);
+    deps.debugLog(
+      `executeViewFileTool: start_line ${String(start_line)} is greater than or equal to end_line ${String(end_line)}`,
+    );
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -292,7 +312,8 @@ export function executeViewFileTool(
 }
 
 const executeStrReplaceToolDeps = {
-  fs,
+  readFileSync,
+  writeFileSync,
   debugLog,
   toolLog,
 };
@@ -315,7 +336,7 @@ export function executeStrReplaceTool(
   deps.toolLog("str_replace", path);
   deps.debugLog(`executeStrReplaceTool: path=${path}`);
 
-  const readResult = tryCatch(() => deps.fs.readFileSync(path));
+  const readResult = tryCatch(() => deps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
     deps.debugLog(`executeStrReplaceTool: error=${error}`);
@@ -353,7 +374,7 @@ export function executeStrReplaceTool(
   }
 
   const writeResult = tryCatch(() => {
-    deps.fs.writeFileSync(path, content.replace(old_str, new_str));
+    deps.writeFileSync(path, content.replace(old_str, new_str));
   });
   if (!writeResult.ok) {
     const error = getMessageFromError(writeResult.error);
@@ -375,7 +396,8 @@ export function executeStrReplaceTool(
 }
 
 const executeInsertLinesToolDeps = {
-  fs,
+  readFileSync,
+  writeFileSync,
   debugLog,
   toolLog,
 };
@@ -400,7 +422,7 @@ export function executeInsertLinesTool(
     `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
   );
 
-  const readResult = tryCatch(() => deps.fs.readFileSync(path));
+  const readResult = tryCatch(() => deps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
     deps.debugLog(`executeInsertLinesTool: error=${error}`);
@@ -429,7 +451,7 @@ export function executeInsertLinesTool(
   lines.splice(after_line, 0, content);
 
   const writeResult = tryCatch(() => {
-    deps.fs.writeFileSync(path, lines.join("\n"));
+    deps.writeFileSync(path, lines.join("\n"));
   });
   if (!writeResult.ok) {
     const error = getMessageFromError(writeResult.error);
@@ -606,7 +628,16 @@ export const TOOLS = {
   }),
 };
 
-export async function getToolResultBlock(toolCall: ToolCall) {
+const getToolResultBlockDeps = {
+  unlinkSync,
+};
+
+type GetToolResultBlockDeps = typeof getToolResultBlockDeps;
+
+export async function getToolResultBlock(
+  toolCall: ToolCall,
+  deps: GetToolResultBlockDeps = getToolResultBlockDeps,
+) {
   let toolResult: ToolResult | null = null;
 
   switch (toolCall.name) {
@@ -633,8 +664,8 @@ export async function getToolResultBlock(toolCall: ToolCall) {
           tempFileAfterPath: tempFileAfter,
           path,
         });
-        fs.unlinkSync(tempFileBefore);
-        fs.unlinkSync(tempFileAfter);
+        deps.unlinkSync(tempFileBefore);
+        deps.unlinkSync(tempFileAfter);
       }
       break;
     }
@@ -649,8 +680,8 @@ export async function getToolResultBlock(toolCall: ToolCall) {
           tempFileAfterPath: tempFileAfter,
           path,
         });
-        fs.unlinkSync(tempFileBefore);
-        fs.unlinkSync(tempFileAfter);
+        deps.unlinkSync(tempFileBefore);
+        deps.unlinkSync(tempFileAfter);
       }
       break;
     }
