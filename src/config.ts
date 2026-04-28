@@ -146,7 +146,7 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
       return parseConfigStr(deps.readFileSync(LOCAL_CONFIG_PATH));
     }
 
-    deps.colorPrint(`${LOCAL_CONFIG_PATH} does not exist`, "grey");
+    debugLog(`${GLOBAL_CONFIG_PATH} does not exist`);
     return {};
   })();
 
