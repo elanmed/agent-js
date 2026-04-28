@@ -1,5 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import type { PathLike, PathOrFileDescriptor } from "node:fs";
 import {
   debugLog,
   editorLog,
@@ -15,7 +16,10 @@ interface FsMockState {
 }
 
 function makeMockFs(): {
-  fs: DebugLogDeps["fs"];
+  deps: Pick<
+    DebugLogDeps,
+    "existsSync" | "mkdirSync" | "appendFileSync" | "writeFileSync" | "readFileSync"
+  >;
   state: FsMockState;
 } {
   const state: FsMockState = {
@@ -24,23 +28,25 @@ function makeMockFs(): {
   };
 
   return {
-    fs: {
-      existsSync: (path: string): boolean => {
-        return state.files.has(path) || state.dirs.has(path);
-      },
-      mkdirSync: (path: string): void => {
-        state.dirs.add(path);
-      },
-      appendFileSync: (path: string, content: string): void => {
-        const existing = state.files.get(path) ?? "";
-        state.files.set(path, existing + "---LOG_ENTRY---" + content);
-      },
-      writeFileSync: (path: string, content: string): void => {
-        state.files.set(path, content);
-      },
-      readFileSync: (path: string): string => {
-        return state.files.get(path) ?? "";
-      },
+    deps: {
+      existsSync: ((path: PathLike): boolean => {
+        const pathStr = path.toString();
+        return state.files.has(pathStr) || state.dirs.has(pathStr);
+      }) as DebugLogDeps["existsSync"],
+      mkdirSync: ((path: PathLike): void => {
+        state.dirs.add(path.toString());
+      }) as DebugLogDeps["mkdirSync"],
+      appendFileSync: ((path: PathOrFileDescriptor, content: string): void => {
+        const pathStr = path.toString();
+        const existing = state.files.get(pathStr) ?? "";
+        state.files.set(pathStr, existing + "---LOG_ENTRY---" + content);
+      }) as DebugLogDeps["appendFileSync"],
+      writeFileSync: ((path: PathOrFileDescriptor, content: string): void => {
+        state.files.set(path.toString(), content);
+      }) as DebugLogDeps["writeFileSync"],
+      readFileSync: ((path: PathOrFileDescriptor): string => {
+        return state.files.get(path.toString()) ?? "";
+      }) as DebugLogDeps["readFileSync"],
     },
     state,
   };
@@ -52,9 +58,9 @@ function makeTestDeps(
     getEditorLogPath?: () => string;
   } = {},
 ): DebugLogDeps {
-  const { fs: mockFs } = makeMockFs();
+  const { deps: mockDeps } = makeMockFs();
   return {
-    fs: mockFs,
+    ...mockDeps,
     getDebugLogPath: overrides.getDebugLogPath ?? (() => "/test/debug.log"),
     getEditorLogPath: overrides.getEditorLogPath ?? (() => "/test/editor.log"),
   };
@@ -70,17 +76,17 @@ describe("log", () => {
       dispatch(actions.setDebugLog(false));
       const deps = makeTestDeps();
       debugLog("test message", deps);
-      assert.equal(deps.fs.existsSync("/test/debug.log"), false);
+      assert.equal(deps.existsSync("/test/debug.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
       dispatch(actions.setDebugLog(true));
       const deps = makeTestDeps();
       const mkdirCalls: string[] = [];
-      const originalMkdirSync = deps.fs.mkdirSync;
-      deps.fs.mkdirSync = (path: string) => {
-        mkdirCalls.push(path);
-        originalMkdirSync(path);
+      const originalMkdirSync = deps.mkdirSync;
+      deps.mkdirSync = (path: unknown) => {
+        mkdirCalls.push(path as string);
+        originalMkdirSync(path as PathLike);
       };
 
       debugLog("test message", deps);
@@ -92,10 +98,10 @@ describe("log", () => {
       const depsWithTracking = makeTestDeps();
 
       const appendCalls: { path: string; content: string }[] = [];
-      const originalAppend = depsWithTracking.fs.appendFileSync;
-      depsWithTracking.fs.appendFileSync = (path: string, content: string) => {
-        appendCalls.push({ path, content });
-        originalAppend(path, content);
+      const originalAppend = depsWithTracking.appendFileSync;
+      depsWithTracking.appendFileSync = (path: unknown, content: unknown) => {
+        appendCalls.push({ path: path as string, content: content as string });
+        originalAppend(path as PathOrFileDescriptor, content as string);
       };
 
       debugLog("test message", depsWithTracking);
@@ -111,10 +117,10 @@ describe("log", () => {
       dispatch(actions.setDebugLog(true));
       const deps = makeTestDeps();
       const appendCalls: { path: string; content: string }[] = [];
-      const originalAppend = deps.fs.appendFileSync;
-      deps.fs.appendFileSync = (path: string, content: string) => {
-        appendCalls.push({ path, content });
-        originalAppend(path, content);
+      const originalAppend = deps.appendFileSync;
+      deps.appendFileSync = (path: unknown, content: unknown) => {
+        appendCalls.push({ path: path as string, content: content as string });
+        originalAppend(path as PathOrFileDescriptor, content as string);
       };
 
       debugLog("message 1", deps);
@@ -131,17 +137,17 @@ describe("log", () => {
       dispatch(actions.setEditorLog(false));
       const deps = makeTestDeps();
       editorLog("test message", deps);
-      assert.equal(deps.fs.existsSync("/test/editor.log"), false);
+      assert.equal(deps.existsSync("/test/editor.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
       dispatch(actions.setEditorLog(true));
       const deps = makeTestDeps();
       const mkdirCalls: string[] = [];
-      const originalMkdirSync = deps.fs.mkdirSync;
-      deps.fs.mkdirSync = (path: string) => {
-        mkdirCalls.push(path);
-        originalMkdirSync(path);
+      const originalMkdirSync = deps.mkdirSync;
+      deps.mkdirSync = (path: unknown) => {
+        mkdirCalls.push(path as string);
+        originalMkdirSync(path as PathLike);
       };
 
       editorLog("test message", deps);
@@ -152,10 +158,10 @@ describe("log", () => {
       dispatch(actions.setEditorLog(true));
       const deps = makeTestDeps();
       const appendCalls: { path: string; content: string }[] = [];
-      const originalAppend = deps.fs.appendFileSync;
-      deps.fs.appendFileSync = (path: string, content: string) => {
-        appendCalls.push({ path, content });
-        originalAppend(path, content);
+      const originalAppend = deps.appendFileSync;
+      deps.appendFileSync = (path: unknown, content: unknown) => {
+        appendCalls.push({ path: path as string, content: content as string });
+        originalAppend(path as PathOrFileDescriptor, content as string);
       };
 
       editorLog("test content", deps);
@@ -173,10 +179,10 @@ describe("log", () => {
       dispatch(actions.setEditorLog(true));
       const deps = makeTestDeps();
       const appendCalls: { path: string; content: string }[] = [];
-      const originalAppend = deps.fs.appendFileSync;
-      deps.fs.appendFileSync = (path: string, content: string) => {
-        appendCalls.push({ path, content });
-        originalAppend(path, content);
+      const originalAppend = deps.appendFileSync;
+      deps.appendFileSync = (path: unknown, content: unknown) => {
+        appendCalls.push({ path: path as string, content: content as string });
+        originalAppend(path as PathOrFileDescriptor, content as string);
       };
 
       editorLog("content 1", deps);
@@ -192,10 +198,10 @@ describe("log", () => {
     it("does nothing when log file does not exist", () => {
       const deps = makeTestDeps();
       const writeCalls: { path: string; content: string }[] = [];
-      const originalWrite = deps.fs.writeFileSync;
-      deps.fs.writeFileSync = (path: string, content: string) => {
-        writeCalls.push({ path, content });
-        originalWrite(path, content);
+      const originalWrite = deps.writeFileSync;
+      deps.writeFileSync = (path: unknown, content: unknown) => {
+        writeCalls.push({ path: path as string, content: content as string });
+        originalWrite(path as PathOrFileDescriptor, content as string);
       };
 
       resetDebugLog(deps);
@@ -203,20 +209,20 @@ describe("log", () => {
     });
 
     it("clears the log file when it exists", () => {
-      const { fs: realMockFs } = makeMockFs();
+      const { deps: realMockDeps } = makeMockFs();
       const deps: DebugLogDeps = {
-        fs: realMockFs,
+        ...realMockDeps,
         getDebugLogPath: () => "/test/debug.log",
         getEditorLogPath: () => "/test/editor.log",
       };
 
-      realMockFs.mkdirSync("/test", { recursive: true });
-      realMockFs.writeFileSync("/test/debug.log", "existing content");
+      deps.mkdirSync("/test", { recursive: true });
+      deps.writeFileSync("/test/debug.log", "existing content");
 
       resetDebugLog(deps);
 
-      assert.equal(realMockFs.existsSync("/test/debug.log"), true);
-      const debugContent = realMockFs.readFileSync("/test/debug.log");
+      assert.equal(deps.existsSync("/test/debug.log"), true);
+      const debugContent = deps.readFileSync("/test/debug.log");
       assert.equal(debugContent, "");
     });
   });
@@ -225,10 +231,10 @@ describe("log", () => {
     it("does nothing when log file does not exist", () => {
       const deps = makeTestDeps();
       const writeCalls: { path: string; content: string }[] = [];
-      const originalWrite = deps.fs.writeFileSync;
-      deps.fs.writeFileSync = (path: string, content: string) => {
-        writeCalls.push({ path, content });
-        originalWrite(path, content);
+      const originalWrite = deps.writeFileSync;
+      deps.writeFileSync = (path: unknown, content: unknown) => {
+        writeCalls.push({ path: path as string, content: content as string });
+        originalWrite(path as PathOrFileDescriptor, content as string);
       };
 
       resetEditorLog(deps);
@@ -236,20 +242,20 @@ describe("log", () => {
     });
 
     it("clears the log file when it exists", () => {
-      const { fs: realMockFs } = makeMockFs();
+      const { deps: realMockDeps } = makeMockFs();
       const deps: DebugLogDeps = {
-        fs: realMockFs,
+        ...realMockDeps,
         getDebugLogPath: () => "/test/debug.log",
         getEditorLogPath: () => "/test/editor.log",
       };
 
-      realMockFs.mkdirSync("/test", { recursive: true });
-      realMockFs.writeFileSync("/test/editor.log", "existing content");
+      deps.mkdirSync("/test", { recursive: true });
+      deps.writeFileSync("/test/editor.log", "existing content");
 
       resetEditorLog(deps);
 
-      assert.equal(realMockFs.existsSync("/test/editor.log"), true);
-      const editorContent = realMockFs.readFileSync("/test/editor.log");
+      assert.equal(deps.existsSync("/test/editor.log"), true);
+      const editorContent = deps.readFileSync("/test/editor.log");
       assert.equal(editorContent, "");
     });
   });

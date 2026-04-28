@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-base-to-string */
-import type * as readline from "node:readline/promises";
+import type readline from "node:readline/promises";
 import type { ModelMessage } from "ai";
 import {
   DEFAULT_CONFIG,

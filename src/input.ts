@@ -1,4 +1,4 @@
-import * as readline from "node:readline/promises";
+import readline from "node:readline/promises";
 import { emitKeypressEvents } from "node:readline";
 import { stdin, stdout } from "node:process";
 import assert from "node:assert";
@@ -224,10 +224,7 @@ function resolveSlashCommand(rawInput: string) {
 
 export function clearCommand() {
   debugLog("Performing the `clear` slash command");
-  colorPrint(
-    `Context cleared (${calculateSessionUsage()})`,
-    "grey",
-  );
+  colorPrint(`Context cleared (${calculateSessionUsage()})`, "grey");
   dispatch(actions.resetMessageUsages());
   dispatch(actions.resetMessageParams());
 }

@@ -1,5 +1,5 @@
 import { describe, it, beforeEach } from "node:test";
-import assert from "node:assert/strict";
+import assert from "node:assert";
 import { MISSING, type TokenUsage } from "./utils.ts";
 import { dispatch, actions, selectors } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
@@ -155,7 +155,10 @@ describe("state", () => {
   });
 
   it("set-keymap-edit-log", () => {
-    assert.deepEqual(selectors.getKeymapEditLog(), DEFAULT_CONFIG.keymaps.editLog);
+    assert.deepEqual(
+      selectors.getKeymapEditLog(),
+      DEFAULT_CONFIG.keymaps.editLog,
+    );
     dispatch(
       actions.setKeymapEditLog({
         name: "o",
@@ -260,7 +263,10 @@ describe("state", () => {
 
   it("set-rl", () => {
     assert.equal(selectors.getRl(), null);
-    const fakeRl = { close: () => undefined, question: () => Promise.resolve("") } as unknown as NonNullable<ReturnType<typeof selectors.getRl>>;
+    const fakeRl = {
+      close: () => undefined,
+      question: () => Promise.resolve(""),
+    } as unknown as NonNullable<ReturnType<typeof selectors.getRl>>;
     dispatch(actions.setRl(fakeRl));
     assert.equal(selectors.getRl(), fakeRl);
   });

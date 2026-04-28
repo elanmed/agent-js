@@ -1,5 +1,5 @@
 import { describe, it, beforeEach } from "node:test";
-import assert from "node:assert/strict";
+import assert from "node:assert";
 import { dispatch, actions, selectors } from "./state.ts";
 import {
   initState,
@@ -260,9 +260,15 @@ describe("initState", () => {
         shift: false,
       });
       // Default editLog keymap
-      assert.deepEqual(selectors.getKeymapEditLog(), DEFAULT_CONFIG.keymaps.editLog);
+      assert.deepEqual(
+        selectors.getKeymapEditLog(),
+        DEFAULT_CONFIG.keymaps.editLog,
+      );
       // Default clear keymap
-      assert.deepEqual(selectors.getKeymapClear(), DEFAULT_CONFIG.keymaps.clear);
+      assert.deepEqual(
+        selectors.getKeymapClear(),
+        DEFAULT_CONFIG.keymaps.clear,
+      );
     });
   });
 

@@ -1,5 +1,5 @@
 import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import assert from "node:assert";
 import { parseCliArgs } from "./args.ts";
 import type { ParseCliArgsDeps } from "./args.ts";
 
