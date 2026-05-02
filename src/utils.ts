@@ -83,7 +83,6 @@ export function printNewline() {
 
 const fencePrintDeps = {
   colorPrint,
-  getColumns: () => (process.stdout.isTTY ? process.stdout.columns : 25),
 };
 
 type FencePrintDeps = typeof fencePrintDeps;
@@ -98,17 +97,12 @@ export function fencePrint(
   opts: FencePrintOpts = {},
   deps: FencePrintDeps = fencePrintDeps,
 ) {
-  const fenceWidth = deps.getColumns();
-  const leftPad = 2;
-  const rightPad = 2;
   let sessionUsage = "";
   if (!opts.skipSessionUsage && !selectors.getDisableUsageMessage()) {
     sessionUsage = ` (${calculateSessionUsage()})`;
   }
-  const label = ` ${text}${sessionUsage} `;
-  const usedWidth = leftPad + label.length + rightPad;
-  const rightFill = Math.max(fenceWidth - usedWidth, 0);
-  const line = `${"─".repeat(leftPad)}${label}${"─".repeat(rightFill)}`;
+  const label = `${text}${sessionUsage}`;
+  const line = `── ${label} ${"─".repeat(50 - label.length)}`;
   deps.colorPrint(line, opts.color ?? "grey");
 }
 
@@ -193,7 +187,9 @@ export const BASE_SYSTEM_PROMPT = `You are an AI agent being called from a minim
 
   CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown. 
 
-  Paging is difficult in the terminal - be concise and output as little text as necessary. When you want to give a command for the user to run (i.e. for debugging purposes), only give one command at a time - not multiple.
+  Paging is difficult in the terminal - be concise and output as little text as necessary.
+
+  When you want to give a command for the user to run (i.e. for debugging purposes), only give one command at a time - not multiple.
   `;
 
 export function getAvailableSlashCommands() {
