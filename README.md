@@ -121,12 +121,18 @@ Minimal runtime dependencies (7 total):
 | `@mozilla/readability`      | Content extraction for `web_fetch_html` |
 | `prettier`                  | Markdown formatting                     |
 
-## TODO
+## TODO (soon)
 
-- [ ] MCP server
-- [ ] Resume session
+- [ ] Support skills
+- [ ] Avoid extra round trip for slash commands
+- [ ] Prevent typing while loading?
 - [ ] Tool call interrupt
-- [ ] Look into tanstack ai (codemode?)
 - [ ] More try catch blocks around tool calls
-- [ ] Separate editor log per session? local editor log?
 - [ ] More robust handling for failed tool calls
+- [ ] Separate editor log per session? local editor log?
+
+## TODO (later)
+
+- [ ] Look into tanstack ai (codemode?) - maybe once stable
+- [ ] Resume session
+- [ ] Support MCP servers
