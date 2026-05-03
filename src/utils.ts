@@ -83,7 +83,6 @@ export function printNewline() {
 
 const fencePrintDeps = {
   colorPrint,
-  getColumns: () => (process.stdout.isTTY ? process.stdout.columns : 25),
 };
 
 type FencePrintDeps = typeof fencePrintDeps;
@@ -98,17 +97,12 @@ export function fencePrint(
   opts: FencePrintOpts = {},
   deps: FencePrintDeps = fencePrintDeps,
 ) {
-  const fenceWidth = deps.getColumns();
-  const leftPad = 2;
-  const rightPad = 2;
   let sessionUsage = "";
   if (!opts.skipSessionUsage && !selectors.getDisableUsageMessage()) {
     sessionUsage = ` (${calculateSessionUsage()})`;
   }
-  const label = ` ${text}${sessionUsage} `;
-  const usedWidth = leftPad + label.length + rightPad;
-  const rightFill = Math.max(fenceWidth - usedWidth, 0);
-  const line = `${"─".repeat(leftPad)}${label}${"─".repeat(rightFill)}`;
+  const label = `${text}${sessionUsage}`;
+  const line = `── ${label} ${"─".repeat(50 - label.length)}`;
   deps.colorPrint(line, opts.color ?? "grey");
 }
 
@@ -187,14 +181,18 @@ export function calculateSessionUsage(): string {
   return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
 
-export const BASE_SYSTEM_PROMPT = `You are an AI agent being called from a minimal terminal cli. Keep your responses brief as to not pollute the terminal. 
+export const BASE_SYSTEM_PROMPT = `
+You are an AI agent being called from a minimal terminal cli. 
 
-  When outputting content from web fetch tools, reference relevant source links.
+- Keep responses under 25 words unless the task requires detail.
+- No filler: omit "I'll help", "Sure", "Here is", etc.
+- Answer in 1 sentence when possible
+- For code edits: show only the change, no description
+- Questions get answers only, no padding
+- When giving commands for debugging, give one command at a time - not multiple.
 
-  CRITICAL: All your responses will be parsed by bat as markdown, your responses MUST be formatted as valid markdown. 
-
-  Paging is difficult in the terminal - be concise and output as little text as necessary. When you want to give a command for the user to run (i.e. for debugging purposes), only give one command at a time - not multiple.
-  `;
+CRITICAL: All responses will be parsed by bat as markdown, you MUST format as valid markdown.
+`;
 
 export function getAvailableSlashCommands() {
   const path = join(process.cwd(), ".agent-js", "commands");
