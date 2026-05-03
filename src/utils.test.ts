@@ -7,7 +7,6 @@ import {
   calculateSessionUsage,
   normalizeLine,
   getMessageFromError,
-  fencePrint,
   isSameKey,
   formatMarkdown,
 } from "./utils.ts";
