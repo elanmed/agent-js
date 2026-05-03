@@ -127,6 +127,7 @@ export function initSigInt() {
   });
 }
 
+// NOTE: missing test coverage
 export async function resolveUserInput() {
   const rl = selectors.getRl();
   assert(rl !== null);
@@ -255,7 +256,10 @@ export function resolveSlashCommand(
     const commandResult = tryCatch(() => deps.readFileSync(path).toString());
     if (commandResult.ok) return commandResult.value;
 
-    deps.colorPrint(`Error reading the slash command located at ${path}`, "red");
+    deps.colorPrint(
+      `Error reading the slash command located at ${path}`,
+      "red",
+    );
     return null;
   }
 

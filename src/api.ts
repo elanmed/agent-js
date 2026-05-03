@@ -108,6 +108,7 @@ async function callApi(
   }
 }
 
+// NOTE: missing test coverage
 export async function resolveUserInputApiCall(initialContent: string) {
   const inputMessageParam: ModelMessage = {
     role: "user",

@@ -96,6 +96,7 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   colorPrint(line, opts.color ?? "grey");
 }
 
+// NOTE: missing test coverage
 export async function getRecursiveAgentsMdFilesStr() {
   const agentFiles = [];
   for await (const file of glob("**/AGENTS.md")) {
@@ -186,6 +187,7 @@ You are an AI agent being called from a minimal terminal cli.
 CRITICAL: All responses will be parsed by bat as markdown, you MUST format as valid markdown.
 `;
 
+// NOTE: missing test coverage
 export function getAvailableSlashCommands() {
   const path = join(process.cwd(), ".agent-js", "commands");
   if (!existsSync(path)) return [];
@@ -229,6 +231,7 @@ export async function formatMarkdown(content: string): Promise<string> {
   }
 }
 
+// NOTE: missing test coverage
 export async function executeBat(content: string) {
   content = await formatMarkdown(content);
   content = normalizeLine(content);
@@ -257,6 +260,7 @@ export async function executeBat(content: string) {
   colorPrint(content);
 }
 
+// NOTE: missing test coverage
 export function createTempFile(args?: { initialContentPath?: string }) {
   const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
@@ -271,6 +275,7 @@ export function createTempFile(args?: { initialContentPath?: string }) {
   return tempFile;
 }
 
+// NOTE: missing test coverage
 export async function execGitDiff(
   args: string,
 ): Promise<{ stdout: string; stderr: string }> {
