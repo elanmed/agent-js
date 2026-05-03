@@ -60,16 +60,6 @@ export function initKeypress() {
   const rl = selectors.getRl();
   assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
-    if (selectors.getSpinnerTimeout() !== null) {
-      if (
-        !isSameKey(key, selectors.getKeymapEdit()) &&
-        !isSameKey(key, selectors.getKeymapClear()) &&
-        !isSameKey(key, selectors.getKeymapEditLog())
-      ) {
-        rl.write(null, { ctrl: true, name: "u" });
-      }
-    }
-
     if (isSameKey(key, selectors.getKeymapEdit())) {
       let initialContentPrefix = "";
       if (selectors.getEditorInputValue() !== null) {
@@ -104,6 +94,8 @@ export function initKeypress() {
       dispatch(actions.appendToStdout("/clear\n"));
     } else if (isSameKey(key, selectors.getKeymapEditLog())) {
       editLogCommand();
+    } else if (selectors.getSpinnerTimeout() !== null) {
+      rl.write(null, { ctrl: true, name: "u" });
     }
   });
 }
