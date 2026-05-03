@@ -3,13 +3,13 @@ import assert from "node:assert";
 import { parseCliArgs } from "./args.ts";
 import type { ParseCliArgsDeps } from "./args.ts";
 
-function makeDeps(argStrings: string[]): ParseCliArgsDeps {
-  return {
-    getArgv: () => ["node", "script.js", ...argStrings],
-  };
-}
-
 describe("parseCliArgs", () => {
+  function makeDeps(argStrings: string[]): ParseCliArgsDeps {
+    return {
+      getArgv: () => ["node", "script.js", ...argStrings],
+    };
+  }
+
   it("returns default args when no arguments are provided", () => {
     const result = parseCliArgs(makeDeps([]));
     assert.deepStrictEqual(result, { debug: false, resumeSessionId: null });

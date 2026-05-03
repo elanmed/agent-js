@@ -26,6 +26,7 @@ interface State {
     stdout: string;
     debugLog: boolean;
     editorLog: boolean;
+    editorLogPath: string;
     agentsMdFilesStr: string;
     rl: readline.Interface | null;
     spinnerTimeout: NodeJS.Timeout | null;
@@ -58,6 +59,7 @@ const initialState: State = {
     stdout: "",
     debugLog: false,
     editorLog: false,
+    editorLogPath: "",
     agentsMdFilesStr: "",
     rl: null,
     spinnerTimeout: null,
@@ -176,6 +178,10 @@ type Action =
   | {
       type: "set-editor-log";
       payload: boolean;
+    }
+  | {
+      type: "set-editor-log-path";
+      payload: string;
     }
   | {
       type: "set-agents-md-files-str";
@@ -461,6 +467,15 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
+    case "set-editor-log-path": {
+      const before = state.appState.editorLogPath;
+      const next = {
+        ...state,
+        appState: { ...state.appState, editorLogPath: action.payload },
+      };
+      logStateChange(action.type, before, action.payload);
+      return next;
+    }
     case "set-agents-md-files-str": {
       const before = state.appState.agentsMdFilesStr;
       const next = {
@@ -612,6 +627,10 @@ const setEditorLog = (editorLog: boolean): Action => {
   return { type: "set-editor-log", payload: editorLog };
 };
 
+const setEditorLogPath = (editorLogPath: string): Action => {
+  return { type: "set-editor-log-path", payload: editorLogPath };
+};
+
 const setAgentsMdFilesStr = (agentsMdFilesStr: string): Action => {
   return { type: "set-agents-md-files-str", payload: agentsMdFilesStr };
 };
@@ -653,6 +672,7 @@ export const actions = {
   appendToStdout,
   setDebugLog,
   setEditorLog,
+  setEditorLogPath,
   setAgentsMdFilesStr,
   setRl,
   setSpinnerTimeout,
@@ -668,6 +688,7 @@ const getSlashCommands = () => getState().appState.slashCommands;
 const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
 const getEditorLog = () => getState().appState.editorLog;
+const getEditorLogPath = () => getState().appState.editorLogPath;
 const getAgentsMdFilesStr = () => getState().appState.agentsMdFilesStr;
 const getRl = () => getState().appState.rl;
 const getSpinnerTimeout = () => getState().appState.spinnerTimeout;
@@ -704,6 +725,7 @@ export const selectors = {
   getStdout,
   getDebugLog,
   getEditorLog,
+  getEditorLogPath,
   getAgentsMdFilesStr,
   getRl,
   getSpinnerTimeout,

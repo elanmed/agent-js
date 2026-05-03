@@ -10,20 +10,20 @@ beforeEach(() => {
   dispatch(actions.resetState());
 });
 
-function makeDeps(overrides: Partial<EditCommandDeps> = {}): EditCommandDeps {
-  return {
-    createTempFile: () => "/tmp/test.txt",
-    writeFileSync: () => undefined,
-    readFileSync: () => Buffer.from("content"),
-    unlinkSync: () => undefined,
-    spawnSync: () => ({ stdout: Buffer.from("") }),
-    env: {},
-    editorLog: () => undefined,
-    ...overrides,
-  };
-}
-
 describe("editCommand", () => {
+  function makeDeps(overrides: Partial<EditCommandDeps> = {}): EditCommandDeps {
+    return {
+      createTempFile: () => "/tmp/test.txt",
+      writeFileSync: () => undefined,
+      readFileSync: () => Buffer.from("content"),
+      unlinkSync: () => undefined,
+      spawnSync: () => ({ stdout: Buffer.from("") }),
+      env: {},
+      editorLog: () => undefined,
+      ...overrides,
+    };
+  }
+
   it("returns null when writeFile fails", () => {
     const deps = makeDeps({
       writeFileSync: () => {
@@ -116,26 +116,26 @@ describe("editCommand", () => {
   });
 });
 
-function makeSlashDeps(
-  overrides: Partial<ResolveSlashCommandDeps> = {},
-): ResolveSlashCommandDeps {
-  return {
-    editCommand: () => null,
-    clearCommand: () => undefined,
-    editLogCommand: () => undefined,
-    readFileSync: () => Buffer.from(""),
-    colorPrint: () => undefined,
-    debugLog: () => undefined,
-    join: (...segments: string[]) => segments.join("/"),
-    cwd: () => "/test",
-    ...overrides,
-  };
-}
-
 describe("resolveSlashCommand", () => {
+  function makeDeps(
+    overrides: Partial<ResolveSlashCommandDeps> = {},
+  ): ResolveSlashCommandDeps {
+    return {
+      editCommand: () => null,
+      clearCommand: () => undefined,
+      editLogCommand: () => undefined,
+      readFileSync: () => Buffer.from(""),
+      colorPrint: () => undefined,
+      debugLog: () => undefined,
+      join: (...segments: string[]) => segments.join("/"),
+      cwd: () => "/test",
+      ...overrides,
+    };
+  }
+
   it("handles /edit command", () => {
     let editCalled = false;
-    const deps = makeSlashDeps({
+    const deps = makeDeps({
       editCommand: () => {
         editCalled = true;
         return "edited content";
@@ -149,7 +149,7 @@ describe("resolveSlashCommand", () => {
 
   it("handles /clear command", () => {
     let clearCalled = false;
-    const deps = makeSlashDeps({
+    const deps = makeDeps({
       clearCommand: () => {
         clearCalled = true;
       },
@@ -162,7 +162,7 @@ describe("resolveSlashCommand", () => {
 
   it("handles /edit-log command", () => {
     let editLogCalled = false;
-    const deps = makeSlashDeps({
+    const deps = makeDeps({
       editLogCommand: () => {
         editLogCalled = true;
       },
@@ -175,7 +175,7 @@ describe("resolveSlashCommand", () => {
 
   it("handles custom slash command successfully", () => {
     dispatch(actions.setSlashCommands(["custom"]));
-    const deps = makeSlashDeps({
+    const deps = makeDeps({
       readFileSync: () => Buffer.from("custom command content"),
       join: (...segments: string[]) => segments.join("/"),
       cwd: () => "/test",
@@ -188,7 +188,7 @@ describe("resolveSlashCommand", () => {
   it("handles custom slash command read error", () => {
     dispatch(actions.setSlashCommands(["custom"]));
     const errors: { message: string; color: Color | undefined }[] = [];
-    const deps = makeSlashDeps({
+    const deps = makeDeps({
       readFileSync: () => {
         throw new Error("read failed");
       },
@@ -206,7 +206,7 @@ describe("resolveSlashCommand", () => {
   it("handles unknown slash command", () => {
     dispatch(actions.setSlashCommands(["known"]));
     const errors: { message: string; color: Color | undefined }[] = [];
-    const deps = makeSlashDeps({
+    const deps = makeDeps({
       colorPrint: (message: string, color?: Color) => {
         errors.push({ message, color });
       },

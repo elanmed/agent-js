@@ -16,6 +16,7 @@ describe("state", () => {
     dispatch(actions.setQuestionAbortController(new AbortController()));
     dispatch(actions.setApiStreamAbortController(new AbortController()));
     dispatch(actions.setSpinnerTimeout(setTimeout(() => undefined, 1000)));
+    dispatch(actions.setEditorLogPath("/tmp/test.log"));
     dispatch(actions.resetState());
 
     assert.equal(selectors.getRunning(), true);
@@ -25,6 +26,7 @@ describe("state", () => {
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
     assert.equal(selectors.getSpinnerTimeout(), null);
+    assert.equal(selectors.getEditorLogPath(), "");
   });
 
   it("initial state", () => {
@@ -34,6 +36,7 @@ describe("state", () => {
     assert.deepEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
+    assert.equal(selectors.getEditorLogPath(), "");
   });
 
   it("set-interrupted", () => {
@@ -223,6 +226,12 @@ describe("state", () => {
     assert.equal(selectors.getEditorLog(), false);
     dispatch(actions.setEditorLog(true));
     assert.equal(selectors.getEditorLog(), true);
+  });
+
+  it("set-editor-log-path", () => {
+    assert.equal(selectors.getEditorLogPath(), "");
+    dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+    assert.equal(selectors.getEditorLogPath(), "/tmp/editor.log");
   });
 
   it("set-agents-md-files-str", () => {

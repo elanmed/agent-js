@@ -1,70 +1,20 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import type { PathLike, PathOrFileDescriptor } from "node:fs";
 import {
   debugLog,
   editorLog,
   resetDebugLog,
-  resetEditorLog,
+  initEditorLog,
+  deleteExpiredEditorLogs,
   type DebugLogDeps,
+  type EditorLogDeps,
+  type InitEditorLogDeps,
+  type DeleteExpiredEditorLogsDeps,
+  type ResetDebugLogDeps,
+  EDITOR_LOGS_PATH,
 } from "./log.ts";
-import { dispatch, actions } from "./state.ts";
-
-interface FsMockState {
-  files: Map<string, string>;
-  dirs: Set<string>;
-}
-
-function makeMockFs(): {
-  deps: Pick<
-    DebugLogDeps,
-    "existsSync" | "mkdirSync" | "appendFileSync" | "writeFileSync" | "readFileSync"
-  >;
-  state: FsMockState;
-} {
-  const state: FsMockState = {
-    files: new Map(),
-    dirs: new Set(),
-  };
-
-  return {
-    deps: {
-      existsSync: ((path: PathLike): boolean => {
-        const pathStr = path.toString();
-        return state.files.has(pathStr) || state.dirs.has(pathStr);
-      }) as DebugLogDeps["existsSync"],
-      mkdirSync: ((path: PathLike): void => {
-        state.dirs.add(path.toString());
-      }) as DebugLogDeps["mkdirSync"],
-      appendFileSync: ((path: PathOrFileDescriptor, content: string): void => {
-        const pathStr = path.toString();
-        const existing = state.files.get(pathStr) ?? "";
-        state.files.set(pathStr, existing + "---LOG_ENTRY---" + content);
-      }) as DebugLogDeps["appendFileSync"],
-      writeFileSync: ((path: PathOrFileDescriptor, content: string): void => {
-        state.files.set(path.toString(), content);
-      }) as DebugLogDeps["writeFileSync"],
-      readFileSync: ((path: PathOrFileDescriptor): string => {
-        return state.files.get(path.toString()) ?? "";
-      }) as DebugLogDeps["readFileSync"],
-    },
-    state,
-  };
-}
-
-function makeTestDeps(
-  overrides: {
-    getDebugLogPath?: () => string;
-    getEditorLogPath?: () => string;
-  } = {},
-): DebugLogDeps {
-  const { deps: mockDeps } = makeMockFs();
-  return {
-    ...mockDeps,
-    getDebugLogPath: overrides.getDebugLogPath ?? (() => "/test/debug.log"),
-    getEditorLogPath: overrides.getEditorLogPath ?? (() => "/test/editor.log"),
-  };
-}
+import { dispatch, actions, selectors } from "./state.ts";
+import type { Dirent } from "node:fs";
 
 describe("log", () => {
   beforeEach(() => {
@@ -72,21 +22,43 @@ describe("log", () => {
   });
 
   describe("debugLog", () => {
+    function makeDeps(
+      overrides: Partial<DebugLogDeps> = {},
+    ): DebugLogDeps & { files: Map<string, string>; dirs: Set<string> } {
+      const files = new Map<string, string>();
+      const dirs = new Set<string>();
+      return {
+        files,
+        dirs,
+        existsSync: (path: string) => files.has(path) || dirs.has(path),
+        mkdirSync: (path: string) => dirs.add(path),
+        appendFileSync: (path: string, content: string) => {
+          const existing = files.get(path) ?? "";
+          files.set(path, existing + "---LOG_ENTRY---" + content);
+        },
+        writeFileSync: (path: string, content: string) =>
+          files.set(path, content),
+        readFileSync: (path: string) => files.get(path) ?? "",
+        getDebugLogPath: () => "/test/debug.log",
+        ...overrides,
+      };
+    }
+
     it("does nothing when debugLog is disabled", () => {
       dispatch(actions.setDebugLog(false));
-      const deps = makeTestDeps();
+      const deps = makeDeps();
       debugLog("test message", deps);
       assert.equal(deps.existsSync("/test/debug.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
       dispatch(actions.setDebugLog(true));
-      const deps = makeTestDeps();
+      const deps = makeDeps();
       const mkdirCalls: string[] = [];
       const originalMkdirSync = deps.mkdirSync;
-      deps.mkdirSync = (path: unknown) => {
-        mkdirCalls.push(path as string);
-        originalMkdirSync(path as PathLike);
+      deps.mkdirSync = (path: string) => {
+        mkdirCalls.push(path);
+        originalMkdirSync(path);
       };
 
       debugLog("test message", deps);
@@ -95,16 +67,15 @@ describe("log", () => {
 
     it("appends content to log file with timestamp", () => {
       dispatch(actions.setDebugLog(true));
-      const depsWithTracking = makeTestDeps();
-
+      const deps = makeDeps();
       const appendCalls: { path: string; content: string }[] = [];
-      const originalAppend = depsWithTracking.appendFileSync;
-      depsWithTracking.appendFileSync = (path: unknown, content: unknown) => {
-        appendCalls.push({ path: path as string, content: content as string });
-        originalAppend(path as PathOrFileDescriptor, content as string);
+      const originalAppend = deps.appendFileSync;
+      deps.appendFileSync = (path: string, content: string) => {
+        appendCalls.push({ path, content });
+        originalAppend(path, content);
       };
 
-      debugLog("test message", depsWithTracking);
+      debugLog("test message", deps);
 
       assert.equal(appendCalls.length, 1);
       const firstCall = appendCalls[0]!;
@@ -115,12 +86,12 @@ describe("log", () => {
 
     it("appends multiple messages", () => {
       dispatch(actions.setDebugLog(true));
-      const deps = makeTestDeps();
+      const deps = makeDeps();
       const appendCalls: { path: string; content: string }[] = [];
       const originalAppend = deps.appendFileSync;
-      deps.appendFileSync = (path: unknown, content: unknown) => {
-        appendCalls.push({ path: path as string, content: content as string });
-        originalAppend(path as PathOrFileDescriptor, content as string);
+      deps.appendFileSync = (path: string, content: string) => {
+        appendCalls.push({ path, content });
+        originalAppend(path, content);
       };
 
       debugLog("message 1", deps);
@@ -133,21 +104,40 @@ describe("log", () => {
   });
 
   describe("editorLog", () => {
+    function makeDeps(
+      overrides: Partial<EditorLogDeps> = {},
+    ): EditorLogDeps & { files: Map<string, string>; dirs: Set<string> } {
+      const files = new Map<string, string>();
+      const dirs = new Set<string>();
+      return {
+        files,
+        dirs,
+        existsSync: (path: string) => files.has(path) || dirs.has(path),
+        mkdirSync: (path: string) => dirs.add(path),
+        appendFileSync: (path: string, content: string) => {
+          const existing = files.get(path) ?? "";
+          files.set(path, existing + "---LOG_ENTRY---" + content);
+        },
+        normalizeLine: (content: string) => content.trim().concat("\n"),
+        getEditorLogPath: () => "/test/editor.log",
+        getEditorLog: () => true,
+        ...overrides,
+      };
+    }
+
     it("does nothing when editorLog is disabled", () => {
-      dispatch(actions.setEditorLog(false));
-      const deps = makeTestDeps();
+      const deps = makeDeps({ getEditorLog: () => false });
       editorLog("test message", deps);
       assert.equal(deps.existsSync("/test/editor.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
-      dispatch(actions.setEditorLog(true));
-      const deps = makeTestDeps();
+      const deps = makeDeps();
       const mkdirCalls: string[] = [];
       const originalMkdirSync = deps.mkdirSync;
-      deps.mkdirSync = (path: unknown) => {
-        mkdirCalls.push(path as string);
-        originalMkdirSync(path as PathLike);
+      deps.mkdirSync = (path: string) => {
+        mkdirCalls.push(path);
+        originalMkdirSync(path);
       };
 
       editorLog("test message", deps);
@@ -155,13 +145,12 @@ describe("log", () => {
     });
 
     it("appends content with timestamp and separator", () => {
-      dispatch(actions.setEditorLog(true));
-      const deps = makeTestDeps();
+      const deps = makeDeps();
       const appendCalls: { path: string; content: string }[] = [];
       const originalAppend = deps.appendFileSync;
-      deps.appendFileSync = (path: unknown, content: unknown) => {
-        appendCalls.push({ path: path as string, content: content as string });
-        originalAppend(path as PathOrFileDescriptor, content as string);
+      deps.appendFileSync = (path: string, content: string) => {
+        appendCalls.push({ path, content });
+        originalAppend(path, content);
       };
 
       editorLog("test content", deps);
@@ -176,13 +165,12 @@ describe("log", () => {
     });
 
     it("appends multiple messages with separators", () => {
-      dispatch(actions.setEditorLog(true));
-      const deps = makeTestDeps();
+      const deps = makeDeps();
       const appendCalls: { path: string; content: string }[] = [];
       const originalAppend = deps.appendFileSync;
-      deps.appendFileSync = (path: unknown, content: unknown) => {
-        appendCalls.push({ path: path as string, content: content as string });
-        originalAppend(path as PathOrFileDescriptor, content as string);
+      deps.appendFileSync = (path: string, content: string) => {
+        appendCalls.push({ path, content });
+        originalAppend(path, content);
       };
 
       editorLog("content 1", deps);
@@ -195,13 +183,29 @@ describe("log", () => {
   });
 
   describe("resetDebugLog", () => {
+    function makeDeps(
+      overrides: Partial<ResetDebugLogDeps> = {},
+    ): ResetDebugLogDeps & { files: Map<string, string>; dirs: Set<string> } {
+      const files = new Map<string, string>();
+      const dirs = new Set<string>();
+      return {
+        files,
+        dirs,
+        existsSync: (path: string) => files.has(path) || dirs.has(path),
+        writeFileSync: (path: string, content: string) =>
+          files.set(path, content),
+        getDebugLogPath: () => "/test/debug.log",
+        ...overrides,
+      };
+    }
+
     it("does nothing when log file does not exist", () => {
-      const deps = makeTestDeps();
+      const deps = makeDeps();
       const writeCalls: { path: string; content: string }[] = [];
       const originalWrite = deps.writeFileSync;
-      deps.writeFileSync = (path: unknown, content: unknown) => {
-        writeCalls.push({ path: path as string, content: content as string });
-        originalWrite(path as PathOrFileDescriptor, content as string);
+      deps.writeFileSync = (path: string, content: string) => {
+        writeCalls.push({ path, content });
+        originalWrite(path, content);
       };
 
       resetDebugLog(deps);
@@ -209,54 +213,186 @@ describe("log", () => {
     });
 
     it("clears the log file when it exists", () => {
-      const { deps: realMockDeps } = makeMockFs();
-      const deps: DebugLogDeps = {
-        ...realMockDeps,
-        getDebugLogPath: () => "/test/debug.log",
-        getEditorLogPath: () => "/test/editor.log",
-      };
-
-      deps.mkdirSync("/test", { recursive: true });
-      deps.writeFileSync("/test/debug.log", "existing content");
+      const deps = makeDeps();
+      deps.dirs.add("/test");
+      deps.files.set("/test/debug.log", "existing content");
 
       resetDebugLog(deps);
 
       assert.equal(deps.existsSync("/test/debug.log"), true);
-      const debugContent = deps.readFileSync("/test/debug.log");
-      assert.equal(debugContent, "");
+      assert.equal(deps.files.get("/test/debug.log"), "");
     });
   });
 
-  describe("resetEditorLog", () => {
-    it("does nothing when log file does not exist", () => {
-      const deps = makeTestDeps();
-      const writeCalls: { path: string; content: string }[] = [];
-      const originalWrite = deps.writeFileSync;
-      deps.writeFileSync = (path: unknown, content: unknown) => {
-        writeCalls.push({ path: path as string, content: content as string });
-        originalWrite(path as PathOrFileDescriptor, content as string);
+  describe("initEditorLog", () => {
+    function makeDeps(
+      overrides: Partial<InitEditorLogDeps> = {},
+    ): InitEditorLogDeps & { files: Map<string, string>; dirs: Set<string> } {
+      const files = new Map<string, string>();
+      const dirs = new Set<string>();
+      return {
+        files,
+        dirs,
+        existsSync: (path: string) => files.has(path) || dirs.has(path),
+        mkdirSync: (path: string) => dirs.add(path),
+        randomUUID: () => "test-uuid",
+        now: () => 1234567890000,
+        ...overrides,
       };
+    }
 
-      resetEditorLog(deps);
-      assert.equal(writeCalls.length, 0);
+    it("creates directory and sets path when directory does not exist", () => {
+      dispatch(actions.setEditorLog(true));
+      const deps = makeDeps();
+      initEditorLog(deps);
+
+      assert.equal(deps.existsSync(EDITOR_LOGS_PATH), true);
+      assert.equal(selectors.getEditorLog(), true);
+      assert.ok(
+        selectors
+          .getEditorLogPath()
+          .endsWith("editor-test-uuid-1234567890000.log"),
+      );
     });
 
-    it("clears the log file when it exists", () => {
-      const { deps: realMockDeps } = makeMockFs();
-      const deps: DebugLogDeps = {
-        ...realMockDeps,
-        getDebugLogPath: () => "/test/debug.log",
-        getEditorLogPath: () => "/test/editor.log",
+    it("disables editor log when mkdir fails", () => {
+      dispatch(actions.setEditorLog(true));
+      const deps = makeDeps({
+        existsSync: () => false,
+        mkdirSync: () => {
+          throw new Error("Permission denied");
+        },
+      });
+      initEditorLog(deps);
+
+      assert.equal(selectors.getEditorLog(), false);
+    });
+
+    it("generates correct log path with uuid and timestamp", () => {
+      dispatch(actions.setEditorLog(true));
+      const deps = makeDeps();
+      initEditorLog(deps);
+
+      const path = selectors.getEditorLogPath();
+      assert.ok(path.endsWith("editor-test-uuid-1234567890000.log"));
+    });
+  });
+
+  describe("deleteExpiredEditorLogs", () => {
+    function makeDeps(
+      overrides: Partial<DeleteExpiredEditorLogsDeps> = {},
+    ): DeleteExpiredEditorLogsDeps {
+      return {
+        existsSync: () => true,
+        readdirSync: () => [],
+        unlinkSync: () => undefined,
+        now: () => 1000000000000,
+        getEditorLogsPath: () => "/test/editor-logs",
+        ...overrides,
       };
+    }
 
-      deps.mkdirSync("/test", { recursive: true });
-      deps.writeFileSync("/test/editor.log", "existing content");
+    function makeDirent(
+      name: string,
+      parentPath: string,
+      isFile = true,
+    ): Dirent {
+      return {
+        name,
+        parentPath,
+        isFile: () => isFile,
+      } as Dirent;
+    }
 
-      resetEditorLog(deps);
+    it("returns early when directory does not exist", () => {
+      const readdirCalls: string[] = [];
+      const deps = makeDeps({
+        existsSync: () => false,
+        readdirSync: (path: string) => {
+          readdirCalls.push(path);
+          return [];
+        },
+      });
+      deleteExpiredEditorLogs(deps);
+      assert.equal(readdirCalls.length, 0);
+    });
 
-      assert.equal(deps.existsSync("/test/editor.log"), true);
-      const editorContent = deps.readFileSync("/test/editor.log");
-      assert.equal(editorContent, "");
+    it("deletes expired files older than 24 hours", () => {
+      const deleted: string[] = [];
+      const deps = makeDeps({
+        readdirSync: () => [
+          makeDirent("editor-uuid-999900000000.log", "/test/editor-logs"),
+        ],
+        unlinkSync: (path: string) => deleted.push(path),
+      });
+      deleteExpiredEditorLogs(deps);
+
+      assert.equal(deleted.length, 1);
+      assert.equal(
+        deleted[0],
+        "/test/editor-logs/editor-uuid-999900000000.log",
+      );
+    });
+
+    it("keeps files newer than 24 hours", () => {
+      const deleted: string[] = [];
+      const deps = makeDeps({
+        readdirSync: () => [
+          makeDirent("editor-uuid-999990000000.log", "/test/editor-logs"),
+        ],
+        unlinkSync: (path: string) => deleted.push(path),
+      });
+      deleteExpiredEditorLogs(deps);
+
+      assert.equal(deleted.length, 0);
+    });
+
+    it("skips files without correct format", () => {
+      const deleted: string[] = [];
+      const deps = makeDeps({
+        readdirSync: () => [
+          makeDirent("random-file.log", "/test/editor-logs"),
+          makeDirent("other-uuid-123-notimestamp.log", "/test/editor-logs"),
+          makeDirent("editor-uuid-999990000001.log", "/test/editor-logs"),
+        ],
+        unlinkSync: (path: string) => deleted.push(path),
+      });
+      deleteExpiredEditorLogs(deps);
+
+      assert.equal(deleted.length, 0);
+    });
+
+    it("skips non-editor files with 3 parts", () => {
+      const deleted: string[] = [];
+      const deps = makeDeps({
+        readdirSync: () => [
+          makeDirent("other-uuid-999997600000.log", "/test/editor-logs"),
+        ],
+        unlinkSync: (path: string) => deleted.push(path),
+      });
+      deleteExpiredEditorLogs(deps);
+
+      assert.equal(deleted.length, 0);
+    });
+
+    it("handles recursive directories", () => {
+      const deleted: string[] = [];
+      const deps = makeDeps({
+        readdirSync: () => [
+          makeDirent(
+            "editor-uuid-999900000000.log",
+            "/test/editor-logs/subdir",
+          ),
+        ],
+        unlinkSync: (path: string) => deleted.push(path),
+      });
+      deleteExpiredEditorLogs(deps);
+
+      assert.equal(deleted.length, 1);
+      assert.equal(
+        deleted[0],
+        "/test/editor-logs/subdir/editor-uuid-999900000000.log",
+      );
     });
   });
 });
