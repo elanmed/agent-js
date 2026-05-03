@@ -136,9 +136,7 @@ export function executeCreateFileTool(
     };
   }
 
-  const createFileResult = tryCatch(() => {
-    deps.writeFileSync(path, content);
-  });
+  const createFileResult = tryCatch(() => deps.writeFileSync(path, content));
 
   if (!createFileResult.ok) {
     const error = getMessageFromError(createFileResult.error);
@@ -373,9 +371,9 @@ export function executeStrReplaceTool(
     };
   }
 
-  const writeResult = tryCatch(() => {
-    deps.writeFileSync(path, content.replace(old_str, new_str));
-  });
+  const writeResult = tryCatch(() =>
+    deps.writeFileSync(path, content.replace(old_str, new_str)),
+  );
   if (!writeResult.ok) {
     const error = getMessageFromError(writeResult.error);
     deps.debugLog(`executeStrReplaceTool: error=${error}`);

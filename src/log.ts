@@ -35,14 +35,10 @@ export function debugLog(content: string, deps: DebugLogDeps = debugLogDeps) {
 
   const path = deps.getDebugLogPath();
   if (!deps.existsSync(path)) {
-    const mkdirResult = tryCatch(() => {
-      deps.mkdirSync(dirname(path), { recursive: true });
-    });
+    const mkdirResult = tryCatch(() => deps.mkdirSync(dirname(path), { recursive: true }));
     if (!mkdirResult.ok) return;
   }
-  tryCatch(() => {
-    deps.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
-  });
+  tryCatch(() => deps.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`));
 }
 
 export function editorLog(content: string, deps: DebugLogDeps = debugLogDeps) {
@@ -50,34 +46,26 @@ export function editorLog(content: string, deps: DebugLogDeps = debugLogDeps) {
 
   const path = deps.getEditorLogPath();
   if (!deps.existsSync(path)) {
-    const mkdirResult = tryCatch(() => {
-      deps.mkdirSync(dirname(path), { recursive: true });
-    });
+    const mkdirResult = tryCatch(() => deps.mkdirSync(dirname(path), { recursive: true }));
     if (!mkdirResult.ok) return;
   }
-  tryCatch(() => {
-    deps.appendFileSync(
-      path,
-      `${new Date().toISOString()}\n${"-".repeat(25)}\n${normalizeLine(content)}\n`,
-    );
-  });
+  tryCatch(() => deps.appendFileSync(
+    path,
+    `${new Date().toISOString()}\n${"-".repeat(25)}\n${normalizeLine(content)}\n`,
+  ));
 }
 
 export function resetDebugLog(deps: DebugLogDeps = debugLogDeps) {
   const path = deps.getDebugLogPath();
   if (deps.existsSync(path)) {
-    tryCatch(() => {
-      deps.writeFileSync(path, "");
-    });
+    tryCatch(() => deps.writeFileSync(path, ""));
   }
 }
 
 export function resetEditorLog(deps: DebugLogDeps = debugLogDeps) {
   const path = deps.getEditorLogPath();
   if (deps.existsSync(path)) {
-    tryCatch(() => {
-      deps.writeFileSync(path, "");
-    });
+    tryCatch(() => deps.writeFileSync(path, ""));
   }
 }
 

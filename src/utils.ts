@@ -261,13 +261,11 @@ export function createTempFile(args?: { initialContentPath?: string }) {
   const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
   if (initialContentPath) {
-    const readResult = tryCatch(() => {
-      return readFileSync(initialContentPath).toString();
-    });
+    const readResult = tryCatch(() =>
+      readFileSync(initialContentPath).toString(),
+    );
     if (readResult.ok) {
-      tryCatch(() => {
-        writeFileSync(tempFile, readResult.value);
-      });
+      tryCatch(() => writeFileSync(tempFile, readResult.value));
     }
   }
   return tempFile;

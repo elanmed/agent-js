@@ -234,9 +234,7 @@ export function editCommand(currentLine: string) {
   const tempFile = createTempFile();
   const editor =
     process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
-  const writeResult = tryCatch(() => {
-    writeFileSync(tempFile, currentLine);
-  });
+  const writeResult = tryCatch(() => writeFileSync(tempFile, currentLine));
   if (!writeResult.ok) {
     colorPrint("Failed to write to temp file", "red");
     return "";
@@ -246,15 +244,11 @@ export function editCommand(currentLine: string) {
   const readResult = tryCatch(() => readFileSync(tempFile).toString());
   if (!readResult.ok) {
     colorPrint("Failed to read from temp file", "red");
-    tryCatch(() => {
-      unlinkSync(tempFile);
-    });
+    tryCatch(() => unlinkSync(tempFile));
     return "";
   }
   const content = normalizeLine(readResult.value);
-  tryCatch(() => {
-    unlinkSync(tempFile);
-  });
+  tryCatch(() => unlinkSync(tempFile));
 
   editorLog(content);
 
