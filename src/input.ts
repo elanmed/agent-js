@@ -16,6 +16,7 @@ import {
   createTempFile,
   clearRlLine,
   calculateSessionUsage,
+  type Color,
 } from "./utils.ts";
 import { writeFileSync, readFileSync, unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -205,35 +206,60 @@ async function resolveExitConfirmation() {
   return null;
 }
 
-function resolveSlashCommand(rawInput: string) {
+export interface ResolveSlashCommandDeps {
+  editCommand: (currentLine: string) => string | null;
+  clearCommand: () => void;
+  editLogCommand: () => void;
+  readFileSync: (path: string) => Buffer | string;
+  colorPrint: (message: string, color?: Color) => void;
+  debugLog: (content: string) => void;
+  join: (...segments: string[]) => string;
+  cwd: () => string;
+}
+
+export const resolveSlashCommandDeps: ResolveSlashCommandDeps = {
+  editCommand: (currentLine: string) => editCommand(currentLine),
+  clearCommand: () => clearCommand(),
+  editLogCommand: () => editLogCommand(),
+  readFileSync,
+  colorPrint,
+  debugLog,
+  join,
+  cwd: () => process.cwd(),
+};
+
+export function resolveSlashCommand(
+  rawInput: string,
+  deps: ResolveSlashCommandDeps = resolveSlashCommandDeps,
+) {
   const commandWithoutSlash = rawInput.slice(1).trim();
   if (commandWithoutSlash === "edit") {
-    return editCommand("");
+    return deps.editCommand("");
   } else if (commandWithoutSlash === "clear") {
-    clearCommand();
+    deps.clearCommand();
     return null;
   } else if (commandWithoutSlash === "edit-log") {
-    editLogCommand();
+    deps.editLogCommand();
     return null;
   }
 
   if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
-    colorPrint(`Executing slash command: ${rawInput}`, "grey");
-    const path = join(
-      process.cwd(),
+    deps.colorPrint(`Executing slash command: ${rawInput}`, "grey");
+    const path = deps.join(
+      deps.cwd(),
       ".agent-js",
       "commands",
       rawInput.slice(1).concat(".md"),
     );
-    debugLog(`Performing the slash command at ${path}`);
-    const commandResult = tryCatch(() => readFileSync(path).toString());
+    deps.debugLog(`Performing the slash command at ${path}`);
+    const commandResult = tryCatch(() => deps.readFileSync(path).toString());
     if (commandResult.ok) return commandResult.value;
 
-    colorPrint(`Error reading the slash command located at ${path}`, "red");
+    deps.colorPrint(`Error reading the slash command located at ${path}`, "red");
     return null;
   }
 
-  colorPrint(
+  deps.colorPrint(
     `Invalid / command detected, valid commands: ${selectors.getSlashCommands().concat(["edit", "edit-log", "clear"]).join(",")}`,
     "red",
   );
