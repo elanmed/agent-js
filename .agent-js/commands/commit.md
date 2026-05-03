@@ -23,4 +23,8 @@ Write commit messages that:
 - Fit on a single line
 - Are descriptive but concise
 
-Then run `git commit -m "<message>"` for each commit.
+Before committing, present the proposed commit message(s) to the user and ask for confirmation.
+
+If the user confirms the message is good, run `git commit -m "<message>"` for each commit.
+
+If the user says the message is not good, ask them to provide a new commit message and use exactly what they provide.
