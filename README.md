@@ -126,6 +126,7 @@ Minimal runtime dependencies (7 total):
 - [ ] Support skills
 - [ ] Tool call interrupt
 - [ ] Separate editor log per session? local editor log?
+- [ ] Avoid calling API with empty editor input
 
 ## TODO (later)
 
