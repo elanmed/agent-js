@@ -127,8 +127,6 @@ Minimal runtime dependencies (7 total):
 - [ ] Avoid extra round trip for slash commands
 - [ ] Prevent typing while loading?
 - [ ] Tool call interrupt
-- [ ] More try catch blocks around tool calls
-- [ ] More robust handling for failed tool calls
 - [ ] Separate editor log per session? local editor log?
 
 ## TODO (later)
