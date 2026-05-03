@@ -30,6 +30,7 @@ npm run ci
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
 - Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value, or if the content is dynamic, use `content: result.content` in deepStrictEqual and then assert on the parsed content separately
 - Only put IO or side-effecting dependencies in deps — pure utility functions like `tryCatch`, `getMessageFromError`, `stringify` should be imported directly, not injected. If a function needs to be swapped in tests (e.g. `fs`, `fetch`, `exec`), it belongs in deps. If it doesn't, it doesn't.
+- For fs functions, use the `fsDeps` object from `fs-deps.ts`. In production, pass `fsDeps`. In tests, use `makeFsDeps()` to get an in-memory mock.
 - In tests, create a `makeDeps` helper function that returns default fake dependencies, allowing individual tests to override specific deps via a partial object spread
 
 ### Example
@@ -71,6 +72,53 @@ it("handles db errors", () => {
     db: { findById: () => null },
   });
   const result = fetchUser("999", deps);
+  assert.strictEqual(result, null);
+});
+```
+
+### fsDeps Example
+
+Production code:
+
+```ts
+import { fsDeps, type FsDeps } from "./fs-deps.ts";
+
+export interface ReadConfigDeps {
+  fs: FsDeps;
+}
+
+export const readConfigDeps: ReadConfigDeps = {
+  fs: fsDeps,
+};
+
+export function readConfig(deps: ReadConfigDeps = readConfigDeps) {
+  if (!deps.fs.existsSync("config.json")) return null;
+  return JSON.parse(deps.fs.readFileSync("config.json").toString());
+}
+```
+
+Test code:
+
+```ts
+import { makeFsDeps } from "./fs-deps.ts";
+
+function makeDeps(overrides: Partial<ReadConfigDeps> = {}) {
+  return {
+    fs: makeFsDeps(),
+    ...overrides,
+  };
+}
+
+it("returns config when file exists", () => {
+  const deps = makeDeps();
+  deps.fs.files.set("config.json", '{"key": "value"}');
+  const result = readConfig(deps);
+  assert.deepStrictEqual(result, { key: "value" });
+});
+
+it("returns null when file does not exist", () => {
+  const deps = makeDeps();
+  const result = readConfig(deps);
   assert.strictEqual(result, null);
 });
 ```

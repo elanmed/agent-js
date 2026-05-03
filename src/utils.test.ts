@@ -594,15 +594,13 @@ describe("utils", () => {
   });
 
   describe("createTempFile", () => {
-    function makeDeps(
-      overrides: Partial<CreateTempFileDeps> = {},
-    ): CreateTempFileDeps {
+    function makeDeps(overrides: Partial<CreateTempFileDeps> = {}) {
       return {
         tmpdir: () => "/tmp",
         randomUUID: () => "test-uuid",
         fs: makeFsDeps(),
         ...overrides,
-      } as CreateTempFileDeps;
+      };
     }
 
     it("returns temp file path without initial content", () => {
