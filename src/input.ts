@@ -254,7 +254,7 @@ export function editCommand(currentLine: string) {
   const writeResult = tryCatch(() => writeFileSync(tempFile, currentLine));
   if (!writeResult.ok) {
     colorPrint("Failed to write to temp file", "red");
-    return "";
+    return null;
   }
   spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
 
@@ -262,13 +262,14 @@ export function editCommand(currentLine: string) {
   if (!readResult.ok) {
     colorPrint("Failed to read from temp file", "red");
     tryCatch(() => unlinkSync(tempFile));
-    return "";
+    return null;
   }
-  const content = normalizeLine(readResult.value);
   tryCatch(() => unlinkSync(tempFile));
 
-  editorLog(content);
+  if (readResult.value === "") return null;
 
+  const content = normalizeLine(readResult.value);
+  editorLog(content);
   return content;
 }
 
