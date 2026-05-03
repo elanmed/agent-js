@@ -247,29 +247,54 @@ export function clearCommand() {
   dispatch(actions.resetMessageParams());
 }
 
-export function editCommand(currentLine: string) {
-  const tempFile = createTempFile();
-  const editor =
-    process.env["AGENT_JS_EDITOR"] ?? process.env["EDITOR"] ?? "vi";
-  const writeResult = tryCatch(() => writeFileSync(tempFile, currentLine));
+export interface EditCommandDeps {
+  createTempFile: (args?: { initialContentPath?: string }) => string;
+  writeFileSync: (path: string, data: string) => void;
+  readFileSync: (path: string) => Buffer | string;
+  unlinkSync: (path: string) => void;
+  spawnSync: (
+    command: string,
+    options: { shell: boolean; stdio: string },
+  ) => unknown;
+  env: NodeJS.ProcessEnv;
+  editorLog: (content: string) => void;
+}
+
+export const editCommandDeps: EditCommandDeps = {
+  createTempFile,
+  writeFileSync,
+  readFileSync,
+  unlinkSync,
+  spawnSync,
+  env: process.env,
+  editorLog,
+};
+
+export function editCommand(
+  currentLine: string,
+  deps: EditCommandDeps = editCommandDeps,
+) {
+  const tempFile = deps.createTempFile();
+  const editor = deps.env["AGENT_JS_EDITOR"] ?? deps.env["EDITOR"] ?? "vi";
+  const writeResult = tryCatch(() => deps.writeFileSync(tempFile, currentLine));
   if (!writeResult.ok) {
     colorPrint("Failed to write to temp file", "red");
     return null;
   }
-  spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
+  deps.spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
 
-  const readResult = tryCatch(() => readFileSync(tempFile).toString());
+  const readResult = tryCatch(() => deps.readFileSync(tempFile).toString());
   if (!readResult.ok) {
     colorPrint("Failed to read from temp file", "red");
-    tryCatch(() => unlinkSync(tempFile));
+    tryCatch(() => deps.unlinkSync(tempFile));
     return null;
   }
-  tryCatch(() => unlinkSync(tempFile));
+  tryCatch(() => deps.unlinkSync(tempFile));
 
   if (readResult.value === "") return null;
 
   const content = normalizeLine(readResult.value);
-  editorLog(content);
+  deps.editorLog(content);
   return content;
 }
 
