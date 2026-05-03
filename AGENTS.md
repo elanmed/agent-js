@@ -25,6 +25,7 @@ npm run ci
 - Always call the dependency parameter `deps`
 - Always export a default deps object named `[functionName]Deps`
 - Always define a matching type named `[FunctionName]Deps` (capital case), inferred from the default deps object
+- If the inferred type is too wide and requires casting in tests (e.g., `fs` functions with multiple overloads), define an explicit interface with narrower types that match how the deps are actually used
 - Never put selectors, actions, or dispatch in deps — read from state directly in functions, set state directly in tests
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
 - Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value, or if the content is dynamic, use `content: result.content` in deepStrictEqual and then assert on the parsed content separately

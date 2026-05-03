@@ -109,17 +109,31 @@ export function fencePrint(
   deps.colorPrint(line, opts.color ?? "grey");
 }
 
-// NOTE: missing test coverage
-export async function getRecursiveAgentsMdFilesStr() {
+export interface GetRecursiveAgentsMdFilesStrDeps {
+  glob: (pattern: string) => AsyncIterable<string>;
+  readFileSync: (path: string) => Buffer;
+  debugLog: (content: string) => void;
+}
+
+export const getRecursiveAgentsMdFilesStrDeps: GetRecursiveAgentsMdFilesStrDeps =
+  {
+    glob,
+    readFileSync,
+    debugLog,
+  };
+
+export async function getRecursiveAgentsMdFilesStr(
+  deps: GetRecursiveAgentsMdFilesStrDeps = getRecursiveAgentsMdFilesStrDeps,
+) {
   const agentFiles = [];
-  for await (const file of glob("**/AGENTS.md")) {
+  for await (const file of deps.glob("**/AGENTS.md")) {
     agentFiles.push(file);
   }
 
-  debugLog(`AGENTS.md found: ${agentFiles.join(",")}`);
+  deps.debugLog(`AGENTS.md found: ${agentFiles.join(",")}`);
   const filesContents = [];
   for (const filePath of agentFiles) {
-    const readResult = tryCatch(() => readFileSync(filePath).toString());
+    const readResult = tryCatch(() => deps.readFileSync(filePath).toString());
     if (readResult.ok) {
       filesContents.push(`FILEPATH: ${filePath}`, readResult.value);
     }
@@ -200,14 +214,17 @@ You are an AI agent being called from a minimal terminal cli.
 CRITICAL: All responses will be parsed by bat as markdown, you MUST format as valid markdown.
 `;
 
-export const getAvailableSlashCommandsDeps = {
-  getCwd: () => process.cwd(),
-  existsSync: (path: string) => existsSync(path),
-  readdirSync: (path: string) => readdirSync(path),
-};
+export interface GetAvailableSlashCommandsDeps {
+  getCwd: () => string;
+  existsSync: (path: string) => boolean;
+  readdirSync: (path: string) => string[];
+}
 
-export type GetAvailableSlashCommandsDeps =
-  typeof getAvailableSlashCommandsDeps;
+export const getAvailableSlashCommandsDeps: GetAvailableSlashCommandsDeps = {
+  getCwd: () => process.cwd(),
+  existsSync: (path) => existsSync(path),
+  readdirSync: (path) => readdirSync(path),
+};
 
 export function getAvailableSlashCommands(
   deps: GetAvailableSlashCommandsDeps = getAvailableSlashCommandsDeps,

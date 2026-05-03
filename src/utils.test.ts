@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import {
@@ -11,8 +13,10 @@ import {
   formatMarkdown,
   fencePrint,
   getAvailableSlashCommands,
+  getRecursiveAgentsMdFilesStr,
   type FencePrintDeps,
   type GetAvailableSlashCommandsDeps,
+  type GetRecursiveAgentsMdFilesStrDeps,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
 
@@ -518,6 +522,71 @@ describe("utils", () => {
       });
       getAvailableSlashCommands(deps);
       assert.equal(capturedPath, "/custom/project/.agent-js/commands");
+    });
+  });
+
+  describe("getRecursiveAgentsMdFilesStr", () => {
+    function makeDeps(
+      overrides: Partial<GetRecursiveAgentsMdFilesStrDeps> = {},
+    ): GetRecursiveAgentsMdFilesStrDeps {
+      return {
+        glob: async function* () {},
+        readFileSync: () => Buffer.from(""),
+        debugLog: () => undefined,
+        ...overrides,
+      };
+    }
+
+    it("returns empty string when no AGENTS.md files found", async () => {
+      const deps = makeDeps({
+        glob: async function* () {},
+      });
+      const result = await getRecursiveAgentsMdFilesStr(deps);
+      assert.equal(result, "");
+    });
+
+    it("returns formatted content for single file", async () => {
+      const deps = makeDeps({
+        glob: async function* () {
+          yield "AGENTS.md";
+        },
+        readFileSync: () => Buffer.from("# Agent Instructions"),
+      });
+      const result = await getRecursiveAgentsMdFilesStr(deps);
+      assert.equal(result, "FILEPATH: AGENTS.md\n# Agent Instructions");
+    });
+
+    it("returns formatted content for multiple files", async () => {
+      const deps = makeDeps({
+        glob: async function* () {
+          yield "AGENTS.md";
+          yield "src/AGENTS.md";
+        },
+        readFileSync: (path) => {
+          if (path === "AGENTS.md") return Buffer.from("Root content");
+          return Buffer.from("Src content");
+        },
+      });
+      const result = await getRecursiveAgentsMdFilesStr(deps);
+      assert.equal(
+        result,
+        "FILEPATH: AGENTS.md\nRoot content\nFILEPATH: src/AGENTS.md\nSrc content",
+      );
+    });
+
+    it("skips files that fail to read", async () => {
+      const deps = makeDeps({
+        glob: async function* () {
+          yield "AGENTS.md";
+          yield "src/AGENTS.md";
+        },
+        readFileSync: (path) => {
+          if (path === "AGENTS.md") throw new Error("Permission denied");
+          return Buffer.from("Src content");
+        },
+      });
+      const result = await getRecursiveAgentsMdFilesStr(deps);
+      assert.equal(result, "FILEPATH: src/AGENTS.md\nSrc content");
     });
   });
 });
