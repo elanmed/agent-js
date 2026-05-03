@@ -81,29 +81,19 @@ export function printNewline() {
   colorPrint("");
 }
 
-const fencePrintDeps = {
-  colorPrint,
-};
-
-type FencePrintDeps = typeof fencePrintDeps;
-
 interface FencePrintOpts {
   skipSessionUsage?: boolean;
   color?: Color;
 }
 
-export function fencePrint(
-  text: string,
-  opts: FencePrintOpts = {},
-  deps: FencePrintDeps = fencePrintDeps,
-) {
+export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   let sessionUsage = "";
   if (!opts.skipSessionUsage && !selectors.getDisableUsageMessage()) {
     sessionUsage = ` (${calculateSessionUsage()})`;
   }
   const label = `${text}${sessionUsage}`;
   const line = `── ${label} ${"─".repeat(50 - label.length)}`;
-  deps.colorPrint(line, opts.color ?? "grey");
+  colorPrint(line, opts.color ?? "grey");
 }
 
 export async function getRecursiveAgentsMdFilesStr() {
