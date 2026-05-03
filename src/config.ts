@@ -6,6 +6,7 @@ import {
   colorPrint,
   getAvailableSlashCommands,
   getRecursiveAgentsMdFilesStr,
+  tryCatch,
 } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
@@ -133,7 +134,12 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
   const globalConfig: Config = (() => {
     if (deps.existsSync(GLOBAL_CONFIG_PATH)) {
       debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
-      return parseConfigStr(deps.readFileSync(GLOBAL_CONFIG_PATH));
+      const readResult = tryCatch(() => deps.readFileSync(GLOBAL_CONFIG_PATH));
+      if (readResult.ok) {
+        return parseConfigStr(readResult.value);
+      }
+      debugLog(`Failed to read ${GLOBAL_CONFIG_PATH}, using default`);
+      return DEFAULT_CONFIG;
     }
 
     debugLog(`${GLOBAL_CONFIG_PATH} does not exist`);
@@ -143,7 +149,12 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
   const localConfig: Config = (() => {
     if (deps.existsSync(LOCAL_CONFIG_PATH)) {
       debugLog(`${LOCAL_CONFIG_PATH} exists, reading`);
-      return parseConfigStr(deps.readFileSync(LOCAL_CONFIG_PATH));
+      const readResult = tryCatch(() => deps.readFileSync(LOCAL_CONFIG_PATH));
+      if (readResult.ok) {
+        return parseConfigStr(readResult.value);
+      }
+      debugLog(`Failed to read ${LOCAL_CONFIG_PATH}, using empty config`);
+      return {};
     }
 
     debugLog(`${GLOBAL_CONFIG_PATH} does not exist`);

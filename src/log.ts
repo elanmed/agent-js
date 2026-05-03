@@ -8,7 +8,7 @@ import {
   writeFileSync,
   readFileSync,
 } from "node:fs";
-import { normalizeLine } from "./utils.ts";
+import { normalizeLine, tryCatch } from "./utils.ts";
 
 const DEBUG_LOG_PATH = join(process.cwd(), ".agent-js", "debug.log");
 export const EDITOR_LOG_PATH = join(
@@ -35,9 +35,14 @@ export function debugLog(content: string, deps: DebugLogDeps = debugLogDeps) {
 
   const path = deps.getDebugLogPath();
   if (!deps.existsSync(path)) {
-    deps.mkdirSync(dirname(path), { recursive: true });
+    const mkdirResult = tryCatch(() => {
+      deps.mkdirSync(dirname(path), { recursive: true });
+    });
+    if (!mkdirResult.ok) return;
   }
-  deps.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
+  tryCatch(() => {
+    deps.appendFileSync(path, `${new Date().toISOString()} :: ${content}\n`);
+  });
 }
 
 export function editorLog(content: string, deps: DebugLogDeps = debugLogDeps) {
@@ -45,25 +50,34 @@ export function editorLog(content: string, deps: DebugLogDeps = debugLogDeps) {
 
   const path = deps.getEditorLogPath();
   if (!deps.existsSync(path)) {
-    deps.mkdirSync(dirname(path), { recursive: true });
+    const mkdirResult = tryCatch(() => {
+      deps.mkdirSync(dirname(path), { recursive: true });
+    });
+    if (!mkdirResult.ok) return;
   }
-  deps.appendFileSync(
-    path,
-    `${new Date().toISOString()}\n${"-".repeat(25)}\n${normalizeLine(content)}\n`,
-  );
+  tryCatch(() => {
+    deps.appendFileSync(
+      path,
+      `${new Date().toISOString()}\n${"-".repeat(25)}\n${normalizeLine(content)}\n`,
+    );
+  });
 }
 
 export function resetDebugLog(deps: DebugLogDeps = debugLogDeps) {
   const path = deps.getDebugLogPath();
   if (deps.existsSync(path)) {
-    deps.writeFileSync(path, "");
+    tryCatch(() => {
+      deps.writeFileSync(path, "");
+    });
   }
 }
 
 export function resetEditorLog(deps: DebugLogDeps = debugLogDeps) {
   const path = deps.getEditorLogPath();
   if (deps.existsSync(path)) {
-    deps.writeFileSync(path, "");
+    tryCatch(() => {
+      deps.writeFileSync(path, "");
+    });
   }
 }
 

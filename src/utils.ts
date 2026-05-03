@@ -105,8 +105,10 @@ export async function getRecursiveAgentsMdFilesStr() {
   debugLog(`AGENTS.md found: ${agentFiles.join(",")}`);
   const filesContents = [];
   for (const filePath of agentFiles) {
-    const fileContent = readFileSync(filePath).toString();
-    filesContents.push(`FILEPATH: ${filePath}`, fileContent);
+    const readResult = tryCatch(() => readFileSync(filePath).toString());
+    if (readResult.ok) {
+      filesContents.push(`FILEPATH: ${filePath}`, readResult.value);
+    }
   }
   return filesContents.join("\n");
 }
@@ -188,8 +190,9 @@ export function getAvailableSlashCommands() {
   const path = join(process.cwd(), ".agent-js", "commands");
   if (!existsSync(path)) return [];
 
-  const files = readdirSync(path);
-  return files.map((file) => parse(file).name);
+  const readdirResult = tryCatch(() => readdirSync(path));
+  if (!readdirResult.ok) return [];
+  return readdirResult.value.map((file) => parse(file).name);
 }
 
 async function checkBat(): Promise<boolean> {
@@ -256,9 +259,16 @@ export async function executeBat(content: string) {
 
 export function createTempFile(args?: { initialContentPath?: string }) {
   const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
-  if (args?.initialContentPath) {
-    const content = readFileSync(args.initialContentPath).toString();
-    writeFileSync(tempFile, content);
+  const initialContentPath = args?.initialContentPath;
+  if (initialContentPath) {
+    const readResult = tryCatch(() => {
+      return readFileSync(initialContentPath).toString();
+    });
+    if (readResult.ok) {
+      tryCatch(() => {
+        writeFileSync(tempFile, readResult.value);
+      });
+    }
   }
   return tempFile;
 }
