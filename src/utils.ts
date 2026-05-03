@@ -300,16 +300,37 @@ export async function executeBat(content: string) {
   colorPrint(content);
 }
 
-// NOTE: missing test coverage
-export function createTempFile(args?: { initialContentPath?: string }) {
-  const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
+export interface CreateTempFileDeps {
+  tmpdir: () => string;
+  randomUUID: () => string;
+  join: (...segments: string[]) => string;
+  readFileSync: (path: string) => Buffer;
+  writeFileSync: (path: string, content: string) => void;
+}
+
+export const createTempFileDeps: CreateTempFileDeps = {
+  tmpdir,
+  randomUUID,
+  join,
+  readFileSync,
+  writeFileSync,
+};
+
+export function createTempFile(
+  args?: { initialContentPath?: string },
+  deps: CreateTempFileDeps = createTempFileDeps,
+) {
+  const tempFile = deps.join(
+    deps.tmpdir(),
+    `agent-js-${deps.randomUUID()}.txt`,
+  );
   const initialContentPath = args?.initialContentPath;
   if (initialContentPath) {
     const readResult = tryCatch(() =>
-      readFileSync(initialContentPath).toString(),
+      deps.readFileSync(initialContentPath).toString(),
     );
     if (readResult.ok) {
-      tryCatch(() => writeFileSync(tempFile, readResult.value));
+      tryCatch(() => deps.writeFileSync(tempFile, readResult.value));
     }
   }
   return tempFile;

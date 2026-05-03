@@ -14,9 +14,11 @@ import {
   fencePrint,
   getAvailableSlashCommands,
   getRecursiveAgentsMdFilesStr,
+  createTempFile,
   type FencePrintDeps,
   type GetAvailableSlashCommandsDeps,
   type GetRecursiveAgentsMdFilesStrDeps,
+  type CreateTempFileDeps,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
 
@@ -587,6 +589,87 @@ describe("utils", () => {
       });
       const result = await getRecursiveAgentsMdFilesStr(deps);
       assert.equal(result, "FILEPATH: src/AGENTS.md\nSrc content");
+    });
+  });
+
+  describe("createTempFile", () => {
+    function makeDeps(
+      overrides: Partial<CreateTempFileDeps> = {},
+    ): CreateTempFileDeps {
+      return {
+        tmpdir: () => "/tmp",
+        randomUUID: () => "test-uuid",
+        join: (...segments) => segments.join("/"),
+        readFileSync: () => Buffer.from(""),
+        writeFileSync: () => undefined,
+        ...overrides,
+      };
+    }
+
+    it("returns temp file path without initial content", () => {
+      const deps = makeDeps();
+      const result = createTempFile(undefined, deps);
+      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+    });
+
+    it("copies initial content when initialContentPath is provided", () => {
+      let writtenPath = "";
+      let writtenContent = "";
+      const deps = makeDeps({
+        readFileSync: () => Buffer.from("initial content"),
+        writeFileSync: (path, content) => {
+          writtenPath = path;
+          writtenContent = content;
+        },
+      });
+      const result = createTempFile(
+        { initialContentPath: "/source/file.txt" },
+        deps,
+      );
+      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(writtenPath, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(writtenContent, "initial content");
+    });
+
+    it("skips writing when read fails", () => {
+      let writeCalled = false;
+      const deps = makeDeps({
+        readFileSync: () => {
+          throw new Error("ENOENT");
+        },
+        writeFileSync: () => {
+          writeCalled = true;
+        },
+      });
+      const result = createTempFile(
+        { initialContentPath: "/missing/file.txt" },
+        deps,
+      );
+      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(writeCalled, false);
+    });
+
+    it("skips writing when write fails", () => {
+      let writtenPath = "";
+      let writeCalled = false;
+      let writtenContent = "";
+      const deps = makeDeps({
+        readFileSync: () => Buffer.from("content"),
+        writeFileSync: (path, content) => {
+          writtenPath = path;
+          writeCalled = true;
+          throw new Error("EIO");
+          writtenContent = content;
+        },
+      });
+      const result = createTempFile(
+        { initialContentPath: "/source.txt" },
+        deps,
+      );
+      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(writtenPath, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(writtenContent, "");
+      assert.equal(writeCalled, true);
     });
   });
 });
