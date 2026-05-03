@@ -29,8 +29,11 @@ npm run ci
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
 - Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value, or if the content is dynamic, use `content: result.content` in deepStrictEqual and then assert on the parsed content separately
 - Only put IO or side-effecting dependencies in deps — pure utility functions like `tryCatch`, `getMessageFromError`, `stringify` should be imported directly, not injected. If a function needs to be swapped in tests (e.g. `fs`, `fetch`, `exec`), it belongs in deps. If it doesn't, it doesn't.
+- In tests, create a `makeDeps` helper function that returns default fake dependencies, allowing individual tests to override specific deps via a partial object spread
 
 ### Example
+
+Production code:
 
 ```ts
 const fetchUserDeps = {
@@ -40,8 +43,33 @@ const fetchUserDeps = {
 
 type FetchUserDeps = typeof fetchUserDeps;
 
-const fetchUser = (id: string, deps: FetchUserDeps) => {
+const fetchUser = (id: string, deps: FetchUserDeps = fetchUserDeps) => {
   deps.logger.info("fetching user", { id });
   return deps.db.findById("users", id);
 };
+```
+
+Test code:
+
+```ts
+function makeDeps(overrides: Partial<FetchUserDeps> = {}): FetchUserDeps {
+  return {
+    db: { findById: () => ({ id: "1", name: "Test User" }) },
+    logger: { info: () => undefined },
+    ...overrides,
+  };
+}
+
+it("returns user from db", () => {
+  const result = fetchUser("1", makeDeps());
+  assert.deepStrictEqual(result, { id: "1", name: "Test User" });
+});
+
+it("handles db errors", () => {
+  const deps = makeDeps({
+    db: { findById: () => null },
+  });
+  const result = fetchUser("999", deps);
+  assert.strictEqual(result, null);
+});
 ```
