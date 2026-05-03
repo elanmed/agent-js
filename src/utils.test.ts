@@ -10,7 +10,9 @@ import {
   isSameKey,
   formatMarkdown,
   fencePrint,
+  getAvailableSlashCommands,
   type FencePrintDeps,
+  type GetAvailableSlashCommandsDeps,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
 
@@ -452,6 +454,70 @@ describe("utils", () => {
       assert.deepStrictEqual(captured, [
         `── short label (0 in, 0 out) ─────────────────────────`,
       ]);
+    });
+  });
+
+  describe("getAvailableSlashCommands", () => {
+    function makeDeps(
+      overrides: Partial<GetAvailableSlashCommandsDeps> = {},
+    ): GetAvailableSlashCommandsDeps {
+      return {
+        getCwd: () => "/test/project",
+        existsSync: () => true,
+        readdirSync: () => [],
+        ...overrides,
+      };
+    }
+
+    it("returns empty array when commands directory does not exist", () => {
+      const deps = makeDeps({ existsSync: () => false });
+      const result = getAvailableSlashCommands(deps);
+      assert.deepStrictEqual(result, []);
+    });
+
+    it("returns empty array when readdir throws", () => {
+      const deps = makeDeps({
+        readdirSync: () => {
+          throw new Error("permission denied");
+        },
+      });
+      const result = getAvailableSlashCommands(deps);
+      assert.deepStrictEqual(result, []);
+    });
+
+    it("returns empty array when commands directory is empty", () => {
+      const deps = makeDeps({ readdirSync: () => [] });
+      const result = getAvailableSlashCommands(deps);
+      assert.deepStrictEqual(result, []);
+    });
+
+    it("returns command names without file extensions", () => {
+      const deps = makeDeps({
+        readdirSync: () => ["help.ts", "status.js", "deploy.mjs"],
+      });
+      const result = getAvailableSlashCommands(deps);
+      assert.deepStrictEqual(result, ["help", "status", "deploy"]);
+    });
+
+    it("returns command names for files without extensions", () => {
+      const deps = makeDeps({
+        readdirSync: () => ["help", "status"],
+      });
+      const result = getAvailableSlashCommands(deps);
+      assert.deepStrictEqual(result, ["help", "status"]);
+    });
+
+    it("uses cwd from deps to build path", () => {
+      let capturedPath = "";
+      const deps = makeDeps({
+        getCwd: () => "/custom/project",
+        existsSync: (path) => {
+          capturedPath = path;
+          return true;
+        },
+      });
+      getAvailableSlashCommands(deps);
+      assert.equal(capturedPath, "/custom/project/.agent-js/commands");
     });
   });
 });

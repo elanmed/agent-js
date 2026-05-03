@@ -200,12 +200,22 @@ You are an AI agent being called from a minimal terminal cli.
 CRITICAL: All responses will be parsed by bat as markdown, you MUST format as valid markdown.
 `;
 
-// NOTE: missing test coverage
-export function getAvailableSlashCommands() {
-  const path = join(process.cwd(), ".agent-js", "commands");
-  if (!existsSync(path)) return [];
+export const getAvailableSlashCommandsDeps = {
+  getCwd: () => process.cwd(),
+  existsSync: (path: string) => existsSync(path),
+  readdirSync: (path: string) => readdirSync(path),
+};
 
-  const readdirResult = tryCatch(() => readdirSync(path));
+export type GetAvailableSlashCommandsDeps =
+  typeof getAvailableSlashCommandsDeps;
+
+export function getAvailableSlashCommands(
+  deps: GetAvailableSlashCommandsDeps = getAvailableSlashCommandsDeps,
+) {
+  const path = join(deps.getCwd(), ".agent-js", "commands");
+  if (!deps.existsSync(path)) return [];
+
+  const readdirResult = tryCatch(() => deps.readdirSync(path));
   if (!readdirResult.ok) return [];
   return readdirResult.value.map((file) => parse(file).name);
 }
