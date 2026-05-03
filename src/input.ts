@@ -213,7 +213,11 @@ function resolveSlashCommand(rawInput: string) {
       rawInput.slice(1).concat(".md"),
     );
     debugLog(`Performing the slash command at ${path}`);
-    return `Perform the instructions located at ${path}`;
+    const commandResult = tryCatch(() => readFileSync(path).toString());
+    if (commandResult.ok) return commandResult.value;
+
+    colorPrint(`Error reading the slash command located at ${path}`, "red");
+    return null;
   }
 
   colorPrint(

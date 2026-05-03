@@ -124,7 +124,6 @@ Minimal runtime dependencies (7 total):
 ## TODO (soon)
 
 - [ ] Support skills
-- [ ] Avoid extra round trip for slash commands
 - [ ] Prevent typing while loading?
 - [ ] Tool call interrupt
 - [ ] Separate editor log per session? local editor log?
