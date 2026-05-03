@@ -2,6 +2,7 @@ import readline from "node:readline/promises";
 import { emitKeypressEvents } from "node:readline";
 import { stdin, stdout } from "node:process";
 import assert from "node:assert";
+import { Writable } from "node:stream";
 import {
   isAbortError,
   tryCatch,
@@ -23,10 +24,20 @@ import { spawnSync } from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, EDITOR_LOG_PATH, editorLog } from "./log.ts";
 
+// https://stackoverflow.com/a/33500118
+const mutedStdout = new Writable({
+  write(chunk: Buffer, _encoding: string, callback: () => void) {
+    if (selectors.getSpinnerTimeout() === null) {
+      stdout.write(chunk);
+    }
+    callback();
+  },
+});
+
 export function initReadline() {
   const rl = readline.createInterface({
     input: stdin,
-    output: stdout,
+    output: mutedStdout,
     terminal: true,
   });
   dispatch(actions.setRl(rl));
@@ -49,6 +60,16 @@ export function initKeypress() {
   const rl = selectors.getRl();
   assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
+    if (selectors.getSpinnerTimeout() !== null) {
+      if (
+        !isSameKey(key, selectors.getKeymapEdit()) &&
+        !isSameKey(key, selectors.getKeymapClear()) &&
+        !isSameKey(key, selectors.getKeymapEditLog())
+      ) {
+        rl.write(null, { ctrl: true, name: "u" });
+      }
+    }
+
     if (isSameKey(key, selectors.getKeymapEdit())) {
       let initialContentPrefix = "";
       if (selectors.getEditorInputValue() !== null) {
