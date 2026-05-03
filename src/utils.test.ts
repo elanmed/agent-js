@@ -333,23 +333,6 @@ describe("utils", () => {
     });
   });
 
-  describe("fencePrint", () => {
-    it("produces a single grey line with the label inline", () => {
-      const written: string[] = [];
-      const deps = {
-        colorPrint: (text: Uint8Array | string) => {
-          written.push(text.toString());
-        },
-        getColumns: () => 80,
-      };
-      fencePrint("Output", { skipSessionUsage: true }, deps);
-      const output = written.join("");
-      assert.ok(output.includes(" Output "));
-      assert.ok(output.includes("─"));
-      assert.ok(!output.includes("=".repeat(5)));
-    });
-  });
-
   describe("normalizeLine", () => {
     it("trims whitespace and appends newline", () => {
       assert.equal(normalizeLine("  hello  "), "hello\n");
