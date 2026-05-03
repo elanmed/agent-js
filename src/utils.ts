@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { tmpdir } from "node:os";
@@ -12,6 +12,7 @@ import { format } from "prettier";
 import { debugLog } from "./log.ts";
 import type readline from "node:readline/promises";
 import assert from "node:assert";
+import { fsDeps, type FsDeps } from "./fs-deps.ts";
 
 export const MISSING = "MISSING";
 
@@ -303,34 +304,27 @@ export async function executeBat(content: string) {
 export interface CreateTempFileDeps {
   tmpdir: () => string;
   randomUUID: () => string;
-  join: (...segments: string[]) => string;
-  readFileSync: (path: string) => Buffer;
-  writeFileSync: (path: string, content: string) => void;
+  fs: FsDeps;
 }
 
 export const createTempFileDeps: CreateTempFileDeps = {
   tmpdir,
   randomUUID,
-  join,
-  readFileSync,
-  writeFileSync,
+  fs: fsDeps,
 };
 
 export function createTempFile(
   args?: { initialContentPath?: string },
   deps: CreateTempFileDeps = createTempFileDeps,
 ) {
-  const tempFile = deps.join(
-    deps.tmpdir(),
-    `agent-js-${deps.randomUUID()}.txt`,
-  );
+  const tempFile = join(deps.tmpdir(), `agent-js-${deps.randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
   if (initialContentPath) {
     const readResult = tryCatch(() =>
-      deps.readFileSync(initialContentPath).toString(),
+      deps.fs.readFileSync(initialContentPath).toString(),
     );
     if (readResult.ok) {
-      tryCatch(() => deps.writeFileSync(tempFile, readResult.value));
+      tryCatch(() => deps.fs.writeFileSync(tempFile, readResult.value));
     }
   }
   return tempFile;
