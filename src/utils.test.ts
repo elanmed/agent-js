@@ -21,34 +21,34 @@ import {
 import { dispatch, actions } from "./state.ts";
 import { makeFsDeps } from "./fs-deps.ts";
 
-beforeEach(() => {
-  dispatch(actions.resetState());
-
-  dispatch(
-    actions.setPricingPerModel({
-      "claude-haiku-4-5": {
-        inputPerToken: 1,
-        outputPerToken: 5,
-        cacheReadPerToken: 0.25,
-        cacheWritePerToken: 1.25,
-      },
-      "claude-sonnet-4-6": {
-        inputPerToken: 3,
-        outputPerToken: 15,
-        cacheReadPerToken: 0.75,
-        cacheWritePerToken: 3.75,
-      },
-      "claude-opus-4-6": {
-        inputPerToken: 5,
-        outputPerToken: 25,
-        cacheReadPerToken: 1.25,
-        cacheWritePerToken: 6.25,
-      },
-    }),
-  );
-});
-
 describe("utils", () => {
+  beforeEach(() => {
+    dispatch(actions.resetState());
+
+    dispatch(
+      actions.setPricingPerModel({
+        "claude-haiku-4-5": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+          cacheReadPerToken: 0.25,
+          cacheWritePerToken: 1.25,
+        },
+        "claude-sonnet-4-6": {
+          inputPerToken: 3,
+          outputPerToken: 15,
+          cacheReadPerToken: 0.75,
+          cacheWritePerToken: 3.75,
+        },
+        "claude-opus-4-6": {
+          inputPerToken: 5,
+          outputPerToken: 25,
+          cacheReadPerToken: 1.25,
+          cacheWritePerToken: 6.25,
+        },
+      }),
+    );
+  });
+
   describe("getMessageFromError", () => {
     it("returns the message from an Error instance", () => {
       assert.equal(
@@ -463,10 +463,15 @@ describe("utils", () => {
   });
 
   describe("getAvailableSlashCommands", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
     function makeDeps(overrides: Partial<GetAvailableSlashCommandsDeps> = {}) {
       return {
         getCwd: () => "/test/project",
-        fs: makeFsDeps(),
+        fs,
         ...overrides,
       };
     }
@@ -478,48 +483,43 @@ describe("utils", () => {
     });
 
     it("returns empty array when readdir throws", () => {
-      const fs = makeFsDeps();
       fs._dirs.add("/test/project/.agent-js/commands");
       fs.readdirSync = () => {
         throw new Error("permission denied");
       };
-      const deps = makeDeps({ fs });
+      const deps = makeDeps();
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, []);
     });
 
     it("returns empty array when commands directory is empty", () => {
-      const fs = makeFsDeps();
       fs._dirs.add("/test/project/.agent-js/commands");
-      const deps = makeDeps({ fs });
+      const deps = makeDeps();
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, []);
     });
 
     it("returns command names without file extensions", () => {
-      const fs = makeFsDeps();
       fs._dirs.add("/test/project/.agent-js/commands");
       fs._listings.set("/test/project/.agent-js/commands", [
         "help.ts",
         "status.js",
         "deploy.mjs",
       ]);
-      const deps = makeDeps({ fs });
+      const deps = makeDeps();
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, ["help", "status", "deploy"]);
     });
 
     it("returns command names for files without extensions", () => {
-      const fs = makeFsDeps();
       fs._dirs.add("/test/project/.agent-js/commands");
       fs._listings.set("/test/project/.agent-js/commands", ["help", "status"]);
-      const deps = makeDeps({ fs });
+      const deps = makeDeps();
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, ["help", "status"]);
     });
 
     it("uses cwd from deps to build path", () => {
-      const fs = makeFsDeps();
       let capturedPath = "";
       const originalExistsSync = fs.existsSync.bind(fs);
       fs.existsSync = (path: string) => {
@@ -528,7 +528,6 @@ describe("utils", () => {
       };
       const deps = makeDeps({
         getCwd: () => "/custom/project",
-        fs,
       });
       getAvailableSlashCommands(deps);
       assert.equal(capturedPath, "/custom/project/.agent-js/commands");
@@ -536,11 +535,16 @@ describe("utils", () => {
   });
 
   describe("getRecursiveAgentsMdFilesStr", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
     function makeDeps(
       overrides: Partial<GetRecursiveAgentsMdFilesStrDeps> = {},
     ) {
       return {
-        fs: makeFsDeps(),
+        fs,
         debugLog: () => undefined,
         ...overrides,
       };
@@ -553,18 +557,18 @@ describe("utils", () => {
     });
 
     it("returns formatted content for single file", () => {
+      fs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
+      fs._files.set("AGENTS.md", "# Agent Instructions");
       const deps = makeDeps();
-      deps.fs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
-      deps.fs._files.set("AGENTS.md", "# Agent Instructions");
       const result = getRecursiveAgentsMdFilesStr(deps);
       assert.equal(result, "FILEPATH: AGENTS.md\n# Agent Instructions");
     });
 
     it("returns formatted content for multiple files", () => {
+      fs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
+      fs._files.set("AGENTS.md", "Root content");
+      fs._files.set("src/AGENTS.md", "Src content");
       const deps = makeDeps();
-      deps.fs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
-      deps.fs._files.set("AGENTS.md", "Root content");
-      deps.fs._files.set("src/AGENTS.md", "Src content");
       const result = getRecursiveAgentsMdFilesStr(deps);
       assert.equal(
         result,
@@ -573,20 +577,25 @@ describe("utils", () => {
     });
 
     it("skips files that fail to read", () => {
+      fs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
+      fs._files.set("src/AGENTS.md", "Src content");
       const deps = makeDeps();
-      deps.fs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
-      deps.fs._files.set("src/AGENTS.md", "Src content");
       const result = getRecursiveAgentsMdFilesStr(deps);
       assert.equal(result, "FILEPATH: src/AGENTS.md\nSrc content");
     });
   });
 
   describe("createTempFile", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
     function makeDeps(overrides: Partial<CreateTempFileDeps> = {}) {
       return {
         tmpdir: () => "/tmp",
         randomUUID: () => "test-uuid",
-        fs: makeFsDeps(),
+        fs,
         ...overrides,
       };
     }
@@ -598,15 +607,15 @@ describe("utils", () => {
     });
 
     it("copies initial content when initialContentPath is provided", () => {
+      fs._files.set("/source/file.txt", "initial content");
       const deps = makeDeps();
-      deps.fs._files.set("/source/file.txt", "initial content");
       const result = createTempFile(
         { initialContentPath: "/source/file.txt" },
         deps,
       );
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
       assert.equal(
-        deps.fs._files.get("/tmp/agent-js-test-uuid.txt"),
+        fs._files.get("/tmp/agent-js-test-uuid.txt"),
         "initial content",
       );
     });
@@ -618,16 +627,15 @@ describe("utils", () => {
         deps,
       );
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
-      assert.equal(deps.fs._files.has("/tmp/agent-js-test-uuid.txt"), false);
+      assert.equal(fs._files.has("/tmp/agent-js-test-uuid.txt"), false);
     });
 
     it("skips writing when write fails", () => {
-      const fs = makeFsDeps();
       fs._files.set("/source.txt", "content");
       fs.writeFileSync = () => {
         throw new Error("EIO");
       };
-      const deps = makeDeps({ fs });
+      const deps = makeDeps();
       const result = createTempFile(
         { initialContentPath: "/source.txt" },
         deps,

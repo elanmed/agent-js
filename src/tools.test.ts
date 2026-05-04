@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
@@ -82,8 +82,12 @@ describe("tools", () => {
   });
 
   describe("executeCreateFileTool", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
     it("creates a new file and returns success", () => {
-      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "create_file",
         input: { path: "/test/new.txt", content: "hello world" },
@@ -101,7 +105,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when the file already exists", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/existing.txt", "already here");
       const call = makeToolCall({
         name: "create_file",
@@ -120,7 +123,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when write fails", () => {
-      const fs = makeFsDeps();
       fs.writeFileSync = () => {
         throw new Error("EIO");
       };
@@ -151,15 +153,19 @@ describe("tools", () => {
       assert.throws(() =>
         executeCreateFileTool(call, {
           ...debugDeps,
-          fs: makeFsDeps(),
+          fs,
         }),
       );
     });
   });
 
   describe("executeViewFileTool", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
     it("returns file contents with line numbers", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "aaa\nbbb\nccc");
       const call = makeToolCall({
         name: "view_file",
@@ -177,7 +183,6 @@ describe("tools", () => {
     });
 
     it("returns a slice when start_line and end_line are specified", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "line1\nline2\nline3\nline4\nline5");
       const call = makeToolCall({
         name: "view_file",
@@ -195,7 +200,6 @@ describe("tools", () => {
     });
 
     it("treats end_line=-1 as end of file", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "a\nb\nc");
       const call = makeToolCall({
         name: "view_file",
@@ -213,7 +217,6 @@ describe("tools", () => {
     });
 
     it("lists directory contents for a directory path", () => {
-      const fs = makeFsDeps();
       fs._dirs.add("/test/dir");
       fs._listings.set("/test/dir", ["alpha.txt", "beta.txt"]);
       const call = makeToolCall({
@@ -232,7 +235,6 @@ describe("tools", () => {
     });
 
     it("returns is_error for a nonexistent path", () => {
-      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "view_file",
         input: { path: "/no/such/path/file.txt" },
@@ -250,7 +252,6 @@ describe("tools", () => {
     });
 
     it("throws on invalid input schema", () => {
-      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "view_file",
         input: { wrong: 123 },
@@ -264,7 +265,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when start_line is less than 1", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
@@ -283,7 +283,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when end_line is less than 1 (and not -1)", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
@@ -302,7 +301,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when start_line is past end of file", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "line1\nline2");
       const call = makeToolCall({
         name: "view_file",
@@ -321,7 +319,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when end_line is past end of file", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "line1\nline2");
       const call = makeToolCall({
         name: "view_file",
@@ -340,7 +337,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when start_line is greater than or equal to end_line", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
@@ -359,7 +355,6 @@ describe("tools", () => {
     });
 
     it("returns single line when start_line equals end_line", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
@@ -378,8 +373,12 @@ describe("tools", () => {
   });
 
   describe("executeStrReplaceTool", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
     it("replaces old_str with new_str when exactly one match exists", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "foo bar baz");
       const call = makeToolCall({
         name: "str_replace",
@@ -398,7 +397,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when old_str is not found", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "foo bar baz");
       const call = makeToolCall({
         name: "str_replace",
@@ -417,7 +415,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when old_str matches more than once", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "aaa bbb aaa");
       const call = makeToolCall({
         name: "str_replace",
@@ -436,7 +433,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when the file does not exist", () => {
-      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "str_replace",
         input: {
@@ -458,7 +454,6 @@ describe("tools", () => {
     });
 
     it("throws on invalid input schema", () => {
-      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "str_replace",
         input: { path: "/tmp/x" },
@@ -473,8 +468,12 @@ describe("tools", () => {
   });
 
   describe("executeInsertLinesTool", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
     it("inserts text after a specific line", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "insert_lines",
@@ -496,7 +495,6 @@ describe("tools", () => {
     });
 
     it("inserts at the beginning when after_line is 0", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "line1\nline2");
       const call = makeToolCall({
         name: "insert_lines",
@@ -515,7 +513,6 @@ describe("tools", () => {
     });
 
     it("inserts at the end when after_line equals the number of lines", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "line1\nline2");
       const call = makeToolCall({
         name: "insert_lines",
@@ -534,7 +531,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when after_line is out of range (negative)", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "line1");
       const call = makeToolCall({
         name: "insert_lines",
@@ -553,7 +549,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when after_line is out of range (too large)", () => {
-      const fs = makeFsDeps();
       fs._files.set("/test/file.txt", "line1");
       const call = makeToolCall({
         name: "insert_lines",
@@ -572,7 +567,6 @@ describe("tools", () => {
     });
 
     it("returns is_error when the file does not exist", () => {
-      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "insert_lines",
         input: {
@@ -594,7 +588,6 @@ describe("tools", () => {
     });
 
     it("throws on invalid input schema", () => {
-      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "insert_lines",
         input: { path: "/tmp/x" },
