@@ -1,16 +1,5 @@
-import { describe, it, afterEach } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert";
-import {
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-  readFileSync,
-  existsSync,
-  statSync,
-  readdirSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -24,6 +13,7 @@ import {
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
 import type { DebugLog, ToolLog } from "./state.ts";
+import { makeFsDeps } from "./fs-deps.ts";
 
 const execPromise = promisify(exec);
 
@@ -48,26 +38,7 @@ function makeToolCall(overrides: Partial<ToolCall> = {}): ToolCall {
   };
 }
 
-function makeTmpDir(): string {
-  return mkdtempSync(join(tmpdir(), "tools-test-"));
-}
-
 describe("tools", () => {
-  const tmpDirs: string[] = [];
-
-  afterEach(() => {
-    for (const dir of tmpDirs) {
-      rmSync(dir, { recursive: true, force: true });
-    }
-    tmpDirs.length = 0;
-  });
-
-  function getTmpDir(): string {
-    const dir = makeTmpDir();
-    tmpDirs.push(dir);
-    return dir;
-  }
-
   describe("executeBashTool", () => {
     it("throws when input is invalid", async () => {
       const call = makeToolCall({
@@ -112,64 +83,63 @@ describe("tools", () => {
 
   describe("executeCreateFileTool", () => {
     it("creates a new file and returns success", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "new.txt");
+      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "create_file",
-        input: { path: filePath, content: "hello world" },
+        input: { path: "/test/new.txt", content: "hello world" },
       });
       const result = executeCreateFileTool(call, {
         ...debugDeps,
-        existsSync: existsSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
-        content: `${filePath} created successfully`,
+        content: `/test/new.txt created successfully`,
       });
-      assert.equal(readFileSync(filePath).toString(), "hello world");
+      assert.equal(fs._files.get("/test/new.txt"), "hello world");
     });
 
     it("returns is_error when the file already exists", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "existing.txt");
-      writeFileSync(filePath, "already here");
+      const fs = makeFsDeps();
+      fs._files.set("/test/existing.txt", "already here");
       const call = makeToolCall({
         name: "create_file",
-        input: { path: filePath, content: "new content" },
+        input: { path: "/test/existing.txt", content: "new content" },
       });
       const result = executeCreateFileTool(call, {
         ...debugDeps,
-        existsSync: existsSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
         is_error: true,
-        content: `${filePath} already exists`,
+        content: `/test/existing.txt already exists`,
       });
     });
 
-    it("returns is_error when writing to an invalid path", () => {
+    it("returns is_error when write fails", () => {
+      const fs = makeFsDeps();
+      fs.writeFileSync = () => {
+        throw new Error("EIO");
+      };
       const call = makeToolCall({
         name: "create_file",
         input: {
-          path: "/no/such/directory/file.txt",
+          path: "/test/file.txt",
           content: "x",
         },
       });
       const result = executeCreateFileTool(call, {
         ...debugDeps,
-        existsSync: existsSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
         is_error: true,
-        content: `ENOENT: no such file or directory, open '/no/such/directory/file.txt'`,
+        content: "EIO",
       });
     });
 
@@ -181,8 +151,7 @@ describe("tools", () => {
       assert.throws(() =>
         executeCreateFileTool(call, {
           ...debugDeps,
-          existsSync: existsSync,
-          writeFileSync: writeFileSync,
+          fs: makeFsDeps(),
         }),
       );
     });
@@ -190,18 +159,15 @@ describe("tools", () => {
 
   describe("executeViewFileTool", () => {
     it("returns file contents with line numbers", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "aaa\nbbb\nccc");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "aaa\nbbb\nccc");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath },
+        input: { path: "/test/lines.txt" },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -211,18 +177,15 @@ describe("tools", () => {
     });
 
     it("returns a slice when start_line and end_line are specified", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "line1\nline2\nline3\nline4\nline5");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "line1\nline2\nline3\nline4\nline5");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, start_line: 2, end_line: 4 },
+        input: { path: "/test/lines.txt", start_line: 2, end_line: 4 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -232,18 +195,15 @@ describe("tools", () => {
     });
 
     it("treats end_line=-1 as end of file", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "a\nb\nc");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "a\nb\nc");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, start_line: 2, end_line: -1 },
+        input: { path: "/test/lines.txt", start_line: 2, end_line: -1 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -253,18 +213,16 @@ describe("tools", () => {
     });
 
     it("lists directory contents for a directory path", () => {
-      const dir = getTmpDir();
-      writeFileSync(join(dir, "alpha.txt"), "");
-      writeFileSync(join(dir, "beta.txt"), "");
+      const fs = makeFsDeps();
+      fs._dirs.add("/test/dir");
+      fs._listings.set("/test/dir", ["alpha.txt", "beta.txt"]);
       const call = makeToolCall({
         name: "view_file",
-        input: { path: dir },
+        input: { path: "/test/dir" },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -274,25 +232,25 @@ describe("tools", () => {
     });
 
     it("returns is_error for a nonexistent path", () => {
+      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "view_file",
         input: { path: "/no/such/path/file.txt" },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
         is_error: true,
-        content: `ENOENT: no such file or directory, stat '/no/such/path/file.txt'`,
+        content: "ENOENT: /no/such/path/file.txt",
       });
     });
 
     it("throws on invalid input schema", () => {
+      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "view_file",
         input: { wrong: 123 },
@@ -300,26 +258,21 @@ describe("tools", () => {
       assert.throws(() =>
         executeViewFileTool(call, {
           ...debugDeps,
-          statSync: statSync,
-          readdirSync: readdirSync,
-          readFileSync: readFileSync,
+          fs,
         }),
       );
     });
 
     it("returns is_error when start_line is less than 1", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "line1\nline2\nline3");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, start_line: 0 },
+        input: { path: "/test/lines.txt", start_line: 0 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -330,18 +283,15 @@ describe("tools", () => {
     });
 
     it("returns is_error when end_line is less than 1 (and not -1)", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "line1\nline2\nline3");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, end_line: 0 },
+        input: { path: "/test/lines.txt", end_line: 0 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -352,18 +302,15 @@ describe("tools", () => {
     });
 
     it("returns is_error when start_line is past end of file", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "line1\nline2");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "line1\nline2");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, start_line: 5 },
+        input: { path: "/test/lines.txt", start_line: 5 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -374,18 +321,15 @@ describe("tools", () => {
     });
 
     it("returns is_error when end_line is past end of file", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "line1\nline2");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "line1\nline2");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, end_line: 10 },
+        input: { path: "/test/lines.txt", end_line: 10 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -396,18 +340,15 @@ describe("tools", () => {
     });
 
     it("returns is_error when start_line is greater than or equal to end_line", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "line1\nline2\nline3");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, start_line: 3, end_line: 2 },
+        input: { path: "/test/lines.txt", start_line: 3, end_line: 2 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -418,18 +359,15 @@ describe("tools", () => {
     });
 
     it("returns single line when start_line equals end_line", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "lines.txt");
-      writeFileSync(filePath, "line1\nline2\nline3");
+      const fs = makeFsDeps();
+      fs._files.set("/test/lines.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "view_file",
-        input: { path: filePath, start_line: 2, end_line: 2 },
+        input: { path: "/test/lines.txt", start_line: 2, end_line: 2 },
       });
       const result = executeViewFileTool(call, {
         ...debugDeps,
-        statSync: statSync,
-        readdirSync: readdirSync,
-        readFileSync: readFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -441,38 +379,34 @@ describe("tools", () => {
 
   describe("executeStrReplaceTool", () => {
     it("replaces old_str with new_str when exactly one match exists", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "foo bar baz");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "foo bar baz");
       const call = makeToolCall({
         name: "str_replace",
-        input: { path: filePath, old_str: "bar", new_str: "qux" },
+        input: { path: "/test/file.txt", old_str: "bar", new_str: "qux" },
       });
       const result = executeStrReplaceTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
-        content: `${filePath} updated successfully`,
+        content: `/test/file.txt updated successfully`,
       });
-      assert.equal(readFileSync(filePath).toString(), "foo qux baz");
+      assert.equal(fs._files.get("/test/file.txt"), "foo qux baz");
     });
 
     it("returns is_error when old_str is not found", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "foo bar baz");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "foo bar baz");
       const call = makeToolCall({
         name: "str_replace",
-        input: { path: filePath, old_str: "missing", new_str: "x" },
+        input: { path: "/test/file.txt", old_str: "missing", new_str: "x" },
       });
       const result = executeStrReplaceTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -483,17 +417,15 @@ describe("tools", () => {
     });
 
     it("returns is_error when old_str matches more than once", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "aaa bbb aaa");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "aaa bbb aaa");
       const call = makeToolCall({
         name: "str_replace",
-        input: { path: filePath, old_str: "aaa", new_str: "x" },
+        input: { path: "/test/file.txt", old_str: "aaa", new_str: "x" },
       });
       const result = executeStrReplaceTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -504,6 +436,7 @@ describe("tools", () => {
     });
 
     it("returns is_error when the file does not exist", () => {
+      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "str_replace",
         input: {
@@ -514,18 +447,18 @@ describe("tools", () => {
       });
       const result = executeStrReplaceTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
         is_error: true,
-        content: `ENOENT: no such file or directory, open '/no/such/path/file.txt'`,
+        content: "ENOENT: /no/such/path/file.txt",
       });
     });
 
     it("throws on invalid input schema", () => {
+      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "str_replace",
         input: { path: "/tmp/x" },
@@ -533,8 +466,7 @@ describe("tools", () => {
       assert.throws(() =>
         executeStrReplaceTool(call, {
           ...debugDeps,
-          readFileSync: readFileSync,
-          writeFileSync: writeFileSync,
+          fs,
         }),
       );
     });
@@ -542,83 +474,75 @@ describe("tools", () => {
 
   describe("executeInsertLinesTool", () => {
     it("inserts text after a specific line", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "line1\nline2\nline3");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "line1\nline2\nline3");
       const call = makeToolCall({
         name: "insert_lines",
-        input: { path: filePath, after_line: 2, content: "inserted" },
+        input: { path: "/test/file.txt", after_line: 2, content: "inserted" },
       });
       const result = executeInsertLinesTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
-        content: `${filePath} updated successfully`,
+        content: `/test/file.txt updated successfully`,
       });
       assert.equal(
-        readFileSync(filePath).toString(),
+        fs._files.get("/test/file.txt"),
         "line1\nline2\ninserted\nline3",
       );
     });
 
     it("inserts at the beginning when after_line is 0", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "line1\nline2");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "line1\nline2");
       const call = makeToolCall({
         name: "insert_lines",
-        input: { path: filePath, after_line: 0, content: "top" },
+        input: { path: "/test/file.txt", after_line: 0, content: "top" },
       });
       const result = executeInsertLinesTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
-        content: `${filePath} updated successfully`,
+        content: `/test/file.txt updated successfully`,
       });
-      assert.equal(readFileSync(filePath).toString(), "top\nline1\nline2");
+      assert.equal(fs._files.get("/test/file.txt"), "top\nline1\nline2");
     });
 
     it("inserts at the end when after_line equals the number of lines", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "line1\nline2");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "line1\nline2");
       const call = makeToolCall({
         name: "insert_lines",
-        input: { path: filePath, after_line: 2, content: "bottom" },
+        input: { path: "/test/file.txt", after_line: 2, content: "bottom" },
       });
       const result = executeInsertLinesTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
-        content: `${filePath} updated successfully`,
+        content: `/test/file.txt updated successfully`,
       });
-      assert.equal(readFileSync(filePath).toString(), "line1\nline2\nbottom");
+      assert.equal(fs._files.get("/test/file.txt"), "line1\nline2\nbottom");
     });
 
     it("returns is_error when after_line is out of range (negative)", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "line1");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "line1");
       const call = makeToolCall({
         name: "insert_lines",
-        input: { path: filePath, after_line: -1, content: "x" },
+        input: { path: "/test/file.txt", after_line: -1, content: "x" },
       });
       const result = executeInsertLinesTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -629,17 +553,15 @@ describe("tools", () => {
     });
 
     it("returns is_error when after_line is out of range (too large)", () => {
-      const dir = getTmpDir();
-      const filePath = join(dir, "file.txt");
-      writeFileSync(filePath, "line1");
+      const fs = makeFsDeps();
+      fs._files.set("/test/file.txt", "line1");
       const call = makeToolCall({
         name: "insert_lines",
-        input: { path: filePath, after_line: 5, content: "x" },
+        input: { path: "/test/file.txt", after_line: 5, content: "x" },
       });
       const result = executeInsertLinesTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
@@ -650,6 +572,7 @@ describe("tools", () => {
     });
 
     it("returns is_error when the file does not exist", () => {
+      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "insert_lines",
         input: {
@@ -660,18 +583,18 @@ describe("tools", () => {
       });
       const result = executeInsertLinesTool(call, {
         ...debugDeps,
-        readFileSync: readFileSync,
-        writeFileSync: writeFileSync,
+        fs,
       });
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
         is_error: true,
-        content: `ENOENT: no such file or directory, open '/no/such/path/file.txt'`,
+        content: `ENOENT: /no/such/path/file.txt`,
       });
     });
 
     it("throws on invalid input schema", () => {
+      const fs = makeFsDeps();
       const call = makeToolCall({
         name: "insert_lines",
         input: { path: "/tmp/x" },
@@ -679,8 +602,7 @@ describe("tools", () => {
       assert.throws(() =>
         executeInsertLinesTool(call, {
           ...debugDeps,
-          readFileSync: readFileSync,
-          writeFileSync: writeFileSync,
+          fs,
         }),
       );
     });
