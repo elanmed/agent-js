@@ -18,12 +18,12 @@ import {
   calculateSessionUsage,
   type Color,
 } from "./utils.ts";
-import { writeFileSync, readFileSync, unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { spawnSync } from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, EDITOR_LOG_PATH, editorLog } from "./log.ts";
+import { fsDeps, type FsDeps } from "./fs-deps.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -211,7 +211,7 @@ export interface ResolveSlashCommandDeps {
   editCommand: (currentLine: string) => string | null;
   clearCommand: () => void;
   editLogCommand: () => void;
-  readFileSync: (path: string) => Buffer | string;
+  fs: FsDeps;
   colorPrint: (message: string, color?: Color) => void;
   debugLog: (content: string) => void;
   join: (...segments: string[]) => string;
@@ -222,7 +222,7 @@ export const resolveSlashCommandDeps: ResolveSlashCommandDeps = {
   editCommand: (currentLine: string) => editCommand(currentLine),
   clearCommand: () => clearCommand(),
   editLogCommand: () => editLogCommand(),
-  readFileSync,
+  fs: fsDeps,
   colorPrint,
   debugLog,
   join,
@@ -253,7 +253,7 @@ export function resolveSlashCommand(
       rawInput.slice(1).concat(".md"),
     );
     deps.debugLog(`Performing the slash command at ${path}`);
-    const commandResult = tryCatch(() => deps.readFileSync(path).toString());
+    const commandResult = tryCatch(() => deps.fs.readFileSync(path).toString());
     if (commandResult.ok) return commandResult.value;
 
     deps.colorPrint(
@@ -279,9 +279,7 @@ export function clearCommand() {
 
 export interface EditCommandDeps {
   createTempFile: (args?: { initialContentPath?: string }) => string;
-  writeFileSync: (path: string, data: string) => void;
-  readFileSync: (path: string) => Buffer | string;
-  unlinkSync: (path: string) => void;
+  fs: FsDeps;
   spawnSync: (
     command: string,
     options: { shell: boolean; stdio: string },
@@ -292,9 +290,7 @@ export interface EditCommandDeps {
 
 export const editCommandDeps: EditCommandDeps = {
   createTempFile,
-  writeFileSync,
-  readFileSync,
-  unlinkSync,
+  fs: fsDeps,
   spawnSync,
   env: process.env,
   editorLog,
@@ -306,20 +302,22 @@ export function editCommand(
 ) {
   const tempFile = deps.createTempFile();
   const editor = deps.env["AGENT_JS_EDITOR"] ?? deps.env["EDITOR"] ?? "vi";
-  const writeResult = tryCatch(() => deps.writeFileSync(tempFile, currentLine));
+  const writeResult = tryCatch(() =>
+    deps.fs.writeFileSync(tempFile, currentLine),
+  );
   if (!writeResult.ok) {
     colorPrint("Failed to write to temp file", "red");
     return null;
   }
   deps.spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
 
-  const readResult = tryCatch(() => deps.readFileSync(tempFile).toString());
+  const readResult = tryCatch(() => deps.fs.readFileSync(tempFile).toString());
   if (!readResult.ok) {
     colorPrint("Failed to read from temp file", "red");
-    tryCatch(() => deps.unlinkSync(tempFile));
+    tryCatch(() => deps.fs.unlinkSync(tempFile));
     return null;
   }
-  tryCatch(() => deps.unlinkSync(tempFile));
+  tryCatch(() => deps.fs.unlinkSync(tempFile));
 
   if (readResult.value === "") return null;
 
@@ -329,7 +327,7 @@ export function editCommand(
 }
 
 export function editLogCommand() {
-  if (!existsSync(EDITOR_LOG_PATH)) {
+  if (!fsDeps.existsSync(EDITOR_LOG_PATH)) {
     colorPrint("[Edit log does not exist]", "yellow");
     clearRlLine()!.prompt();
     return;

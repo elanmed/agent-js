@@ -5,18 +5,23 @@ import { dispatch, actions } from "./state.ts";
 import { editCommand, resolveSlashCommand } from "./input.ts";
 import type { EditCommandDeps, ResolveSlashCommandDeps } from "./input.ts";
 import type { Color } from "./utils.ts";
+import { makeFsDeps } from "./fs-deps.ts";
 
 beforeEach(() => {
   dispatch(actions.resetState());
 });
 
 describe("editCommand", () => {
+  let fs: ReturnType<typeof makeFsDeps>;
+
+  beforeEach(() => {
+    fs = makeFsDeps();
+  });
+
   function makeDeps(overrides: Partial<EditCommandDeps> = {}): EditCommandDeps {
     return {
+      fs,
       createTempFile: () => "/tmp/test.txt",
-      writeFileSync: () => undefined,
-      readFileSync: () => Buffer.from("content"),
-      unlinkSync: () => undefined,
       spawnSync: () => ({ stdout: Buffer.from("") }),
       env: {},
       editorLog: () => undefined,
@@ -26,8 +31,11 @@ describe("editCommand", () => {
 
   it("returns null when writeFile fails", () => {
     const deps = makeDeps({
-      writeFileSync: () => {
-        throw new Error("write failed");
+      fs: {
+        ...fs,
+        writeFileSync: () => {
+          throw new Error("write failed");
+        },
       },
     });
 
@@ -38,11 +46,14 @@ describe("editCommand", () => {
   it("returns null and cleans up when readFile fails", () => {
     let unlinkCalled = false;
     const deps = makeDeps({
-      readFileSync: () => {
-        throw new Error("read failed");
-      },
-      unlinkSync: () => {
-        unlinkCalled = true;
+      fs: {
+        ...fs,
+        readFileSync: () => {
+          throw new Error("read failed");
+        },
+        unlinkSync: () => {
+          unlinkCalled = true;
+        },
       },
     });
 
@@ -53,7 +64,7 @@ describe("editCommand", () => {
 
   it("returns null when editor returns empty content", () => {
     const deps = makeDeps({
-      readFileSync: () => Buffer.from(""),
+      fs: { ...fs, readFileSync: () => Buffer.from("") },
     });
 
     const result = editCommand("content", deps);
@@ -63,7 +74,7 @@ describe("editCommand", () => {
   it("returns normalized content and logs it", () => {
     const logs: string[] = [];
     const deps = makeDeps({
-      readFileSync: () => Buffer.from("  hello  "),
+      fs: { ...fs, readFileSync: () => Buffer.from("  hello  ") },
       editorLog: (content: string) => {
         logs.push(content);
       },
@@ -117,14 +128,20 @@ describe("editCommand", () => {
 });
 
 describe("resolveSlashCommand", () => {
+  let fs: ReturnType<typeof makeFsDeps>;
+
+  beforeEach(() => {
+    fs = makeFsDeps();
+  });
+
   function makeDeps(
     overrides: Partial<ResolveSlashCommandDeps> = {},
   ): ResolveSlashCommandDeps {
     return {
+      fs,
       editCommand: () => null,
       clearCommand: () => undefined,
       editLogCommand: () => undefined,
-      readFileSync: () => Buffer.from(""),
       colorPrint: () => undefined,
       debugLog: () => undefined,
       join: (...segments: string[]) => segments.join("/"),
@@ -176,9 +193,7 @@ describe("resolveSlashCommand", () => {
   it("handles custom slash command successfully", () => {
     dispatch(actions.setSlashCommands(["custom"]));
     const deps = makeDeps({
-      readFileSync: () => Buffer.from("custom command content"),
-      join: (...segments: string[]) => segments.join("/"),
-      cwd: () => "/test",
+      fs: { ...fs, readFileSync: () => Buffer.from("custom command content") },
     });
 
     const result = resolveSlashCommand("/custom", deps);
@@ -189,8 +204,11 @@ describe("resolveSlashCommand", () => {
     dispatch(actions.setSlashCommands(["custom"]));
     const errors: { message: string; color: Color | undefined }[] = [];
     const deps = makeDeps({
-      readFileSync: () => {
-        throw new Error("read failed");
+      fs: {
+        ...fs,
+        readFileSync: () => {
+          throw new Error("read failed");
+        },
       },
       colorPrint: (message: string, color?: Color) => {
         errors.push({ message, color });
