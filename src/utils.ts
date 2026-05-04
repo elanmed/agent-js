@@ -1,11 +1,9 @@
-import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { glob } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import type { Key, ModelPricing } from "./config.ts";
 import { format } from "prettier";
@@ -111,30 +109,27 @@ export function fencePrint(
 }
 
 export interface GetRecursiveAgentsMdFilesStrDeps {
-  glob: (pattern: string) => AsyncIterable<string>;
-  readFileSync: (path: string) => Buffer;
   debugLog: (content: string) => void;
+  fs: FsDeps;
 }
 
 export const getRecursiveAgentsMdFilesStrDeps: GetRecursiveAgentsMdFilesStrDeps =
   {
-    glob,
-    readFileSync,
     debugLog,
+    fs: fsDeps,
   };
 
-export async function getRecursiveAgentsMdFilesStr(
+export function getRecursiveAgentsMdFilesStr(
   deps: GetRecursiveAgentsMdFilesStrDeps = getRecursiveAgentsMdFilesStrDeps,
 ) {
-  const agentFiles = [];
-  for await (const file of deps.glob("**/AGENTS.md")) {
-    agentFiles.push(file);
-  }
+  const agentFiles = deps.fs.globSync("**/AGENTS.md");
 
   deps.debugLog(`AGENTS.md found: ${agentFiles.join(",")}`);
   const filesContents = [];
   for (const filePath of agentFiles) {
-    const readResult = tryCatch(() => deps.readFileSync(filePath).toString());
+    const readResult = tryCatch(() =>
+      deps.fs.readFileSync(filePath).toString(),
+    );
     if (readResult.ok) {
       filesContents.push(`FILEPATH: ${filePath}`, readResult.value);
     }
@@ -217,23 +212,21 @@ CRITICAL: All responses will be parsed by bat as markdown, you MUST format as va
 
 export interface GetAvailableSlashCommandsDeps {
   getCwd: () => string;
-  existsSync: (path: string) => boolean;
-  readdirSync: (path: string) => string[];
+  fs: FsDeps;
 }
 
 export const getAvailableSlashCommandsDeps: GetAvailableSlashCommandsDeps = {
   getCwd: () => process.cwd(),
-  existsSync: (path) => existsSync(path),
-  readdirSync: (path) => readdirSync(path),
+  fs: fsDeps,
 };
 
 export function getAvailableSlashCommands(
   deps: GetAvailableSlashCommandsDeps = getAvailableSlashCommandsDeps,
 ) {
   const path = join(deps.getCwd(), ".agent-js", "commands");
-  if (!deps.existsSync(path)) return [];
+  if (!deps.fs.existsSync(path)) return [];
 
-  const readdirResult = tryCatch(() => deps.readdirSync(path));
+  const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
   if (!readdirResult.ok) return [];
   return readdirResult.value.map((file) => parse(file).name);
 }

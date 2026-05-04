@@ -7,8 +7,8 @@ import {
   unlinkSync,
   appendFileSync,
   statSync,
+  globSync,
 } from "node:fs";
-import { glob } from "node:fs/promises";
 
 export interface FsDeps {
   readFileSync: (path: string) => Buffer;
@@ -22,10 +22,11 @@ export interface FsDeps {
     isFile: () => boolean;
     isDirectory: () => boolean;
   };
-  glob: (pattern: string) => AsyncIterable<string>;
+  globSync: (pattern: string) => string[];
   _files: Map<string, string>;
   _dirs: Set<string>;
   _listings: Map<string, string[]>;
+  _globResults: Map<string, string[]>;
 }
 
 export const fsDeps: FsDeps = {
@@ -37,21 +38,24 @@ export const fsDeps: FsDeps = {
   unlinkSync: (path) => unlinkSync(path),
   appendFileSync: (path, content) => appendFileSync(path, content),
   statSync: (path) => statSync(path),
-  glob: (pattern) => glob(pattern),
+  globSync: (pattern) => globSync(pattern),
   _files: new Map(),
   _dirs: new Set(),
   _listings: new Map(),
+  _globResults: new Map(),
 };
 
 export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
   const _files = new Map<string, string>();
   const _dirs = new Set<string>();
   const _listings = new Map<string, string[]>();
+  const _globResults = new Map<string, string[]>();
 
   return {
     _files,
     _dirs,
     _listings,
+    _globResults,
     readFileSync: (path: string) => {
       const content = _files.get(path);
       if (content === undefined) throw new Error(`ENOENT: ${path}`);
@@ -71,10 +75,7 @@ export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
       isFile: () => _files.has(path),
       isDirectory: () => _dirs.has(path),
     }),
-    glob: async function* () {
-      await Promise.resolve();
-      yield "";
-    },
+    globSync: (pattern: string) => _globResults.get(pattern) ?? [],
     ...overrides,
   } as FsDeps;
 }

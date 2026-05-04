@@ -20,7 +20,7 @@ import { initLogs } from "./log.ts";
 
 async function main() {
   initLogs();
-  await initState();
+  initState();
   initPrint();
 
   initReadline();

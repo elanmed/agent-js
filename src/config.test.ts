@@ -46,7 +46,7 @@ function makeFs(overrides: Partial<FsState> = {}): {
         if (path === GLOBAL_CONFIG_PATH) state.globalContent = content;
       },
       parseCliArgs,
-      getRecursiveAgentsMdFilesStr: () => Promise.resolve(""),
+      getRecursiveAgentsMdFilesStr: () => "",
       colorPrint: () => {
         /* noop */
       },
@@ -62,7 +62,7 @@ describe("initState", () => {
   });
 
   describe("when local config exists", () => {
-    it("uses its model over the global config, default config", async () => {
+    it("uses its model over the global config, default config", () => {
       const { fs } = makeFs({
         globalExists: true,
         globalContent: JSON.stringify({
@@ -76,12 +76,12 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       assert.equal(selectors.getModel(), "claude-haiku-4-5");
     });
 
-    it("uses its provider over the global config, default config", async () => {
+    it("uses its provider over the global config, default config", () => {
       const { fs } = makeFs({
         globalExists: true,
         globalContent: JSON.stringify({
@@ -95,12 +95,12 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       assert.equal(selectors.getProvider(), "anthropic");
     });
 
-    it("uses its disableUsageMessage over the global config, default config", async () => {
+    it("uses its disableUsageMessage over the global config, default config", () => {
       const { fs } = makeFs({
         globalExists: true,
         globalContent: JSON.stringify({
@@ -116,12 +116,12 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       assert.equal(selectors.getDisableUsageMessage(), true);
     });
 
-    it("uses its editorLog over the global config, default config", async () => {
+    it("uses its editorLog over the global config, default config", () => {
       const { fs } = makeFs({
         globalExists: true,
         globalContent: JSON.stringify({
@@ -137,12 +137,12 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       assert.equal(selectors.getEditorLog(), true);
     });
 
-    it("uses its diffStyle over the global config, default config", async () => {
+    it("uses its diffStyle over the global config, default config", () => {
       const { fs } = makeFs({
         globalExists: true,
         globalContent: JSON.stringify({
@@ -158,12 +158,12 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       assert.equal(selectors.getDiffStyle(), "unified");
     });
 
-    it("uses its pricingPerModel over the global config, default config", async () => {
+    it("uses its pricingPerModel over the global config, default config", () => {
       const localPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
       localPricing["test-model"] = {
         inputPerToken: 999,
@@ -187,12 +187,12 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       assert.deepEqual(selectors.getPricingPerModel(), localPricing);
     });
 
-    it("uses its keymaps over the global config, default config", async () => {
+    it("uses its keymaps over the global config, default config", () => {
       const { fs } = makeFs({
         globalExists: true,
         globalContent: JSON.stringify({
@@ -216,7 +216,7 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       assert.deepEqual(selectors.getKeymapEdit(), {
         name: "e",
@@ -238,7 +238,7 @@ describe("initState", () => {
       });
     });
 
-    it("merges partial keymaps with defaults", async () => {
+    it("merges partial keymaps with defaults", () => {
       const { fs } = makeFs({
         localExists: true,
         localContent: JSON.stringify({
@@ -250,7 +250,7 @@ describe("initState", () => {
         }),
       });
 
-      await initState(fs);
+      initState(fs);
 
       // Custom edit keymap
       assert.deepEqual(selectors.getKeymapEdit(), {
@@ -274,7 +274,7 @@ describe("initState", () => {
 
   describe("when local config does not exist", () => {
     describe("when the global config exists", () => {
-      it("uses its model over the default config", async () => {
+      it("uses its model over the default config", () => {
         const { fs } = makeFs({
           globalExists: true,
           globalContent: JSON.stringify({
@@ -283,11 +283,11 @@ describe("initState", () => {
           }),
         });
 
-        await initState(fs);
+        initState(fs);
         assert.equal(selectors.getModel(), "claude-haiku-4-5");
       });
 
-      it("uses its provider over the default config", async () => {
+      it("uses its provider over the default config", () => {
         const { fs } = makeFs({
           globalExists: true,
           globalContent: JSON.stringify({
@@ -296,11 +296,11 @@ describe("initState", () => {
           }),
         });
 
-        await initState(fs);
+        initState(fs);
         assert.equal(selectors.getProvider(), "anthropic");
       });
 
-      it("uses its disableUsageMessage over the default config", async () => {
+      it("uses its disableUsageMessage over the default config", () => {
         const { fs } = makeFs({
           globalExists: true,
           globalContent: JSON.stringify({
@@ -310,11 +310,11 @@ describe("initState", () => {
           }),
         });
 
-        await initState(fs);
+        initState(fs);
         assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
-      it("uses its editorLog over the default config", async () => {
+      it("uses its editorLog over the default config", () => {
         const { fs } = makeFs({
           globalExists: true,
           globalContent: JSON.stringify({
@@ -324,11 +324,11 @@ describe("initState", () => {
           }),
         });
 
-        await initState(fs);
+        initState(fs);
         assert.equal(selectors.getEditorLog(), true);
       });
 
-      it("uses its diffStyle over the default config", async () => {
+      it("uses its diffStyle over the default config", () => {
         const { fs } = makeFs({
           globalExists: true,
           globalContent: JSON.stringify({
@@ -338,11 +338,11 @@ describe("initState", () => {
           }),
         });
 
-        await initState(fs);
+        initState(fs);
         assert.equal(selectors.getDiffStyle(), "unified");
       });
 
-      it("uses its pricingPerModel over the default config", async () => {
+      it("uses its pricingPerModel over the default config", () => {
         const globalPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
         globalPricing["test-model"] = {
           inputPerToken: 999,
@@ -360,11 +360,11 @@ describe("initState", () => {
           }),
         });
 
-        await initState(fs);
+        initState(fs);
         assert.deepEqual(selectors.getPricingPerModel(), globalPricing);
       });
 
-      it("uses its keymaps over the default config", async () => {
+      it("uses its keymaps over the default config", () => {
         const { fs } = makeFs({
           globalExists: true,
           globalContent: JSON.stringify({
@@ -378,7 +378,7 @@ describe("initState", () => {
           }),
         });
 
-        await initState(fs);
+        initState(fs);
 
         assert.deepEqual(selectors.getKeymapEdit(), {
           name: "v",
@@ -402,48 +402,48 @@ describe("initState", () => {
     });
 
     describe("when the global config does not exist", () => {
-      it("throws when model is not configured", async () => {
+        it("throws when model is not configured", () => {
         const { fs } = makeFs();
-        await assert.rejects(async () => {
-          await initState(fs);
+        assert.throws(() => {
+          initState(fs);
         }, /A `model` is required/);
       });
 
-      it("throws when baseURL is not configured for openai-compatible provider", async () => {
+      it("throws when baseURL is not configured for openai-compatible provider", () => {
         const { fs } = makeFs({
           globalExists: true,
           globalContent: JSON.stringify({ model: "some-model" }),
         });
-        await assert.rejects(async () => {
-          await initState(fs);
+        assert.throws(() => {
+          initState(fs);
         }, /A `baseURL` is required when `provider=openai-compatible`/);
       });
     });
   });
 
-  it("throws on invalid JSON in global config", async () => {
+  it("throws on invalid JSON in global config", () => {
     const { fs } = makeFs({
       globalExists: true,
       globalContent: "not valid json",
     });
 
-    await assert.rejects(async () => {
-      await initState(fs);
+    assert.throws(() => {
+      initState(fs);
     }, /Failed to parse config as JSON/);
   });
 
-  it("throws on invalid JSON in local config", async () => {
+  it("throws on invalid JSON in local config", () => {
     const { fs } = makeFs({
       localExists: true,
       localContent: "not valid json",
     });
 
-    await assert.rejects(async () => {
-      await initState(fs);
+    assert.throws(() => {
+      initState(fs);
     }, /Failed to parse config as JSON/);
   });
 
-  it("sets debug from args", async () => {
+  it("sets debug from args", () => {
     const { fs } = makeFs({
       globalExists: true,
       globalContent: JSON.stringify({
@@ -452,14 +452,14 @@ describe("initState", () => {
       }),
     });
 
-    await initState({
+    initState({
       ...fs,
       parseCliArgs: () => ({ debug: true, resumeSessionId: null }),
     });
     assert.equal(selectors.getDebugLog(), true);
   });
 
-  it("sets agentsMdFilesStr from dep", async () => {
+  it("sets agentsMdFilesStr from dep", () => {
     const { fs } = makeFs({
       globalExists: true,
       globalContent: JSON.stringify({
@@ -468,10 +468,9 @@ describe("initState", () => {
       }),
     });
 
-    await initState({
+    initState({
       ...fs,
-      getRecursiveAgentsMdFilesStr: () =>
-        Promise.resolve("FILEPATH: AGENTS.md\nhello"),
+      getRecursiveAgentsMdFilesStr: () => "FILEPATH: AGENTS.md\nhello",
     });
     assert.equal(selectors.getAgentsMdFilesStr(), "FILEPATH: AGENTS.md\nhello");
   });

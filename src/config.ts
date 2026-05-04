@@ -126,7 +126,7 @@ const initStateDeps = {
 
 export type InitStateDeps = typeof initStateDeps;
 
-export async function initState(deps: InitStateDeps = initStateDeps) {
+export function initState(deps: InitStateDeps = initStateDeps) {
   const args = deps.parseCliArgs();
   dispatch(actions.setDebugLog(args.debug));
   dispatch(actions.setDebugLog(args.debug)); // second time so it's logged
@@ -236,7 +236,7 @@ export async function initState(deps: InitStateDeps = initStateDeps) {
     ),
   );
 
-  const agentsMdFilesStr = await deps.getRecursiveAgentsMdFilesStr();
+  const agentsMdFilesStr = deps.getRecursiveAgentsMdFilesStr();
   dispatch(actions.setAgentsMdFilesStr(agentsMdFilesStr));
 }
 

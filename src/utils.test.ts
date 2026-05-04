@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import {
@@ -465,63 +463,72 @@ describe("utils", () => {
   });
 
   describe("getAvailableSlashCommands", () => {
-    function makeDeps(
-      overrides: Partial<GetAvailableSlashCommandsDeps> = {},
-    ): GetAvailableSlashCommandsDeps {
+    function makeDeps(overrides: Partial<GetAvailableSlashCommandsDeps> = {}) {
       return {
         getCwd: () => "/test/project",
-        existsSync: () => true,
-        readdirSync: () => [],
+        fs: makeFsDeps(),
         ...overrides,
       };
     }
 
     it("returns empty array when commands directory does not exist", () => {
-      const deps = makeDeps({ existsSync: () => false });
+      const deps = makeDeps();
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, []);
     });
 
     it("returns empty array when readdir throws", () => {
-      const deps = makeDeps({
-        readdirSync: () => {
-          throw new Error("permission denied");
-        },
-      });
+      const fs = makeFsDeps();
+      fs._dirs.add("/test/project/.agent-js/commands");
+      fs.readdirSync = () => {
+        throw new Error("permission denied");
+      };
+      const deps = makeDeps({ fs });
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, []);
     });
 
     it("returns empty array when commands directory is empty", () => {
-      const deps = makeDeps({ readdirSync: () => [] });
+      const fs = makeFsDeps();
+      fs._dirs.add("/test/project/.agent-js/commands");
+      const deps = makeDeps({ fs });
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, []);
     });
 
     it("returns command names without file extensions", () => {
-      const deps = makeDeps({
-        readdirSync: () => ["help.ts", "status.js", "deploy.mjs"],
-      });
+      const fs = makeFsDeps();
+      fs._dirs.add("/test/project/.agent-js/commands");
+      fs._listings.set("/test/project/.agent-js/commands", [
+        "help.ts",
+        "status.js",
+        "deploy.mjs",
+      ]);
+      const deps = makeDeps({ fs });
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, ["help", "status", "deploy"]);
     });
 
     it("returns command names for files without extensions", () => {
-      const deps = makeDeps({
-        readdirSync: () => ["help", "status"],
-      });
+      const fs = makeFsDeps();
+      fs._dirs.add("/test/project/.agent-js/commands");
+      fs._listings.set("/test/project/.agent-js/commands", ["help", "status"]);
+      const deps = makeDeps({ fs });
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, ["help", "status"]);
     });
 
     it("uses cwd from deps to build path", () => {
+      const fs = makeFsDeps();
       let capturedPath = "";
+      const originalExistsSync = fs.existsSync.bind(fs);
+      fs.existsSync = (path: string) => {
+        capturedPath = path;
+        return originalExistsSync(path);
+      };
       const deps = makeDeps({
         getCwd: () => "/custom/project",
-        existsSync: (path) => {
-          capturedPath = path;
-          return true;
-        },
+        fs,
       });
       getAvailableSlashCommands(deps);
       assert.equal(capturedPath, "/custom/project/.agent-js/commands");
@@ -531,64 +538,45 @@ describe("utils", () => {
   describe("getRecursiveAgentsMdFilesStr", () => {
     function makeDeps(
       overrides: Partial<GetRecursiveAgentsMdFilesStrDeps> = {},
-    ): GetRecursiveAgentsMdFilesStrDeps {
+    ) {
       return {
-        glob: async function* () {},
-        readFileSync: () => Buffer.from(""),
+        fs: makeFsDeps(),
         debugLog: () => undefined,
         ...overrides,
       };
     }
 
-    it("returns empty string when no AGENTS.md files found", async () => {
-      const deps = makeDeps({
-        glob: async function* () {},
-      });
-      const result = await getRecursiveAgentsMdFilesStr(deps);
+    it("returns empty string when no AGENTS.md files found", () => {
+      const deps = makeDeps();
+      const result = getRecursiveAgentsMdFilesStr(deps);
       assert.equal(result, "");
     });
 
-    it("returns formatted content for single file", async () => {
-      const deps = makeDeps({
-        glob: async function* () {
-          yield "AGENTS.md";
-        },
-        readFileSync: () => Buffer.from("# Agent Instructions"),
-      });
-      const result = await getRecursiveAgentsMdFilesStr(deps);
+    it("returns formatted content for single file", () => {
+      const deps = makeDeps();
+      deps.fs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
+      deps.fs._files.set("AGENTS.md", "# Agent Instructions");
+      const result = getRecursiveAgentsMdFilesStr(deps);
       assert.equal(result, "FILEPATH: AGENTS.md\n# Agent Instructions");
     });
 
-    it("returns formatted content for multiple files", async () => {
-      const deps = makeDeps({
-        glob: async function* () {
-          yield "AGENTS.md";
-          yield "src/AGENTS.md";
-        },
-        readFileSync: (path) => {
-          if (path === "AGENTS.md") return Buffer.from("Root content");
-          return Buffer.from("Src content");
-        },
-      });
-      const result = await getRecursiveAgentsMdFilesStr(deps);
+    it("returns formatted content for multiple files", () => {
+      const deps = makeDeps();
+      deps.fs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
+      deps.fs._files.set("AGENTS.md", "Root content");
+      deps.fs._files.set("src/AGENTS.md", "Src content");
+      const result = getRecursiveAgentsMdFilesStr(deps);
       assert.equal(
         result,
         "FILEPATH: AGENTS.md\nRoot content\nFILEPATH: src/AGENTS.md\nSrc content",
       );
     });
 
-    it("skips files that fail to read", async () => {
-      const deps = makeDeps({
-        glob: async function* () {
-          yield "AGENTS.md";
-          yield "src/AGENTS.md";
-        },
-        readFileSync: (path) => {
-          if (path === "AGENTS.md") throw new Error("Permission denied");
-          return Buffer.from("Src content");
-        },
-      });
-      const result = await getRecursiveAgentsMdFilesStr(deps);
+    it("skips files that fail to read", () => {
+      const deps = makeDeps();
+      deps.fs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
+      deps.fs._files.set("src/AGENTS.md", "Src content");
+      const result = getRecursiveAgentsMdFilesStr(deps);
       assert.equal(result, "FILEPATH: src/AGENTS.md\nSrc content");
     });
   });
