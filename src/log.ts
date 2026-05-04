@@ -151,15 +151,13 @@ export function deleteExpiredEditorLogs(
   const editorLogsPath = deps.getEditorLogsPath();
   if (!deps.fs.existsSync(editorLogsPath)) return;
 
-  for (const entry of deps.fs.readdirSync(editorLogsPath, {
-    withFileTypes: true,
-    recursive: true,
-  })) {
-    if (!entry.isFile()) continue;
+  for (const name of deps.fs.readdirSync(editorLogsPath)) {
+    const fullPath = join(editorLogsPath, name);
+    const statResult = tryCatch(() => deps.fs.statSync(fullPath));
+    if (!statResult.ok) continue;
+    if (!statResult.value.isFile()) continue;
 
-    const path = join(entry.parentPath, entry.name);
-    const fileName = basename(entry.name, extname(entry.name));
-
+    const fileName = basename(name, extname(name));
     const parts = fileName.split("-");
     if (parts.length !== 3) continue;
     if (parts[0] !== "editor") continue;
@@ -169,7 +167,7 @@ export function deleteExpiredEditorLogs(
 
     const oneDay = 1_000 * 60 * 60 * 24;
     if (date + oneDay < deps.now()) {
-      tryCatch(() => deps.fs.unlinkSync(path));
+      tryCatch(() => deps.fs.unlinkSync(fullPath));
     }
   }
 }
