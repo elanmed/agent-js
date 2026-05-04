@@ -104,23 +104,22 @@ Test code:
 ```ts
 import { makeFsDeps } from "./fs-deps.ts";
 
-function makeDeps(overrides: Partial<ReadConfigDeps> = {}) {
-  return {
-    fs: makeFsDeps(),
-    ...overrides,
-  };
-}
+describe("readConfig", () => {
+  let fs: ReturnType<typeof makeFsDeps>;
 
-it("returns config when file exists", () => {
-  const deps = makeDeps();
-  deps.fs.files.set("config.json", '{"key": "value"}');
-  const result = readConfig(deps);
-  assert.deepStrictEqual(result, { key: "value" });
-});
+  beforeEach(() => {
+    fs = makeFsDeps();
+  });
 
-it("returns null when file does not exist", () => {
-  const deps = makeDeps();
-  const result = readConfig(deps);
-  assert.strictEqual(result, null);
+  it("returns config when file exists", () => {
+    fs.files.set("config.json", '{"key": "value"}');
+    const result = readConfig({ fs });
+    assert.deepStrictEqual(result, { key: "value" });
+  });
+
+  it("returns null when file does not exist", () => {
+    const result = readConfig({ fs });
+    assert.strictEqual(result, null);
+  });
 });
 ```
