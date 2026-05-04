@@ -1,5 +1,7 @@
 # agent-js
 
+You are running in a container. Make all changes to `/agent-js` at the root of the filesystem.
+
 ## Development
 
 After every change, run linting, types, and tests:

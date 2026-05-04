@@ -1,5 +1,5 @@
 {
-  "model": "kimi-k2.5",
+  "model": "deepseek-v4-pro",
   "baseURL": "https://opencode.ai/zen/go/v1",
   "pricingPerModel": {
     "glm-5.1": {
@@ -11,6 +11,11 @@
       "inputPerToken": 0.6,
       "outputPerToken": 3.0,
       "cacheReadPerToken": 0.1
+    },
+    "kimi-k2.6": {
+      "inputPerToken": 0.95,
+      "outputPerToken": 4.0,
+      "cacheReadPerToken": 0.16
     }
   }
 }
