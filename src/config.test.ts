@@ -8,51 +8,15 @@ import {
   LOCAL_CONFIG_PATH,
 } from "./config.ts";
 import type { InitStateDeps } from "./config.ts";
-import { parseCliArgs } from "./args.ts";
+import { makeFsDeps } from "./fs-deps.ts";
 
-interface FsState {
-  globalExists: boolean;
-  globalContent: string;
-  localExists: boolean;
-  localContent: string;
-}
-
-function makeFs(overrides: Partial<FsState> = {}): {
-  fs: InitStateDeps;
-  state: FsState;
-  written: [string, string][];
-} {
-  const state: FsState = {
-    globalExists: false,
-    globalContent: "{}",
-    localExists: false,
-    localContent: "{}",
-    ...overrides,
-  };
-  const written: [string, string][] = [];
-
+function makeDeps(overrides: Partial<InitStateDeps> = {}): InitStateDeps {
   return {
-    fs: {
-      existsSync: (path: string): boolean =>
-        path === GLOBAL_CONFIG_PATH ? state.globalExists : state.localExists,
-      readFileSync: (path: string): string =>
-        path === GLOBAL_CONFIG_PATH ? state.globalContent : state.localContent,
-      mkdirSync: () => {
-        /* noop */
-      },
-      writeFileSync: (path: string, content: string) => {
-        written.push([path, content]);
-        if (path === LOCAL_CONFIG_PATH) state.localContent = content;
-        if (path === GLOBAL_CONFIG_PATH) state.globalContent = content;
-      },
-      parseCliArgs,
-      getRecursiveAgentsMdFilesStr: () => "",
-      colorPrint: () => {
-        /* noop */
-      },
-    } satisfies InitStateDeps,
-    state,
-    written,
+    fs: makeFsDeps(),
+    parseCliArgs: () => ({ debug: false, resumeSessionId: null }),
+    getRecursiveAgentsMdFilesStr: () => "",
+    colorPrint: () => undefined,
+    ...overrides,
   };
 }
 
@@ -63,102 +27,117 @@ describe("initState", () => {
 
   describe("when local config exists", () => {
     it("uses its model over the global config, default config", () => {
-      const { fs } = makeFs({
-        globalExists: true,
-        globalContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        GLOBAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
         }),
-        localExists: true,
-        localContent: JSON.stringify({
+      );
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-haiku-4-5",
           baseURL: "https://api.example.com",
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
       assert.equal(selectors.getModel(), "claude-haiku-4-5");
     });
 
     it("uses its provider over the global config, default config", () => {
-      const { fs } = makeFs({
-        globalExists: true,
-        globalContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        GLOBAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           provider: "openai-compatible",
         }),
-        localExists: true,
-        localContent: JSON.stringify({
+      );
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           provider: "anthropic",
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
       assert.equal(selectors.getProvider(), "anthropic");
     });
 
     it("uses its disableUsageMessage over the global config, default config", () => {
-      const { fs } = makeFs({
-        globalExists: true,
-        globalContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        GLOBAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           disableUsageMessage: false,
         }),
-        localExists: true,
-        localContent: JSON.stringify({
+      );
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           disableUsageMessage: true,
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
       assert.equal(selectors.getDisableUsageMessage(), true);
     });
 
     it("uses its editorLog over the global config, default config", () => {
-      const { fs } = makeFs({
-        globalExists: true,
-        globalContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        GLOBAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           editorLog: false,
         }),
-        localExists: true,
-        localContent: JSON.stringify({
+      );
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           editorLog: true,
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
       assert.equal(selectors.getEditorLog(), true);
     });
 
     it("uses its diffStyle over the global config, default config", () => {
-      const { fs } = makeFs({
-        globalExists: true,
-        globalContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        GLOBAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           diffStyle: "lines",
         }),
-        localExists: true,
-        localContent: JSON.stringify({
+      );
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           diffStyle: "unified",
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
       assert.equal(selectors.getDiffStyle(), "unified");
     });
@@ -172,30 +151,34 @@ describe("initState", () => {
         cacheWritePerToken: 0,
       };
 
-      const { fs } = makeFs({
-        globalExists: true,
-        globalContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        GLOBAL_CONFIG_PATH,
+        JSON.stringify({
           model: "test-model",
           baseURL: "https://api.example.com",
           pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
         }),
-        localExists: true,
-        localContent: JSON.stringify({
+      );
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "test-model",
           baseURL: "https://api.example.com",
           pricingPerModel: localPricing,
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
       assert.deepEqual(selectors.getPricingPerModel(), localPricing);
     });
 
     it("uses its keymaps over the global config, default config", () => {
-      const { fs } = makeFs({
-        globalExists: true,
-        globalContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        GLOBAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           keymaps: {
@@ -204,8 +187,10 @@ describe("initState", () => {
             clear: { name: "j", ctrl: false, meta: false, shift: false },
           },
         }),
-        localExists: true,
-        localContent: JSON.stringify({
+      );
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           keymaps: {
@@ -214,9 +199,9 @@ describe("initState", () => {
             clear: { name: "k", ctrl: true, meta: false, shift: false },
           },
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
       assert.deepEqual(selectors.getKeymapEdit(), {
         name: "e",
@@ -239,32 +224,30 @@ describe("initState", () => {
     });
 
     it("merges partial keymaps with defaults", () => {
-      const { fs } = makeFs({
-        localExists: true,
-        localContent: JSON.stringify({
+      const deps = makeDeps();
+      deps.fs._files.set(
+        LOCAL_CONFIG_PATH,
+        JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
           },
         }),
-      });
+      );
 
-      initState(fs);
+      initState(deps);
 
-      // Custom edit keymap
       assert.deepEqual(selectors.getKeymapEdit(), {
         name: "v",
         ctrl: false,
         meta: false,
         shift: false,
       });
-      // Default editLog keymap
       assert.deepEqual(
         selectors.getKeymapEditLog(),
         DEFAULT_CONFIG.keymaps.editLog,
       );
-      // Default clear keymap
       assert.deepEqual(
         selectors.getKeymapClear(),
         DEFAULT_CONFIG.keymaps.clear,
@@ -275,70 +258,75 @@ describe("initState", () => {
   describe("when local config does not exist", () => {
     describe("when the global config exists", () => {
       it("uses its model over the default config", () => {
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({
             model: "claude-haiku-4-5",
             baseURL: "https://api.example.com",
           }),
-        });
+        );
 
-        initState(fs);
+        initState(deps);
         assert.equal(selectors.getModel(), "claude-haiku-4-5");
       });
 
       it("uses its provider over the default config", () => {
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({
             model: "claude-sonnet-4-6",
             provider: "anthropic",
           }),
-        });
+        );
 
-        initState(fs);
+        initState(deps);
         assert.equal(selectors.getProvider(), "anthropic");
       });
 
       it("uses its disableUsageMessage over the default config", () => {
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
             disableUsageMessage: true,
           }),
-        });
+        );
 
-        initState(fs);
+        initState(deps);
         assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
       it("uses its editorLog over the default config", () => {
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
             editorLog: true,
           }),
-        });
+        );
 
-        initState(fs);
+        initState(deps);
         assert.equal(selectors.getEditorLog(), true);
       });
 
       it("uses its diffStyle over the default config", () => {
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
             diffStyle: "unified",
           }),
-        });
+        );
 
-        initState(fs);
+        initState(deps);
         assert.equal(selectors.getDiffStyle(), "unified");
       });
 
@@ -351,23 +339,25 @@ describe("initState", () => {
           cacheWritePerToken: 0,
         };
 
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({
             model: "test-model",
             baseURL: "https://api.example.com",
             pricingPerModel: globalPricing,
           }),
-        });
+        );
 
-        initState(fs);
+        initState(deps);
         assert.deepEqual(selectors.getPricingPerModel(), globalPricing);
       });
 
       it("uses its keymaps over the default config", () => {
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
             keymaps: {
@@ -376,9 +366,9 @@ describe("initState", () => {
               clear: { name: "j", ctrl: false, meta: false, shift: false },
             },
           }),
-        });
+        );
 
-        initState(fs);
+        initState(deps);
 
         assert.deepEqual(selectors.getKeymapEdit(), {
           name: "v",
@@ -402,76 +392,73 @@ describe("initState", () => {
     });
 
     describe("when the global config does not exist", () => {
-        it("throws when model is not configured", () => {
-        const { fs } = makeFs();
+      it("throws when model is not configured", () => {
+        const deps = makeDeps();
         assert.throws(() => {
-          initState(fs);
+          initState(deps);
         }, /A `model` is required/);
       });
 
       it("throws when baseURL is not configured for openai-compatible provider", () => {
-        const { fs } = makeFs({
-          globalExists: true,
-          globalContent: JSON.stringify({ model: "some-model" }),
-        });
+        const deps = makeDeps();
+        deps.fs._files.set(
+          GLOBAL_CONFIG_PATH,
+          JSON.stringify({ model: "some-model" }),
+        );
         assert.throws(() => {
-          initState(fs);
+          initState(deps);
         }, /A `baseURL` is required when `provider=openai-compatible`/);
       });
     });
   });
 
   it("throws on invalid JSON in global config", () => {
-    const { fs } = makeFs({
-      globalExists: true,
-      globalContent: "not valid json",
-    });
+    const deps = makeDeps();
+    deps.fs._files.set(GLOBAL_CONFIG_PATH, "not valid json");
 
     assert.throws(() => {
-      initState(fs);
+      initState(deps);
     }, /Failed to parse config as JSON/);
   });
 
   it("throws on invalid JSON in local config", () => {
-    const { fs } = makeFs({
-      localExists: true,
-      localContent: "not valid json",
-    });
+    const deps = makeDeps();
+    deps.fs._files.set(LOCAL_CONFIG_PATH, "not valid json");
 
     assert.throws(() => {
-      initState(fs);
+      initState(deps);
     }, /Failed to parse config as JSON/);
   });
 
   it("sets debug from args", () => {
-    const { fs } = makeFs({
-      globalExists: true,
-      globalContent: JSON.stringify({
+    const deps = makeDeps({
+      parseCliArgs: () => ({ debug: true, resumeSessionId: null }),
+    });
+    deps.fs._files.set(
+      GLOBAL_CONFIG_PATH,
+      JSON.stringify({
         model: "claude-sonnet-4-6",
         baseURL: "https://api.example.com",
       }),
-    });
+    );
 
-    initState({
-      ...fs,
-      parseCliArgs: () => ({ debug: true, resumeSessionId: null }),
-    });
+    initState(deps);
     assert.equal(selectors.getDebugLog(), true);
   });
 
   it("sets agentsMdFilesStr from dep", () => {
-    const { fs } = makeFs({
-      globalExists: true,
-      globalContent: JSON.stringify({
+    const deps = makeDeps({
+      getRecursiveAgentsMdFilesStr: () => "FILEPATH: AGENTS.md\nhello",
+    });
+    deps.fs._files.set(
+      GLOBAL_CONFIG_PATH,
+      JSON.stringify({
         model: "claude-sonnet-4-6",
         baseURL: "https://api.example.com",
       }),
-    });
+    );
 
-    initState({
-      ...fs,
-      getRecursiveAgentsMdFilesStr: () => "FILEPATH: AGENTS.md\nhello",
-    });
+    initState(deps);
     assert.equal(selectors.getAgentsMdFilesStr(), "FILEPATH: AGENTS.md\nhello");
   });
 });

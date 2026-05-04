@@ -1,4 +1,3 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
@@ -11,6 +10,7 @@ import {
 import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
+import { fsDeps, type FsDeps } from "./fs-deps.ts";
 
 export const MISSING = "MISSING";
 
@@ -110,21 +110,19 @@ export const LOCAL_CONFIG_PATH = join(
   "settings.json",
 );
 
-const initStateDeps = {
-  existsSync: (path: string): boolean => existsSync(path),
-  readFileSync: (path: string): string => readFileSync(path).toString(),
-  mkdirSync: (path: string, options?: { recursive: boolean }): void => {
-    mkdirSync(path, options);
-  },
-  writeFileSync: (path: string, content: string): void => {
-    writeFileSync(path, content);
-  },
+export interface InitStateDeps {
+  fs: FsDeps;
+  parseCliArgs: typeof parseCliArgs;
+  getRecursiveAgentsMdFilesStr: typeof getRecursiveAgentsMdFilesStr;
+  colorPrint: typeof colorPrint;
+}
+
+const initStateDeps: InitStateDeps = {
+  fs: fsDeps,
   parseCliArgs,
   getRecursiveAgentsMdFilesStr,
   colorPrint,
 };
-
-export type InitStateDeps = typeof initStateDeps;
 
 export function initState(deps: InitStateDeps = initStateDeps) {
   const args = deps.parseCliArgs();
@@ -132,9 +130,11 @@ export function initState(deps: InitStateDeps = initStateDeps) {
   dispatch(actions.setDebugLog(args.debug)); // second time so it's logged
 
   const globalConfig: Config = (() => {
-    if (deps.existsSync(GLOBAL_CONFIG_PATH)) {
+    if (deps.fs.existsSync(GLOBAL_CONFIG_PATH)) {
       debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
-      const readResult = tryCatch(() => deps.readFileSync(GLOBAL_CONFIG_PATH));
+      const readResult = tryCatch(() =>
+        deps.fs.readFileSync(GLOBAL_CONFIG_PATH).toString(),
+      );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
       }
@@ -147,9 +147,11 @@ export function initState(deps: InitStateDeps = initStateDeps) {
   })();
 
   const localConfig: Config = (() => {
-    if (deps.existsSync(LOCAL_CONFIG_PATH)) {
+    if (deps.fs.existsSync(LOCAL_CONFIG_PATH)) {
       debugLog(`${LOCAL_CONFIG_PATH} exists, reading`);
-      const readResult = tryCatch(() => deps.readFileSync(LOCAL_CONFIG_PATH));
+      const readResult = tryCatch(() =>
+        deps.fs.readFileSync(LOCAL_CONFIG_PATH).toString(),
+      );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
       }
