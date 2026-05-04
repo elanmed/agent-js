@@ -186,7 +186,7 @@ export function executeViewFileTool(
   }
 
   if (statResult.value.isDirectory()) {
-    const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
+    const readdirResult = tryCatch(() => deps.fs.readdirSync(path, {}));
     if (!readdirResult.ok) {
       const error = getMessageFromError(readdirResult.error);
       deps.debugLog(`executeViewFileTool: error=${error}`);

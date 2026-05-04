@@ -226,7 +226,7 @@ export function getAvailableSlashCommands(
   const path = join(deps.getCwd(), ".agent-js", "commands");
   if (!deps.fs.existsSync(path)) return [];
 
-  const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
+  const readdirResult = tryCatch(() => deps.fs.readdirSync(path, {}));
   if (!readdirResult.ok) return [];
   return readdirResult.value.map((file) => parse(file).name);
 }

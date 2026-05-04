@@ -8,14 +8,24 @@ import {
   appendFileSync,
   statSync,
   globSync,
+  Dirent,
 } from "node:fs";
 
 export interface FsDeps {
   readFileSync: (path: string) => Buffer;
   writeFileSync: (path: string, content: string) => void;
   existsSync: (path: string) => boolean;
-  readdirSync: (path: string) => string[];
-  mkdirSync: (path: string) => void;
+  readdirSync(
+    path: string,
+    options:
+      | { withFileTypes: false; recursive?: boolean }
+      | { recursive?: boolean },
+  ): string[];
+  readdirSync(
+    path: string,
+    options: { withFileTypes: true; recursive?: boolean },
+  ): Dirent[];
+  mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
   unlinkSync: (path: string) => void;
   appendFileSync: (path: string, content: string) => void;
   statSync: (path: string) => {
@@ -33,8 +43,8 @@ export const fsDeps: FsDeps = {
   readFileSync: (path) => readFileSync(path),
   writeFileSync: (path, content) => writeFileSync(path, content),
   existsSync: (path) => existsSync(path),
-  readdirSync: (path) => readdirSync(path),
-  mkdirSync: (path) => mkdirSync(path),
+  readdirSync: readdirSync as FsDeps["readdirSync"],
+  mkdirSync: (path, options) => mkdirSync(path, options),
   unlinkSync: (path) => unlinkSync(path),
   appendFileSync: (path, content) => appendFileSync(path, content),
   statSync: (path) => statSync(path),
@@ -65,7 +75,25 @@ export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
       _files.set(path, content);
     },
     existsSync: (path: string) => _files.has(path) || _dirs.has(path),
-    readdirSync: (path: string) => _listings.get(path) ?? [],
+    // TODO: little complex
+    readdirSync: ((
+      path: string,
+      options?: { withFileTypes?: boolean; recursive?: boolean },
+    ) => {
+      const names = _listings.get(path) ?? [];
+      if (options?.withFileTypes) {
+        return names.map(
+          (name) =>
+            ({
+              name,
+              parentPath: path,
+              isFile: () => true,
+              isDirectory: () => false,
+            }) as Dirent,
+        );
+      }
+      return names;
+    }) as FsDeps["readdirSync"],
     mkdirSync: (path: string) => _dirs.add(path),
     unlinkSync: (path: string) => _files.delete(path),
     appendFileSync: (path: string, content: string) => {
