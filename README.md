@@ -156,7 +156,6 @@ Minimal runtime dependencies (7 total):
 ## TODO (soon)
 
 - [ ] Support skills
-  - [ ] Local skills override global skills by name
   - [ ] View skill tool
 - [ ] AGENTS.md in global settings path
 - [ ] Tool call interrupt

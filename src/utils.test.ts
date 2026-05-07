@@ -628,6 +628,52 @@ describe("utils", () => {
       const result = getSkillsContext(deps);
       assert.ok(result.includes("- my-skill: A test skill"));
     });
+
+    it("deduplicates by parsed name, keeping first occurrence", () => {
+      fs._dirs.add("/local/skills");
+      fs._dirs.add("/local/skills/local-skill");
+      fs._dirs.add("/global/skills");
+      fs._dirs.add("/global/skills/global-skill");
+      fs._listings.set("/local/skills", ["local-skill"]);
+      fs._listings.set("/local/skills/local-skill", ["SKILL.md"]);
+      fs._files.set(
+        "/local/skills/local-skill/SKILL.md",
+        "---\nname: deploy\ndescription: Local deploy\n---\n# Local",
+      );
+      fs._listings.set("/global/skills", ["global-skill"]);
+      fs._listings.set("/global/skills/global-skill", ["SKILL.md"]);
+      fs._files.set(
+        "/global/skills/global-skill/SKILL.md",
+        "---\nname: deploy\ndescription: Global deploy\n---\n# Global",
+      );
+      const deps = makeDeps({
+        skillsDirPaths: ["/local/skills", "/global/skills"],
+      });
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("- deploy: Local deploy"));
+      assert.ok(!result.includes("Global deploy"));
+    });
+
+    it("includes skills with different names", () => {
+      fs._dirs.add("/local/skills");
+      fs._dirs.add("/local/skills/a");
+      fs._dirs.add("/local/skills/b");
+      fs._listings.set("/local/skills", ["a", "b"]);
+      fs._listings.set("/local/skills/a", ["SKILL.md"]);
+      fs._files.set(
+        "/local/skills/a/SKILL.md",
+        "---\nname: skill-a\ndescription: First\n---\n",
+      );
+      fs._listings.set("/local/skills/b", ["SKILL.md"]);
+      fs._files.set(
+        "/local/skills/b/SKILL.md",
+        "---\nname: skill-b\ndescription: Second\n---\n",
+      );
+      const deps = makeDeps();
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("- skill-a: First"));
+      assert.ok(result.includes("- skill-b: Second"));
+    });
   });
 
   describe("getSkillJSON", () => {
@@ -654,7 +700,10 @@ describe("utils", () => {
       );
       const deps = makeDeps();
       const result = getSkillJSON("/skill-dir", deps);
-      assert.deepStrictEqual(result, { name: "deploy", description: "Deploy the app" });
+      assert.deepStrictEqual(result, {
+        name: "deploy",
+        description: "Deploy the app",
+      });
     });
 
     it("returns null when SKILL.md is missing name", () => {

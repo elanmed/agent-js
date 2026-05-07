@@ -173,24 +173,27 @@ export const getSkillsContextDeps: GetSkillsContextDeps = {
 export function getSkillsContext(
   deps: GetSkillsContextDeps = getSkillsContextDeps,
 ) {
+  const seenSkills = new Set();
   const skillsDirPaths = deps.skillsDirPaths ?? [
-    GLOBAL_SKILLS_DIR_PATH,
     LOCAL_SKILLS_DIR_PATH,
+    GLOBAL_SKILLS_DIR_PATH,
   ];
   const skillsJSON: Skill[] = [];
 
   skillsDirPaths.forEach((dirPath) => {
-    for (const name of deps.fs.readdirSync(dirPath)) {
-      const fullPath = join(dirPath, name);
-      const statResult = tryCatch(() => deps.fs.statSync(fullPath));
+    for (const dirName of deps.fs.readdirSync(dirPath)) {
+      const fullDirPath = join(dirPath, dirName);
+      const statResult = tryCatch(() => deps.fs.statSync(fullDirPath));
       if (!statResult.ok) continue;
       if (statResult.value.isFile()) continue;
 
-      const skillJSON = getSkillJSON(fullPath, {
+      const skillJSON = getSkillJSON(fullDirPath, {
         fs: deps.fs,
         colorPrint: deps.colorPrint,
       });
       if (skillJSON === null) continue;
+      if (seenSkills.has(skillJSON.name)) continue;
+      seenSkills.add(skillJSON.name);
       skillsJSON.push(skillJSON);
     }
   });
