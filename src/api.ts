@@ -62,7 +62,8 @@ async function callApi(
 
   const systemContent = [
     BASE_SYSTEM_PROMPT,
-    selectors.getAgentsMdFilesStr(),
+    selectors.getAgentsContext(),
+    selectors.getSkillsContext(),
   ].join("\n");
 
   try {

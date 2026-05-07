@@ -234,10 +234,16 @@ describe("state", () => {
     assert.equal(selectors.getEditorLogPath(), "/tmp/editor.log");
   });
 
-  it("set-agents-md-files-str", () => {
-    assert.equal(selectors.getAgentsMdFilesStr(), "");
-    dispatch(actions.setAgentsMdFilesStr("FILEPATH: AGENTS.md\nhello"));
-    assert.equal(selectors.getAgentsMdFilesStr(), "FILEPATH: AGENTS.md\nhello");
+  it("set-agents-context", () => {
+    assert.equal(selectors.getAgentsContext(), "");
+    dispatch(actions.setAgentsContext("FILEPATH: AGENTS.md\nhello"));
+    assert.equal(selectors.getAgentsContext(), "FILEPATH: AGENTS.md\nhello");
+  });
+
+  it("set-skills-context", () => {
+    assert.equal(selectors.getSkillsContext(), "");
+    dispatch(actions.setSkillsContext("- skill: desc"));
+    assert.equal(selectors.getSkillsContext(), "- skill: desc");
   });
 
   it("set-slash-commands", () => {

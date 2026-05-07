@@ -4,7 +4,8 @@ import { z } from "zod";
 import {
   colorPrint,
   getAvailableSlashCommands,
-  getRecursiveAgentsMdFilesStr,
+  getAgentsContext,
+  getSkillsContext,
   tryCatch,
 } from "./utils.ts";
 import { debugLog } from "./log.ts";
@@ -109,18 +110,27 @@ export const LOCAL_CONFIG_PATH = join(
   ".agent-js",
   "settings.json",
 );
+export const GLOBAL_SKILLS_DIR_PATH = join(
+  homedir(),
+  ".config",
+  ".agent-js",
+  "skills",
+);
+export const LOCAL_SKILLS_DIR_PATH = join(process.cwd(), ".agent-js", "skills");
 
 export interface InitStateDeps {
   fs: FsDeps;
   parseCliArgs: typeof parseCliArgs;
-  getRecursiveAgentsMdFilesStr: typeof getRecursiveAgentsMdFilesStr;
+  getAgentsContext: typeof getAgentsContext;
+  getSkillsContext: typeof getSkillsContext;
   colorPrint: typeof colorPrint;
 }
 
 const initStateDeps: InitStateDeps = {
   fs: fsDeps,
   parseCliArgs,
-  getRecursiveAgentsMdFilesStr,
+  getAgentsContext,
+  getSkillsContext,
   colorPrint,
 };
 
@@ -238,8 +248,17 @@ export function initState(deps: InitStateDeps = initStateDeps) {
     ),
   );
 
-  const agentsMdFilesStr = deps.getRecursiveAgentsMdFilesStr();
-  dispatch(actions.setAgentsMdFilesStr(agentsMdFilesStr));
+  const agentsContext = deps.getAgentsContext({
+    fs: deps.fs,
+    debugLog,
+  });
+  dispatch(actions.setAgentsContext(agentsContext));
+
+  const skillsContext = deps.getSkillsContext({
+    fs: deps.fs,
+    colorPrint: deps.colorPrint,
+  });
+  dispatch(actions.setSkillsContext(skillsContext));
 }
 
 function parseConfigStr(configStr: string): Config {

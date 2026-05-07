@@ -11,11 +11,13 @@ import type { InitStateDeps } from "./config.ts";
 import { makeFsDeps } from "./fs-deps.ts";
 
 function makeDeps(overrides: Partial<InitStateDeps> = {}): InitStateDeps {
+  const colorPrint = () => undefined;
   return {
     fs: makeFsDeps(),
     parseCliArgs: () => ({ debug: false, resumeSessionId: null }),
-    getRecursiveAgentsMdFilesStr: () => "",
-    colorPrint: () => undefined,
+    getAgentsContext: () => "",
+    getSkillsContext: () => "",
+    colorPrint,
     ...overrides,
   };
 }
@@ -446,9 +448,9 @@ describe("initState", () => {
     assert.equal(selectors.getDebugLog(), true);
   });
 
-  it("sets agentsMdFilesStr from dep", () => {
+  it("sets agentsContext from dep", () => {
     const deps = makeDeps({
-      getRecursiveAgentsMdFilesStr: () => "FILEPATH: AGENTS.md\nhello",
+      getAgentsContext: () => "FILEPATH: AGENTS.md\nhello",
     });
     deps.fs._files.set(
       GLOBAL_CONFIG_PATH,
@@ -459,6 +461,22 @@ describe("initState", () => {
     );
 
     initState(deps);
-    assert.equal(selectors.getAgentsMdFilesStr(), "FILEPATH: AGENTS.md\nhello");
+    assert.equal(selectors.getAgentsContext(), "FILEPATH: AGENTS.md\nhello");
+  });
+
+  it("sets skillsContext from dep", () => {
+    const deps = makeDeps({
+      getSkillsContext: () => "- skill: desc",
+    });
+    deps.fs._files.set(
+      GLOBAL_CONFIG_PATH,
+      JSON.stringify({
+        model: "claude-sonnet-4-6",
+        baseURL: "https://api.example.com",
+      }),
+    );
+
+    initState(deps);
+    assert.equal(selectors.getSkillsContext(), "- skill: desc");
   });
 });

@@ -11,11 +11,15 @@ import {
   formatMarkdown,
   fencePrint,
   getAvailableSlashCommands,
-  getRecursiveAgentsMdFilesStr,
+  getAgentsContext,
+  getSkillsContext,
+  getSkillJSON,
   createTempFile,
   type FencePrintDeps,
   type GetAvailableSlashCommandsDeps,
-  type GetRecursiveAgentsMdFilesStrDeps,
+  type GetAgentsContextDeps,
+  type GetSkillsContextDeps,
+  type GetSkillJSONDeps,
   type CreateTempFileDeps,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
@@ -534,15 +538,13 @@ describe("utils", () => {
     });
   });
 
-  describe("getRecursiveAgentsMdFilesStr", () => {
+  describe("getAgentsContext", () => {
     let fs: ReturnType<typeof makeFsDeps>;
     beforeEach(() => {
       fs = makeFsDeps();
     });
 
-    function makeDeps(
-      overrides: Partial<GetRecursiveAgentsMdFilesStrDeps> = {},
-    ) {
+    function makeDeps(overrides: Partial<GetAgentsContextDeps> = {}) {
       return {
         fs,
         debugLog: () => undefined,
@@ -552,7 +554,7 @@ describe("utils", () => {
 
     it("returns empty string when no AGENTS.md files found", () => {
       const deps = makeDeps();
-      const result = getRecursiveAgentsMdFilesStr(deps);
+      const result = getAgentsContext(deps);
       assert.equal(result, "");
     });
 
@@ -560,8 +562,11 @@ describe("utils", () => {
       fs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
       fs._files.set("AGENTS.md", "# Agent Instructions");
       const deps = makeDeps();
-      const result = getRecursiveAgentsMdFilesStr(deps);
-      assert.equal(result, "FILEPATH: AGENTS.md\n# Agent Instructions");
+      const result = getAgentsContext(deps);
+      assert.equal(
+        result,
+        "\nAGENTS.md context files:\nPath: AGENTS.md\nContent: # Agent Instructions\n",
+      );
     });
 
     it("returns formatted content for multiple files", () => {
@@ -569,10 +574,10 @@ describe("utils", () => {
       fs._files.set("AGENTS.md", "Root content");
       fs._files.set("src/AGENTS.md", "Src content");
       const deps = makeDeps();
-      const result = getRecursiveAgentsMdFilesStr(deps);
+      const result = getAgentsContext(deps);
       assert.equal(
         result,
-        "FILEPATH: AGENTS.md\nRoot content\nFILEPATH: src/AGENTS.md\nSrc content",
+        "\nAGENTS.md context files:\nPath: AGENTS.md\nContent: Root content\n\nPath: src/AGENTS.md\nContent: Src content\n",
       );
     });
 
@@ -580,8 +585,95 @@ describe("utils", () => {
       fs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
       fs._files.set("src/AGENTS.md", "Src content");
       const deps = makeDeps();
-      const result = getRecursiveAgentsMdFilesStr(deps);
-      assert.equal(result, "FILEPATH: src/AGENTS.md\nSrc content");
+      const result = getAgentsContext(deps);
+      assert.equal(
+        result,
+        "\nAGENTS.md context files:\nPath: src/AGENTS.md\nContent: Src content\n",
+      );
+    });
+  });
+
+  describe("getSkillsContext", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
+    function makeDeps(overrides: Partial<GetSkillsContextDeps> = {}) {
+      return {
+        fs,
+        skillsDirPaths: ["/global/skills", "/local/skills"],
+        colorPrint: () => undefined,
+        ...overrides,
+      };
+    }
+
+    it("returns skills prompt with no skills when dirs are empty", () => {
+      const deps = makeDeps();
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("Available skills:\n"));
+      assert.ok(!result.includes("- "));
+    });
+
+    it("lists skills found in skill directories", () => {
+      fs._dirs.add("/global/skills");
+      fs._dirs.add("/global/skills/my-skill");
+      fs._listings.set("/global/skills", ["my-skill"]);
+      fs._listings.set("/global/skills/my-skill", ["SKILL.md"]);
+      fs._files.set(
+        "/global/skills/my-skill/SKILL.md",
+        "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
+      );
+      const deps = makeDeps();
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("- my-skill: A test skill"));
+    });
+  });
+
+  describe("getSkillJSON", () => {
+    let fs: ReturnType<typeof makeFsDeps>;
+    beforeEach(() => {
+      fs = makeFsDeps();
+    });
+
+    function makeDeps(overrides: Partial<GetSkillJSONDeps> = {}) {
+      return { fs, colorPrint: () => undefined, ...overrides };
+    }
+
+    it("returns null when dir is empty", () => {
+      const deps = makeDeps();
+      const result = getSkillJSON("/some/dir", deps);
+      assert.equal(result, null);
+    });
+
+    it("parses valid SKILL.md front matter", () => {
+      fs._listings.set("/skill-dir", ["SKILL.md", "other.txt"]);
+      fs._files.set(
+        "/skill-dir/SKILL.md",
+        "---\nname: deploy\ndescription: Deploy the app\n---\n# Deploy",
+      );
+      const deps = makeDeps();
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.deepStrictEqual(result, { name: "deploy", description: "Deploy the app" });
+    });
+
+    it("returns null when SKILL.md is missing name", () => {
+      fs._listings.set("/skill-dir", ["SKILL.md"]);
+      fs._files.set(
+        "/skill-dir/SKILL.md",
+        "---\ndescription: No name here\n---\n",
+      );
+      const deps = makeDeps();
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.equal(result, null);
+    });
+
+    it("returns null when SKILL.md is not a file", () => {
+      fs._dirs.add("/skill-dir");
+      fs._files.delete("/skill-dir/SKILL.md");
+      const deps = makeDeps();
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.equal(result, null);
     });
   });
 

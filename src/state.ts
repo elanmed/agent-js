@@ -27,7 +27,8 @@ interface State {
     debugLog: boolean;
     editorLog: boolean;
     editorLogPath: string;
-    agentsMdFilesStr: string;
+    agentsContext: string;
+    skillsContext: string;
     rl: readline.Interface | null;
     spinnerTimeout: NodeJS.Timeout | null;
   };
@@ -60,7 +61,8 @@ const initialState: State = {
     debugLog: false,
     editorLog: false,
     editorLogPath: "",
-    agentsMdFilesStr: "",
+    agentsContext: "",
+    skillsContext: "",
     rl: null,
     spinnerTimeout: null,
   },
@@ -184,7 +186,11 @@ type Action =
       payload: string;
     }
   | {
-      type: "set-agents-md-files-str";
+      type: "set-agents-context";
+      payload: string;
+    }
+  | {
+      type: "set-skills-context";
       payload: string;
     }
   | {
@@ -476,11 +482,24 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, before, action.payload);
       return next;
     }
-    case "set-agents-md-files-str": {
-      const before = state.appState.agentsMdFilesStr;
+    case "set-agents-context": {
+      const before = state.appState.agentsContext;
       const next = {
         ...state,
-        appState: { ...state.appState, agentsMdFilesStr: action.payload },
+        appState: { ...state.appState, agentsContext: action.payload },
+      };
+      logStateChange(
+        action.type,
+        String(before.length),
+        String(action.payload.length),
+      );
+      return next;
+    }
+    case "set-skills-context": {
+      const before = state.appState.skillsContext;
+      const next = {
+        ...state,
+        appState: { ...state.appState, skillsContext: action.payload },
       };
       logStateChange(
         action.type,
@@ -631,8 +650,12 @@ const setEditorLogPath = (editorLogPath: string): Action => {
   return { type: "set-editor-log-path", payload: editorLogPath };
 };
 
-const setAgentsMdFilesStr = (agentsMdFilesStr: string): Action => {
-  return { type: "set-agents-md-files-str", payload: agentsMdFilesStr };
+const setAgentsContext = (agentsContext: string): Action => {
+  return { type: "set-agents-context", payload: agentsContext };
+};
+
+const setSkillsContext = (skillsContext: string): Action => {
+  return { type: "set-skills-context", payload: skillsContext };
 };
 
 const setRl = (rl: readline.Interface | null): Action => {
@@ -673,7 +696,8 @@ export const actions = {
   setDebugLog,
   setEditorLog,
   setEditorLogPath,
-  setAgentsMdFilesStr,
+  setAgentsContext,
+  setSkillsContext,
   setRl,
   setSpinnerTimeout,
   resetState,
@@ -689,7 +713,8 @@ const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
 const getEditorLog = () => getState().appState.editorLog;
 const getEditorLogPath = () => getState().appState.editorLogPath;
-const getAgentsMdFilesStr = () => getState().appState.agentsMdFilesStr;
+const getAgentsContext = () => getState().appState.agentsContext;
+const getSkillsContext = () => getState().appState.skillsContext;
 const getRl = () => getState().appState.rl;
 const getSpinnerTimeout = () => getState().appState.spinnerTimeout;
 const getModel = () => getState().configState.model;
@@ -726,7 +751,8 @@ export const selectors = {
   getDebugLog,
   getEditorLog,
   getEditorLogPath,
-  getAgentsMdFilesStr,
+  getAgentsContext,
+  getSkillsContext,
   getRl,
   getSpinnerTimeout,
 };

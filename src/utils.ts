@@ -5,12 +5,19 @@ import { spawnSync } from "node:child_process";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
-import type { Key, ModelPricing } from "./config.ts";
+import {
+  GLOBAL_SKILLS_DIR_PATH,
+  LOCAL_SKILLS_DIR_PATH,
+  type Key,
+  type ModelPricing,
+} from "./config.ts";
 import { format } from "prettier";
 import { debugLog } from "./log.ts";
 import type readline from "node:readline/promises";
 import assert from "node:assert";
 import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import frontMatter from "front-matter";
+import z from "zod";
 
 export const MISSING = "MISSING";
 
@@ -108,33 +115,140 @@ export function fencePrint(
   deps.colorPrint(line, opts.color ?? "grey");
 }
 
-export interface GetRecursiveAgentsMdFilesStrDeps {
+export interface GetAgentsContextDeps {
   debugLog: (content: string) => void;
   fs: FsDeps;
 }
 
-export const getRecursiveAgentsMdFilesStrDeps: GetRecursiveAgentsMdFilesStrDeps =
-  {
-    debugLog,
-    fs: fsDeps,
-  };
+export const getAgentsContextDeps: GetAgentsContextDeps = {
+  debugLog,
+  fs: fsDeps,
+};
 
-export function getRecursiveAgentsMdFilesStr(
-  deps: GetRecursiveAgentsMdFilesStrDeps = getRecursiveAgentsMdFilesStrDeps,
+export function getAgentsContext(
+  deps: GetAgentsContextDeps = getAgentsContextDeps,
 ) {
-  const agentFiles = deps.fs.globSync("**/AGENTS.md");
+  const agentFilePaths = deps.fs.globSync("**/AGENTS.md");
 
-  deps.debugLog(`AGENTS.md found: ${agentFiles.join(",")}`);
-  const filesContents = [];
-  for (const filePath of agentFiles) {
+  deps.debugLog(`AGENTS.md found: ${agentFilePaths.join(",")}`);
+
+  const entries: { filePath: string; content: string }[] = [];
+
+  for (const filePath of agentFilePaths) {
     const readResult = tryCatch(() =>
       deps.fs.readFileSync(filePath).toString(),
     );
     if (readResult.ok) {
-      filesContents.push(`FILEPATH: ${filePath}`, readResult.value);
+      entries.push({ filePath, content: readResult.value });
     }
   }
-  return filesContents.join("\n");
+
+  if (entries.length === 0) return "";
+
+  const agentFilesList = entries
+    .map((entry) => `Path: ${entry.filePath}\nContent: ${entry.content}\n`)
+    .join("\n");
+  return `
+AGENTS.md context files:
+${agentFilesList}`;
+}
+
+const skillSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+});
+export type Skill = z.infer<typeof skillSchema>;
+
+export interface GetSkillsContextDeps {
+  fs: FsDeps;
+  skillsDirPaths?: string[];
+  colorPrint: typeof colorPrint;
+}
+
+export const getSkillsContextDeps: GetSkillsContextDeps = {
+  fs: fsDeps,
+  colorPrint,
+};
+
+export function getSkillsContext(
+  deps: GetSkillsContextDeps = getSkillsContextDeps,
+) {
+  const skillsDirPaths = deps.skillsDirPaths ?? [
+    GLOBAL_SKILLS_DIR_PATH,
+    LOCAL_SKILLS_DIR_PATH,
+  ];
+  const skillsJSON: Skill[] = [];
+
+  skillsDirPaths.forEach((dirPath) => {
+    for (const name of deps.fs.readdirSync(dirPath)) {
+      const fullPath = join(dirPath, name);
+      const statResult = tryCatch(() => deps.fs.statSync(fullPath));
+      if (!statResult.ok) continue;
+      if (statResult.value.isFile()) continue;
+
+      const skillJSON = getSkillJSON(fullPath, {
+        fs: deps.fs,
+        colorPrint: deps.colorPrint,
+      });
+      if (skillJSON === null) continue;
+      skillsJSON.push(skillJSON);
+    }
+  });
+
+  const skillsList = skillsJSON
+    .map((skill) => `- ${skill.name}: ${skill.description}`)
+    .join("\n");
+
+  return `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+${skillsList}
+`;
+}
+
+export interface GetSkillJSONDeps {
+  fs: FsDeps;
+  colorPrint: typeof colorPrint;
+}
+
+export const getSkillJSONDeps: GetSkillJSONDeps = {
+  fs: fsDeps,
+  colorPrint,
+};
+
+export function getSkillJSON(
+  dirPath: string,
+  deps: GetSkillJSONDeps = getSkillJSONDeps,
+) {
+  for (const name of deps.fs.readdirSync(dirPath)) {
+    const fullPath = join(dirPath, name);
+    const statResult = tryCatch(() => deps.fs.statSync(fullPath));
+    if (!statResult.ok) continue;
+    if (!statResult.value.isFile()) continue;
+    if (name !== "SKILL.md") continue;
+
+    const readResult = tryCatch(() =>
+      deps.fs.readFileSync(fullPath).toString(),
+    );
+    if (!readResult.ok) continue;
+
+    const rawData = frontMatter(readResult.value);
+    const parseResult = skillSchema.safeParse(rawData.attributes);
+    if (!parseResult.success) {
+      deps.colorPrint(
+        `Malformed skill at ${fullPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,
+        "red",
+      );
+      continue;
+    }
+    return parseResult.data;
+  }
+
+  return null;
 }
 
 export function normalizeLine(content: string): string {
