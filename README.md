@@ -12,6 +12,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Configuration**: global and local `settings.json`
 - **Cost tracking**: per-model token pricing with usage summary after each response
 - **AGENTS.md discovery**: recursively includes project context from `AGENTS.md` files
+- **Skills**: load skill metadata from `SKILL.md` files in `~/.config/.agent-js/skills/` or `./.agent-js/skills/`
 - **Slash commands**: builtin (`/edit`, `/clear`, `/edit-log`) and custom commands from `./.agent-js/commands/`
 - **Keymaps**: customizable shortcuts for common actions
 - **Rendering**: responses piped through `bat` for markdown formatting
@@ -97,6 +98,36 @@ Slash commands are triggered with `/command` at the prompt.
 
 Create custom commands by adding markdown files to `./.agent-js/commands/[command].md`
 
+## Skills
+
+### Directory Structure
+
+```
+~/.config/.agent-js/skills/   # global skills
+  my-skill/
+    SKILL.md
+./.agent-js/skills/            # local skills
+  project-skill/
+    SKILL.md
+```
+
+### SKILL.md Format
+
+Each `SKILL.md` must have front matter with `name` and `description`:
+
+```markdown
+---
+name: my-skill
+description: Does something useful
+---
+
+# My Skill
+
+Skill body with instructions the agent will use when this skill is loaded.
+```
+
+Available skills are listed in the system prompt. Use the `loadSkill` tool to load a skill's full instructions.
+
 ## Tools
 
 - `bash` — run bash commands
@@ -125,6 +156,8 @@ Minimal runtime dependencies (7 total):
 ## TODO (soon)
 
 - [ ] Support skills
+  - [ ] Local skills override global skills by name
+  - [ ] View skill tool
 - [ ] AGENTS.md in global settings path
 - [ ] Tool call interrupt
 
