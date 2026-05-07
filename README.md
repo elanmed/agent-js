@@ -7,7 +7,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 ## Features
 
 - **Minimal**: 2,500 lines of source code, 2,000 lines of tests
-- **Tools**: execute bash commands, create/edit files, etc. A `git diff` is output when a tool changes a file
+- **Tools**: execute bash commands, create/edit files, fetch from the web, etc. A `git diff` is output when a tool changes a file
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
 - **Configuration**: global and local `settings.json`
 - **Cost tracking**: per-model token pricing with usage summary after each response
@@ -120,12 +120,13 @@ Minimal runtime dependencies (7 total):
 | `jsdom`                     | DOM parsing for `web_fetch_html`        |
 | `@mozilla/readability`      | Content extraction for `web_fetch_html` |
 | `prettier`                  | Markdown formatting                     |
+| `front-matter`              | Parsing Skill metadata                  |
 
 ## TODO (soon)
 
 - [ ] Support skills
+- [ ] AGENTS.md in global settings path
 - [ ] Tool call interrupt
-- [ ] Separate editor log per session? local editor log?
 
 ## TODO (later)
 
