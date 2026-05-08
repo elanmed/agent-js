@@ -708,3 +708,51 @@ async function printGitDiff(args: {
     printNewline();
   }
 }
+
+// NOTE: missing test coverage
+export async function execGitDiff(
+  args: string,
+): Promise<{ stdout: string; stderr: string }> {
+  debugLog(`execGitDiff: args=${args}`);
+  const isDeltaAvailable = await checkDelta();
+  debugLog(`execGitDiff: isDeltaAvailable=${String(isDeltaAvailable)}`);
+
+  return new Promise((resolve, reject) => {
+    const gitDiffCmd = `git diff --no-index ${args}`;
+    debugLog(`execGitDiff: gitDiffCmd=${gitDiffCmd}`);
+
+    if (isDeltaAvailable) {
+      const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
+      exec(`${gitDiffCmd} | ${deltaCmd}`, (error, stdout, stderr) => {
+        if (error && error.code !== 1) {
+          debugLog(
+            `execGitDiff: error with delta, code=${String(error.code)}, message=${error.message}`,
+          );
+          reject(error);
+        } else {
+          debugLog(
+            `execGitDiff: success with delta, stdout.length=${String(stdout.length)}`,
+          );
+          resolve({ stdout, stderr });
+        }
+      });
+      return;
+    }
+
+    const coloredGitDiffCmd = `${gitDiffCmd} --color=always`;
+    exec(coloredGitDiffCmd, (error, stdout, stderr) => {
+      if (error && error.code !== 1) {
+        debugLog(
+          `execGitDiff: error without delta, code=${String(error.code)}, message=${error.message}`,
+        );
+        reject(error);
+      } else {
+        debugLog(
+          `execGitDiff: success without delta, stdout.length=${String(stdout.length)}`,
+        );
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+}
+

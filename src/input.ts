@@ -342,3 +342,42 @@ export function editLogCommand() {
     stdio: "inherit",
   });
 }
+
+export function isSameKey(a: Key, b: Key) {
+  return (
+    a.name === b.name &&
+    (a.ctrl ?? false) === (b.ctrl ?? false) &&
+    (a.meta ?? false) === (b.meta ?? false) &&
+    (a.shift ?? false) === (b.shift ?? false)
+  );
+}
+
+export function clearRlLine(): readline.Interface | null {
+  const rl = selectors.getRl();
+  assert(rl !== null);
+  rl.write(null, { ctrl: true, name: "e" });
+  rl.write(null, { ctrl: true, name: "u" });
+  return rl;
+}
+
+export interface GetAvailableSlashCommandsDeps {
+  getCwd: () => string;
+  fs: FsDeps;
+}
+
+export const getAvailableSlashCommandsDeps: GetAvailableSlashCommandsDeps = {
+  getCwd: () => process.cwd(),
+  fs: fsDeps,
+};
+
+export function getAvailableSlashCommands(
+  deps: GetAvailableSlashCommandsDeps = getAvailableSlashCommandsDeps,
+) {
+  const path = join(deps.getCwd(), ".agent-js", "commands");
+  if (!deps.fs.existsSync(path)) return [];
+
+  const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
+  if (!readdirResult.ok) return [];
+  return readdirResult.value.map((file) => parse(file).name);
+}
+
