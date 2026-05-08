@@ -181,6 +181,8 @@ export function getSkillsContext(
   const skillsJSON: Skill[] = [];
 
   skillsDirPaths.forEach((dirPath) => {
+    if (!deps.fs.existsSync(dirPath)) return;
+
     for (const dirName of deps.fs.readdirSync(dirPath)) {
       const fullDirPath = join(dirPath, dirName);
       const statResult = tryCatch(() => deps.fs.statSync(fullDirPath));
