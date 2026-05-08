@@ -7,9 +7,9 @@ import {
   tryCatch,
   tryCatchAsync,
   normalizeLine,
-  calculateSessionUsage,
   type Result,
 } from "./utils.ts";
+import { type ModelPricing } from "./config.ts";
 
 const execPromise = promisify(exec);
 
@@ -170,5 +170,61 @@ export async function executeBat(content: string) {
 
   debugLog("executeBat: bat spawn failed, falling back to plain text");
   colorPrint(content);
+}
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+}
+
+export function calculateSessionUsage(): string {
+  const model = selectors.getModel();
+  const usages = selectors.getMessageUsages();
+  const pricingPerModel = selectors.getPricingPerModel();
+
+  const totalUsage = usages.reduce<{
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+  }>(
+    (accum, curr) => ({
+      inputTokens: accum.inputTokens + curr.inputTokens,
+      outputTokens: accum.outputTokens + curr.outputTokens,
+      cacheReadTokens: accum.cacheReadTokens + curr.cacheReadTokens,
+      cacheWriteTokens: accum.cacheWriteTokens + curr.cacheWriteTokens,
+    }),
+    {
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    },
+  );
+
+  const pricing: ModelPricing | undefined = pricingPerModel[model];
+  if (!pricing) {
+    return `${totalUsage.inputTokens.toLocaleString()} in, ${totalUsage.outputTokens.toLocaleString()} out`;
+  }
+
+  const DOLLARS_PER_MILLION = 1_000_000;
+  const inputPerToken = pricing.inputPerToken;
+  const outputPerToken = pricing.outputPerToken;
+  const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
+  const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
+
+  const inputCost =
+    (totalUsage.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
+  const outputCost =
+    (totalUsage.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
+  const cacheReadCost =
+    (totalUsage.cacheReadTokens * cacheReadPerToken) / DOLLARS_PER_MILLION;
+  const cacheWriteCost =
+    (totalUsage.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
+
+  const cost = inputCost + outputCost + cacheReadCost + cacheWriteCost;
+  return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
 

@@ -10,12 +10,12 @@ import {
   getMessageFromError,
   normalizeLine,
   createTempFile,
-  calculateSessionUsage,
 } from "./utils.ts";
 import {
   colorPrint,
   printNewline,
   fencePrint,
+  calculateSessionUsage,
   type Color,
 } from "./print.ts";
 import { join, parse } from "node:path";

@@ -1,6 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import { MISSING, type TokenUsage } from "./utils.ts";
+import { MISSING } from "./utils.ts";
+import type { TokenUsage } from "./print.ts";
 import { dispatch, actions, selectors } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 
