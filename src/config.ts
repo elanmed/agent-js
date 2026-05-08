@@ -1,5 +1,3 @@
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { z } from "zod";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
@@ -9,6 +7,10 @@ import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import {
+  GLOBAL_CONFIG_PATH,
+  LOCAL_CONFIG_PATH,
+} from "./paths.ts";
 
 export const MISSING = "MISSING";
 
@@ -95,25 +97,6 @@ export const DEFAULT_CONFIG: DefaultConfig = {
     },
   },
 };
-
-export const GLOBAL_CONFIG_PATH = join(
-  homedir(),
-  ".config",
-  ".agent-js",
-  "settings.json",
-);
-export const LOCAL_CONFIG_PATH = join(
-  process.cwd(),
-  ".agent-js",
-  "settings.json",
-);
-export const GLOBAL_SKILLS_DIR_PATH = join(
-  homedir(),
-  ".config",
-  ".agent-js",
-  "skills",
-);
-export const LOCAL_SKILLS_DIR_PATH = join(process.cwd(), ".agent-js", "skills");
 
 export interface InitStateDeps {
   fs: FsDeps;

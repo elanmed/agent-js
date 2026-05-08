@@ -4,10 +4,9 @@ import { dispatch, actions, selectors } from "./state.ts";
 import {
   initState,
   DEFAULT_CONFIG,
-  GLOBAL_CONFIG_PATH,
-  LOCAL_CONFIG_PATH,
 } from "./config.ts";
 import type { InitStateDeps } from "./config.ts";
+import { GLOBAL_CONFIG_PATH, LOCAL_CONFIG_PATH } from "./paths.ts";
 import { makeFsDeps } from "./fs-deps.ts";
 
 function makeDeps(overrides: Partial<InitStateDeps> = {}): InitStateDeps {

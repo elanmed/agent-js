@@ -1,6 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import { makeFsDeps } from "./fs-deps.ts";
+import { GLOBAL_AGENTS_PATH } from "./paths.ts";
 import {
   getAgentsContext,
   getSkillsContext,
@@ -62,6 +63,35 @@ describe("context", () => {
       assert.equal(
         result,
         "\nAGENTS.md context files:\nPath: src/AGENTS.md\nContent: Src content\n",
+      );
+    });
+
+    it("includes global AGENTS.md when it exists", () => {
+      fs._files.set(GLOBAL_AGENTS_PATH, "global content");
+      const deps = makeDeps();
+      const result = getAgentsContext(deps);
+      assert.equal(
+        result,
+        `\nAGENTS.md context files:\nPath: ${GLOBAL_AGENTS_PATH}\nContent: global content\n`,
+      );
+    });
+
+    it("combines global and globbed AGENTS.md files", () => {
+      fs._files.set(GLOBAL_AGENTS_PATH, "global content");
+      fs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
+      fs._files.set("AGENTS.md", "local content");
+      const deps = makeDeps();
+      const result = getAgentsContext(deps);
+      assert.equal(
+        result,
+        `
+AGENTS.md context files:
+Path: ${GLOBAL_AGENTS_PATH}
+Content: global content
+
+Path: AGENTS.md
+Content: local content
+`,
       );
     });
   });
@@ -147,6 +177,76 @@ describe("context", () => {
       assert.ok(result.includes("- skill-a: First"));
       assert.ok(result.includes("- skill-b: Second"));
     });
+
+    it("skips non-existent skill directories", () => {
+      fs._dirs.add("/global/skills");
+      fs._dirs.add("/global/skills/my-skill");
+      fs._listings.set("/global/skills", ["my-skill"]);
+      fs._listings.set("/global/skills/my-skill", ["SKILL.md"]);
+      fs._files.set(
+        "/global/skills/my-skill/SKILL.md",
+        "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
+      );
+      const deps = makeDeps({
+        skillsDirPaths: ["/nonexistent", "/global/skills"],
+      });
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("- my-skill: A test skill"));
+    });
+
+    it("skips file entries in skill directory", () => {
+      fs._dirs.add("/global/skills");
+      fs._files.set("/global/skills/not-a-dir", "some content");
+      fs._dirs.add("/global/skills/actual-skill");
+      fs._listings.set("/global/skills", ["not-a-dir", "actual-skill"]);
+      fs._listings.set("/global/skills/actual-skill", ["SKILL.md"]);
+      fs._files.set(
+        "/global/skills/actual-skill/SKILL.md",
+        "---\nname: actual-skill\ndescription: Real\n---\n",
+      );
+      const deps = makeDeps();
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("- actual-skill: Real"));
+      assert.ok(!result.includes("not-a-dir"));
+    });
+
+    it("skips entries where statSync fails", () => {
+      fs._dirs.add("/global/skills");
+      fs._listings.set("/global/skills", ["broken", "working"]);
+      fs._dirs.add("/global/skills/working");
+      fs._listings.set("/global/skills/working", ["SKILL.md"]);
+      fs._files.set(
+        "/global/skills/working/SKILL.md",
+        "---\nname: working\ndescription: Works\n---\n",
+      );
+      const originalStatSync = fs.statSync;
+      fs.statSync = (path: string) => {
+        if (path === "/global/skills/broken") throw new Error("stat failed");
+        return originalStatSync(path);
+      };
+      const deps = makeDeps();
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("- working: Works"));
+      assert.ok(!result.includes("broken"));
+    });
+
+    it("skips entries where getSkillJSON returns null", () => {
+      fs._dirs.add("/global/skills");
+      fs._dirs.add("/global/skills/no-skill-md");
+      fs._dirs.add("/global/skills/has-skill");
+      fs._listings.set("/global/skills", ["no-skill-md", "has-skill"]);
+      fs._listings.set("/global/skills/no-skill-md", ["readme.txt"]);
+      fs._files.set("/global/skills/no-skill-md/readme.txt", "just a file");
+      fs._listings.set("/global/skills/has-skill", ["SKILL.md"]);
+      fs._files.set(
+        "/global/skills/has-skill/SKILL.md",
+        "---\nname: has-skill\ndescription: Present\n---\n",
+      );
+      const deps = makeDeps();
+      const result = getSkillsContext(deps);
+      assert.ok(result.includes("- has-skill: Present"));
+      assert.ok(!result.includes("no-skill-md"));
+    });
   });
 
   describe("getSkillJSON", () => {
@@ -190,12 +290,72 @@ describe("context", () => {
       assert.equal(result, null);
     });
 
+    it("returns null when SKILL.md is missing description", () => {
+      fs._listings.set("/skill-dir", ["SKILL.md"]);
+      fs._files.set("/skill-dir/SKILL.md", "---\nname: deploy\n---\n");
+      const deps = makeDeps();
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.equal(result, null);
+    });
+
     it("returns null when SKILL.md is not a file", () => {
       fs._dirs.add("/skill-dir");
       fs._files.delete("/skill-dir/SKILL.md");
       const deps = makeDeps();
       const result = getSkillJSON("/skill-dir", deps);
       assert.equal(result, null);
+    });
+
+    it("finds SKILL.md when it is not the first entry", () => {
+      fs._listings.set("/skill-dir", ["readme.txt", "notes.md", "SKILL.md"]);
+      fs._files.set("/skill-dir/readme.txt", "readme");
+      fs._files.set("/skill-dir/notes.md", "notes");
+      fs._files.set(
+        "/skill-dir/SKILL.md",
+        "---\nname: deploy\ndescription: Deploy the app\n---\n",
+      );
+      const deps = makeDeps();
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.deepStrictEqual(result, {
+        name: "deploy",
+        description: "Deploy the app",
+      });
+    });
+
+    it("skips entries where statSync fails", () => {
+      fs._listings.set("/skill-dir", ["SKILL.md"]);
+      const originalStatSync = fs.statSync;
+      fs.statSync = (path: string) => {
+        if (path === "/skill-dir/SKILL.md") throw new Error("stat failed");
+        return originalStatSync(path);
+      };
+      const deps = makeDeps();
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.equal(result, null);
+    });
+
+    it("returns null when readFileSync fails", () => {
+      fs._listings.set("/skill-dir", ["SKILL.md"]);
+      const deps = makeDeps();
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.equal(result, null);
+    });
+
+    it("calls colorPrint for malformed skill", () => {
+      const calls: string[] = [];
+      fs._listings.set("/skill-dir", ["SKILL.md"]);
+      fs._files.set("/skill-dir/SKILL.md", "---\nname: bad\n---\n");
+      const deps = makeDeps({
+        colorPrint: (text) => {
+          calls.push(text.toString());
+        },
+      });
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.equal(result, null);
+      assert.equal(calls.length, 1);
+      assert.ok(calls[0]!.includes("Malformed skill at /skill-dir/SKILL.md"));
+      assert.ok(calls[0]!.includes("name"));
+      assert.ok(calls[0]!.includes("description"));
     });
   });
 });

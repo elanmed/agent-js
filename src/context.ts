@@ -3,7 +3,11 @@ import { fsDeps, type FsDeps } from "./fs-deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
-import { GLOBAL_SKILLS_DIR_PATH, LOCAL_SKILLS_DIR_PATH } from "./config.ts";
+import {
+  GLOBAL_AGENTS_PATH,
+  GLOBAL_SKILLS_DIR_PATH,
+  LOCAL_SKILLS_DIR_PATH,
+} from "./paths.ts";
 import frontMatter from "front-matter";
 import z from "zod";
 
@@ -20,7 +24,16 @@ export const getAgentsContextDeps: GetAgentsContextDeps = {
 export function getAgentsContext(
   deps: GetAgentsContextDeps = getAgentsContextDeps,
 ) {
-  const agentFilePaths = deps.fs.globSync("**/AGENTS.md");
+  const agentFilePaths: string[] = [];
+
+  if (deps.fs.existsSync(GLOBAL_AGENTS_PATH)) {
+    agentFilePaths.push(GLOBAL_AGENTS_PATH);
+  }
+
+  const globResult = tryCatch(() => deps.fs.globSync("**/AGENTS.md"));
+  if (globResult.ok) {
+    agentFilePaths.push(...globResult.value);
+  }
 
   deps.debugLog(`AGENTS.md found: ${agentFilePaths.join(",")}`);
 
