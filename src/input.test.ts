@@ -237,3 +237,128 @@ describe("resolveSlashCommand", () => {
     assert.ok(errors[0]!.message.includes("known,edit,edit-log,clear"));
   });
 });
+
+describe("isSameKey", () => {
+  it("returns true when all fields match", () => {
+    assert.equal(
+      isSameKey(
+        { name: "e", ctrl: true, meta: false, shift: false },
+        { name: "e", ctrl: true, meta: false, shift: false },
+      ),
+      true,
+    );
+  });
+
+  it("returns false when name differs", () => {
+    assert.equal(
+      isSameKey(
+        { name: "e", ctrl: true, meta: false, shift: false },
+        { name: "x", ctrl: true, meta: false, shift: false },
+      ),
+      false,
+    );
+  });
+
+  it("returns false when ctrl differs", () => {
+    assert.equal(
+      isSameKey(
+        { name: "e", ctrl: true, meta: false, shift: false },
+        { name: "e", ctrl: false, meta: false, shift: false },
+      ),
+      false,
+    );
+  });
+
+  it("returns false when meta differs", () => {
+    assert.equal(
+      isSameKey(
+        { name: "x", ctrl: false, meta: true, shift: false },
+        { name: "x", ctrl: false, meta: false, shift: false },
+      ),
+      false,
+    );
+  });
+
+  it("returns false when shift differs", () => {
+    assert.equal(
+      isSameKey(
+        { name: "x", ctrl: false, meta: false, shift: true },
+        { name: "x", ctrl: false, meta: false, shift: false },
+      ),
+      false,
+    );
+  });
+});
+
+describe("getAvailableSlashCommands", () => {
+  let fs: ReturnType<typeof makeFsDeps>;
+  beforeEach(() => {
+    fs = makeFsDeps();
+  });
+
+  function makeDeps(overrides: Partial<GetAvailableSlashCommandsDeps> = {}) {
+    return {
+      getCwd: () => "/test/project",
+      fs,
+      ...overrides,
+    };
+  }
+
+  it("returns empty array when commands directory does not exist", () => {
+    const deps = makeDeps();
+    const result = getAvailableSlashCommands(deps);
+    assert.deepStrictEqual(result, []);
+  });
+
+  it("returns empty array when readdir throws", () => {
+    fs._dirs.add("/test/project/.agent-js/commands");
+    fs.readdirSync = () => {
+      throw new Error("permission denied");
+    };
+    const deps = makeDeps();
+    const result = getAvailableSlashCommands(deps);
+    assert.deepStrictEqual(result, []);
+  });
+
+  it("returns empty array when commands directory is empty", () => {
+    fs._dirs.add("/test/project/.agent-js/commands");
+    const deps = makeDeps();
+    const result = getAvailableSlashCommands(deps);
+    assert.deepStrictEqual(result, []);
+  });
+
+  it("returns command names without file extensions", () => {
+    fs._dirs.add("/test/project/.agent-js/commands");
+    fs._listings.set("/test/project/.agent-js/commands", [
+      "help.ts",
+      "status.js",
+      "deploy.mjs",
+    ]);
+    const deps = makeDeps();
+    const result = getAvailableSlashCommands(deps);
+    assert.deepStrictEqual(result, ["help", "status", "deploy"]);
+  });
+
+  it("returns command names for files without extensions", () => {
+    fs._dirs.add("/test/project/.agent-js/commands");
+    fs._listings.set("/test/project/.agent-js/commands", ["help", "status"]);
+    const deps = makeDeps();
+    const result = getAvailableSlashCommands(deps);
+    assert.deepStrictEqual(result, ["help", "status"]);
+  });
+
+  it("uses cwd from deps to build path", () => {
+    let capturedPath = "";
+    const originalExistsSync = fs.existsSync.bind(fs);
+    fs.existsSync = (path: string) => {
+      capturedPath = path;
+      return originalExistsSync(path);
+    };
+    const deps = makeDeps({
+      getCwd: () => "/custom/project",
+    });
+    getAvailableSlashCommands(deps);
+    assert.equal(capturedPath, "/custom/project/.agent-js/commands");
+  });
+});
+
