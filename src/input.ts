@@ -328,8 +328,10 @@ export function editCommand(
 
 export function editLogCommand() {
   if (!fsDeps.existsSync(selectors.getEditorLogPath())) {
-    colorPrint("[Edit log does not exist]", "yellow");
-    clearRlLine()!.prompt();
+    if (selectors.getSpinnerTimeout() === null) {
+      colorPrint("[Edit log does not exist]", "yellow");
+      clearRlLine()!.prompt();
+    }
     return;
   }
   const editor =
