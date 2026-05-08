@@ -32,6 +32,9 @@ describe("editCommand", () => {
       fs,
       createTempFile: () => "/tmp/test.txt",
       spawnSync: () => ({ stdout: Buffer.from("") }),
+      colorPrint: () => {
+        void 0;
+      },
       env: {},
       editorLog: () => undefined,
       ...overrides,

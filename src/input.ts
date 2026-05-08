@@ -12,12 +12,7 @@ import {
   createTempFile,
   calculateSessionUsage,
 } from "./utils.ts";
-import {
-  colorPrint,
-  printNewline,
-  fencePrint,
-  type Color,
-} from "./print.ts";
+import { colorPrint, printNewline, fencePrint, type Color } from "./print.ts";
 import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { spawnSync } from "node:child_process";
@@ -286,6 +281,7 @@ export interface EditCommandDeps {
   ) => unknown;
   env: NodeJS.ProcessEnv;
   editorLog: (content: string) => void;
+  colorPrint: (message: string, color?: Color) => void;
 }
 
 export const editCommandDeps: EditCommandDeps = {
@@ -294,6 +290,7 @@ export const editCommandDeps: EditCommandDeps = {
   spawnSync,
   env: process.env,
   editorLog,
+  colorPrint,
 };
 
 export function editCommand(
@@ -306,14 +303,14 @@ export function editCommand(
     deps.fs.writeFileSync(tempFile, currentLine),
   );
   if (!writeResult.ok) {
-    colorPrint("Failed to write to temp file", "red");
+    deps.colorPrint("Failed to write to temp file", "red");
     return null;
   }
   deps.spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
 
   const readResult = tryCatch(() => deps.fs.readFileSync(tempFile).toString());
   if (!readResult.ok) {
-    colorPrint("Failed to read from temp file", "red");
+    deps.colorPrint("Failed to read from temp file", "red");
     tryCatch(() => deps.fs.unlinkSync(tempFile));
     return null;
   }
