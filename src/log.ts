@@ -74,9 +74,9 @@ export function editorLog(
     deps.fs.appendFileSync(
       path,
       `${new Date(deps.now()).toISOString()}
-      ${"-".repeat(25)}
-      ${normalizeLine(content)}
-      `,
+${"-".repeat(25)}
+${normalizeLine(content)}
+`,
     ),
   );
 }
