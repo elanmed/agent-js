@@ -12,15 +12,16 @@ import {
   executeWebFetchJsonTool,
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
-import type { DebugLog, ToolLog } from "./state.ts";
+import { debugLog } from "./log.ts";
+import type { ToolLog } from "./state.ts";
 import { makeFsDeps } from "./fs-deps.ts";
-import { type ColorPrint } from "./print.ts";
+import { colorPrint } from "./print.ts";
 
 const execPromise = promisify(exec);
 
-const debugNoop: DebugLog = () => undefined;
+const debugNoop: typeof debugLog = () => undefined;
 const toolNoop: ToolLog = () => undefined;
-const colorNoop: ColorPrint = () => undefined;
+const colorNoop: typeof colorPrint = () => undefined;
 const debugDeps = {
   debugLog: debugNoop,
   toolLog: toolNoop,

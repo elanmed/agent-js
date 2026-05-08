@@ -12,7 +12,7 @@ import {
 import { stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import type { TokenUsage } from "./utils.ts";
-export type { DebugLog, EditorLog } from "./log.ts";
+export type { EditorLog } from "./log.ts";
 export type { ToolLog } from "./tools.ts";
 
 interface State {

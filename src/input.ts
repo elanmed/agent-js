@@ -12,7 +12,12 @@ import {
   createTempFile,
   calculateSessionUsage,
 } from "./utils.ts";
-import { colorPrint, printNewline, fencePrint, type Color } from "./print.ts";
+import {
+  colorPrint,
+  printNewline,
+  fencePrint,
+  type Color,
+} from "./print.ts";
 import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { spawnSync } from "node:child_process";
@@ -207,8 +212,8 @@ export interface ResolveSlashCommandDeps {
   clearCommand: () => void;
   editLogCommand: () => void;
   fs: FsDeps;
-  colorPrint: (message: string, color?: Color) => void;
-  debugLog: (content: string) => void;
+  colorPrint: typeof colorPrint;
+  debugLog: typeof debugLog;
   join: (...segments: string[]) => string;
   cwd: () => string;
 }

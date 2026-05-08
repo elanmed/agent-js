@@ -15,7 +15,6 @@ import {
   fencePrint,
   printNewline,
   checkDelta,
-  type ColorPrint,
 } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
@@ -28,7 +27,7 @@ const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 export interface ToolLogDeps {
-  colorPrint: ColorPrint;
+  colorPrint: typeof colorPrint;
 }
 
 const toolLogDeps: ToolLogDeps = {

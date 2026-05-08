@@ -167,7 +167,6 @@ export function deleteExpiredEditorLogs(
   }
 }
 
-export type DebugLog = typeof debugLog;
 export type EditorLog = typeof editorLog;
 
 export function initLogs() {

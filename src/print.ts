@@ -22,7 +22,6 @@ const COLORS = {
   grey: "\x1b[90m",
 } as const;
 
-export type ColorPrint = typeof colorPrint;
 export type Color = keyof typeof COLORS;
 
 export function colorPrint(text: Uint8Array | string, color?: Color) {

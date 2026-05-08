@@ -226,8 +226,8 @@ describe("input", () => {
             throw new Error("read failed");
           },
         },
-        colorPrint: (message: string, color?: Color) => {
-          errors.push({ message, color });
+        colorPrint: (text: string | Uint8Array, color?: Color) => {
+          errors.push({ message: text.toString(), color });
         },
       });
 
@@ -241,8 +241,8 @@ describe("input", () => {
       dispatch(actions.setSlashCommands(["known"]));
       const errors: { message: string; color: Color | undefined }[] = [];
       const deps = makeDeps({
-        colorPrint: (message: string, color?: Color) => {
-          errors.push({ message, color });
+        colorPrint: (text: string | Uint8Array, color?: Color) => {
+          errors.push({ message: text.toString(), color });
         },
       });
 
