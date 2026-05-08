@@ -5,16 +5,18 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { actions, dispatch, selectors } from "./state.ts";
 import {
   isAbortError,
-  colorPrint,
   tryCatchAsync,
   getMessageFromError,
+} from "./utils.ts";
+import {
+  colorPrint,
   executeBat,
-  BASE_SYSTEM_PROMPT,
   fencePrint,
   printNewline,
   startSpinner,
   stopSpinner,
-} from "./utils.ts";
+} from "./print.ts";
+import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import { debugLog } from "./log.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
 import { TOOLS } from "./tools.ts";

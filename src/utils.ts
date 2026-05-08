@@ -1,27 +1,11 @@
-import { join, parse } from "node:path";
-import { actions, dispatch, selectors } from "./state.ts";
+import { join } from "node:path";
+import { selectors } from "./state.ts";
 import { tmpdir } from "node:os";
-import { spawnSync } from "node:child_process";
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
-import {
-  GLOBAL_SKILLS_DIR_PATH,
-  LOCAL_SKILLS_DIR_PATH,
-  type Key,
-  type ModelPricing,
-} from "./config.ts";
-import { format } from "prettier";
-import { debugLog } from "./log.ts";
-import type readline from "node:readline/promises";
-import assert from "node:assert";
+import { type ModelPricing } from "./config.ts";
 import { fsDeps, type FsDeps } from "./fs-deps.ts";
-import frontMatter from "front-matter";
-import z from "zod";
 
 export const MISSING = "MISSING";
-
-const execPromise = promisify(exec);
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 

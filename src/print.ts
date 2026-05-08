@@ -1,23 +1,17 @@
-import { join, parse } from "node:path";
-import { actions, dispatch, selectors } from "./state.ts";
-import { tmpdir } from "node:os";
-import { spawnSync } from "node:child_process";
-import { exec } from "node:child_process";
+import { spawnSync, exec } from "node:child_process";
 import { promisify } from "node:util";
-import { randomUUID } from "node:crypto";
-import {
-  GLOBAL_SKILLS_DIR_PATH,
-  LOCAL_SKILLS_DIR_PATH,
-  type Key,
-  type ModelPricing,
-} from "./config.ts";
+import { actions, dispatch, selectors } from "./state.ts";
 import { format } from "prettier";
 import { debugLog } from "./log.ts";
-import type readline from "node:readline/promises";
-import assert from "node:assert";
-import { fsDeps, type FsDeps } from "./fs-deps.ts";
-import frontMatter from "front-matter";
-import z from "zod";
+import {
+  tryCatch,
+  tryCatchAsync,
+  normalizeLine,
+  calculateSessionUsage,
+  type Result,
+} from "./utils.ts";
+
+const execPromise = promisify(exec);
 
 const COLORS = {
   red: "\x1b[31m",
@@ -120,7 +114,7 @@ async function checkBat(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("bat --version"))).ok;
 }
 
-async function checkDelta(): Promise<boolean> {
+export async function checkDelta(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("delta --version"))).ok;
 }
 

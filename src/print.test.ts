@@ -1,3 +1,7 @@
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
+import { formatMarkdown, fencePrint, type FencePrintDeps } from "./print.ts";
+
 describe("print", () => {
   describe("formatMarkdown", () => {
     it("formats markdown tables with aligned columns", async () => {

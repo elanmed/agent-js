@@ -2,9 +2,18 @@ import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import { Buffer } from "node:buffer";
 import { dispatch, actions } from "./state.ts";
-import { editCommand, resolveSlashCommand } from "./input.ts";
-import type { EditCommandDeps, ResolveSlashCommandDeps } from "./input.ts";
-import type { Color } from "./utils.ts";
+import {
+  editCommand,
+  resolveSlashCommand,
+  isSameKey,
+  getAvailableSlashCommands,
+} from "./input.ts";
+import type {
+  EditCommandDeps,
+  ResolveSlashCommandDeps,
+  GetAvailableSlashCommandsDeps,
+} from "./input.ts";
+import type { Color } from "./print.ts";
 import { makeFsDeps } from "./fs-deps.ts";
 
 beforeEach(() => {

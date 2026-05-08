@@ -1,13 +1,10 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import {
-  colorPrint,
-  getAvailableSlashCommands,
-  getAgentsContext,
-  getSkillsContext,
-  tryCatch,
-} from "./utils.ts";
+import { tryCatch } from "./utils.ts";
+import { colorPrint } from "./print.ts";
+import { getAvailableSlashCommands } from "./input.ts";
+import { getAgentsContext, getSkillsContext } from "./context.ts";
 import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";

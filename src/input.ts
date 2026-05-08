@@ -8,17 +8,17 @@ import {
   tryCatch,
   tryCatchAsync,
   getMessageFromError,
-  colorPrint,
   normalizeLine,
-  isSameKey,
+  createTempFile,
+  calculateSessionUsage,
+} from "./utils.ts";
+import {
+  colorPrint,
   printNewline,
   fencePrint,
-  createTempFile,
-  clearRlLine,
-  calculateSessionUsage,
   type Color,
-} from "./utils.ts";
-import { join } from "node:path";
+} from "./print.ts";
+import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { spawnSync } from "node:child_process";
 import type { Key } from "./config.ts";

@@ -3,18 +3,20 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
 import {
-  colorPrint,
   createTempFile,
-  execGitDiff,
-  fencePrint,
   getMessageFromError,
-  printNewline,
   normalizeLine,
   stringify,
   tryCatch,
   tryCatchAsync,
 } from "./utils.ts";
-import type { ColorPrint } from "./utils.ts";
+import {
+  colorPrint,
+  fencePrint,
+  printNewline,
+  checkDelta,
+  type ColorPrint,
+} from "./print.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";

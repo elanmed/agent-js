@@ -1,13 +1,13 @@
 import { fileURLToPath } from "node:url";
 import { selectors } from "./state.ts";
+import { getMessageFromError } from "./utils.ts";
 import {
   colorPrint,
   executeBat,
   fencePrint,
-  getMessageFromError,
   initPrint,
   printNewline,
-} from "./utils.ts";
+} from "./print.ts";
 import { initState } from "./config.ts";
 import {
   initKeypress,

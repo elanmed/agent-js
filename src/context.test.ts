@@ -1,3 +1,15 @@
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
+import { makeFsDeps } from "./fs-deps.ts";
+import {
+  getAgentsContext,
+  getSkillsContext,
+  getSkillJSON,
+  type GetAgentsContextDeps,
+  type GetSkillsContextDeps,
+  type GetSkillJSONDeps,
+} from "./context.ts";
+
 describe("context", () => {
   describe("getAgentsContext", () => {
     let fs: ReturnType<typeof makeFsDeps>;
