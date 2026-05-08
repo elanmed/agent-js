@@ -55,7 +55,7 @@ describe("utils", () => {
   describe("tryCatch", () => {
     it("returns {ok: true, value} when the callback succeeds", () => {
       const result = tryCatch(() => 42);
-      assert.deepEqual(result, { ok: true, value: 42 });
+      assert.deepStrictEqual(result, { ok: true, value: 42 });
     });
 
     it("returns {ok: false, error} when the callback throws", () => {
@@ -63,20 +63,20 @@ describe("utils", () => {
       const result = tryCatch(() => {
         throw err;
       });
-      assert.deepEqual(result, { ok: false, error: err });
+      assert.deepStrictEqual(result, { ok: false, error: err });
     });
   });
 
   describe("tryCatchAsync", () => {
     it("returns {ok: true, value} for a resolved promise", async () => {
       const result = await tryCatchAsync(Promise.resolve(42));
-      assert.deepEqual(result, { ok: true, value: 42 });
+      assert.deepStrictEqual(result, { ok: true, value: 42 });
     });
 
     it("returns {ok: false, error} for a rejected promise", async () => {
       const err = new Error("boom");
       const result = await tryCatchAsync(Promise.reject(err));
-      assert.deepEqual(result, { ok: false, error: err });
+      assert.deepStrictEqual(result, { ok: false, error: err });
     });
   });
 

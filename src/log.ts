@@ -157,11 +157,11 @@ export function deleteExpiredEditorLogs(
     if (parts.length !== 3) continue;
     if (parts[0] !== "editor") continue;
 
-    const date = Number(parts[2]);
-    if (Number.isNaN(date)) continue;
+    const fileTimestampMs = Number(parts[2]);
+    if (Number.isNaN(fileTimestampMs)) continue;
 
     const oneDay = 1_000 * 60 * 60 * 24;
-    if (date + oneDay < deps.now()) {
+    if (fileTimestampMs + oneDay < deps.now()) {
       tryCatch(() => deps.fs.unlinkSync(fullPath));
     }
   }

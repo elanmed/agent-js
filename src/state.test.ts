@@ -24,8 +24,8 @@ describe("state", () => {
 
     assert.equal(selectors.getRunning(), true);
     assert.equal(selectors.getInterrupted(), false);
-    assert.deepEqual(selectors.getMessageParams(), []);
-    assert.deepEqual(selectors.getMessageUsages(), []);
+    assert.deepStrictEqual(selectors.getMessageParams(), []);
+    assert.deepStrictEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
     assert.equal(selectors.getSpinnerTimeout(), null);
@@ -35,8 +35,8 @@ describe("state", () => {
   it("initial state", () => {
     assert.equal(selectors.getRunning(), true);
     assert.equal(selectors.getInterrupted(), false);
-    assert.deepEqual(selectors.getMessageParams(), []);
-    assert.deepEqual(selectors.getMessageUsages(), []);
+    assert.deepStrictEqual(selectors.getMessageParams(), []);
+    assert.deepStrictEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
     assert.equal(selectors.getEditorLogPath(), "");
@@ -56,17 +56,17 @@ describe("state", () => {
 
   describe("append-to-message-params", () => {
     it("appends new message to the list", () => {
-      assert.deepEqual(selectors.getMessageParams(), []);
+      assert.deepStrictEqual(selectors.getMessageParams(), []);
       dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
       assert.equal(selectors.getMessageParams().length, 1);
-      assert.deepEqual(selectors.getMessageParams()[0], {
+      assert.deepStrictEqual(selectors.getMessageParams()[0], {
         role: "user",
         content: "hi",
       });
     });
 
     it("appends multiple messages in order", () => {
-      assert.deepEqual(selectors.getMessageParams(), []);
+      assert.deepStrictEqual(selectors.getMessageParams(), []);
       dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
       dispatch(
         actions.appendToMessageParams({ role: "assistant", content: "hello" }),
@@ -80,7 +80,7 @@ describe("state", () => {
   });
 
   it("append-to-message-usages", () => {
-    assert.deepEqual(selectors.getMessageUsages(), []);
+    assert.deepStrictEqual(selectors.getMessageUsages(), []);
     const usage1: TokenUsage = {
       inputTokens: 10,
       outputTokens: 5,
@@ -97,7 +97,7 @@ describe("state", () => {
     dispatch(actions.appendToMessageUsages(usage1));
     dispatch(actions.appendToMessageUsages(usage2));
 
-    assert.deepEqual(selectors.getMessageUsages(), [usage1, usage2]);
+    assert.deepStrictEqual(selectors.getMessageUsages(), [usage1, usage2]);
   });
 
   it("set-model", () => {
@@ -127,7 +127,7 @@ describe("state", () => {
       cacheWritePerToken: 0,
     };
     dispatch(actions.setPricingPerModel(newPricing));
-    assert.deepEqual(selectors.getPricingPerModel(), newPricing);
+    assert.deepStrictEqual(selectors.getPricingPerModel(), newPricing);
   });
 
   it("set-disable-usage-message", () => {
@@ -143,7 +143,7 @@ describe("state", () => {
   });
 
   it("set-keymap-edit", () => {
-    assert.deepEqual(selectors.getKeymapEdit(), DEFAULT_CONFIG.keymaps.edit);
+    assert.deepStrictEqual(selectors.getKeymapEdit(), DEFAULT_CONFIG.keymaps.edit);
     dispatch(
       actions.setKeymapEdit({
         name: "v",
@@ -152,7 +152,7 @@ describe("state", () => {
         shift: false,
       }),
     );
-    assert.deepEqual(selectors.getKeymapEdit(), {
+    assert.deepStrictEqual(selectors.getKeymapEdit(), {
       name: "v",
       ctrl: false,
       meta: false,
@@ -161,7 +161,7 @@ describe("state", () => {
   });
 
   it("set-keymap-edit-log", () => {
-    assert.deepEqual(
+    assert.deepStrictEqual(
       selectors.getKeymapEditLog(),
       DEFAULT_CONFIG.keymaps.editLog,
     );
@@ -173,7 +173,7 @@ describe("state", () => {
         shift: false,
       }),
     );
-    assert.deepEqual(selectors.getKeymapEditLog(), {
+    assert.deepStrictEqual(selectors.getKeymapEditLog(), {
       name: "o",
       ctrl: false,
       meta: false,
@@ -182,7 +182,7 @@ describe("state", () => {
   });
 
   it("set-keymap-clear", () => {
-    assert.deepEqual(selectors.getKeymapClear(), DEFAULT_CONFIG.keymaps.clear);
+    assert.deepStrictEqual(selectors.getKeymapClear(), DEFAULT_CONFIG.keymaps.clear);
     dispatch(
       actions.setKeymapClear({
         name: "k",
@@ -191,7 +191,7 @@ describe("state", () => {
         shift: false,
       }),
     );
-    assert.deepEqual(selectors.getKeymapClear(), {
+    assert.deepStrictEqual(selectors.getKeymapClear(), {
       name: "k",
       ctrl: false,
       meta: false,
@@ -250,9 +250,9 @@ describe("state", () => {
   });
 
   it("set-slash-commands", () => {
-    assert.deepEqual(selectors.getSlashCommands(), []);
+    assert.deepStrictEqual(selectors.getSlashCommands(), []);
     dispatch(actions.setSlashCommands(["test", "deploy"]));
-    assert.deepEqual(selectors.getSlashCommands(), ["test", "deploy"]);
+    assert.deepStrictEqual(selectors.getSlashCommands(), ["test", "deploy"]);
   });
 
   it("reset-stdout", () => {

@@ -13,7 +13,7 @@ import {
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
 import { debugLog } from "./log.ts";
-import type { ToolLog } from "./state.ts";
+import type { ToolLog } from "./tools.ts";
 import { makeFsDeps } from "./fs-deps.ts";
 import { colorPrint } from "./print.ts";
 

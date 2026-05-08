@@ -9,7 +9,7 @@ import {
   LOCAL_SKILLS_DIR_PATH,
 } from "./paths.ts";
 import frontMatter from "front-matter";
-import z from "zod";
+import { z } from "zod";
 
 export interface GetAgentsContextDeps {
   debugLog: typeof debugLog;
@@ -83,7 +83,7 @@ export function getSkillsContext(
     LOCAL_SKILLS_DIR_PATH,
     GLOBAL_SKILLS_DIR_PATH,
   ];
-  const skillsJSON: Skill[] = [];
+  const skills: Skill[] = [];
 
   skillsDirPaths.forEach((dirPath) => {
     if (!deps.fs.existsSync(dirPath)) return;
@@ -94,18 +94,18 @@ export function getSkillsContext(
       if (!statResult.ok) continue;
       if (statResult.value.isFile()) continue;
 
-      const skillJSON = getSkillJSON(fullDirPath, {
+      const skill = getSkillJSON(fullDirPath, {
         fs: deps.fs,
         colorPrint: deps.colorPrint,
       });
-      if (skillJSON === null) continue;
-      if (seenSkills.has(skillJSON.name)) continue;
-      seenSkills.add(skillJSON.name);
-      skillsJSON.push(skillJSON);
+      if (skill === null) continue;
+      if (seenSkills.has(skill.name)) continue;
+      seenSkills.add(skill.name);
+      skills.push(skill);
     }
   });
 
-  const skillsList = skillsJSON
+  const skillsList = skills
     .map((skill) => `- ${skill.name}: ${skill.description}`)
     .join("\n");
 
