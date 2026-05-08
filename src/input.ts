@@ -22,7 +22,7 @@ import { join } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { spawnSync } from "node:child_process";
 import type { Key } from "./config.ts";
-import { debugLog, EDITOR_LOG_PATH, editorLog } from "./log.ts";
+import { debugLog, editorLog } from "./log.ts";
 import { fsDeps, type FsDeps } from "./fs-deps.ts";
 
 // https://stackoverflow.com/a/33500118
@@ -327,7 +327,7 @@ export function editCommand(
 }
 
 export function editLogCommand() {
-  if (!fsDeps.existsSync(EDITOR_LOG_PATH)) {
+  if (!fsDeps.existsSync(selectors.getEditorLogPath())) {
     colorPrint("[Edit log does not exist]", "yellow");
     clearRlLine()!.prompt();
     return;
@@ -335,7 +335,7 @@ export function editLogCommand() {
   const editor =
     process.env["AGENT_JS_EDITOR_LOG"] ?? process.env["EDITOR"] ?? "vi";
 
-  spawnSync(`${editor} "${EDITOR_LOG_PATH}"`, {
+  spawnSync(`${editor} "${selectors.getEditorLogPath()}"`, {
     shell: true,
     stdio: "inherit",
   });

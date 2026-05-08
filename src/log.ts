@@ -13,13 +13,6 @@ export const EDITOR_LOGS_PATH = join(
   "editor",
 );
 
-export const EDITOR_LOG_PATH = join(
-  homedir(),
-  ".config",
-  ".agent-js",
-  "editor.log",
-);
-
 export interface DebugLogDeps {
   fs: FsDeps;
   getDebugLogPath: () => string;
@@ -119,7 +112,9 @@ export const initEditorLogDeps: InitEditorLogDeps = {
 
 export function initEditorLog(deps: InitEditorLogDeps = initEditorLogDeps) {
   if (!deps.fs.existsSync(EDITOR_LOGS_PATH)) {
-    const mkdirResult = tryCatch(() => deps.fs.mkdirSync(EDITOR_LOGS_PATH));
+    const mkdirResult = tryCatch(() =>
+      deps.fs.mkdirSync(EDITOR_LOGS_PATH, { recursive: true }),
+    );
     if (!mkdirResult.ok) {
       dispatch(actions.setEditorLog(false));
       return;
