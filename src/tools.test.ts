@@ -18,15 +18,9 @@ import { type ColorPrint } from "./print.ts";
 
 const execPromise = promisify(exec);
 
-const debugNoop: DebugLog = () => {
-  void 0;
-};
-const toolNoop: ToolLog = () => {
-  void 0;
-};
-const colorNoop: ColorPrint = () => {
-  void 0;
-};
+const debugNoop: DebugLog = () => undefined;
+const toolNoop: ToolLog = () => undefined;
+const colorNoop: ColorPrint = () => undefined;
 const debugDeps = {
   debugLog: debugNoop,
   toolLog: toolNoop,

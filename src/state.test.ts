@@ -4,11 +4,11 @@ import { MISSING, type TokenUsage } from "./utils.ts";
 import { dispatch, actions, selectors } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 
-beforeEach(() => {
-  dispatch(actions.resetState());
-});
-
 describe("state", () => {
+  beforeEach(() => {
+    dispatch(actions.resetState());
+  });
+
   it("resetState restores initial state after mutations", () => {
     dispatch(actions.setRunning(false));
     dispatch(actions.setInterrupted(true));

@@ -22,7 +22,7 @@ function makeDeps(overrides: Partial<InitStateDeps> = {}): InitStateDeps {
   };
 }
 
-describe("initState", () => {
+describe("config", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
   });

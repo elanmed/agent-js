@@ -16,7 +16,6 @@ import { makeFsDeps } from "./fs-deps.ts";
 describe("utils", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
-
     dispatch(
       actions.setPricingPerModel({
         "claude-haiku-4-5": {

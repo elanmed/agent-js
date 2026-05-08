@@ -3,7 +3,7 @@ import assert from "node:assert";
 import { parseCliArgs } from "./args.ts";
 import type { ParseCliArgsDeps } from "./args.ts";
 
-describe("parseCliArgs", () => {
+describe("args", () => {
   function makeDeps(argStrings: string[]): ParseCliArgsDeps {
     return {
       getArgv: () => ["node", "script.js", ...argStrings],
