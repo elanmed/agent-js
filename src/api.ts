@@ -19,7 +19,7 @@ import {
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import { debugLog } from "./log.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
-import { TOOLS } from "./tool-registry.ts";
+import { TOOLS } from "./tools.ts";
 import assert from "node:assert";
 
 interface ToolCallInfo {

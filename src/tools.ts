@@ -1,3 +1,4 @@
+import { tool } from "ai";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
@@ -18,6 +19,8 @@ import {
 } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
+import { JSDOM } from "jsdom";
+import { Readability } from "@mozilla/readability";
 import { fsDeps } from "./fs-deps.ts";
 
 const execPromise = promisify(exec);
@@ -63,7 +66,7 @@ const executeBashToolDeps = {
 
 type ExecuteBashToolDeps = typeof executeBashToolDeps;
 
-export const BashToolInputSchema = z.object({ command: z.string() });
+const BashToolInputSchema = z.object({ command: z.string() });
 
 export async function executeBashTool(
   toolCall: ToolCall,
@@ -107,7 +110,7 @@ const executeCreateFileToolDeps = {
 
 type ExecuteCreateFileToolDeps = typeof executeCreateFileToolDeps;
 
-export const CreateFileToolSchema = z.object({
+const CreateFileToolSchema = z.object({
   path: z.string(),
   content: z.string(),
 });
@@ -156,7 +159,7 @@ const executeViewFileToolDeps = {
 
 type ExecuteViewFileToolDeps = typeof executeViewFileToolDeps;
 
-export const ViewFileToolInputSchema = z.object({
+const ViewFileToolInputSchema = z.object({
   path: z.string(),
   start_line: z.number().int().optional(),
   end_line: z.number().int().optional(),
@@ -306,7 +309,7 @@ const executeStrReplaceToolDeps = {
 
 type ExecuteStrReplaceToolDeps = typeof executeStrReplaceToolDeps;
 
-export const StrReplaceToolInputSchema = z.object({
+const StrReplaceToolInputSchema = z.object({
   path: z.string(),
   old_str: z.string(),
   new_str: z.string(),
@@ -389,7 +392,7 @@ const executeInsertLinesToolDeps = {
 
 type ExecuteInsertLinesToolDeps = typeof executeInsertLinesToolDeps;
 
-export const InsertLinesToolInputSchema = z.object({
+const InsertLinesToolInputSchema = z.object({
   path: z.string(),
   after_line: z.number().int(),
   content: z.string(),
@@ -466,7 +469,7 @@ const executeWebFetchToolDeps = {
 
 type ExecuteWebFetchToolDeps = typeof executeWebFetchToolDeps;
 
-export const WebFetchToolSchema = z.object({
+const WebFetchToolSchema = z.object({
   href: z.string(),
 });
 
@@ -499,8 +502,6 @@ export async function executeWebFetchHtmlTool(
     }
 
     const htmlStr = await response.text();
-    const { JSDOM } = await import("jsdom");
-    const { Readability } = await import("@mozilla/readability");
     const doc = new JSDOM(htmlStr);
     const reader = new Readability(doc.window.document);
     const article = reader.parse();
@@ -580,6 +581,43 @@ export async function executeWebFetchJsonTool(
     clearTimeout(timeoutId);
   }
 }
+
+export const TOOLS = {
+  bash: tool({
+    description: "Execute a bash command and return its output.",
+    inputSchema: BashToolInputSchema,
+  }),
+  create_file: tool({
+    description:
+      "Create a new file with the given content. Fails if the file already exists.",
+    inputSchema: CreateFileToolSchema,
+  }),
+  view_file: tool({
+    description:
+      "View the contents of a file or list a directory. File contents are returned with line numbers.",
+    inputSchema: ViewFileToolInputSchema,
+  }),
+  str_replace: tool({
+    description:
+      "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
+    inputSchema: StrReplaceToolInputSchema,
+  }),
+  insert_lines: tool({
+    description:
+      "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
+    inputSchema: InsertLinesToolInputSchema,
+  }),
+  web_fetch_html: tool({
+    description:
+      "Fetch a web page by URL and return its readable content, parsed to extract the main article.",
+    inputSchema: WebFetchToolSchema,
+  }),
+  web_fetch_json: tool({
+    description:
+      "Fetch a JSON API endpoint by URL and return the parsed JSON response.",
+    inputSchema: WebFetchToolSchema,
+  }),
+};
 
 const getToolResultBlockDeps = {
   fs: fsDeps,
