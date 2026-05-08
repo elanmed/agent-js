@@ -14,6 +14,7 @@ import {
 import type { ToolCall } from "./tools.ts";
 import type { DebugLog, ToolLog } from "./state.ts";
 import { makeFsDeps } from "./fs-deps.ts";
+import { type ColorPrint } from "./print.ts";
 
 const execPromise = promisify(exec);
 
@@ -23,9 +24,13 @@ const debugNoop: DebugLog = () => {
 const toolNoop: ToolLog = () => {
   void 0;
 };
+const colorNoop: ColorPrint = () => {
+  void 0;
+};
 const debugDeps = {
   debugLog: debugNoop,
   toolLog: toolNoop,
+  colorPrint: colorNoop,
 };
 const bashDeps = { ...debugDeps, exec: execPromise };
 

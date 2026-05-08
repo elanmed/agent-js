@@ -15,9 +15,11 @@ describe("state", () => {
     dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
     dispatch(actions.setQuestionAbortController(new AbortController()));
     dispatch(actions.setApiStreamAbortController(new AbortController()));
-    dispatch(actions.setSpinnerTimeout(setTimeout(() => undefined, 1000)));
+    const timeout = setTimeout(() => undefined, 1000);
+    dispatch(actions.setSpinnerTimeout(timeout));
     dispatch(actions.setEditorLogPath("/tmp/test.log"));
     dispatch(actions.resetState());
+    clearTimeout(timeout);
 
     assert.equal(selectors.getRunning(), true);
     assert.equal(selectors.getInterrupted(), false);

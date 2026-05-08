@@ -1,4 +1,3 @@
-import { tool } from "ai";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
@@ -19,8 +18,6 @@ import {
 } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
-import { JSDOM } from "jsdom";
-import { Readability } from "@mozilla/readability";
 import { fsDeps } from "./fs-deps.ts";
 
 const execPromise = promisify(exec);
@@ -66,7 +63,7 @@ const executeBashToolDeps = {
 
 type ExecuteBashToolDeps = typeof executeBashToolDeps;
 
-const BashToolInputSchema = z.object({ command: z.string() });
+export const BashToolInputSchema = z.object({ command: z.string() });
 
 export async function executeBashTool(
   toolCall: ToolCall,
@@ -110,7 +107,7 @@ const executeCreateFileToolDeps = {
 
 type ExecuteCreateFileToolDeps = typeof executeCreateFileToolDeps;
 
-const CreateFileToolSchema = z.object({
+export const CreateFileToolSchema = z.object({
   path: z.string(),
   content: z.string(),
 });
@@ -159,7 +156,7 @@ const executeViewFileToolDeps = {
 
 type ExecuteViewFileToolDeps = typeof executeViewFileToolDeps;
 
-const ViewFileToolInputSchema = z.object({
+export const ViewFileToolInputSchema = z.object({
   path: z.string(),
   start_line: z.number().int().optional(),
   end_line: z.number().int().optional(),
@@ -309,7 +306,7 @@ const executeStrReplaceToolDeps = {
 
 type ExecuteStrReplaceToolDeps = typeof executeStrReplaceToolDeps;
 
-const StrReplaceToolInputSchema = z.object({
+export const StrReplaceToolInputSchema = z.object({
   path: z.string(),
   old_str: z.string(),
   new_str: z.string(),
@@ -392,7 +389,7 @@ const executeInsertLinesToolDeps = {
 
 type ExecuteInsertLinesToolDeps = typeof executeInsertLinesToolDeps;
 
-const InsertLinesToolInputSchema = z.object({
+export const InsertLinesToolInputSchema = z.object({
   path: z.string(),
   after_line: z.number().int(),
   content: z.string(),
@@ -463,12 +460,13 @@ export function executeInsertLinesTool(
 const executeWebFetchToolDeps = {
   fetch: (href: string, init?: RequestInit) => fetch(href, init),
   debugLog,
+  colorPrint,
   toolLog,
 };
 
 type ExecuteWebFetchToolDeps = typeof executeWebFetchToolDeps;
 
-const WebFetchToolSchema = z.object({
+export const WebFetchToolSchema = z.object({
   href: z.string(),
 });
 
@@ -479,35 +477,36 @@ export async function executeWebFetchHtmlTool(
   const { href } = WebFetchToolSchema.parse(toolCall.input);
   deps.toolLog("web_fetch_html", href);
   deps.debugLog(`executeWebFetchHtmlTool: href=${href}`);
+  const headers = new Headers();
+  headers.append("User-Agent", userAgent);
+  headers.append("Accept", "text/html");
+
+  const fetchController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    fetchController.abort();
+  }, 10_000);
+
   try {
-    const headers = new Headers();
-    headers.append("User-Agent", userAgent);
-    headers.append("Accept", "text/html");
-
-    const fetchController = new AbortController();
-    const timeoutId = setTimeout(() => {
-      fetchController.abort();
-    }, 10_000);
-
     const response = await deps.fetch(href, {
       headers,
       signal: fetchController.signal,
     });
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      colorPrint(error, "yellow");
+      deps.colorPrint(error, "yellow");
       throw new Error(error);
     }
 
     const htmlStr = await response.text();
+    const { JSDOM } = await import("jsdom");
+    const { Readability } = await import("@mozilla/readability");
     const doc = new JSDOM(htmlStr);
     const reader = new Readability(doc.window.document);
     const article = reader.parse();
     if (!article) {
       const error = `Failed to parse article from ${href}`;
-      colorPrint(error, "yellow");
+      deps.colorPrint(error, "yellow");
       throw new Error(error);
     }
 
@@ -528,6 +527,8 @@ export async function executeWebFetchHtmlTool(
       content: msg,
       tool_use_id: toolCall.id,
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -538,25 +539,24 @@ export async function executeWebFetchJsonTool(
   const { href } = WebFetchToolSchema.parse(toolCall.input);
   deps.toolLog("web_fetch_json", href);
   deps.debugLog(`executeWebFetchJsonTool: href=${href}`);
+  const headers = new Headers();
+  headers.append("User-Agent", userAgent);
+  headers.append("Accept", "application/json");
+
+  const fetchController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    fetchController.abort();
+  }, 10_000);
+
   try {
-    const headers = new Headers();
-    headers.append("User-Agent", userAgent);
-    headers.append("Accept", "application/json");
-
-    const fetchController = new AbortController();
-    const timeoutId = setTimeout(() => {
-      fetchController.abort();
-    }, 10_000);
-
     const response = await deps.fetch(href, {
       headers,
       signal: fetchController.signal,
     });
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      colorPrint(error, "yellow");
+      deps.colorPrint(error, "yellow");
       throw new Error(error);
     }
 
@@ -576,45 +576,10 @@ export async function executeWebFetchJsonTool(
       content: msg,
       tool_use_id: toolCall.id,
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
-
-export const TOOLS = {
-  bash: tool({
-    description: "Execute a bash command and return its output.",
-    inputSchema: BashToolInputSchema,
-  }),
-  create_file: tool({
-    description:
-      "Create a new file with the given content. Fails if the file already exists.",
-    inputSchema: CreateFileToolSchema,
-  }),
-  view_file: tool({
-    description:
-      "View the contents of a file or list a directory. File contents are returned with line numbers.",
-    inputSchema: ViewFileToolInputSchema,
-  }),
-  str_replace: tool({
-    description:
-      "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
-    inputSchema: StrReplaceToolInputSchema,
-  }),
-  insert_lines: tool({
-    description:
-      "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
-    inputSchema: InsertLinesToolInputSchema,
-  }),
-  web_fetch_html: tool({
-    description:
-      "Fetch a web page by URL and return its readable content, parsed to extract the main article.",
-    inputSchema: WebFetchToolSchema,
-  }),
-  web_fetch_json: tool({
-    description:
-      "Fetch a JSON API endpoint by URL and return the parsed JSON response.",
-    inputSchema: WebFetchToolSchema,
-  }),
-};
 
 const getToolResultBlockDeps = {
   fs: fsDeps,
