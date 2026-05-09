@@ -680,11 +680,12 @@ export async function getToolResultBlock(
     }
   }
 
-  if (!toolResult) {
-    throw new Error(
-      "Failed to create a tool result when processing the tool call",
-    );
-  }
+  toolResult ??= {
+    type: "tool_result",
+    tool_use_id: toolCall.id,
+    content: `Unsupported tool: ${toolCall.name}`,
+    is_error: true,
+  };
 
   return toolResult;
 }
