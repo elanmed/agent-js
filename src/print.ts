@@ -34,7 +34,11 @@ export function colorPrint(text: Uint8Array | string, color?: Color) {
     out = `${text.toString()}\n`;
   }
 
+  const wasSpinnerActive = selectors.getSpinnerTimeout() !== null;
+  stopSpinner();
   process.stdout.write(out);
+  if (wasSpinnerActive) startSpinner();
+
   dispatch(actions.appendToStdout(out));
 }
 
