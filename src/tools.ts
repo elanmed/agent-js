@@ -10,12 +10,7 @@ import {
   tryCatch,
   tryCatchAsync,
 } from "./utils.ts";
-import {
-  colorPrint,
-  fencePrint,
-  printNewline,
-  checkDelta,
-} from "./print.ts";
+import { colorPrint, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
