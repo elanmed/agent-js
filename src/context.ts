@@ -8,7 +8,7 @@ import {
   GLOBAL_SKILLS_DIR_PATH,
   LOCAL_SKILLS_DIR_PATH,
 } from "./paths.ts";
-import frontMatter from "front-matter";
+import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 export interface GetAgentsContextDeps {
@@ -130,6 +130,24 @@ export const getSkillJSONDeps: GetSkillJSONDeps = {
   colorPrint,
 };
 
+export function parseFrontMatter(content: string) {
+  if (!content.startsWith("---\n")) return null;
+
+  // start search on the char after the ---\n
+  const closeIndex = content.indexOf("\n---\n", 4);
+  if (closeIndex === -1) return null;
+
+  // start slice on the char after the --- \n
+  const yamlStr = content.slice(4, closeIndex);
+  if (yamlStr === "") return null;
+  const data = tryCatch(() => parseYaml(yamlStr) as unknown);
+  if (!data.ok) return null;
+
+  // start slice on the char after the \n---\n
+  const body = content.slice(closeIndex + 5);
+  return { data, body };
+}
+
 export function getSkillJSON(
   dirPath: string,
   deps: GetSkillJSONDeps = getSkillJSONDeps,
@@ -146,8 +164,15 @@ export function getSkillJSON(
     );
     if (!readResult.ok) continue;
 
-    const rawData = frontMatter(readResult.value);
-    const parseResult = skillSchema.safeParse(rawData.attributes);
+    const parsed = parseFrontMatter(readResult.value);
+    if (parsed === null) {
+      deps.colorPrint(
+        `Malformed skill at ${fullPath}! A skill's front matter must contain valid YAML between \`---\` and \`---\`.`,
+        "red",
+      );
+      continue;
+    }
+    const parseResult = skillSchema.safeParse(parsed.data.value);
     if (!parseResult.success) {
       deps.colorPrint(
         `Malformed skill at ${fullPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,

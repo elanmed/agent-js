@@ -6,6 +6,7 @@ import {
   getAgentsContext,
   getSkillsContext,
   getSkillJSON,
+  parseFrontMatter,
   type GetAgentsContextDeps,
   type GetSkillsContextDeps,
   type GetSkillJSONDeps,
@@ -356,6 +357,87 @@ Content: local content
       assert.ok(calls[0]!.includes("Malformed skill at /skill-dir/SKILL.md"));
       assert.ok(calls[0]!.includes("name"));
       assert.ok(calls[0]!.includes("description"));
+    });
+
+    it("calls colorPrint when front matter fails to parse", () => {
+      const calls: string[] = [];
+      fs._listings.set("/skill-dir", ["SKILL.md"]);
+      fs._files.set("/skill-dir/SKILL.md", "---\n* invalid yaml\n---\n");
+      const deps = makeDeps({
+        colorPrint: (text) => {
+          calls.push(text.toString());
+        },
+      });
+      const result = getSkillJSON("/skill-dir", deps);
+      assert.equal(result, null);
+      assert.equal(calls.length, 1);
+      assert.ok(calls[0]!.includes("Malformed skill at /skill-dir/SKILL.md"));
+      assert.ok(calls[0]!.includes("valid YAML"));
+    });
+  });
+
+  describe("parseFrontMatter", () => {
+    it("returns null when content does not start with ---\\n", () => {
+      const result = parseFrontMatter("no front matter here");
+      assert.equal(result, null);
+    });
+
+    it("returns null when content starts with --- but no newline", () => {
+      const result = parseFrontMatter("---foo");
+      assert.equal(result, null);
+    });
+
+    it("returns null when no closing delimiter", () => {
+      const result = parseFrontMatter("---\nname: test\n");
+      assert.equal(result, null);
+    });
+
+    it("returns null when yaml string is empty", () => {
+      const result = parseFrontMatter("---\n---\nbody");
+      assert.equal(result, null);
+    });
+
+    it("parses valid front matter with attributes and body", () => {
+      const result = parseFrontMatter(
+        "---\nname: my-skill\ndescription: A skill\n---\n# Body content",
+      );
+      assert.deepStrictEqual(result, {
+        data: { ok: true, value: { name: "my-skill", description: "A skill" } },
+        body: "# Body content",
+      });
+    });
+
+    it("parses front matter with no body", () => {
+      const result = parseFrontMatter("---\nname: test\n---\n");
+      assert.deepStrictEqual(result, {
+        data: { ok: true, value: { name: "test" } },
+        body: "",
+      });
+    });
+
+    it("preserves body containing dashes", () => {
+      const result = parseFrontMatter(
+        "---\nkey: val\n---\nBody with --- inside\nand more text",
+      );
+      assert.deepStrictEqual(result, {
+        data: { ok: true, value: { key: "val" } },
+        body: "Body with --- inside\nand more text",
+      });
+    });
+
+    it("returns null when closing delimiter lacks trailing newline", () => {
+      const result = parseFrontMatter("---\nkey: val\n---");
+      assert.equal(result, null);
+    });
+
+    it("returns null on invalid yaml", () => {
+      const result = parseFrontMatter("---\n* invalid\n---\nbody");
+      assert.equal(result, null);
+    });
+
+    it("returns null on unclosed flow sequence in yaml", () => {
+      const result = parseFrontMatter("---\nkey: [unclosed\n---\nbody");
+      assert.equal(result, null);
     });
   });
 });

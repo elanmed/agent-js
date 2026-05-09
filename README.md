@@ -151,7 +151,7 @@ Minimal runtime dependencies (7 total):
 | `jsdom`                     | DOM parsing for `web_fetch_html`        |
 | `@mozilla/readability`      | Content extraction for `web_fetch_html` |
 | `prettier`                  | Markdown formatting                     |
-| `front-matter`              | Parsing Skill metadata                  |
+| `yaml`                      | Parsing Skill metadata                  |
 
 ## TODO (soon)
 
