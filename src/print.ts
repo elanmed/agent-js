@@ -52,17 +52,7 @@ interface FencePrintOpts {
   color?: Color;
 }
 
-export const fencePrintDeps = {
-  colorPrint,
-};
-
-export type FencePrintDeps = typeof fencePrintDeps;
-
-export function fencePrint(
-  text: string,
-  opts: FencePrintOpts = {},
-  deps: FencePrintDeps = fencePrintDeps,
-) {
+export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   let sessionUsage = "";
   if (!opts.skipSessionUsage && !selectors.getDisableUsageMessage()) {
     sessionUsage = ` (${calculateSessionUsage()})`;
@@ -72,7 +62,7 @@ export function fencePrint(
     label = label.slice(0, 46).concat("...");
   }
   const line = `── ${label} ${"─".repeat(50 - label.length)}`;
-  deps.colorPrint(line, opts.color ?? "grey");
+  colorPrint(line, opts.color ?? "grey");
 }
 
 export function initPrint() {
@@ -231,4 +221,3 @@ export function calculateSessionUsage(): string {
   const cost = inputCost + outputCost + cacheReadCost + cacheWriteCost;
   return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
-
