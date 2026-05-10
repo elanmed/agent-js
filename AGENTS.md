@@ -26,19 +26,19 @@ npm run ci
 - Minimize diffs — only change what's necessary
 - All changes must have test coverage
 - Use `node:test` for tests and `node:assert` for assertions
-- Use `node:test` mocking (`mock.fn`, `mock.method`, `mock.module`, etc.) instead of dependency injection
-- Never put selectors, actions, or dispatch in deps — read from state directly in functions, set state directly in tests
+- Use `node:test` mocking (`mock.fn`, `mock.method`, `mock.module`, etc.) instead of dependency injection. Some existing code still uses DI (`deps` parameters) — do not add new DI; prefer mocking for new code and migrate existing DI when touching those files.
+- Never put selectors, actions, or dispatch in deps (legacy DI deps sometimes still have them — remove when migrating to mocking)
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
-- Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value, or if the content is dynamic, use `content: result.content` in deepStrictEqual and then assert on the parsed content separately
-- For fs functions, use the `fsDeps` object from `fs-deps.ts`. In production, pass `fsDeps`. In tests, use `makeFakeFsDeps()` to get an in-memory mock.
-- Pure utility functions do not need deps — import and call them directly in tests. Only IO or side-effecting functions go in deps.
+- Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value
+- For fs, import `fsDeps` directly in production code — no dependency injection. In tests, use `setupFakeFs()` from `test-helpers.ts` to mock all fs methods globally, and use `testFs._files` / `testFs._dirs` / `testFs._globResults` to set up fixture state. Import `testFs` and `setupFakeFs` from `./test-helpers.ts`.
+- Pure utility functions do not need deps — import and call them directly in tests.
 
-### fsDeps Example
+### fs mocking example
 
 Production code:
 
 ```ts
-import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import { fsDeps } from "./fs-deps.ts";
 
 export function readConfig() {
   if (!fsDeps.existsSync("config.json")) return null;
@@ -49,17 +49,15 @@ export function readConfig() {
 Test code:
 
 ```ts
-import { makeFakeFsDeps, type FsDeps } from "./fs-deps.ts";
+import { testFs, setupFakeFs } from "./test-helpers.ts";
 
 describe("readConfig", () => {
-  let fs: FsDeps;
-
   beforeEach(() => {
-    fs = makeFakeFsDeps();
+    setupFakeFs();
   });
 
   it("returns config when file exists", () => {
-    fs._files.set("config.json", '{"key": "value"}');
+    testFs._files.set("config.json", '{"key": "value"}');
     const result = readConfig();
     assert.deepStrictEqual(result, { key: "value" });
   });
@@ -68,5 +66,20 @@ describe("readConfig", () => {
     const result = readConfig();
     assert.strictEqual(result, null);
   });
+});
+```
+
+### mocking other built-ins
+
+Use `mock.method` from `node:test` — pass the module and method name with a replacement function. Restore is automatic between tests.
+
+```ts
+import { mock } from "node:test";
+import os from "node:os";
+import crypto from "node:crypto";
+
+beforeEach(() => {
+  mock.method(os, "tmpdir", () => "/tmp");
+  mock.method(crypto, "randomUUID", () => "test-uuid");
 });
 ```
