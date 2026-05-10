@@ -21,20 +21,8 @@ const execPromise = promisify(exec);
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
-export interface ToolLogDeps {
-  colorPrint: typeof colorPrint;
-}
-
-const toolLogDeps: ToolLogDeps = {
-  colorPrint,
-};
-
-function toolLog(
-  label: string,
-  detail: string,
-  deps: ToolLogDeps = toolLogDeps,
-) {
-  deps.colorPrint(`${label}: ${detail}`, "blue");
+function toolLog(label: string, detail: string) {
+  colorPrint(`${label}: ${detail}`, "blue");
 }
 
 export type ToolLog = typeof toolLog;
@@ -52,28 +40,19 @@ export interface ToolResult {
   is_error?: boolean;
 }
 
-const executeBashToolDeps = {
-  exec: (cmd: string) => execPromise(cmd),
-  debugLog,
-  toolLog,
-};
-
-type ExecuteBashToolDeps = typeof executeBashToolDeps;
-
 const BashToolInputSchema = z.object({ command: z.string() });
 
 export async function executeBashTool(
   toolCall: ToolCall,
-  deps: ExecuteBashToolDeps = executeBashToolDeps,
 ): Promise<ToolResult> {
   const { command: bashCommand } = BashToolInputSchema.parse(toolCall.input);
-  deps.toolLog("bash", bashCommand);
-  deps.debugLog(`executeBashTool: command=${bashCommand}`);
+  toolLog("bash", bashCommand);
+  debugLog(`executeBashTool: command=${bashCommand}`);
 
-  const bashResult = await tryCatchAsync(deps.exec(bashCommand));
+  const bashResult = await tryCatchAsync(execPromise(bashCommand));
 
   if (bashResult.ok) {
-    deps.debugLog(
+    debugLog(
       `executeBashTool: stdout=${bashResult.value.stdout}, stderr=${bashResult.value.stderr}`,
     );
     return {
@@ -87,7 +66,7 @@ export async function executeBashTool(
   }
 
   const error = getMessageFromError(bashResult.error);
-  deps.debugLog(`executeBashTool: error=${error}`);
+  debugLog(`executeBashTool: error=${error}`);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
@@ -96,14 +75,6 @@ export async function executeBashTool(
   };
 }
 
-const executeCreateFileToolDeps = {
-  fs: fsDeps,
-  debugLog,
-  toolLog,
-};
-
-type ExecuteCreateFileToolDeps = typeof executeCreateFileToolDeps;
-
 const CreateFileToolSchema = z.object({
   path: z.string(),
   content: z.string(),
@@ -111,11 +82,10 @@ const CreateFileToolSchema = z.object({
 
 export function executeCreateFileTool(
   toolCall: ToolCall,
-  deps: ExecuteCreateFileToolDeps = executeCreateFileToolDeps,
 ): ToolResult {
   const { content, path } = CreateFileToolSchema.parse(toolCall.input);
-  if (deps.fs.existsSync(path)) {
-    deps.debugLog(`executeCreatefileTool: ${path} already exists`);
+  if (fsDeps.existsSync(path)) {
+    debugLog(`executeCreatefileTool: ${path} already exists`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -124,11 +94,11 @@ export function executeCreateFileTool(
     };
   }
 
-  const createFileResult = tryCatch(() => deps.fs.writeFileSync(path, content));
+  const createFileResult = tryCatch(() => fsDeps.writeFileSync(path, content));
 
   if (!createFileResult.ok) {
     const error = getMessageFromError(createFileResult.error);
-    deps.debugLog(`executeCreateFileTool: error=${error}`);
+    debugLog(`executeCreateFileTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -137,21 +107,13 @@ export function executeCreateFileTool(
     };
   }
 
-  deps.debugLog(`executeCreateFileTool: ${path} created successfully `);
+  debugLog(`executeCreateFileTool: ${path} created successfully `);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
     content: `${path} created successfully`,
   };
 }
-
-const executeViewFileToolDeps = {
-  fs: fsDeps,
-  debugLog,
-  toolLog,
-};
-
-type ExecuteViewFileToolDeps = typeof executeViewFileToolDeps;
 
 const ViewFileToolInputSchema = z.object({
   path: z.string(),
@@ -161,18 +123,17 @@ const ViewFileToolInputSchema = z.object({
 
 export function executeViewFileTool(
   toolCall: ToolCall,
-  deps: ExecuteViewFileToolDeps = executeViewFileToolDeps,
 ): ToolResult {
   const { path, start_line, end_line } = ViewFileToolInputSchema.parse(
     toolCall.input,
   );
-  deps.toolLog("view_file", path);
-  deps.debugLog(`executeViewFileTool: path=${path}`);
+  toolLog("view_file", path);
+  debugLog(`executeViewFileTool: path=${path}`);
 
-  const statResult = tryCatch(() => deps.fs.statSync(path));
+  const statResult = tryCatch(() => fsDeps.statSync(path));
   if (!statResult.ok) {
     const error = getMessageFromError(statResult.error);
-    deps.debugLog(`executeViewFileTool: error=${error}`);
+    debugLog(`executeViewFileTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -182,10 +143,10 @@ export function executeViewFileTool(
   }
 
   if (statResult.value.isDirectory()) {
-    const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
+    const readdirResult = tryCatch(() => fsDeps.readdirSync(path));
     if (!readdirResult.ok) {
       const error = getMessageFromError(readdirResult.error);
-      deps.debugLog(`executeViewFileTool: error=${error}`);
+      debugLog(`executeViewFileTool: error=${error}`);
       return {
         type: "tool_result",
         tool_use_id: toolCall.id,
@@ -194,7 +155,7 @@ export function executeViewFileTool(
       };
     }
     const listing = readdirResult.value.join("\n");
-    deps.debugLog(`executeViewFileTool: directory listing for ${path}`);
+    debugLog(`executeViewFileTool: directory listing for ${path}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -202,10 +163,10 @@ export function executeViewFileTool(
     };
   }
 
-  const readResult = tryCatch(() => deps.fs.readFileSync(path));
+  const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    deps.debugLog(`executeViewFileTool: error=${error}`);
+    debugLog(`executeViewFileTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -217,7 +178,7 @@ export function executeViewFileTool(
   const lines = readResult.value.toString().split("\n");
 
   if (start_line !== undefined && start_line < 1) {
-    deps.debugLog(
+    debugLog(
       `executeViewFileTool: start_line ${String(start_line)} is less than 1`,
     );
     return {
@@ -229,7 +190,7 @@ export function executeViewFileTool(
   }
 
   if (end_line !== undefined && end_line !== -1 && end_line < 1) {
-    deps.debugLog(
+    debugLog(
       `executeViewFileTool: end_line ${String(end_line)} is less than 1`,
     );
     return {
@@ -245,7 +206,7 @@ export function executeViewFileTool(
     end_line === undefined || end_line === -1 ? lines.length : end_line;
 
   if (start >= lines.length) {
-    deps.debugLog(
+    debugLog(
       `executeViewFileTool: start_line ${String(start_line)} is past end of file`,
     );
     return {
@@ -257,7 +218,7 @@ export function executeViewFileTool(
   }
 
   if (end > lines.length) {
-    deps.debugLog(
+    debugLog(
       `executeViewFileTool: end_line ${String(end_line)} is past end of file`,
     );
     return {
@@ -269,7 +230,7 @@ export function executeViewFileTool(
   }
 
   if (start >= end) {
-    deps.debugLog(
+    debugLog(
       `executeViewFileTool: start_line ${String(start_line)} is greater than or equal to end_line ${String(end_line)}`,
     );
     return {
@@ -285,7 +246,7 @@ export function executeViewFileTool(
     .map((line, i) => `${String(start + i + 1)}\t${line}`)
     .join("\n");
 
-  deps.debugLog(
+  debugLog(
     `executeViewFileTool: ${path} lines ${String(start + 1)}-${String(end)}`,
   );
   return {
@@ -295,14 +256,6 @@ export function executeViewFileTool(
   };
 }
 
-const executeStrReplaceToolDeps = {
-  fs: fsDeps,
-  debugLog,
-  toolLog,
-};
-
-type ExecuteStrReplaceToolDeps = typeof executeStrReplaceToolDeps;
-
 const StrReplaceToolInputSchema = z.object({
   path: z.string(),
   old_str: z.string(),
@@ -311,18 +264,17 @@ const StrReplaceToolInputSchema = z.object({
 
 export function executeStrReplaceTool(
   toolCall: ToolCall,
-  deps: ExecuteStrReplaceToolDeps = executeStrReplaceToolDeps,
 ): ToolResult {
   const { path, old_str, new_str } = StrReplaceToolInputSchema.parse(
     toolCall.input,
   );
-  deps.toolLog("str_replace", path);
-  deps.debugLog(`executeStrReplaceTool: path=${path}`);
+  toolLog("str_replace", path);
+  debugLog(`executeStrReplaceTool: path=${path}`);
 
-  const readResult = tryCatch(() => deps.fs.readFileSync(path));
+  const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    deps.debugLog(`executeStrReplaceTool: error=${error}`);
+    debugLog(`executeStrReplaceTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -335,7 +287,7 @@ export function executeStrReplaceTool(
   const occurrences = content.split(old_str).length - 1;
 
   if (occurrences === 0) {
-    deps.debugLog(`executeStrReplaceTool: old_str not found in ${path}`);
+    debugLog(`executeStrReplaceTool: old_str not found in ${path}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -345,7 +297,7 @@ export function executeStrReplaceTool(
   }
 
   if (occurrences > 1) {
-    deps.debugLog(
+    debugLog(
       `executeStrReplaceTool: old_str matched ${String(occurrences)} times in ${path}`,
     );
     return {
@@ -357,11 +309,11 @@ export function executeStrReplaceTool(
   }
 
   const writeResult = tryCatch(() =>
-    deps.fs.writeFileSync(path, content.replace(old_str, new_str)),
+    fsDeps.writeFileSync(path, content.replace(old_str, new_str)),
   );
   if (!writeResult.ok) {
     const error = getMessageFromError(writeResult.error);
-    deps.debugLog(`executeStrReplaceTool: error=${error}`);
+    debugLog(`executeStrReplaceTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -370,21 +322,13 @@ export function executeStrReplaceTool(
     };
   }
 
-  deps.debugLog(`executeStrReplaceTool: ${path} updated successfully`);
+  debugLog(`executeStrReplaceTool: ${path} updated successfully`);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
     content: `${path} updated successfully`,
   };
 }
-
-const executeInsertLinesToolDeps = {
-  fs: fsDeps,
-  debugLog,
-  toolLog,
-};
-
-type ExecuteInsertLinesToolDeps = typeof executeInsertLinesToolDeps;
 
 const InsertLinesToolInputSchema = z.object({
   path: z.string(),
@@ -394,20 +338,19 @@ const InsertLinesToolInputSchema = z.object({
 
 export function executeInsertLinesTool(
   toolCall: ToolCall,
-  deps: ExecuteInsertLinesToolDeps = executeInsertLinesToolDeps,
 ): ToolResult {
   const { path, after_line, content } = InsertLinesToolInputSchema.parse(
     toolCall.input,
   );
-  deps.toolLog("insert_lines", path);
-  deps.debugLog(
+  toolLog("insert_lines", path);
+  debugLog(
     `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
   );
 
-  const readResult = tryCatch(() => deps.fs.readFileSync(path));
+  const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    deps.debugLog(`executeInsertLinesTool: error=${error}`);
+    debugLog(`executeInsertLinesTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -419,7 +362,7 @@ export function executeInsertLinesTool(
   const lines = readResult.value.toString().split("\n");
 
   if (after_line < 0 || after_line > lines.length) {
-    deps.debugLog(
+    debugLog(
       `executeInsertLinesTool: after_line ${String(after_line)} out of range`,
     );
     return {
@@ -433,11 +376,11 @@ export function executeInsertLinesTool(
   lines.splice(after_line, 0, content);
 
   const writeResult = tryCatch(() => {
-    deps.fs.writeFileSync(path, lines.join("\n"));
+    fsDeps.writeFileSync(path, lines.join("\n"));
   });
   if (!writeResult.ok) {
     const error = getMessageFromError(writeResult.error);
-    deps.debugLog(`executeInsertLinesTool: error=${error}`);
+    debugLog(`executeInsertLinesTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
@@ -446,7 +389,7 @@ export function executeInsertLinesTool(
     };
   }
 
-  deps.debugLog(`executeInsertLinesTool: ${path} updated successfully`);
+  debugLog(`executeInsertLinesTool: ${path} updated successfully`);
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
@@ -454,26 +397,16 @@ export function executeInsertLinesTool(
   };
 }
 
-const executeWebFetchToolDeps = {
-  fetch: (href: string, init?: RequestInit) => fetch(href, init),
-  debugLog,
-  colorPrint,
-  toolLog,
-};
-
-type ExecuteWebFetchToolDeps = typeof executeWebFetchToolDeps;
-
 const WebFetchToolSchema = z.object({
   href: z.string(),
 });
 
 export async function executeWebFetchHtmlTool(
   toolCall: ToolCall,
-  deps: ExecuteWebFetchToolDeps = executeWebFetchToolDeps,
 ): Promise<ToolResult> {
   const { href } = WebFetchToolSchema.parse(toolCall.input);
-  deps.toolLog("web_fetch_html", href);
-  deps.debugLog(`executeWebFetchHtmlTool: href=${href}`);
+  toolLog("web_fetch_html", href);
+  debugLog(`executeWebFetchHtmlTool: href=${href}`);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "text/html");
@@ -484,14 +417,14 @@ export async function executeWebFetchHtmlTool(
   }, 10_000);
 
   try {
-    const response = await deps.fetch(href, {
+    const response = await fetch(href, {
       headers,
       signal: fetchController.signal,
     });
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      deps.colorPrint(error, "yellow");
+      colorPrint(error, "yellow");
       throw new Error(error);
     }
 
@@ -501,11 +434,11 @@ export async function executeWebFetchHtmlTool(
     const article = reader.parse();
     if (!article) {
       const error = `Failed to parse article from ${href}`;
-      deps.colorPrint(error, "yellow");
+      colorPrint(error, "yellow");
       throw new Error(error);
     }
 
-    deps.debugLog(
+    debugLog(
       `executeWebFetchHtmlTool: success, title=${article.title ?? "null"}`,
     );
     return {
@@ -515,7 +448,7 @@ export async function executeWebFetchHtmlTool(
     };
   } catch (error: unknown) {
     const msg = getMessageFromError(error);
-    deps.debugLog(`executeWebFetchHtmlTool: error=${msg}`);
+    debugLog(`executeWebFetchHtmlTool: error=${msg}`);
     return {
       is_error: true,
       type: "tool_result",
@@ -529,11 +462,10 @@ export async function executeWebFetchHtmlTool(
 
 export async function executeWebFetchJsonTool(
   toolCall: ToolCall,
-  deps: ExecuteWebFetchToolDeps = executeWebFetchToolDeps,
 ): Promise<ToolResult> {
   const { href } = WebFetchToolSchema.parse(toolCall.input);
-  deps.toolLog("web_fetch_json", href);
-  deps.debugLog(`executeWebFetchJsonTool: href=${href}`);
+  toolLog("web_fetch_json", href);
+  debugLog(`executeWebFetchJsonTool: href=${href}`);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "application/json");
@@ -544,19 +476,19 @@ export async function executeWebFetchJsonTool(
   }, 10_000);
 
   try {
-    const response = await deps.fetch(href, {
+    const response = await fetch(href, {
       headers,
       signal: fetchController.signal,
     });
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      deps.colorPrint(error, "yellow");
+      colorPrint(error, "yellow");
       throw new Error(error);
     }
 
     const json = (await response.json()) as unknown;
-    deps.debugLog(`executeWebFetchJsonTool: success`);
+    debugLog(`executeWebFetchJsonTool: success`);
     return {
       content: stringify(json),
       tool_use_id: toolCall.id,
@@ -564,7 +496,7 @@ export async function executeWebFetchJsonTool(
     };
   } catch (error: unknown) {
     const msg = getMessageFromError(error);
-    deps.debugLog(`executeWebFetchJsonTool: error=${msg}`);
+    debugLog(`executeWebFetchJsonTool: error=${msg}`);
     return {
       is_error: true,
       type: "tool_result",
@@ -580,23 +512,15 @@ const LoadSkillToolSchema = z.object({
   name: z.string(),
 });
 
-const loadSkillToolDeps = {
-  debugLog,
-  toolLog,
-};
-
-type LoadSkillToolDeps = typeof loadSkillToolDeps;
-
 export function loadSkillTool(
   toolCall: ToolCall,
-  deps: LoadSkillToolDeps = loadSkillToolDeps,
 ): ToolResult {
   const { name } = LoadSkillToolSchema.parse(toolCall.input);
-  deps.toolLog("load_skill", name);
-  deps.debugLog(`loadSkillTool: name=${name}`);
+  toolLog("load_skill", name);
+  debugLog(`loadSkillTool: name=${name}`);
   const foundSkill = selectors.getSkills().find((skill) => skill.name === name);
   if (!foundSkill) {
-    deps.debugLog(`loadSkillTool: skill not found`);
+    debugLog(`loadSkillTool: skill not found`);
     return {
       is_error: true,
       type: "tool_result",
@@ -605,7 +529,7 @@ export function loadSkillTool(
     };
   }
 
-  deps.debugLog(`loadSkillTool: loaded ${name}`);
+  debugLog(`loadSkillTool: loaded ${name}`);
   return {
     type: "tool_result",
     content: stringify(foundSkill),
@@ -654,15 +578,8 @@ export const TOOLS = {
   }),
 };
 
-const getToolResultBlockDeps = {
-  fs: fsDeps,
-};
-
-type GetToolResultBlockDeps = typeof getToolResultBlockDeps;
-
 export async function getToolResultBlock(
   toolCall: ToolCall,
-  deps: GetToolResultBlockDeps = getToolResultBlockDeps,
 ) {
   let toolResult: ToolResult | null = null;
 
@@ -690,8 +607,8 @@ export async function getToolResultBlock(
           tempFileAfterPath: tempFileAfter,
           path,
         });
-        deps.fs.unlinkSync(tempFileBefore);
-        deps.fs.unlinkSync(tempFileAfter);
+        fsDeps.unlinkSync(tempFileBefore);
+        fsDeps.unlinkSync(tempFileAfter);
       }
       break;
     }
@@ -706,8 +623,8 @@ export async function getToolResultBlock(
           tempFileAfterPath: tempFileAfter,
           path,
         });
-        deps.fs.unlinkSync(tempFileBefore);
-        deps.fs.unlinkSync(tempFileAfter);
+        fsDeps.unlinkSync(tempFileBefore);
+        fsDeps.unlinkSync(tempFileAfter);
       }
       break;
     }
