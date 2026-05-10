@@ -11,7 +11,7 @@
     "lint": "eslint src",
     "types": "tsc",
     "cloc": "npx cloc src --exclude-ext=test.ts",
-    "ci": "npm run test && npm run lint && npm run types",
+    "ci": "pnpm run test && pnpm run lint && pnpm run types",
     "format": "prettier --write ."
   },
   "devDependencies": {

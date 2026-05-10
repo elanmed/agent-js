@@ -11,7 +11,7 @@ import {
   createTempFile,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
-import { fsDeps, makeFakeFsDeps } from "./fs-deps.ts";
+import { testFs, setupFakeFs } from "./test-helpers.ts";
 
 describe("utils", () => {
   beforeEach(() => {
@@ -104,14 +104,10 @@ describe("utils", () => {
   });
 
   describe("createTempFile", () => {
-    const fs = makeFakeFsDeps();
-
     beforeEach(() => {
-      fs._restore();
+      setupFakeFs();
       mock.method(os, "tmpdir", () => "/tmp");
       mock.method(crypto, "randomUUID", () => "test-uuid");
-      mock.method(fsDeps, "readFileSync", fs.readFileSync);
-      mock.method(fsDeps, "writeFileSync", fs.writeFileSync);
     });
 
     it("returns temp file path without initial content", () => {
@@ -120,13 +116,13 @@ describe("utils", () => {
     });
 
     it("copies initial content when initialContentPath is provided", () => {
-      fs._files.set("/source/file.txt", "initial content");
+      testFs._files.set("/source/file.txt", "initial content");
       const result = createTempFile({
         initialContentPath: "/source/file.txt",
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
       assert.equal(
-        fs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         "initial content",
       );
     });
@@ -136,12 +132,12 @@ describe("utils", () => {
         initialContentPath: "/missing/file.txt",
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
-      assert.equal(fs._files.has("/tmp/agent-js-test-uuid.txt"), false);
+      assert.equal(testFs._files.has("/tmp/agent-js-test-uuid.txt"), false);
     });
 
     it("skips writing when write fails", () => {
-      fs._files.set("/source.txt", "content");
-      fs.writeFileSync = () => {
+      testFs._files.set("/source.txt", "content");
+      testFs.writeFileSync = () => {
         throw new Error("EIO");
       };
       const result = createTempFile({

@@ -7,17 +7,24 @@ import {
 } from "./config.ts";
 import type { InitStateDeps } from "./config.ts";
 import { GLOBAL_CONFIG_PATH, LOCAL_CONFIG_PATH } from "./paths.ts";
-import { makeFakeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps, type FakeFsDeps } from "./test-helpers.ts";
 
-function makeDeps(overrides: Partial<InitStateDeps> = {}): InitStateDeps {
+function makeDeps(overrides: Partial<InitStateDeps> = {}): {
+  deps: InitStateDeps;
+  fs: FakeFsDeps;
+} {
+  const fs = makeFakeFsDeps();
   const colorPrint = () => undefined;
   return {
-    fs: makeFakeFsDeps(),
-    parseCliArgs: () => ({ debug: false, resumeSessionId: null }),
-    getAgentsContext: () => "",
-    getSkillsContext: () => "",
-    colorPrint,
-    ...overrides,
+    deps: {
+      fs,
+      parseCliArgs: () => ({ debug: false, resumeSessionId: null }),
+      getAgentsContext: () => "",
+      getSkillsContext: () => "",
+      colorPrint,
+      ...overrides,
+    },
+    fs,
   };
 }
 
@@ -28,15 +35,15 @@ describe("config", () => {
 
   describe("when local config exists", () => {
     it("uses its model over the global config, default config", () => {
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         GLOBAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
         }),
       );
-      deps.fs._files.set(
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-haiku-4-5",
@@ -50,15 +57,15 @@ describe("config", () => {
     });
 
     it("uses its provider over the global config, default config", () => {
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         GLOBAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
           provider: "openai-compatible",
         }),
       );
-      deps.fs._files.set(
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -72,8 +79,8 @@ describe("config", () => {
     });
 
     it("uses its disableUsageMessage over the global config, default config", () => {
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         GLOBAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -81,7 +88,7 @@ describe("config", () => {
           disableUsageMessage: false,
         }),
       );
-      deps.fs._files.set(
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -96,8 +103,8 @@ describe("config", () => {
     });
 
     it("uses its editorLog over the global config, default config", () => {
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         GLOBAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -105,7 +112,7 @@ describe("config", () => {
           editorLog: false,
         }),
       );
-      deps.fs._files.set(
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -120,8 +127,8 @@ describe("config", () => {
     });
 
     it("uses its diffStyle over the global config, default config", () => {
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         GLOBAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -129,7 +136,7 @@ describe("config", () => {
           diffStyle: "lines",
         }),
       );
-      deps.fs._files.set(
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -152,8 +159,8 @@ describe("config", () => {
         cacheWritePerToken: 0,
       };
 
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         GLOBAL_CONFIG_PATH,
         JSON.stringify({
           model: "test-model",
@@ -161,7 +168,7 @@ describe("config", () => {
           pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
         }),
       );
-      deps.fs._files.set(
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "test-model",
@@ -176,8 +183,8 @@ describe("config", () => {
     });
 
     it("uses its keymaps over the global config, default config", () => {
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         GLOBAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -189,7 +196,7 @@ describe("config", () => {
           },
         }),
       );
-      deps.fs._files.set(
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -225,8 +232,8 @@ describe("config", () => {
     });
 
     it("merges partial keymaps with defaults", () => {
-      const deps = makeDeps();
-      deps.fs._files.set(
+      const { deps, fs } = makeDeps();
+      fs._files.set(
         LOCAL_CONFIG_PATH,
         JSON.stringify({
           model: "claude-sonnet-4-6",
@@ -259,8 +266,8 @@ describe("config", () => {
   describe("when local config does not exist", () => {
     describe("when the global config exists", () => {
       it("uses its model over the default config", () => {
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({
             model: "claude-haiku-4-5",
@@ -273,8 +280,8 @@ describe("config", () => {
       });
 
       it("uses its provider over the default config", () => {
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({
             model: "claude-sonnet-4-6",
@@ -287,8 +294,8 @@ describe("config", () => {
       });
 
       it("uses its disableUsageMessage over the default config", () => {
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({
             model: "claude-sonnet-4-6",
@@ -302,8 +309,8 @@ describe("config", () => {
       });
 
       it("uses its editorLog over the default config", () => {
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({
             model: "claude-sonnet-4-6",
@@ -317,8 +324,8 @@ describe("config", () => {
       });
 
       it("uses its diffStyle over the default config", () => {
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({
             model: "claude-sonnet-4-6",
@@ -340,8 +347,8 @@ describe("config", () => {
           cacheWritePerToken: 0,
         };
 
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({
             model: "test-model",
@@ -355,8 +362,8 @@ describe("config", () => {
       });
 
       it("uses its keymaps over the default config", () => {
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({
             model: "claude-sonnet-4-6",
@@ -394,15 +401,15 @@ describe("config", () => {
 
     describe("when the global config does not exist", () => {
       it("throws when model is not configured", () => {
-        const deps = makeDeps();
+        const { deps } = makeDeps();
         assert.throws(() => {
           initState(deps);
         }, /A `model` is required/);
       });
 
       it("throws when baseURL is not configured for openai-compatible provider", () => {
-        const deps = makeDeps();
-        deps.fs._files.set(
+        const { deps, fs } = makeDeps();
+        fs._files.set(
           GLOBAL_CONFIG_PATH,
           JSON.stringify({ model: "some-model" }),
         );
@@ -414,8 +421,8 @@ describe("config", () => {
   });
 
   it("throws on invalid JSON in global config", () => {
-    const deps = makeDeps();
-    deps.fs._files.set(GLOBAL_CONFIG_PATH, "not valid json");
+    const { deps, fs } = makeDeps();
+    fs._files.set(GLOBAL_CONFIG_PATH, "not valid json");
 
     assert.throws(() => {
       initState(deps);
@@ -423,8 +430,8 @@ describe("config", () => {
   });
 
   it("throws on invalid JSON in local config", () => {
-    const deps = makeDeps();
-    deps.fs._files.set(LOCAL_CONFIG_PATH, "not valid json");
+    const { deps, fs } = makeDeps();
+    fs._files.set(LOCAL_CONFIG_PATH, "not valid json");
 
     assert.throws(() => {
       initState(deps);
@@ -432,10 +439,10 @@ describe("config", () => {
   });
 
   it("sets debug from args", () => {
-    const deps = makeDeps({
+    const { deps, fs } = makeDeps({
       parseCliArgs: () => ({ debug: true, resumeSessionId: null }),
     });
-    deps.fs._files.set(
+    fs._files.set(
       GLOBAL_CONFIG_PATH,
       JSON.stringify({
         model: "claude-sonnet-4-6",
@@ -448,10 +455,10 @@ describe("config", () => {
   });
 
   it("sets agentsContext from dep", () => {
-    const deps = makeDeps({
+    const { deps, fs } = makeDeps({
       getAgentsContext: () => "FILEPATH: AGENTS.md\nhello",
     });
-    deps.fs._files.set(
+    fs._files.set(
       GLOBAL_CONFIG_PATH,
       JSON.stringify({
         model: "claude-sonnet-4-6",
@@ -464,10 +471,10 @@ describe("config", () => {
   });
 
   it("sets skillsContext from dep", () => {
-    const deps = makeDeps({
+    const { deps, fs } = makeDeps({
       getSkillsContext: () => "- skill: desc",
     });
-    deps.fs._files.set(
+    fs._files.set(
       GLOBAL_CONFIG_PATH,
       JSON.stringify({
         model: "claude-sonnet-4-6",

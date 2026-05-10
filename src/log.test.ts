@@ -14,7 +14,7 @@ import {
   EDITOR_LOGS_PATH,
 } from "./log.ts";
 import { dispatch, actions, selectors } from "./state.ts";
-import { makeFakeFsDeps, type FsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps, type FakeFsDeps } from "./test-helpers.ts";
 
 describe("log", () => {
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe("log", () => {
   });
 
   describe("debugLog", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -74,7 +74,7 @@ describe("log", () => {
   });
 
   describe("editorLog", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -135,7 +135,7 @@ content 2
   });
 
   describe("resetDebugLog", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -167,7 +167,7 @@ content 2
   });
 
   describe("initEditorLog", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -222,7 +222,7 @@ content 2
   });
 
   describe("deleteExpiredEditorLogs", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();

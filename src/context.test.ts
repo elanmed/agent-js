@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import { makeFakeFsDeps, type FsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps, type FakeFsDeps } from "./test-helpers.ts";
 import { GLOBAL_AGENTS_PATH } from "./paths.ts";
 import {
   getAgentsContext,
@@ -14,7 +14,7 @@ import {
 
 describe("context", () => {
   describe("getAgentsContext", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });
@@ -98,7 +98,7 @@ Content: local content
   });
 
   describe("getSkillsContext", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });
@@ -234,7 +234,7 @@ Content: local content
   });
 
   describe("getSkillJSON", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });

@@ -14,7 +14,7 @@ import type {
   GetAvailableSlashCommandsDeps,
 } from "./input.ts";
 import type { Color } from "./print.ts";
-import { makeFakeFsDeps, type FsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps, type FakeFsDeps } from "./test-helpers.ts";
 
 describe("input", () => {
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe("input", () => {
   });
 
   describe("editCommand", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -141,7 +141,7 @@ describe("input", () => {
   });
 
   describe("resolveSlashCommand", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -307,7 +307,7 @@ describe("input", () => {
   });
 
   describe("getAvailableSlashCommands", () => {
-    let fs: FsDeps;
+    let fs: FakeFsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });
