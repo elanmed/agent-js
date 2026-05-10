@@ -126,7 +126,7 @@ description: Does something useful
 Skill body with instructions the agent will use when this skill is loaded.
 ```
 
-Available skills are listed in the system prompt. Use the `loadSkill` tool to load a skill's full instructions.
+Available skills are listed in the system prompt, the LLM can use the `loadSkill` tool to load a skill's full instructions.
 
 ## Tools
 
@@ -155,8 +155,6 @@ Minimal runtime dependencies (7 total):
 
 ## TODO (soon)
 
-- [ ] Support skills
-  - [ ] View skill tool
 - [ ] Tool call interrupt
 
 ## TODO (later)

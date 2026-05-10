@@ -379,7 +379,7 @@ Content: local content
         "---\nname: my-skill\ndescription: A skill\n---\n# Body content",
       );
       assert.deepStrictEqual(result, {
-        data: { ok: true, value: { name: "my-skill", description: "A skill" } },
+        data: { name: "my-skill", description: "A skill" },
         body: "# Body content",
       });
     });
@@ -387,7 +387,7 @@ Content: local content
     it("parses front matter with no body", () => {
       const result = parseFrontMatter("---\nname: test\n---\n");
       assert.deepStrictEqual(result, {
-        data: { ok: true, value: { name: "test" } },
+        data: { name: "test" },
         body: "",
       });
     });
@@ -397,7 +397,7 @@ Content: local content
         "---\nkey: val\n---\nBody with --- inside\nand more text",
       );
       assert.deepStrictEqual(result, {
-        data: { ok: true, value: { key: "val" } },
+        data: { key: "val" },
         body: "Body with --- inside\nand more text",
       });
     });

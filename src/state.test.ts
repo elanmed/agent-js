@@ -249,6 +249,35 @@ describe("state", () => {
     assert.equal(selectors.getSkillsContext(), "- skill: desc");
   });
 
+  describe("append-to-skills", () => {
+    it("adds a skill to the skills array", () => {
+      assert.deepStrictEqual(selectors.getSkills(), []);
+      dispatch(
+        actions.appendToSkills({
+          name: "deploy",
+          dir: "/skills/deploy",
+          content: "# Deploy instructions",
+        }),
+      );
+      assert.deepStrictEqual(selectors.getSkills(), [
+        { name: "deploy", dir: "/skills/deploy", content: "# Deploy instructions" },
+      ]);
+    });
+
+    it("appends multiple skills in order", () => {
+      assert.deepStrictEqual(selectors.getSkills(), []);
+      dispatch(
+        actions.appendToSkills({ name: "a", dir: "/a", content: "content a" }),
+      );
+      dispatch(
+        actions.appendToSkills({ name: "b", dir: "/b", content: "content b" }),
+      );
+      assert.equal(selectors.getSkills().length, 2);
+      assert.equal(selectors.getSkills()[0]!.name, "a");
+      assert.equal(selectors.getSkills()[1]!.name, "b");
+    });
+  });
+
   it("set-slash-commands", () => {
     assert.deepStrictEqual(selectors.getSlashCommands(), []);
     dispatch(actions.setSlashCommands(["test", "deploy"]));

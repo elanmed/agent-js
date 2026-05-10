@@ -576,6 +576,28 @@ export async function executeWebFetchJsonTool(
   }
 }
 
+const LoadSkillToolSchema = z.object({
+  name: z.string(),
+});
+
+export function loadSkillTool(toolCall: ToolCall): ToolResult {
+  const { name } = LoadSkillToolSchema.parse(toolCall.input);
+  const foundSkill = selectors.getSkills().find((skill) => skill.name === name);
+  if (!foundSkill)
+    return {
+      is_error: true,
+      type: "tool_result",
+      content: `Could not find a skill with name: ${name}`,
+      tool_use_id: toolCall.id,
+    };
+
+  return {
+    type: "tool_result",
+    content: stringify(foundSkill),
+    tool_use_id: toolCall.id,
+  };
+}
+
 export const TOOLS = {
   bash: tool({
     description: "Execute a bash command and return its output.",
@@ -610,6 +632,10 @@ export const TOOLS = {
     description:
       "Fetch a JSON API endpoint by URL and return the parsed JSON response.",
     inputSchema: WebFetchToolSchema,
+  }),
+  load_skill: tool({
+    description: "Load a skill to get specialized instructions",
+    inputSchema: LoadSkillToolSchema,
   }),
 };
 
@@ -676,6 +702,10 @@ export async function getToolResultBlock(
     }
     case "web_fetch_json": {
       toolResult = await executeWebFetchJsonTool(toolCall);
+      break;
+    }
+    case "load_skill": {
+      toolResult = loadSkillTool(toolCall);
       break;
     }
   }

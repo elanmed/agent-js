@@ -3,6 +3,7 @@ import { fsDeps, type FsDeps } from "./fs-deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
+import { dispatch, actions } from "./state.ts";
 import {
   GLOBAL_AGENTS_PATH,
   GLOBAL_SKILLS_DIR_PATH,
@@ -58,11 +59,16 @@ AGENTS.md context files:
 ${agentFilesList}`;
 }
 
-const skillSchema = z.object({
+const skillMetadataSchema = z.object({
   name: z.string(),
   description: z.string(),
 });
-export type Skill = z.infer<typeof skillSchema>;
+export type SkillMetadata = z.infer<typeof skillMetadataSchema>;
+export interface Skill {
+  name: string;
+  dir: string;
+  content: string;
+}
 
 export interface GetSkillsContextDeps {
   fs: FsDeps;
@@ -83,7 +89,7 @@ export function getSkillsContext(
     LOCAL_SKILLS_DIR_PATH,
     GLOBAL_SKILLS_DIR_PATH,
   ];
-  const skills: Skill[] = [];
+  const skills: SkillMetadata[] = [];
 
   skillsDirPaths.forEach((dirPath) => {
     if (!deps.fs.existsSync(dirPath)) return;
@@ -140,12 +146,12 @@ export function parseFrontMatter(content: string) {
   // start slice on the char after the --- \n
   const yamlStr = content.slice(4, closeIndex);
   if (yamlStr === "") return null;
-  const data = tryCatch(() => parseYaml(yamlStr) as unknown);
-  if (!data.ok) return null;
+  const parseResult = tryCatch(() => parseYaml(yamlStr) as unknown);
+  if (!parseResult.ok) return null;
 
   // start slice on the char after the \n---\n
   const body = content.slice(closeIndex + 5);
-  return { data, body };
+  return { data: parseResult.value, body };
 }
 
 export function getSkillJSON(
@@ -172,7 +178,7 @@ export function getSkillJSON(
       );
       continue;
     }
-    const parseResult = skillSchema.safeParse(parsed.data.value);
+    const parseResult = skillMetadataSchema.safeParse(parsed.data);
     if (!parseResult.success) {
       deps.colorPrint(
         `Malformed skill at ${fullPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,
@@ -180,6 +186,14 @@ export function getSkillJSON(
       );
       continue;
     }
+    dispatch(
+      actions.appendToSkills({
+        name: parseResult.data.name,
+        content: parsed.body,
+        dir: dirPath,
+      }),
+    );
+
     return parseResult.data;
   }
 

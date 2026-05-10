@@ -10,12 +10,14 @@ import {
   executeInsertLinesTool,
   executeWebFetchHtmlTool,
   executeWebFetchJsonTool,
+  loadSkillTool,
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
 import { debugLog } from "./log.ts";
 import type { ToolLog } from "./tools.ts";
 import { makeFsDeps } from "./fs-deps.ts";
 import { colorPrint } from "./print.ts";
+import { dispatch, actions } from "./state.ts";
 
 const execPromise = promisify(exec);
 
@@ -781,6 +783,91 @@ describe("tools", () => {
         is_error: true,
         content: "Invalid JSON",
       });
+    });
+  });
+
+  describe("loadSkillTool", () => {
+    beforeEach(() => {
+      dispatch(actions.resetState());
+    });
+
+    it("returns loaded skill content when skill exists in state", () => {
+      dispatch(
+        actions.appendToSkills({
+          name: "deploy",
+          dir: "/skills/deploy",
+          content: "# Deploy instructions",
+        }),
+      );
+      const call = makeToolCall({
+        name: "load_skill",
+        input: { name: "deploy" },
+      });
+      const result = loadSkillTool(call);
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        content: JSON.stringify(
+          { name: "deploy", dir: "/skills/deploy", content: "# Deploy instructions" },
+          null,
+          2,
+        ),
+      });
+    });
+
+    it("finds the correct skill when multiple skills are stored", () => {
+      dispatch(
+        actions.appendToSkills({
+          name: "skill-a",
+          dir: "/a",
+          content: "content a",
+        }),
+      );
+      dispatch(
+        actions.appendToSkills({
+          name: "skill-b",
+          dir: "/b",
+          content: "content b",
+        }),
+      );
+      const call = makeToolCall({
+        name: "load_skill",
+        input: { name: "skill-b" },
+      });
+      const result = loadSkillTool(call);
+      const parsed = JSON.parse(result.content) as Record<string, unknown>;
+      assert.equal(parsed["name"], "skill-b");
+    });
+
+    it("returns is_error when skill is not found", () => {
+      const call = makeToolCall({
+        name: "load_skill",
+        input: { name: "nonexistent" },
+      });
+      const result = loadSkillTool(call);
+      assert.deepStrictEqual(result, {
+        type: "tool_result",
+        tool_use_id: "tool_1",
+        is_error: true,
+        content: "Could not find a skill with name: nonexistent",
+      });
+    });
+
+    it("returns is_error when no skills are loaded", () => {
+      const call = makeToolCall({
+        name: "load_skill",
+        input: { name: "any" },
+      });
+      const result = loadSkillTool(call);
+      assert.ok(result.is_error);
+    });
+
+    it("throws on invalid input schema", () => {
+      const call = makeToolCall({
+        name: "load_skill",
+        input: { bad: true },
+      });
+      assert.throws(() => loadSkillTool(call));
     });
   });
 });

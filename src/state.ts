@@ -14,6 +14,7 @@ import { debugLog } from "./log.ts";
 import type { TokenUsage } from "./print.ts";
 export type { EditorLog } from "./log.ts";
 export type { ToolLog } from "./tools.ts";
+import type { Skill } from "./context.ts";
 
 interface State {
   appState: {
@@ -29,6 +30,7 @@ interface State {
     editorLogPath: string;
     agentsContext: string;
     skillsContext: string;
+    skills: Skill[];
     rl: readline.Interface | null;
     spinnerTimeout: NodeJS.Timeout | null;
   };
@@ -63,6 +65,7 @@ const initialState: State = {
     editorLogPath: "",
     agentsContext: "",
     skillsContext: "",
+    skills: [],
     rl: null,
     spinnerTimeout: null,
   },
@@ -192,6 +195,10 @@ type Action =
   | {
       type: "set-skills-context";
       payload: string;
+    }
+  | {
+      type: "append-to-skills";
+      payload: Skill;
     }
   | {
       type: "set-rl";
@@ -508,6 +515,18 @@ const reducer = (state: State, action: Action): State => {
       );
       return next;
     }
+    case "append-to-skills": {
+      const before = state.appState.skills.length;
+      const next = {
+        ...state,
+        appState: {
+          ...state.appState,
+          skills: [...state.appState.skills, action.payload],
+        },
+      };
+      logStateChange(action.type, String(before), String(next.appState.skills.length));
+      return next;
+    }
     case "set-rl": {
       const before = state.appState.rl;
       const next = {
@@ -658,6 +677,10 @@ const setSkillsContext = (skillsContext: string): Action => {
   return { type: "set-skills-context", payload: skillsContext };
 };
 
+const appendToSkills = (skill: Skill): Action => {
+  return { type: "append-to-skills", payload: skill };
+};
+
 const setRl = (rl: readline.Interface | null): Action => {
   return { type: "set-rl", payload: rl };
 };
@@ -698,6 +721,7 @@ export const actions = {
   setEditorLogPath,
   setAgentsContext,
   setSkillsContext,
+  appendToSkills,
   setRl,
   setSpinnerTimeout,
   resetState,
@@ -715,6 +739,7 @@ const getEditorLog = () => getState().appState.editorLog;
 const getEditorLogPath = () => getState().appState.editorLogPath;
 const getAgentsContext = () => getState().appState.agentsContext;
 const getSkillsContext = () => getState().appState.skillsContext;
+const getSkills = () => getState().appState.skills;
 const getRl = () => getState().appState.rl;
 const getSpinnerTimeout = () => getState().appState.spinnerTimeout;
 const getModel = () => getState().configState.model;
@@ -753,6 +778,7 @@ export const selectors = {
   getEditorLogPath,
   getAgentsContext,
   getSkillsContext,
+  getSkills,
   getRl,
   getSpinnerTimeout,
 };

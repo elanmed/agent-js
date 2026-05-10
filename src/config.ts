@@ -192,9 +192,9 @@ export function initState(deps: InitStateDeps = initStateDeps) {
   );
   dispatch(
     actions.setDiffStyle(
-      (localConfig.diffStyle ??
+      localConfig.diffStyle ??
         globalConfig.diffStyle ??
-        DEFAULT_CONFIG.diffStyle) as DiffStyle,
+        DEFAULT_CONFIG.diffStyle,
     ),
   );
   dispatch(
