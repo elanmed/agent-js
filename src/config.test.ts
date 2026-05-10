@@ -7,12 +7,12 @@ import {
 } from "./config.ts";
 import type { InitStateDeps } from "./config.ts";
 import { GLOBAL_CONFIG_PATH, LOCAL_CONFIG_PATH } from "./paths.ts";
-import { makeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps } from "./fs-deps.ts";
 
 function makeDeps(overrides: Partial<InitStateDeps> = {}): InitStateDeps {
   const colorPrint = () => undefined;
   return {
-    fs: makeFsDeps(),
+    fs: makeFakeFsDeps(),
     parseCliArgs: () => ({ debug: false, resumeSessionId: null }),
     getAgentsContext: () => "",
     getSkillsContext: () => "",

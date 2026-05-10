@@ -1,6 +1,7 @@
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { mock } from "bun:test";
+import os from "node:os";
+import crypto from "node:crypto";
 import {
   isAbortError,
   tryCatch,
@@ -10,7 +11,7 @@ import {
   createTempFile,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
-import { makeFsDeps } from "./fs-deps.ts";
+import { fsDeps, makeFakeFsDeps } from "./fs-deps.ts";
 
 describe("utils", () => {
   beforeEach(() => {
@@ -103,18 +104,14 @@ describe("utils", () => {
   });
 
   describe("createTempFile", () => {
-    const fs = makeFsDeps();
-
-    mock.module("node:os", () => ({ tmpdir: () => "/tmp" }));
-    mock.module("node:crypto", () => ({ randomUUID: () => "test-uuid" }));
-    mock.module("./fs-deps.ts", () => ({ fsDeps: fs }));
+    const fs = makeFakeFsDeps();
 
     beforeEach(() => {
       fs._restore();
-    });
-
-    afterEach(() => {
-      mock.restore();
+      mock.method(os, "tmpdir", () => "/tmp");
+      mock.method(crypto, "randomUUID", () => "test-uuid");
+      mock.method(fsDeps, "readFileSync", fs.readFileSync);
+      mock.method(fsDeps, "writeFileSync", fs.writeFileSync);
     });
 
     it("returns temp file path without initial content", () => {

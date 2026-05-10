@@ -14,7 +14,7 @@ import type {
   GetAvailableSlashCommandsDeps,
 } from "./input.ts";
 import type { Color } from "./print.ts";
-import { makeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps } from "./fs-deps.ts";
 
 describe("input", () => {
   beforeEach(() => {
@@ -22,10 +22,10 @@ describe("input", () => {
   });
 
   describe("editCommand", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
 
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(
@@ -141,10 +141,10 @@ describe("input", () => {
   });
 
   describe("resolveSlashCommand", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
 
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(
@@ -307,9 +307,9 @@ describe("input", () => {
   });
 
   describe("getAvailableSlashCommands", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(overrides: Partial<GetAvailableSlashCommandsDeps> = {}) {

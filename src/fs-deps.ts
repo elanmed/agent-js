@@ -45,7 +45,7 @@ export const fsDeps: FsDeps = {
   _restore: () => undefined,
 };
 
-export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
+export function makeFakeFsDeps(overrides: Partial<FsDeps> = {}) {
   const _files = new Map<string, string>();
   const _dirs = new Set<string>();
   const _globResults = new Map<string, string[]>();

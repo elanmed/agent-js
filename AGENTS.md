@@ -2,6 +2,8 @@
 
 You are running in a container. Make all changes to `/agent-js` at the root of the filesystem.
 
+This is a Node.js project. Only Node.js APIs should be used. Use `node` for everything — running, testing, etc.
+
 ## Development
 
 After every change, run linting, types, and tests:
@@ -23,60 +25,13 @@ npm run ci
 - Never add comments
 - Minimize diffs — only change what's necessary
 - All changes must have test coverage
-- Never use mocking — prefer dependency injection instead
-- Always call the dependency parameter `deps`
-- Always export a default deps object named `[functionName]Deps`
-- Always define a matching type named `[FunctionName]Deps` (capital case), inferred from the default deps object
-- If the inferred type is too wide and requires casting in tests (e.g., `fs` functions with multiple overloads), define an explicit interface with narrower types that match how the deps are actually used
+- Use `node:test` for tests and `node:assert` for assertions
+- Use `node:test` mocking (`mock.fn`, `mock.method`, `mock.module`, etc.) instead of dependency injection
 - Never put selectors, actions, or dispatch in deps — read from state directly in functions, set state directly in tests
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
 - Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value, or if the content is dynamic, use `content: result.content` in deepStrictEqual and then assert on the parsed content separately
-- Only put IO or side-effecting dependencies in deps — pure utility functions like `tryCatch`, `getMessageFromError`, `stringify` should be imported directly, not injected. If a function needs to be swapped in tests (e.g. `fs`, `fetch`, `exec`), it belongs in deps. If it doesn't, it doesn't.
-- For fs functions, use the `fsDeps` object from `fs-deps.ts`. In production, pass `fsDeps`. In tests, use `makeFsDeps()` to get an in-memory mock.
-- In tests, create a `makeDeps` helper function that returns default fake dependencies, allowing individual tests to override specific deps via a partial object spread
-
-### Example
-
-Production code:
-
-```ts
-const fetchUserDeps = {
-  db: createDb(),
-  logger: createLogger(),
-};
-
-type FetchUserDeps = typeof fetchUserDeps;
-
-const fetchUser = (id: string, deps: FetchUserDeps = fetchUserDeps) => {
-  deps.logger.info("fetching user", { id });
-  return deps.db.findById("users", id);
-};
-```
-
-Test code:
-
-```ts
-function makeDeps(overrides: Partial<FetchUserDeps> = {}): FetchUserDeps {
-  return {
-    db: { findById: () => ({ id: "1", name: "Test User" }) },
-    logger: { info: () => undefined },
-    ...overrides,
-  };
-}
-
-it("returns user from db", () => {
-  const result = fetchUser("1", makeDeps());
-  assert.deepStrictEqual(result, { id: "1", name: "Test User" });
-});
-
-it("handles db errors", () => {
-  const deps = makeDeps({
-    db: { findById: () => null },
-  });
-  const result = fetchUser("999", deps);
-  assert.strictEqual(result, null);
-});
-```
+- For fs functions, use the `fsDeps` object from `fs-deps.ts`. In production, pass `fsDeps`. In tests, use `makeFakeFsDeps()` to get an in-memory mock.
+- Pure utility functions do not need deps — import and call them directly in tests. Only IO or side-effecting functions go in deps.
 
 ### fsDeps Example
 
@@ -85,40 +40,32 @@ Production code:
 ```ts
 import { fsDeps, type FsDeps } from "./fs-deps.ts";
 
-export interface ReadConfigDeps {
-  fs: FsDeps;
-}
-
-export const readConfigDeps: ReadConfigDeps = {
-  fs: fsDeps,
-};
-
-export function readConfig(deps: ReadConfigDeps = readConfigDeps) {
-  if (!deps.fs.existsSync("config.json")) return null;
-  return JSON.parse(deps.fs.readFileSync("config.json").toString());
+export function readConfig() {
+  if (!fsDeps.existsSync("config.json")) return null;
+  return JSON.parse(fsDeps.readFileSync("config.json").toString());
 }
 ```
 
 Test code:
 
 ```ts
-import { makeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps, type FsDeps } from "./fs-deps.ts";
 
 describe("readConfig", () => {
-  let fs: ReturnType<typeof makeFsDeps>;
+  let fs: FsDeps;
 
   beforeEach(() => {
-    fs = makeFsDeps();
+    fs = makeFakeFsDeps();
   });
 
   it("returns config when file exists", () => {
-    fs.files.set("config.json", '{"key": "value"}');
-    const result = readConfig({ fs });
+    fs._files.set("config.json", '{"key": "value"}');
+    const result = readConfig();
     assert.deepStrictEqual(result, { key: "value" });
   });
 
   it("returns null when file does not exist", () => {
-    const result = readConfig({ fs });
+    const result = readConfig();
     assert.strictEqual(result, null);
   });
 });

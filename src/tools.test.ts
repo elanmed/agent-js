@@ -15,7 +15,7 @@ import {
 import type { ToolCall } from "./tools.ts";
 import { debugLog } from "./log.ts";
 import type { ToolLog } from "./tools.ts";
-import { makeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps } from "./fs-deps.ts";
 import { colorPrint } from "./print.ts";
 import { dispatch, actions } from "./state.ts";
 
@@ -74,19 +74,17 @@ describe("tools", () => {
     it("returns is_error when command exits with non-zero code", async () => {
       const call = makeToolCall({ input: { command: "exit 1" } });
       const result = await executeBashTool(call, bashDeps);
-      assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
-        content: "Command failed: exit 1",
-      });
+      assert.deepStrictEqual(result.type, "tool_result");
+      assert.deepStrictEqual(result.tool_use_id, "tool_1");
+      assert.deepStrictEqual(result.is_error, true);
+      assert.match(result.content, /Command failed: exit 1/);
     });
   });
 
   describe("executeCreateFileTool", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     it("creates a new file and returns success", () => {
@@ -162,9 +160,9 @@ describe("tools", () => {
   });
 
   describe("executeViewFileTool", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     it("returns file contents with line numbers", () => {
@@ -376,9 +374,9 @@ describe("tools", () => {
   });
 
   describe("executeStrReplaceTool", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     it("replaces old_str with new_str when exactly one match exists", () => {
@@ -471,9 +469,9 @@ describe("tools", () => {
   });
 
   describe("executeInsertLinesTool", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     it("inserts text after a specific line", () => {
@@ -810,7 +808,11 @@ describe("tools", () => {
         type: "tool_result",
         tool_use_id: "tool_1",
         content: JSON.stringify(
-          { name: "deploy", dir: "/skills/deploy", content: "# Deploy instructions" },
+          {
+            name: "deploy",
+            dir: "/skills/deploy",
+            content: "# Deploy instructions",
+          },
           null,
           2,
         ),

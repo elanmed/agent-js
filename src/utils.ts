@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { randomUUID } from "node:crypto";
+import os from "node:os";
+import crypto from "node:crypto";
 import { fsDeps } from "./fs-deps.ts";
 
 export const MISSING = "MISSING";
@@ -43,7 +43,7 @@ export function normalizeLine(content: string): string {
 }
 
 export function createTempFile(args?: { initialContentPath?: string }) {
-  const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
+  const tempFile = join(os.tmpdir(), `agent-js-${crypto.randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
   if (initialContentPath) {
     const readResult = tryCatch(() =>

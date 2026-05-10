@@ -14,7 +14,7 @@ import {
   EDITOR_LOGS_PATH,
 } from "./log.ts";
 import { dispatch, actions, selectors } from "./state.ts";
-import { makeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps, type FsDeps } from "./fs-deps.ts";
 
 describe("log", () => {
   beforeEach(() => {
@@ -22,10 +22,10 @@ describe("log", () => {
   });
 
   describe("debugLog", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: FsDeps;
 
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(overrides: Partial<DebugLogDeps> = {}): DebugLogDeps {
@@ -74,10 +74,10 @@ describe("log", () => {
   });
 
   describe("editorLog", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
 
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(overrides: Partial<EditorLogDeps> = {}): EditorLogDeps {
@@ -135,10 +135,10 @@ content 2
   });
 
   describe("resetDebugLog", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
 
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(
@@ -167,10 +167,10 @@ content 2
   });
 
   describe("initEditorLog", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
 
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(
@@ -222,10 +222,10 @@ content 2
   });
 
   describe("deleteExpiredEditorLogs", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
 
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(

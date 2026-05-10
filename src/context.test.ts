@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import { makeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps } from "./fs-deps.ts";
 import { GLOBAL_AGENTS_PATH } from "./paths.ts";
 import {
   getAgentsContext,
@@ -14,9 +14,9 @@ import {
 
 describe("context", () => {
   describe("getAgentsContext", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(overrides: Partial<GetAgentsContextDeps> = {}) {
@@ -98,9 +98,9 @@ Content: local content
   });
 
   describe("getSkillsContext", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(overrides: Partial<GetSkillsContextDeps> = {}) {
@@ -234,9 +234,9 @@ Content: local content
   });
 
   describe("getSkillJSON", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    let fs: ReturnType<typeof makeFakeFsDeps>;
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs = makeFakeFsDeps();
     });
 
     function makeDeps(overrides: Partial<GetSkillJSONDeps> = {}) {

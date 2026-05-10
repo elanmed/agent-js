@@ -6,8 +6,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun src/index.ts",
-    "test": "bun test",
+    "start": "node src/index.ts",
+    "test": "node --test src/**/*.test.ts",
     "lint": "eslint src",
     "types": "tsc",
     "cloc": "npx cloc src --exclude-ext=test.ts",
@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@types/bun": "latest",
     "cloc": "^2.6.0-cloc",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
