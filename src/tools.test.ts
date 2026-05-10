@@ -76,7 +76,7 @@ describe("tools", () => {
         type: "tool_result",
         tool_use_id: "tool_1",
         is_error: true,
-        content: "Command failed: exit 1\n",
+        content: "Command failed: exit 1",
       });
     });
   });
