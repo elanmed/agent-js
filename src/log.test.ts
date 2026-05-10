@@ -248,7 +248,6 @@ content 2
     it("deletes expired files older than 24 hours", () => {
       const deps = makeDeps();
       fs._dirs.add("/test/editor-logs");
-      fs._listings.set("/test/editor-logs", ["editor-uuid-999900000000.log"]);
       fs._files.set("/test/editor-logs/editor-uuid-999900000000.log", "old");
       deleteExpiredEditorLogs(deps);
       assert.equal(
@@ -260,7 +259,6 @@ content 2
     it("keeps files newer than 24 hours", () => {
       const deps = makeDeps();
       fs._dirs.add("/test/editor-logs");
-      fs._listings.set("/test/editor-logs", ["editor-uuid-999990000000.log"]);
       fs._files.set("/test/editor-logs/editor-uuid-999990000000.log", "new");
       deleteExpiredEditorLogs(deps);
       assert.equal(
@@ -272,11 +270,6 @@ content 2
     it("skips files without correct format", () => {
       const deps = makeDeps();
       fs._dirs.add("/test/editor-logs");
-      fs._listings.set("/test/editor-logs", [
-        "random-file.log",
-        "other-uuid-123-notimestamp.log",
-        "editor-uuid-999990000001.log",
-      ]);
       fs._files.set("/test/editor-logs/random-file.log", "");
       fs._files.set("/test/editor-logs/other-uuid-123-notimestamp.log", "");
       fs._files.set("/test/editor-logs/editor-uuid-999990000001.log", "");
@@ -295,7 +288,6 @@ content 2
     it("skips non-editor files with 3 parts", () => {
       const deps = makeDeps();
       fs._dirs.add("/test/editor-logs");
-      fs._listings.set("/test/editor-logs", ["other-uuid-999997600000.log"]);
       fs._files.set("/test/editor-logs/other-uuid-999997600000.log", "");
       deleteExpiredEditorLogs(deps);
       assert.equal(

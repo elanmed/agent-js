@@ -345,11 +345,9 @@ describe("input", () => {
 
     it("returns command names without file extensions", () => {
       fs._dirs.add("/test/project/.agent-js/commands");
-      fs._listings.set("/test/project/.agent-js/commands", [
-        "help.ts",
-        "status.js",
-        "deploy.mjs",
-      ]);
+      fs._files.set("/test/project/.agent-js/commands/help.ts", "");
+      fs._files.set("/test/project/.agent-js/commands/status.js", "");
+      fs._files.set("/test/project/.agent-js/commands/deploy.mjs", "");
       const deps = makeDeps();
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, ["help", "status", "deploy"]);
@@ -357,7 +355,8 @@ describe("input", () => {
 
     it("returns command names for files without extensions", () => {
       fs._dirs.add("/test/project/.agent-js/commands");
-      fs._listings.set("/test/project/.agent-js/commands", ["help", "status"]);
+      fs._files.set("/test/project/.agent-js/commands/help", "");
+      fs._files.set("/test/project/.agent-js/commands/status", "");
       const deps = makeDeps();
       const result = getAvailableSlashCommands(deps);
       assert.deepStrictEqual(result, ["help", "status"]);

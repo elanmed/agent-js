@@ -218,7 +218,8 @@ describe("tools", () => {
 
     it("lists directory contents for a directory path", () => {
       fs._dirs.add("/test/dir");
-      fs._listings.set("/test/dir", ["alpha.txt", "beta.txt"]);
+      fs._files.set("/test/dir/alpha.txt", "");
+      fs._files.set("/test/dir/beta.txt", "");
       const call = makeToolCall({
         name: "view_file",
         input: { path: "/test/dir" },

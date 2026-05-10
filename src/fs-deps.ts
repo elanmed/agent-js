@@ -25,7 +25,6 @@ export interface FsDeps {
   globSync: (pattern: string) => string[];
   _files: Map<string, string>;
   _dirs: Set<string>;
-  _listings: Map<string, string[]>;
   _globResults: Map<string, string[]>;
 }
 
@@ -41,20 +40,17 @@ export const fsDeps: FsDeps = {
   globSync: (pattern) => globSync(pattern),
   _files: new Map(),
   _dirs: new Set(),
-  _listings: new Map(),
   _globResults: new Map(),
 };
 
 export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
   const _files = new Map<string, string>();
   const _dirs = new Set<string>();
-  const _listings = new Map<string, string[]>();
   const _globResults = new Map<string, string[]>();
 
   return {
     _files,
     _dirs,
-    _listings,
     _globResults,
     readFileSync: (path: string) => {
       const content = _files.get(path);
@@ -65,7 +61,21 @@ export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
       _files.set(path, content);
     },
     existsSync: (path: string) => _files.has(path) || _dirs.has(path),
-    readdirSync: (path: string) => _listings.get(path) ?? [],
+    readdirSync: (path: string) => {
+      const prefix = path + "/";
+      const result = new Set<string>();
+      for (const filePath of _files.keys()) {
+        if (filePath.startsWith(prefix)) {
+          result.add(filePath.slice(prefix.length).split("/")[0]!);
+        }
+      }
+      for (const dirPath of _dirs) {
+        if (dirPath.startsWith(prefix)) {
+          result.add(dirPath.slice(prefix.length).split("/")[0]!);
+        }
+      }
+      return [...result];
+    },
     mkdirSync: (path: string) => _dirs.add(path),
     unlinkSync: (path: string) => _files.delete(path),
     appendFileSync: (path: string, content: string) => {

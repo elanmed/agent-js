@@ -122,8 +122,6 @@ Content: local content
     it("lists skills found in skill directories", () => {
       fs._dirs.add("/global/skills");
       fs._dirs.add("/global/skills/my-skill");
-      fs._listings.set("/global/skills", ["my-skill"]);
-      fs._listings.set("/global/skills/my-skill", ["SKILL.md"]);
       fs._files.set(
         "/global/skills/my-skill/SKILL.md",
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
@@ -138,14 +136,10 @@ Content: local content
       fs._dirs.add("/local/skills/local-skill");
       fs._dirs.add("/global/skills");
       fs._dirs.add("/global/skills/global-skill");
-      fs._listings.set("/local/skills", ["local-skill"]);
-      fs._listings.set("/local/skills/local-skill", ["SKILL.md"]);
       fs._files.set(
         "/local/skills/local-skill/SKILL.md",
         "---\nname: deploy\ndescription: Local deploy\n---\n# Local",
       );
-      fs._listings.set("/global/skills", ["global-skill"]);
-      fs._listings.set("/global/skills/global-skill", ["SKILL.md"]);
       fs._files.set(
         "/global/skills/global-skill/SKILL.md",
         "---\nname: deploy\ndescription: Global deploy\n---\n# Global",
@@ -162,13 +156,10 @@ Content: local content
       fs._dirs.add("/local/skills");
       fs._dirs.add("/local/skills/a");
       fs._dirs.add("/local/skills/b");
-      fs._listings.set("/local/skills", ["a", "b"]);
-      fs._listings.set("/local/skills/a", ["SKILL.md"]);
       fs._files.set(
         "/local/skills/a/SKILL.md",
         "---\nname: skill-a\ndescription: First\n---\n",
       );
-      fs._listings.set("/local/skills/b", ["SKILL.md"]);
       fs._files.set(
         "/local/skills/b/SKILL.md",
         "---\nname: skill-b\ndescription: Second\n---\n",
@@ -182,8 +173,6 @@ Content: local content
     it("skips non-existent skill directories", () => {
       fs._dirs.add("/global/skills");
       fs._dirs.add("/global/skills/my-skill");
-      fs._listings.set("/global/skills", ["my-skill"]);
-      fs._listings.set("/global/skills/my-skill", ["SKILL.md"]);
       fs._files.set(
         "/global/skills/my-skill/SKILL.md",
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
@@ -199,8 +188,6 @@ Content: local content
       fs._dirs.add("/global/skills");
       fs._files.set("/global/skills/not-a-dir", "some content");
       fs._dirs.add("/global/skills/actual-skill");
-      fs._listings.set("/global/skills", ["not-a-dir", "actual-skill"]);
-      fs._listings.set("/global/skills/actual-skill", ["SKILL.md"]);
       fs._files.set(
         "/global/skills/actual-skill/SKILL.md",
         "---\nname: actual-skill\ndescription: Real\n---\n",
@@ -213,9 +200,8 @@ Content: local content
 
     it("skips entries where statSync fails", () => {
       fs._dirs.add("/global/skills");
-      fs._listings.set("/global/skills", ["broken", "working"]);
+      fs._dirs.add("/global/skills/broken");
       fs._dirs.add("/global/skills/working");
-      fs._listings.set("/global/skills/working", ["SKILL.md"]);
       fs._files.set(
         "/global/skills/working/SKILL.md",
         "---\nname: working\ndescription: Works\n---\n",
@@ -235,10 +221,7 @@ Content: local content
       fs._dirs.add("/global/skills");
       fs._dirs.add("/global/skills/no-skill-md");
       fs._dirs.add("/global/skills/has-skill");
-      fs._listings.set("/global/skills", ["no-skill-md", "has-skill"]);
-      fs._listings.set("/global/skills/no-skill-md", ["readme.txt"]);
       fs._files.set("/global/skills/no-skill-md/readme.txt", "just a file");
-      fs._listings.set("/global/skills/has-skill", ["SKILL.md"]);
       fs._files.set(
         "/global/skills/has-skill/SKILL.md",
         "---\nname: has-skill\ndescription: Present\n---\n",
@@ -267,7 +250,7 @@ Content: local content
     });
 
     it("parses valid SKILL.md front matter", () => {
-      fs._listings.set("/skill-dir", ["SKILL.md", "other.txt"]);
+      fs._files.set("/skill-dir/other.txt", "");
       fs._files.set(
         "/skill-dir/SKILL.md",
         "---\nname: deploy\ndescription: Deploy the app\n---\n# Deploy",
@@ -281,7 +264,6 @@ Content: local content
     });
 
     it("returns null when SKILL.md is missing name", () => {
-      fs._listings.set("/skill-dir", ["SKILL.md"]);
       fs._files.set(
         "/skill-dir/SKILL.md",
         "---\ndescription: No name here\n---\n",
@@ -292,7 +274,6 @@ Content: local content
     });
 
     it("returns null when SKILL.md is missing description", () => {
-      fs._listings.set("/skill-dir", ["SKILL.md"]);
       fs._files.set("/skill-dir/SKILL.md", "---\nname: deploy\n---\n");
       const deps = makeDeps();
       const result = getSkillJSON("/skill-dir", deps);
@@ -308,7 +289,6 @@ Content: local content
     });
 
     it("finds SKILL.md when it is not the first entry", () => {
-      fs._listings.set("/skill-dir", ["readme.txt", "notes.md", "SKILL.md"]);
       fs._files.set("/skill-dir/readme.txt", "readme");
       fs._files.set("/skill-dir/notes.md", "notes");
       fs._files.set(
@@ -324,7 +304,7 @@ Content: local content
     });
 
     it("skips entries where statSync fails", () => {
-      fs._listings.set("/skill-dir", ["SKILL.md"]);
+      fs._files.set("/skill-dir/SKILL.md", "content");
       const originalStatSync = fs.statSync;
       fs.statSync = (path: string) => {
         if (path === "/skill-dir/SKILL.md") throw new Error("stat failed");
@@ -336,7 +316,6 @@ Content: local content
     });
 
     it("returns null when readFileSync fails", () => {
-      fs._listings.set("/skill-dir", ["SKILL.md"]);
       const deps = makeDeps();
       const result = getSkillJSON("/skill-dir", deps);
       assert.equal(result, null);
@@ -344,7 +323,6 @@ Content: local content
 
     it("calls colorPrint for malformed skill", () => {
       const calls: string[] = [];
-      fs._listings.set("/skill-dir", ["SKILL.md"]);
       fs._files.set("/skill-dir/SKILL.md", "---\nname: bad\n---\n");
       const deps = makeDeps({
         colorPrint: (text) => {
@@ -361,7 +339,6 @@ Content: local content
 
     it("calls colorPrint when front matter fails to parse", () => {
       const calls: string[] = [];
-      fs._listings.set("/skill-dir", ["SKILL.md"]);
       fs._files.set("/skill-dir/SKILL.md", "---\n* invalid yaml\n---\n");
       const deps = makeDeps({
         colorPrint: (text) => {
