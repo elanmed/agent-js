@@ -25,6 +25,10 @@ function makeToolCall(overrides: Partial<ToolCall> = {}): ToolCall {
 }
 
 describe("tools", () => {
+  beforeEach(() => {
+    mock.method(process.stdout, "write", () => undefined);
+  });
+
   describe("executeBashTool", () => {
     it("throws when input is invalid", async () => {
       const call = makeToolCall({

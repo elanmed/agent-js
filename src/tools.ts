@@ -42,9 +42,7 @@ export interface ToolResult {
 
 const BashToolInputSchema = z.object({ command: z.string() });
 
-export async function executeBashTool(
-  toolCall: ToolCall,
-): Promise<ToolResult> {
+export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
   const { command: bashCommand } = BashToolInputSchema.parse(toolCall.input);
   toolLog("bash", bashCommand);
   debugLog(`executeBashTool: command=${bashCommand}`);
@@ -80,9 +78,7 @@ const CreateFileToolSchema = z.object({
   content: z.string(),
 });
 
-export function executeCreateFileTool(
-  toolCall: ToolCall,
-): ToolResult {
+export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
   const { content, path } = CreateFileToolSchema.parse(toolCall.input);
   if (fsDeps.existsSync(path)) {
     debugLog(`executeCreatefileTool: ${path} already exists`);
@@ -121,9 +117,7 @@ const ViewFileToolInputSchema = z.object({
   end_line: z.number().int().optional(),
 });
 
-export function executeViewFileTool(
-  toolCall: ToolCall,
-): ToolResult {
+export function executeViewFileTool(toolCall: ToolCall): ToolResult {
   const { path, start_line, end_line } = ViewFileToolInputSchema.parse(
     toolCall.input,
   );
@@ -262,9 +256,7 @@ const StrReplaceToolInputSchema = z.object({
   new_str: z.string(),
 });
 
-export function executeStrReplaceTool(
-  toolCall: ToolCall,
-): ToolResult {
+export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
   const { path, old_str, new_str } = StrReplaceToolInputSchema.parse(
     toolCall.input,
   );
@@ -336,9 +328,7 @@ const InsertLinesToolInputSchema = z.object({
   content: z.string(),
 });
 
-export function executeInsertLinesTool(
-  toolCall: ToolCall,
-): ToolResult {
+export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
   const { path, after_line, content } = InsertLinesToolInputSchema.parse(
     toolCall.input,
   );
@@ -512,9 +502,7 @@ const LoadSkillToolSchema = z.object({
   name: z.string(),
 });
 
-export function loadSkillTool(
-  toolCall: ToolCall,
-): ToolResult {
+export function loadSkillTool(toolCall: ToolCall): ToolResult {
   const { name } = LoadSkillToolSchema.parse(toolCall.input);
   toolLog("load_skill", name);
   debugLog(`loadSkillTool: name=${name}`);
@@ -578,9 +566,7 @@ export const TOOLS = {
   }),
 };
 
-export async function getToolResultBlock(
-  toolCall: ToolCall,
-) {
+export async function getToolResultBlock(toolCall: ToolCall) {
   let toolResult: ToolResult | null = null;
 
   switch (toolCall.name) {
