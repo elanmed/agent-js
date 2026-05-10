@@ -7,15 +7,15 @@
       "outputPerToken": 4.4,
       "cacheReadPerToken": 0.26
     },
-    "kimi-k2.5": {
-      "inputPerToken": 0.6,
-      "outputPerToken": 3.0,
-      "cacheReadPerToken": 0.1
-    },
     "kimi-k2.6": {
       "inputPerToken": 0.95,
       "outputPerToken": 4.0,
       "cacheReadPerToken": 0.16
+    },
+    "deepseek-v4-pro": {
+      "inputPerToken": 1.74,
+      "outputPerToken": 3.48,
+      "cacheReadPerToken": 0.0145
     }
   }
 }
