@@ -84,15 +84,15 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   model: MISSING,
   keymaps: {
     edit: {
-      name: "e",
+      name: "g",
       ctrl: true,
     },
     editLog: {
-      name: "k",
+      name: "o",
       ctrl: true,
     },
     clear: {
-      name: "u",
+      name: "x",
       ctrl: true,
     },
   },

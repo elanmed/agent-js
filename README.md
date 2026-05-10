@@ -37,9 +37,11 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 | Key       | Type  | Default                     | Description                                                 |
 | --------- | ----- | --------------------------- | ----------------------------------------------------------- |
-| `edit`    | `Key` | `{ name: "e", ctrl: true }` | Open `$EDITOR` for multi-line                               |
-| `editLog` | `Key` | `{ name: "l", ctrl: true }` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view editor log |
-| `clear`   | `Key` | `{ name: "u", ctrl: true }` | Clear conversation context                                  |
+| `edit`    | `Key` | `{ name: "g", ctrl: true }` | Open `$EDITOR` for multi-line                               |
+| `editLog` | `Key` | `{ name: "o", ctrl: true }` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view editor log |
+| `clear`   | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                  |
+
+The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
 
 Each `Key` object has:
 
