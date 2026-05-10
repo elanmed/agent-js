@@ -26,6 +26,7 @@ export interface FsDeps {
   _files: Map<string, string>;
   _dirs: Set<string>;
   _globResults: Map<string, string[]>;
+  _restore: () => void;
 }
 
 export const fsDeps: FsDeps = {
@@ -41,6 +42,7 @@ export const fsDeps: FsDeps = {
   _files: new Map(),
   _dirs: new Set(),
   _globResults: new Map(),
+  _restore: () => undefined,
 };
 
 export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
@@ -86,6 +88,11 @@ export function makeFsDeps(overrides: Partial<FsDeps> = {}) {
       isDirectory: () => _dirs.has(path),
     }),
     globSync: (pattern: string) => _globResults.get(pattern) ?? [],
+    _restore: () => {
+      _files.clear();
+      _dirs.clear();
+      _globResults.clear();
+    },
     ...overrides,
-  } as FsDeps;
+  };
 }

@@ -1,5 +1,6 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert";
+import { mock } from "bun:test";
 import {
   isAbortError,
   tryCatch,
@@ -7,7 +8,6 @@ import {
   normalizeLine,
   getMessageFromError,
   createTempFile,
-  type CreateTempFileDeps,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
 import { makeFsDeps } from "./fs-deps.ts";
@@ -103,33 +103,30 @@ describe("utils", () => {
   });
 
   describe("createTempFile", () => {
-    let fs: ReturnType<typeof makeFsDeps>;
+    const fs = makeFsDeps();
+
+    mock.module("node:os", () => ({ tmpdir: () => "/tmp" }));
+    mock.module("node:crypto", () => ({ randomUUID: () => "test-uuid" }));
+    mock.module("./fs-deps.ts", () => ({ fsDeps: fs }));
+
     beforeEach(() => {
-      fs = makeFsDeps();
+      fs._restore();
     });
 
-    function makeDeps(overrides: Partial<CreateTempFileDeps> = {}) {
-      return {
-        tmpdir: () => "/tmp",
-        randomUUID: () => "test-uuid",
-        fs,
-        ...overrides,
-      };
-    }
+    afterEach(() => {
+      mock.restore();
+    });
 
     it("returns temp file path without initial content", () => {
-      const deps = makeDeps();
-      const result = createTempFile(undefined, deps);
+      const result = createTempFile();
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
     });
 
     it("copies initial content when initialContentPath is provided", () => {
       fs._files.set("/source/file.txt", "initial content");
-      const deps = makeDeps();
-      const result = createTempFile(
-        { initialContentPath: "/source/file.txt" },
-        deps,
-      );
+      const result = createTempFile({
+        initialContentPath: "/source/file.txt",
+      });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
       assert.equal(
         fs._files.get("/tmp/agent-js-test-uuid.txt"),
@@ -138,11 +135,9 @@ describe("utils", () => {
     });
 
     it("skips writing when read fails", () => {
-      const deps = makeDeps();
-      const result = createTempFile(
-        { initialContentPath: "/missing/file.txt" },
-        deps,
-      );
+      const result = createTempFile({
+        initialContentPath: "/missing/file.txt",
+      });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
       assert.equal(fs._files.has("/tmp/agent-js-test-uuid.txt"), false);
     });
@@ -152,11 +147,9 @@ describe("utils", () => {
       fs.writeFileSync = () => {
         throw new Error("EIO");
       };
-      const deps = makeDeps();
-      const result = createTempFile(
-        { initialContentPath: "/source.txt" },
-        deps,
-      );
+      const result = createTempFile({
+        initialContentPath: "/source.txt",
+      });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
     });
   });

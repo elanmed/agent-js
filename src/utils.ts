@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import { fsDeps } from "./fs-deps.ts";
 
 export const MISSING = "MISSING";
 
@@ -42,30 +42,15 @@ export function normalizeLine(content: string): string {
   return content.trim().concat("\n");
 }
 
-export interface CreateTempFileDeps {
-  tmpdir: () => string;
-  randomUUID: () => string;
-  fs: FsDeps;
-}
-
-export const createTempFileDeps: CreateTempFileDeps = {
-  tmpdir,
-  randomUUID,
-  fs: fsDeps,
-};
-
-export function createTempFile(
-  args?: { initialContentPath?: string },
-  deps: CreateTempFileDeps = createTempFileDeps,
-) {
-  const tempFile = join(deps.tmpdir(), `agent-js-${deps.randomUUID()}.txt`);
+export function createTempFile(args?: { initialContentPath?: string }) {
+  const tempFile = join(tmpdir(), `agent-js-${randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
   if (initialContentPath) {
     const readResult = tryCatch(() =>
-      deps.fs.readFileSync(initialContentPath).toString(),
+      fsDeps.readFileSync(initialContentPath).toString(),
     );
     if (readResult.ok) {
-      tryCatch(() => deps.fs.writeFileSync(tempFile, readResult.value));
+      tryCatch(() => fsDeps.writeFileSync(tempFile, readResult.value));
     }
   }
   return tempFile;
