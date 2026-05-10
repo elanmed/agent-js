@@ -3,9 +3,9 @@ import { actions, dispatch, selectors } from "./state.ts";
 import { homedir } from "node:os";
 import { normalizeLine, tryCatch } from "./utils.ts";
 import { randomUUID } from "node:crypto";
-import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import { fsDeps } from "./fs-deps.ts";
 
-const DEBUG_LOG_PATH = join(process.cwd(), ".agent-js", "debug.log");
+export const DEBUG_LOG_PATH = join(process.cwd(), ".agent-js", "debug.log");
 export const EDITOR_LOGS_PATH = join(
   homedir(),
   ".config",
@@ -13,67 +13,38 @@ export const EDITOR_LOGS_PATH = join(
   "editor",
 );
 
-export interface DebugLogDeps {
-  fs: FsDeps;
-  getDebugLogPath: () => string;
-  now: () => number;
-}
-
-export const debugLogDeps: DebugLogDeps = {
-  fs: fsDeps,
-  getDebugLogPath: () => DEBUG_LOG_PATH,
-  now: () => Date.now(),
-};
-
-export function debugLog(content: string, deps: DebugLogDeps = debugLogDeps) {
+export function debugLog(content: string) {
   if (!selectors.getDebugLog()) return;
 
-  const path = deps.getDebugLogPath();
-  if (!deps.fs.existsSync(path)) {
+  const path = DEBUG_LOG_PATH;
+  if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
-      deps.fs.mkdirSync(dirname(path), { recursive: true }),
+      fsDeps.mkdirSync(dirname(path), { recursive: true }),
     );
     if (!mkdirResult.ok) return;
   }
   tryCatch(() =>
-    deps.fs.appendFileSync(
+    fsDeps.appendFileSync(
       path,
-      `${new Date(deps.now()).toISOString()} :: ${content}\n`,
+      `${new Date(Date.now()).toISOString()} :: ${content}\n`,
     ),
   );
 }
 
-export interface EditorLogDeps {
-  fs: FsDeps;
-  getEditorLogPath: () => string;
-  getEditorLog: () => boolean;
-  now: () => number;
-}
+export function editorLog(content: string) {
+  if (!selectors.getEditorLog()) return;
 
-export const editorLogDeps: EditorLogDeps = {
-  fs: fsDeps,
-  getEditorLogPath: () => selectors.getEditorLogPath(),
-  getEditorLog: () => selectors.getEditorLog(),
-  now: () => Date.now(),
-};
-
-export function editorLog(
-  content: string,
-  deps: EditorLogDeps = editorLogDeps,
-) {
-  if (!deps.getEditorLog()) return;
-
-  const path = deps.getEditorLogPath();
-  if (!deps.fs.existsSync(path)) {
+  const path = selectors.getEditorLogPath();
+  if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
-      deps.fs.mkdirSync(dirname(path), { recursive: true }),
+      fsDeps.mkdirSync(dirname(path), { recursive: true }),
     );
     if (!mkdirResult.ok) return;
   }
   tryCatch(() =>
-    deps.fs.appendFileSync(
+    fsDeps.appendFileSync(
       path,
-      `${new Date(deps.now()).toISOString()}
+      `${new Date(Date.now()).toISOString()}
 ${"-".repeat(25)}
 ${normalizeLine(content)}
 `,
@@ -81,39 +52,17 @@ ${normalizeLine(content)}
   );
 }
 
-export interface ResetDebugLogDeps {
-  fs: FsDeps;
-  getDebugLogPath: () => string;
-}
-
-export const resetDebugLogDeps: ResetDebugLogDeps = {
-  fs: fsDeps,
-  getDebugLogPath: () => DEBUG_LOG_PATH,
-};
-
-export function resetDebugLog(deps: ResetDebugLogDeps = resetDebugLogDeps) {
-  const path = deps.getDebugLogPath();
-  if (deps.fs.existsSync(path)) {
-    tryCatch(() => deps.fs.writeFileSync(path, ""));
+export function resetDebugLog() {
+  const path = DEBUG_LOG_PATH;
+  if (fsDeps.existsSync(path)) {
+    tryCatch(() => fsDeps.writeFileSync(path, ""));
   }
 }
 
-export interface InitEditorLogDeps {
-  fs: FsDeps;
-  randomUUID: () => string;
-  now: () => number;
-}
-
-export const initEditorLogDeps: InitEditorLogDeps = {
-  fs: fsDeps,
-  randomUUID,
-  now: () => Date.now(),
-};
-
-export function initEditorLog(deps: InitEditorLogDeps = initEditorLogDeps) {
-  if (!deps.fs.existsSync(EDITOR_LOGS_PATH)) {
+export function initEditorLog() {
+  if (!fsDeps.existsSync(EDITOR_LOGS_PATH)) {
     const mkdirResult = tryCatch(() =>
-      deps.fs.mkdirSync(EDITOR_LOGS_PATH, { recursive: true }),
+      fsDeps.mkdirSync(EDITOR_LOGS_PATH, { recursive: true }),
     );
     if (!mkdirResult.ok) {
       dispatch(actions.setEditorLog(false));
@@ -123,32 +72,18 @@ export function initEditorLog(deps: InitEditorLogDeps = initEditorLogDeps) {
 
   const editorLogSessionPath = join(
     EDITOR_LOGS_PATH,
-    `editor-${deps.randomUUID()}-${deps.now().toString()}.log`,
+    `editor-${randomUUID()}-${Date.now().toString()}.log`,
   );
   dispatch(actions.setEditorLogPath(editorLogSessionPath));
 }
 
-export interface DeleteExpiredEditorLogsDeps {
-  fs: FsDeps;
-  now: () => number;
-  getEditorLogsPath: () => string;
-}
+export function deleteExpiredEditorLogs() {
+  const editorLogsPath = EDITOR_LOGS_PATH;
+  if (!fsDeps.existsSync(editorLogsPath)) return;
 
-export const deleteExpiredEditorLogsDeps: DeleteExpiredEditorLogsDeps = {
-  fs: fsDeps,
-  now: () => Date.now(),
-  getEditorLogsPath: () => EDITOR_LOGS_PATH,
-};
-
-export function deleteExpiredEditorLogs(
-  deps: DeleteExpiredEditorLogsDeps = deleteExpiredEditorLogsDeps,
-) {
-  const editorLogsPath = deps.getEditorLogsPath();
-  if (!deps.fs.existsSync(editorLogsPath)) return;
-
-  for (const name of deps.fs.readdirSync(editorLogsPath)) {
+  for (const name of fsDeps.readdirSync(editorLogsPath)) {
     const fullPath = join(editorLogsPath, name);
-    const statResult = tryCatch(() => deps.fs.statSync(fullPath));
+    const statResult = tryCatch(() => fsDeps.statSync(fullPath));
     if (!statResult.ok) continue;
     if (!statResult.value.isFile()) continue;
 
@@ -161,8 +96,8 @@ export function deleteExpiredEditorLogs(
     if (Number.isNaN(fileTimestampMs)) continue;
 
     const oneDay = 1_000 * 60 * 60 * 24;
-    if (fileTimestampMs + oneDay < deps.now()) {
-      tryCatch(() => deps.fs.unlinkSync(fullPath));
+    if (fileTimestampMs + oneDay < Date.now()) {
+      tryCatch(() => fsDeps.unlinkSync(fullPath));
     }
   }
 }

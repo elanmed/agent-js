@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import {
   debugLog,
@@ -6,15 +6,13 @@ import {
   resetDebugLog,
   initEditorLog,
   deleteExpiredEditorLogs,
-  type DebugLogDeps,
-  type EditorLogDeps,
-  type InitEditorLogDeps,
-  type DeleteExpiredEditorLogsDeps,
-  type ResetDebugLogDeps,
+  DEBUG_LOG_PATH,
   EDITOR_LOGS_PATH,
 } from "./log.ts";
 import { dispatch, actions, selectors } from "./state.ts";
-import { makeFakeFsDeps, type FakeFsDeps } from "./test-helpers.ts";
+import { testFs, setupFakeFs } from "./test-helpers.ts";
+import { fsDeps } from "./fs-deps.ts";
+import { dirname } from "node:path";
 
 describe("log", () => {
   beforeEach(() => {
@@ -22,91 +20,69 @@ describe("log", () => {
   });
 
   describe("debugLog", () => {
-    let fs: FakeFsDeps;
-
     beforeEach(() => {
-      fs = makeFakeFsDeps();
+      setupFakeFs();
+      mock.method(Date, "now", () => 1700000000000);
     });
-
-    function makeDeps(overrides: Partial<DebugLogDeps> = {}): DebugLogDeps {
-      return {
-        fs,
-        getDebugLogPath: () => "/test/debug.log",
-        now: () => 1700000000000,
-        ...overrides,
-      };
-    }
 
     it("does nothing when debugLog is disabled", () => {
       dispatch(actions.setDebugLog(false));
-      const deps = makeDeps();
-      debugLog("test message", deps);
-      assert.equal(fs._files.has("/test/debug.log"), false);
+      debugLog("test message");
+      assert.equal(testFs._files.has(DEBUG_LOG_PATH), false);
     });
 
     it("creates directory when log file does not exist", () => {
       dispatch(actions.setDebugLog(true));
-      const deps = makeDeps();
-      debugLog("test message", deps);
-      assert.equal(fs._dirs.has("/test"), true);
+      debugLog("test message");
+      assert.equal(testFs._dirs.has(dirname(DEBUG_LOG_PATH)), true);
     });
 
     it("appends content to log file with timestamp", () => {
       dispatch(actions.setDebugLog(true));
-      const deps = makeDeps();
-      debugLog("test message", deps);
+      debugLog("test message");
       assert.equal(
-        fs._files.get("/test/debug.log"),
+        testFs._files.get(DEBUG_LOG_PATH),
         "2023-11-14T22:13:20.000Z :: test message\n",
       );
     });
 
     it("appends multiple messages", () => {
       dispatch(actions.setDebugLog(true));
-      const deps = makeDeps();
-      debugLog("message 1", deps);
-      debugLog("message 2", deps);
+      debugLog("message 1");
+      debugLog("message 2");
       assert.equal(
-        fs._files.get("/test/debug.log"),
+        testFs._files.get(DEBUG_LOG_PATH),
         "2023-11-14T22:13:20.000Z :: message 1\n2023-11-14T22:13:20.000Z :: message 2\n",
       );
     });
   });
 
   describe("editorLog", () => {
-    let fs: FakeFsDeps;
-
     beforeEach(() => {
-      fs = makeFakeFsDeps();
+      setupFakeFs();
+      mock.method(Date, "now", () => 1700000000000);
     });
 
-    function makeDeps(overrides: Partial<EditorLogDeps> = {}): EditorLogDeps {
-      return {
-        fs,
-        getEditorLogPath: () => "/test/editor.log",
-        getEditorLog: () => true,
-        now: () => 1700000000000,
-        ...overrides,
-      };
-    }
-
     it("does nothing when editorLog is disabled", () => {
-      const deps = makeDeps({ getEditorLog: () => false });
-      editorLog("test message", deps);
-      assert.equal(fs._files.has("/test/editor.log"), false);
+      dispatch(actions.setEditorLog(false));
+      dispatch(actions.setEditorLogPath("/test/editor.log"));
+      editorLog("test message");
+      assert.equal(testFs._files.has("/test/editor.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
-      const deps = makeDeps();
-      editorLog("test message", deps);
-      assert.equal(fs._dirs.has("/test"), true);
+      dispatch(actions.setEditorLog(true));
+      dispatch(actions.setEditorLogPath("/test/editor.log"));
+      editorLog("test message");
+      assert.equal(testFs._dirs.has("/test"), true);
     });
 
     it("appends content with timestamp and separator", () => {
-      const deps = makeDeps();
-      editorLog("test content", deps);
+      dispatch(actions.setEditorLog(true));
+      dispatch(actions.setEditorLogPath("/test/editor.log"));
+      editorLog("test content");
       assert.equal(
-        fs._files.get("/test/editor.log"),
+        testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z
 -------------------------
 test content
@@ -116,11 +92,12 @@ test content
     });
 
     it("appends multiple messages with separators", () => {
-      const deps = makeDeps();
-      editorLog("content 1", deps);
-      editorLog("content 2", deps);
+      dispatch(actions.setEditorLog(true));
+      dispatch(actions.setEditorLogPath("/test/editor.log"));
+      editorLog("content 1");
+      editorLog("content 2");
       assert.equal(
-        fs._files.get("/test/editor.log"),
+        testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z
 -------------------------
 content 1
@@ -135,163 +112,126 @@ content 2
   });
 
   describe("resetDebugLog", () => {
-    let fs: FakeFsDeps;
-
     beforeEach(() => {
-      fs = makeFakeFsDeps();
+      setupFakeFs();
     });
 
-    function makeDeps(
-      overrides: Partial<ResetDebugLogDeps> = {},
-    ): ResetDebugLogDeps {
-      return {
-        fs,
-        getDebugLogPath: () => "/test/debug.log",
-        ...overrides,
-      };
-    }
-
     it("does nothing when log file does not exist", () => {
-      const deps = makeDeps();
-      resetDebugLog(deps);
-      assert.equal(fs._files.has("/test/debug.log"), false);
+      resetDebugLog();
+      assert.equal(testFs._files.has(DEBUG_LOG_PATH), false);
     });
 
     it("clears the log file when it exists", () => {
-      const deps = makeDeps();
-      fs._dirs.add("/test");
-      fs._files.set("/test/debug.log", "existing content");
-      resetDebugLog(deps);
-      assert.equal(fs._files.get("/test/debug.log"), "");
+      testFs._dirs.add(dirname(DEBUG_LOG_PATH));
+      testFs._files.set(DEBUG_LOG_PATH, "existing content");
+      resetDebugLog();
+      assert.equal(testFs._files.get(DEBUG_LOG_PATH), "");
     });
   });
 
   describe("initEditorLog", () => {
-    let fs: FakeFsDeps;
-
     beforeEach(() => {
-      fs = makeFakeFsDeps();
+      setupFakeFs();
+      mock.method(Date, "now", () => 1234567890000);
     });
-
-    function makeDeps(
-      overrides: Partial<InitEditorLogDeps> = {},
-    ): InitEditorLogDeps {
-      return {
-        fs,
-        randomUUID: () => "test-uuid",
-        now: () => 1234567890000,
-        ...overrides,
-      };
-    }
 
     it("creates directory and sets path when directory does not exist", () => {
       dispatch(actions.setEditorLog(true));
-      const deps = makeDeps();
-      initEditorLog(deps);
-      assert.equal(fs._dirs.has(EDITOR_LOGS_PATH), true);
+      initEditorLog();
+      assert.equal(testFs._dirs.has(EDITOR_LOGS_PATH), true);
       assert.equal(selectors.getEditorLog(), true);
-      assert.ok(
-        selectors
-          .getEditorLogPath()
-          .endsWith("editor-test-uuid-1234567890000.log"),
+      assert.match(
+        selectors.getEditorLogPath(),
+        /editor-[a-f0-9-]+-1234567890000\.log$/,
       );
     });
 
     it("disables editor log when mkdir fails", () => {
       dispatch(actions.setEditorLog(true));
-      const deps = makeDeps({
-        fs: {
-          ...fs,
-          existsSync: () => false,
-          mkdirSync: () => {
-            throw new Error("Permission denied");
-          },
-        },
+      mock.method(fsDeps, "existsSync", () => false);
+      mock.method(fsDeps, "mkdirSync", () => {
+        throw new Error("Permission denied");
       });
-      initEditorLog(deps);
+      initEditorLog();
       assert.equal(selectors.getEditorLog(), false);
     });
 
     it("generates correct log path with uuid and timestamp", () => {
       dispatch(actions.setEditorLog(true));
-      const deps = makeDeps();
-      initEditorLog(deps);
-      const path = selectors.getEditorLogPath();
-      assert.ok(path.endsWith("editor-test-uuid-1234567890000.log"));
+      initEditorLog();
+      assert.match(
+        selectors.getEditorLogPath(),
+        /editor-[a-f0-9-]+-1234567890000\.log$/,
+      );
     });
   });
 
   describe("deleteExpiredEditorLogs", () => {
-    let fs: FakeFsDeps;
-
     beforeEach(() => {
-      fs = makeFakeFsDeps();
+      setupFakeFs();
+      mock.method(Date, "now", () => 1000000000000);
     });
 
-    function makeDeps(
-      overrides: Partial<DeleteExpiredEditorLogsDeps> = {},
-    ): DeleteExpiredEditorLogsDeps {
-      return {
-        fs,
-        now: () => 1000000000000,
-        getEditorLogsPath: () => "/test/editor-logs",
-        ...overrides,
-      };
-    }
-
     it("returns early when directory does not exist", () => {
-      const deps = makeDeps();
-      deleteExpiredEditorLogs(deps);
-      assert.equal(fs._dirs.has("/test/editor-logs"), false);
+      deleteExpiredEditorLogs();
+      assert.equal(testFs._dirs.has(EDITOR_LOGS_PATH), false);
     });
 
     it("deletes expired files older than 24 hours", () => {
-      const deps = makeDeps();
-      fs._dirs.add("/test/editor-logs");
-      fs._files.set("/test/editor-logs/editor-uuid-999900000000.log", "old");
-      deleteExpiredEditorLogs(deps);
+      testFs._dirs.add(EDITOR_LOGS_PATH);
+      testFs._files.set(
+        `${EDITOR_LOGS_PATH}/editor-uuid-999900000000.log`,
+        "old",
+      );
+      deleteExpiredEditorLogs();
       assert.equal(
-        fs._files.has("/test/editor-logs/editor-uuid-999900000000.log"),
+        testFs._files.has(`${EDITOR_LOGS_PATH}/editor-uuid-999900000000.log`),
         false,
       );
     });
 
     it("keeps files newer than 24 hours", () => {
-      const deps = makeDeps();
-      fs._dirs.add("/test/editor-logs");
-      fs._files.set("/test/editor-logs/editor-uuid-999990000000.log", "new");
-      deleteExpiredEditorLogs(deps);
+      testFs._dirs.add(EDITOR_LOGS_PATH);
+      testFs._files.set(
+        `${EDITOR_LOGS_PATH}/editor-uuid-999990000000.log`,
+        "new",
+      );
+      deleteExpiredEditorLogs();
       assert.equal(
-        fs._files.has("/test/editor-logs/editor-uuid-999990000000.log"),
+        testFs._files.has(`${EDITOR_LOGS_PATH}/editor-uuid-999990000000.log`),
         true,
       );
     });
 
     it("skips files without correct format", () => {
-      const deps = makeDeps();
-      fs._dirs.add("/test/editor-logs");
-      fs._files.set("/test/editor-logs/random-file.log", "");
-      fs._files.set("/test/editor-logs/other-uuid-123-notimestamp.log", "");
-      fs._files.set("/test/editor-logs/editor-uuid-999990000001.log", "");
-      deleteExpiredEditorLogs(deps);
-      assert.equal(fs._files.has("/test/editor-logs/random-file.log"), true);
+      testFs._dirs.add(EDITOR_LOGS_PATH);
+      testFs._files.set(`${EDITOR_LOGS_PATH}/random-file.log`, "");
+      testFs._files.set(
+        `${EDITOR_LOGS_PATH}/other-uuid-123-notimestamp.log`,
+        "",
+      );
+      testFs._files.set(`${EDITOR_LOGS_PATH}/editor-uuid-999990000001.log`, "");
+      deleteExpiredEditorLogs();
       assert.equal(
-        fs._files.has("/test/editor-logs/other-uuid-123-notimestamp.log"),
+        testFs._files.has(`${EDITOR_LOGS_PATH}/random-file.log`),
         true,
       );
       assert.equal(
-        fs._files.has("/test/editor-logs/editor-uuid-999990000001.log"),
+        testFs._files.has(`${EDITOR_LOGS_PATH}/other-uuid-123-notimestamp.log`),
+        true,
+      );
+      assert.equal(
+        testFs._files.has(`${EDITOR_LOGS_PATH}/editor-uuid-999990000001.log`),
         true,
       );
     });
 
     it("skips non-editor files with 3 parts", () => {
-      const deps = makeDeps();
-      fs._dirs.add("/test/editor-logs");
-      fs._files.set("/test/editor-logs/other-uuid-999997600000.log", "");
-      deleteExpiredEditorLogs(deps);
+      testFs._dirs.add(EDITOR_LOGS_PATH);
+      testFs._files.set(`${EDITOR_LOGS_PATH}/other-uuid-999997600000.log`, "");
+      deleteExpiredEditorLogs();
       assert.equal(
-        fs._files.has("/test/editor-logs/other-uuid-999997600000.log"),
+        testFs._files.has(`${EDITOR_LOGS_PATH}/other-uuid-999997600000.log`),
         true,
       );
     });
