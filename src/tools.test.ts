@@ -15,7 +15,7 @@ import {
 import type { ToolCall } from "./tools.ts";
 import { debugLog } from "./log.ts";
 import type { ToolLog } from "./tools.ts";
-import { makeFakeFsDeps } from "./fs-deps.ts";
+import { makeFakeFsDeps, type FsDeps } from "./fs-deps.ts";
 import { colorPrint } from "./print.ts";
 import { dispatch, actions } from "./state.ts";
 
@@ -82,7 +82,7 @@ describe("tools", () => {
   });
 
   describe("executeCreateFileTool", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });
@@ -160,7 +160,7 @@ describe("tools", () => {
   });
 
   describe("executeViewFileTool", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });
@@ -374,7 +374,7 @@ describe("tools", () => {
   });
 
   describe("executeStrReplaceTool", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });
@@ -469,7 +469,7 @@ describe("tools", () => {
   });
 
   describe("executeInsertLinesTool", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
     beforeEach(() => {
       fs = makeFakeFsDeps();
     });

@@ -74,7 +74,7 @@ describe("log", () => {
   });
 
   describe("editorLog", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -135,7 +135,7 @@ content 2
   });
 
   describe("resetDebugLog", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -167,7 +167,7 @@ content 2
   });
 
   describe("initEditorLog", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
@@ -222,7 +222,7 @@ content 2
   });
 
   describe("deleteExpiredEditorLogs", () => {
-    let fs: ReturnType<typeof makeFakeFsDeps>;
+    let fs: FsDeps;
 
     beforeEach(() => {
       fs = makeFakeFsDeps();
