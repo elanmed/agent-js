@@ -580,17 +580,32 @@ const LoadSkillToolSchema = z.object({
   name: z.string(),
 });
 
-export function loadSkillTool(toolCall: ToolCall): ToolResult {
+const loadSkillToolDeps = {
+  debugLog,
+  toolLog,
+};
+
+type LoadSkillToolDeps = typeof loadSkillToolDeps;
+
+export function loadSkillTool(
+  toolCall: ToolCall,
+  deps: LoadSkillToolDeps = loadSkillToolDeps,
+): ToolResult {
   const { name } = LoadSkillToolSchema.parse(toolCall.input);
+  deps.toolLog("load_skill", name);
+  deps.debugLog(`loadSkillTool: name=${name}`);
   const foundSkill = selectors.getSkills().find((skill) => skill.name === name);
-  if (!foundSkill)
+  if (!foundSkill) {
+    deps.debugLog(`loadSkillTool: skill not found`);
     return {
       is_error: true,
       type: "tool_result",
       content: `Could not find a skill with name: ${name}`,
       tool_use_id: toolCall.id,
     };
+  }
 
+  deps.debugLog(`loadSkillTool: loaded ${name}`);
   return {
     type: "tool_result",
     content: stringify(foundSkill),

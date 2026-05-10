@@ -791,6 +791,8 @@ describe("tools", () => {
       dispatch(actions.resetState());
     });
 
+    const loadSkillDeps = { debugLog: debugNoop, toolLog: toolNoop };
+
     it("returns loaded skill content when skill exists in state", () => {
       dispatch(
         actions.appendToSkills({
@@ -803,7 +805,7 @@ describe("tools", () => {
         name: "load_skill",
         input: { name: "deploy" },
       });
-      const result = loadSkillTool(call);
+      const result = loadSkillTool(call, loadSkillDeps);
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -834,7 +836,7 @@ describe("tools", () => {
         name: "load_skill",
         input: { name: "skill-b" },
       });
-      const result = loadSkillTool(call);
+      const result = loadSkillTool(call, loadSkillDeps);
       const parsed = JSON.parse(result.content) as Record<string, unknown>;
       assert.equal(parsed["name"], "skill-b");
     });
@@ -844,7 +846,7 @@ describe("tools", () => {
         name: "load_skill",
         input: { name: "nonexistent" },
       });
-      const result = loadSkillTool(call);
+      const result = loadSkillTool(call, loadSkillDeps);
       assert.deepStrictEqual(result, {
         type: "tool_result",
         tool_use_id: "tool_1",
@@ -858,7 +860,7 @@ describe("tools", () => {
         name: "load_skill",
         input: { name: "any" },
       });
-      const result = loadSkillTool(call);
+      const result = loadSkillTool(call, loadSkillDeps);
       assert.ok(result.is_error);
     });
 
@@ -867,7 +869,7 @@ describe("tools", () => {
         name: "load_skill",
         input: { bad: true },
       });
-      assert.throws(() => loadSkillTool(call));
+      assert.throws(() => loadSkillTool(call, loadSkillDeps));
     });
   });
 });
