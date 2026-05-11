@@ -16,14 +16,13 @@ import {
   printNewline,
   fencePrint,
   calculateSessionUsage,
-  type Color,
 } from "./print.ts";
 import { join, parse } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
-import { spawnSync } from "node:child_process";
+import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, editorLog } from "./log.ts";
-import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import { fsDeps, processEnv } from "./fs-deps.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -207,63 +206,35 @@ async function resolveExitConfirmation() {
   return null;
 }
 
-export interface ResolveSlashCommandDeps {
-  editCommand: (currentLine: string) => string | null;
-  clearCommand: () => void;
-  editLogCommand: () => void;
-  fs: FsDeps;
-  colorPrint: typeof colorPrint;
-  debugLog: typeof debugLog;
-  join: (...segments: string[]) => string;
-  cwd: () => string;
-}
-
-export const resolveSlashCommandDeps: ResolveSlashCommandDeps = {
-  editCommand: (currentLine: string) => editCommand(currentLine),
-  clearCommand: () => clearCommand(),
-  editLogCommand: () => editLogCommand(),
-  fs: fsDeps,
-  colorPrint,
-  debugLog,
-  join,
-  cwd: () => process.cwd(),
-};
-
-export function resolveSlashCommand(
-  rawInput: string,
-  deps: ResolveSlashCommandDeps = resolveSlashCommandDeps,
-) {
+export function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1).trim();
   if (commandWithoutSlash === "edit") {
-    return deps.editCommand("");
+    return editCommand("");
   } else if (commandWithoutSlash === "clear") {
-    deps.clearCommand();
+    clearCommand();
     return null;
   } else if (commandWithoutSlash === "edit-log") {
-    deps.editLogCommand();
+    editLogCommand();
     return null;
   }
 
   if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
-    deps.colorPrint(`Executing slash command: ${rawInput}`, "grey");
-    const path = deps.join(
-      deps.cwd(),
+    colorPrint(`Executing slash command: ${rawInput}`, "grey");
+    const path = join(
+      process.cwd(),
       ".agent-js",
       "commands",
       rawInput.slice(1).concat(".md"),
     );
-    deps.debugLog(`Performing the slash command at ${path}`);
-    const commandResult = tryCatch(() => deps.fs.readFileSync(path).toString());
+    debugLog(`Performing the slash command at ${path}`);
+    const commandResult = tryCatch(() => fsDeps.readFileSync(path).toString());
     if (commandResult.ok) return commandResult.value;
 
-    deps.colorPrint(
-      `Error reading the slash command located at ${path}`,
-      "red",
-    );
+    colorPrint(`Error reading the slash command located at ${path}`, "red");
     return null;
   }
 
-  deps.colorPrint(
+  colorPrint(
     `Invalid / command detected, valid commands: ${selectors.getSlashCommands().concat(["edit", "edit-log", "clear"]).join(",")}`,
     "red",
   );
@@ -277,54 +248,34 @@ export function clearCommand() {
   dispatch(actions.resetMessageParams());
 }
 
-export interface EditCommandDeps {
-  createTempFile: (args?: { initialContentPath?: string }) => string;
-  fs: FsDeps;
-  spawnSync: (
-    command: string,
-    options: { shell: boolean; stdio: string },
-  ) => unknown;
-  env: NodeJS.ProcessEnv;
-  editorLog: (content: string) => void;
-  colorPrint: (message: string, color?: Color) => void;
-}
-
-export const editCommandDeps: EditCommandDeps = {
-  createTempFile,
-  fs: fsDeps,
-  spawnSync,
-  env: process.env,
-  editorLog,
-  colorPrint,
-};
-
-export function editCommand(
-  currentLine: string,
-  deps: EditCommandDeps = editCommandDeps,
-) {
-  const tempFile = deps.createTempFile();
-  const editor = deps.env["AGENT_JS_EDITOR"] ?? deps.env["EDITOR"] ?? "vi";
+export function editCommand(currentLine: string) {
+  const tempFile = createTempFile();
+  const editor =
+    processEnv.get("AGENT_JS_EDITOR") ?? processEnv.get("EDITOR") ?? "vi";
   const writeResult = tryCatch(() =>
-    deps.fs.writeFileSync(tempFile, currentLine),
+    fsDeps.writeFileSync(tempFile, currentLine),
   );
   if (!writeResult.ok) {
-    deps.colorPrint("Failed to write to temp file", "red");
+    colorPrint("Failed to write to temp file", "red");
     return null;
   }
-  deps.spawnSync(`${editor} "${tempFile}"`, { shell: true, stdio: "inherit" });
+  childProcess.spawnSync(`${editor} "${tempFile}"`, {
+    shell: true,
+    stdio: "inherit",
+  });
 
-  const readResult = tryCatch(() => deps.fs.readFileSync(tempFile).toString());
+  const readResult = tryCatch(() => fsDeps.readFileSync(tempFile).toString());
   if (!readResult.ok) {
-    deps.colorPrint("Failed to read from temp file", "red");
-    tryCatch(() => deps.fs.unlinkSync(tempFile));
+    colorPrint("Failed to read from temp file", "red");
+    tryCatch(() => fsDeps.unlinkSync(tempFile));
     return null;
   }
-  tryCatch(() => deps.fs.unlinkSync(tempFile));
+  tryCatch(() => fsDeps.unlinkSync(tempFile));
 
   if (readResult.value === "") return null;
 
   const content = normalizeLine(readResult.value);
-  deps.editorLog(content);
+  editorLog(content);
   return content;
 }
 
@@ -337,9 +288,9 @@ export function editLogCommand() {
     return;
   }
   const editor =
-    process.env["AGENT_JS_EDITOR_LOG"] ?? process.env["EDITOR"] ?? "vi";
+    processEnv.get("AGENT_JS_EDITOR_LOG") ?? processEnv.get("EDITOR") ?? "vi";
 
-  spawnSync(`${editor} "${selectors.getEditorLogPath()}"`, {
+  childProcess.spawnSync(`${editor} "${selectors.getEditorLogPath()}"`, {
     shell: true,
     stdio: "inherit",
   });
@@ -362,23 +313,11 @@ export function clearRlLine(): readline.Interface | null {
   return rl;
 }
 
-export interface GetAvailableSlashCommandsDeps {
-  getCwd: () => string;
-  fs: FsDeps;
-}
+export function getAvailableSlashCommands() {
+  const path = join(process.cwd(), ".agent-js", "commands");
+  if (!fsDeps.existsSync(path)) return [];
 
-export const getAvailableSlashCommandsDeps: GetAvailableSlashCommandsDeps = {
-  getCwd: () => process.cwd(),
-  fs: fsDeps,
-};
-
-export function getAvailableSlashCommands(
-  deps: GetAvailableSlashCommandsDeps = getAvailableSlashCommandsDeps,
-) {
-  const path = join(deps.getCwd(), ".agent-js", "commands");
-  if (!deps.fs.existsSync(path)) return [];
-
-  const readdirResult = tryCatch(() => deps.fs.readdirSync(path));
+  const readdirResult = tryCatch(() => fsDeps.readdirSync(path));
   if (!readdirResult.ok) return [];
   return readdirResult.value.map((file) => parse(file).name);
 }

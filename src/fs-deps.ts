@@ -36,3 +36,8 @@ export const fsDeps: FsDeps = {
   statSync: (path) => statSync(path),
   globSync: (pattern) => globSync(pattern),
 };
+
+export const processEnv = {
+  get: (key: string) => process.env[key],
+};
+
