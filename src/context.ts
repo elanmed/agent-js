@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { fsDeps, type FsDeps } from "./deps.ts";
+import { fsDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
@@ -12,38 +12,24 @@ import {
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
-export interface GetAgentsContextDeps {
-  debugLog: typeof debugLog;
-  fs: FsDeps;
-}
-
-export const getAgentsContextDeps: GetAgentsContextDeps = {
-  debugLog,
-  fs: fsDeps,
-};
-
-export function getAgentsContext(
-  deps: GetAgentsContextDeps = getAgentsContextDeps,
-) {
+export function getAgentsContext() {
   const agentFilePaths: string[] = [];
 
-  if (deps.fs.existsSync(GLOBAL_AGENTS_PATH)) {
+  if (fsDeps.existsSync(GLOBAL_AGENTS_PATH)) {
     agentFilePaths.push(GLOBAL_AGENTS_PATH);
   }
 
-  const globResult = tryCatch(() => deps.fs.globSync("**/AGENTS.md"));
+  const globResult = tryCatch(() => fsDeps.globSync("**/AGENTS.md"));
   if (globResult.ok) {
     agentFilePaths.push(...globResult.value);
   }
 
-  deps.debugLog(`AGENTS.md found: ${agentFilePaths.join(",")}`);
+  debugLog(`AGENTS.md found: ${agentFilePaths.join(",")}`);
 
   const entries: { filePath: string; content: string }[] = [];
 
   for (const filePath of agentFilePaths) {
-    const readResult = tryCatch(() =>
-      deps.fs.readFileSync(filePath).toString(),
-    );
+    const readResult = tryCatch(() => fsDeps.readFileSync(filePath).toString());
     if (readResult.ok) {
       entries.push({ filePath, content: readResult.value });
     }
@@ -70,40 +56,24 @@ export interface Skill {
   content: string;
 }
 
-export interface GetSkillsContextDeps {
-  fs: FsDeps;
-  skillsDirPaths?: string[];
-  colorPrint: typeof colorPrint;
-}
-
-export const getSkillsContextDeps: GetSkillsContextDeps = {
-  fs: fsDeps,
-  colorPrint,
-};
-
-export function getSkillsContext(
-  deps: GetSkillsContextDeps = getSkillsContextDeps,
-) {
+export function getSkillsContext(skillsDirPaths?: string[]) {
   const seenSkills = new Set();
-  const skillsDirPaths = deps.skillsDirPaths ?? [
+  const paths = skillsDirPaths ?? [
     LOCAL_SKILLS_DIR_PATH,
     GLOBAL_SKILLS_DIR_PATH,
   ];
   const skills: SkillMetadata[] = [];
 
-  skillsDirPaths.forEach((dirPath) => {
-    if (!deps.fs.existsSync(dirPath)) return;
+  paths.forEach((dirPath) => {
+    if (!fsDeps.existsSync(dirPath)) return;
 
-    for (const dirName of deps.fs.readdirSync(dirPath)) {
+    for (const dirName of fsDeps.readdirSync(dirPath)) {
       const fullDirPath = join(dirPath, dirName);
-      const statResult = tryCatch(() => deps.fs.statSync(fullDirPath));
+      const statResult = tryCatch(() => fsDeps.statSync(fullDirPath));
       if (!statResult.ok) continue;
       if (statResult.value.isFile()) continue;
 
-      const skill = getSkillJSON(fullDirPath, {
-        fs: deps.fs,
-        colorPrint: deps.colorPrint,
-      });
+      const skill = getSkillJSON(fullDirPath);
       if (skill === null) continue;
       if (seenSkills.has(skill.name)) continue;
       seenSkills.add(skill.name);
@@ -126,16 +96,6 @@ ${skillsList}
 `;
 }
 
-export interface GetSkillJSONDeps {
-  fs: FsDeps;
-  colorPrint: typeof colorPrint;
-}
-
-export const getSkillJSONDeps: GetSkillJSONDeps = {
-  fs: fsDeps,
-  colorPrint,
-};
-
 export function parseFrontMatter(content: string) {
   if (!content.startsWith("---\n")) return null;
 
@@ -154,25 +114,20 @@ export function parseFrontMatter(content: string) {
   return { data: parseResult.value, body };
 }
 
-export function getSkillJSON(
-  dirPath: string,
-  deps: GetSkillJSONDeps = getSkillJSONDeps,
-) {
-  for (const name of deps.fs.readdirSync(dirPath)) {
+export function getSkillJSON(dirPath: string) {
+  for (const name of fsDeps.readdirSync(dirPath)) {
     const fullPath = join(dirPath, name);
-    const statResult = tryCatch(() => deps.fs.statSync(fullPath));
+    const statResult = tryCatch(() => fsDeps.statSync(fullPath));
     if (!statResult.ok) continue;
     if (!statResult.value.isFile()) continue;
     if (name !== "SKILL.md") continue;
 
-    const readResult = tryCatch(() =>
-      deps.fs.readFileSync(fullPath).toString(),
-    );
+    const readResult = tryCatch(() => fsDeps.readFileSync(fullPath).toString());
     if (!readResult.ok) continue;
 
     const parsed = parseFrontMatter(readResult.value);
     if (parsed === null) {
-      deps.colorPrint(
+      colorPrint(
         `Malformed skill at ${fullPath}! A skill's front matter must contain valid YAML between \`---\` and \`---\`.`,
         "red",
       );
@@ -180,7 +135,7 @@ export function getSkillJSON(
     }
     const parseResult = skillMetadataSchema.safeParse(parsed.data);
     if (!parseResult.success) {
-      deps.colorPrint(
+      colorPrint(
         `Malformed skill at ${fullPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,
         "red",
       );
