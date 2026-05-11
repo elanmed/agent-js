@@ -25,12 +25,11 @@ npm run ci
 - Never add comments
 - Minimize diffs — only change what's necessary
 - All changes must have test coverage
-- Use `node:test` for tests and `node:assert` for assertions
-- Use `node:test` mocking (`mock.fn`, `mock.method`, `mock.module`, etc.) instead of dependency injection. Some existing code still uses DI (`deps` parameters) — do not add new DI; prefer mocking for new code and migrate existing DI when touching those files.
 - Never put selectors, actions, or dispatch in deps (legacy DI deps sometimes still have them — remove when migrating to mocking)
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
 - Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value
-- For fs, import `fsDeps` directly in production code — no dependency injection. In tests, use `setupFakeFs()` from `test-helpers.ts` to mock all fs methods globally, and use `testFs._files` / `testFs._dirs` / `testFs._globResults` to set up fixture state. Import `testFs` and `setupFakeFs` from `./test-helpers.ts`.
+- For fs, import `fsDeps` directly from `deps.ts`. In tests, use `setupFakeDeps()` from `test-helpers.ts` to mock all fs methods, `processEnv`, and `processStdout` globally. Use `testFs._files` / `testFs._dirs` / `testFs._globResults` to set up fixture state. Import `testFs` and `setupFakeDeps` from `./test-helpers.ts`.
+- `processEnv.get` and `processStdout.write` are also in `deps.ts` and mocked by `setupFakeDeps()`. Use `testProcessEnv._set(key, value)` for env vars. Override `processStdout.write` with an additional `mock.method(processStdout, "write", ...)` if you need to capture output.
 - Pure utility functions do not need deps — import and call them directly in tests.
 
 ### fs mocking example
@@ -38,7 +37,7 @@ npm run ci
 Production code:
 
 ```ts
-import { fsDeps } from "./fs-deps.ts";
+import { fsDeps } from "./deps.ts";
 
 export function readConfig() {
   if (!fsDeps.existsSync("config.json")) return null;
@@ -49,11 +48,11 @@ export function readConfig() {
 Test code:
 
 ```ts
-import { testFs, setupFakeFs } from "./test-helpers.ts";
+import { testFs, setupFakeDeps } from "./test-helpers.ts";
 
 describe("readConfig", () => {
   beforeEach(() => {
-    setupFakeFs();
+    setupFakeDeps();
   });
 
   it("returns config when file exists", () => {

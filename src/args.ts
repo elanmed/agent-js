@@ -12,10 +12,8 @@ export const parseCliArgsDeps = {
   getArgv: () => process.argv,
 };
 
-export type ParseCliArgsDeps = typeof parseCliArgsDeps;
-
-export function parseCliArgs(deps: ParseCliArgsDeps = parseCliArgsDeps) {
-  const args = deps.getArgv().slice(2);
+export function parseCliArgs() {
+  const args = parseCliArgsDeps.getArgv().slice(2);
 
   const parsedArgs: CliArgs = structuredClone(defaultCliArgs);
   while (args.length) {
