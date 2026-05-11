@@ -1,6 +1,5 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { Buffer } from "node:buffer";
 import { dispatch, actions, selectors } from "./state.ts";
 import {
   editCommand,
@@ -8,8 +7,8 @@ import {
   isSameKey,
   getAvailableSlashCommands,
 } from "./input.ts";
-import { testFs, testProcessEnv, setupFakeFs } from "./test-helpers.ts";
-import { fsDeps } from "./fs-deps.ts";
+import { testFs, testProcessEnv, setupFakeDeps } from "./test-helpers.ts";
+import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import crypto from "node:crypto";
 import os from "node:os";
@@ -23,14 +22,13 @@ describe("input", () => {
     let spawned: string[];
 
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
       spawned = [];
       mock.method(crypto, "randomUUID", () => "test-uuid");
       mock.method(os, "tmpdir", () => "/tmp");
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned.push(cmd);
       });
-      mock.method(process.stdout, "write", () => undefined);
     });
 
     it("returns null when writeFile fails", () => {
@@ -93,8 +91,8 @@ describe("input", () => {
 
   describe("resolveSlashCommand", () => {
     beforeEach(() => {
-      setupFakeFs();
-      mock.method(process.stdout, "write", () => undefined);
+      setupFakeDeps();
+      mock.method(process, "cwd", () => "/agent-js");
       mock.method(childProcess, "spawnSync", () => undefined);
     });
 
@@ -112,7 +110,6 @@ describe("input", () => {
       dispatch(
         actions.setRl({ write: () => null, prompt: () => null } as never),
       );
-      mock.method(process.stdout, "write", () => undefined);
       const result = resolveSlashCommand("/edit-log");
       assert.strictEqual(result, null);
     });
@@ -205,7 +202,8 @@ describe("input", () => {
 
   describe("getAvailableSlashCommands", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
+      mock.method(process, "cwd", () => "/agent-js");
     });
 
     it("returns empty array when commands directory does not exist", () => {

@@ -10,8 +10,8 @@ import {
   EDITOR_LOGS_PATH,
 } from "./log.ts";
 import { dispatch, actions, selectors } from "./state.ts";
-import { testFs, setupFakeFs } from "./test-helpers.ts";
-import { fsDeps } from "./fs-deps.ts";
+import { testFs, setupFakeDeps } from "./test-helpers.ts";
+import { fsDeps } from "./deps.ts";
 import { dirname } from "node:path";
 
 describe("log", () => {
@@ -21,7 +21,7 @@ describe("log", () => {
 
   describe("debugLog", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
       mock.method(Date, "now", () => 1700000000000);
     });
 
@@ -59,7 +59,7 @@ describe("log", () => {
 
   describe("editorLog", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
       mock.method(Date, "now", () => 1700000000000);
     });
 
@@ -113,7 +113,7 @@ content 2
 
   describe("resetDebugLog", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
     });
 
     it("does nothing when log file does not exist", () => {
@@ -131,7 +131,7 @@ content 2
 
   describe("initEditorLog", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
       mock.method(Date, "now", () => 1234567890000);
     });
 
@@ -168,7 +168,7 @@ content 2
 
   describe("deleteExpiredEditorLogs", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
       mock.method(Date, "now", () => 1000000000000);
     });
 

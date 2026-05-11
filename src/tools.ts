@@ -15,7 +15,7 @@ import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
-import { fsDeps } from "./fs-deps.ts";
+import { fsDeps } from "./deps.ts";
 
 const execPromise = promisify(exec);
 const userAgent =

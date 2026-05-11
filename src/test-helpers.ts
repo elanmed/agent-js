@@ -1,5 +1,5 @@
 import { mock } from "node:test";
-import { fsDeps, processEnv, type FsDeps } from "./fs-deps.ts";
+import { fsDeps, processEnv, processStdout, type FsDeps } from "./deps.ts";
 
 export interface FakeFsDeps extends FsDeps {
   _files: Map<string, string>;
@@ -83,7 +83,7 @@ export function makeFakeProcessEnv() {
 export const testFs = makeFakeFsDeps();
 export const testProcessEnv = makeFakeProcessEnv();
 
-export function setupFakeFs() {
+export function setupFakeDeps() {
   testFs._restore();
   for (const key of Object.keys(testFs)) {
     if (!EXCLUDED_KEYS.includes(key)) {
@@ -97,5 +97,6 @@ export function setupFakeFs() {
 
   testProcessEnv._clear();
   mock.method(processEnv, "get", (key: string) => testProcessEnv.get(key));
+  mock.method(processStdout, "write", () => undefined);
 }
 

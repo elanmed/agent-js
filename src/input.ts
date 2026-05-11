@@ -22,7 +22,7 @@ import { actions, dispatch, selectors } from "./state.ts";
 import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, editorLog } from "./log.ts";
-import { fsDeps, processEnv } from "./fs-deps.ts";
+import { fsDeps, processEnv } from "./deps.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({

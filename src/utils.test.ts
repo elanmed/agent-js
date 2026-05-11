@@ -11,7 +11,7 @@ import {
   createTempFile,
 } from "./utils.ts";
 import { dispatch, actions } from "./state.ts";
-import { testFs, setupFakeFs } from "./test-helpers.ts";
+import { testFs, setupFakeDeps } from "./test-helpers.ts";
 
 describe("utils", () => {
   beforeEach(() => {
@@ -105,7 +105,7 @@ describe("utils", () => {
 
   describe("createTempFile", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
       mock.method(os, "tmpdir", () => "/tmp");
       mock.method(crypto, "randomUUID", () => "test-uuid");
     });

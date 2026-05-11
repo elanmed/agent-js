@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import { fsDeps, type FsDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";

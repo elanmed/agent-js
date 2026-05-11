@@ -11,9 +11,10 @@ import {
   loadSkillTool,
 } from "./tools.ts";
 import type { ToolCall } from "./tools.ts";
-import { testFs, setupFakeFs } from "./test-helpers.ts";
-import { fsDeps } from "./fs-deps.ts";
+import { testFs, setupFakeDeps } from "./test-helpers.ts";
+import { fsDeps } from "./deps.ts";
 import { dispatch, actions } from "./state.ts";
+import { processStdout } from "./deps.ts";
 
 function makeToolCall(overrides: Partial<ToolCall> = {}): ToolCall {
   return {
@@ -26,7 +27,7 @@ function makeToolCall(overrides: Partial<ToolCall> = {}): ToolCall {
 
 describe("tools", () => {
   beforeEach(() => {
-    mock.method(process.stdout, "write", () => undefined);
+    mock.method(processStdout, "write", () => undefined);
   });
 
   describe("executeBashTool", () => {
@@ -71,7 +72,7 @@ describe("tools", () => {
 
   describe("executeCreateFileTool", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
     });
 
     it("creates a new file and returns success", () => {
@@ -134,7 +135,7 @@ describe("tools", () => {
 
   describe("executeViewFileTool", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
     });
 
     it("returns file contents with line numbers", () => {
@@ -309,7 +310,7 @@ describe("tools", () => {
 
   describe("executeStrReplaceTool", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
     });
 
     it("replaces old_str with new_str when exactly one match exists", () => {
@@ -386,7 +387,7 @@ describe("tools", () => {
 
   describe("executeInsertLinesTool", () => {
     beforeEach(() => {
-      setupFakeFs();
+      setupFakeDeps();
     });
 
     it("inserts text after a specific line", () => {

@@ -41,3 +41,9 @@ export const processEnv = {
   get: (key: string) => process.env[key],
 };
 
+export const processStdout = {
+  write: (out: string) => {
+    process.stdout.write(out);
+  },
+};
+

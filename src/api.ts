@@ -21,7 +21,7 @@ import { debugLog } from "./log.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
 import { TOOLS } from "./tools.ts";
 import assert from "node:assert";
-import { processEnv } from "./fs-deps.ts";
+import { processEnv } from "./deps.ts";
 
 interface ToolCallInfo {
   toolCallId: string;

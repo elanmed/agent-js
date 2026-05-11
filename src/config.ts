@@ -6,7 +6,7 @@ import { getAgentsContext, getSkillsContext } from "./context.ts";
 import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
-import { fsDeps, type FsDeps } from "./fs-deps.ts";
+import { fsDeps, type FsDeps } from "./deps.ts";
 import {
   GLOBAL_CONFIG_PATH,
   LOCAL_CONFIG_PATH,

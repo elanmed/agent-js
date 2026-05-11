@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
-import { fsDeps } from "./fs-deps.ts";
+import { fsDeps } from "./deps.ts";
 
 export const MISSING = "MISSING";
 
