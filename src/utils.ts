@@ -3,7 +3,7 @@ import os from "node:os";
 import crypto from "node:crypto";
 import { fsDeps } from "./deps.ts";
 
-export const MISSING = "MISSING";
+export const MISSING = "__MISSING__";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 

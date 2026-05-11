@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { tryCatch } from "./utils.ts";
+import { tryCatch, MISSING } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
 import { getAgentsContext, getSkillsContext } from "./context.ts";
 import { debugLog } from "./log.ts";
@@ -10,8 +10,6 @@ import {
   GLOBAL_CONFIG_PATH,
   LOCAL_CONFIG_PATH,
 } from "./paths.ts";
-
-export const MISSING = "MISSING";
 
 export type DiffStyle = "unified" | "lines";
 export type Provider = "anthropic" | "openai-compatible";

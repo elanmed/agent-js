@@ -107,6 +107,13 @@ export function initSigInt() {
     const apiStream = selectors.getApiStreamAbortController();
     if (apiStream) {
       apiStream.abort();
+      return;
+    }
+
+    const toolCall = selectors.getToolCallAbortController();
+    if (toolCall) {
+      toolCall.abort();
+      return;
     }
 
     const questionAbortController = selectors.getQuestionAbortController();

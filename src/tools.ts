@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   createTempFile,
   getMessageFromError,
+  isAbortError,
   normalizeLine,
   stringify,
   tryCatch,
@@ -16,6 +17,7 @@ import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import { fsDeps } from "./deps.ts";
+import assert from "node:assert";
 
 const execPromise = promisify(exec);
 const userAgent =
@@ -47,29 +49,37 @@ export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
   toolLog("bash", bashCommand);
   debugLog(`executeBashTool: command=${bashCommand}`);
 
-  const bashResult = await tryCatchAsync(execPromise(bashCommand));
+  const abortController = selectors.getToolCallAbortController();
+  assert(abortController !== null);
+  const bashResult = await tryCatchAsync(
+    execPromise(bashCommand, { signal: abortController.signal }),
+  );
 
-  if (bashResult.ok) {
-    debugLog(
-      `executeBashTool: stdout=${bashResult.value.stdout}, stderr=${bashResult.value.stderr}`,
-    );
+  if (!bashResult.ok) {
+    if (isAbortError(bashResult.error)) {
+      throw bashResult.error;
+    }
+
+    const error = getMessageFromError(bashResult.error);
+    debugLog(`executeBashTool: error=${error}`);
     return {
       type: "tool_result",
       tool_use_id: toolCall.id,
-      content: JSON.stringify({
-        stdout: bashResult.value.stdout,
-        stderr: bashResult.value.stderr,
-      }),
+      content: error,
+      is_error: true,
     };
   }
 
-  const error = getMessageFromError(bashResult.error);
-  debugLog(`executeBashTool: error=${error}`);
+  debugLog(
+    `executeBashTool: stdout=${bashResult.value.stdout}, stderr=${bashResult.value.stderr}`,
+  );
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
-    content: error,
-    is_error: true,
+    content: JSON.stringify({
+      stdout: bashResult.value.stdout,
+      stderr: bashResult.value.stderr,
+    }),
   };
 }
 

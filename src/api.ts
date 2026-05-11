@@ -3,11 +3,7 @@ import { generateText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { actions, dispatch, selectors } from "./state.ts";
-import {
-  isAbortError,
-  tryCatchAsync,
-  getMessageFromError,
-} from "./utils.ts";
+import { isAbortError, tryCatchAsync, getMessageFromError } from "./utils.ts";
 import {
   colorPrint,
   executeBat,
@@ -127,7 +123,7 @@ export async function resolveUserInputApiCall(initialContent: string) {
 
   if (!apiResult.ok) {
     if (isAbortError(apiResult.error)) {
-      colorPrint("Aborted", "red");
+      colorPrint("Aborted API call", "red");
       return null;
     }
 
@@ -169,17 +165,26 @@ export async function runToolLoop(
         input: toolCall.input,
       };
 
+      dispatch(actions.setToolCallAbortController(new AbortController()));
       startSpinner();
-      const toolResult = await getToolResultBlock(localToolCall);
+      const toolResult = await tryCatchAsync(getToolResultBlock(localToolCall));
       stopSpinner();
+      dispatch(actions.setToolCallAbortController(null));
+
+      if (!toolResult.ok) {
+        assert(isAbortError(toolResult.error));
+        colorPrint("Aborted tool call", "red");
+        dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
+        return currentResult;
+      }
 
       toolMessages.push({
         type: "tool-result",
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
-        output: toolResult.is_error
-          ? { type: "error-text", value: toolResult.content }
-          : { type: "text", value: toolResult.content },
+        output: toolResult.value.is_error
+          ? { type: "error-text", value: toolResult.value.content }
+          : { type: "text", value: toolResult.value.content },
       });
     }
 
@@ -195,24 +200,24 @@ export async function runToolLoop(
     );
     dispatch(actions.setApiStreamAbortController(null));
 
-    if (toolApiCallResult.ok) {
-      if (toolApiCallResult.value.text) {
-        printNewline();
-        await executeBat(toolApiCallResult.value.text);
-        printNewline();
-      }
-
-      currentResult = toolApiCallResult.value;
-    } else {
+    if (!toolApiCallResult.ok) {
       if (isAbortError(toolApiCallResult.error)) {
-        colorPrint("Aborted", "red");
+        colorPrint("Aborted API call", "red");
         dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
-        break;
       } else {
         colorPrint(getMessageFromError(toolApiCallResult.error), "red");
-        break;
       }
+
+      return currentResult;
     }
+
+    if (toolApiCallResult.value.text) {
+      printNewline();
+      await executeBat(toolApiCallResult.value.text);
+      printNewline();
+    }
+
+    currentResult = toolApiCallResult.value;
   }
 
   if (logged) {
