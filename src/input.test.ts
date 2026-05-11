@@ -4,6 +4,7 @@ import { dispatch, actions, selectors } from "./state.ts";
 import {
   editCommand,
   resolveSlashCommand,
+  setModelCommand,
   isSameKey,
   getAvailableSlashCommands,
 } from "./input.ts";
@@ -144,6 +145,50 @@ describe("input", () => {
         selectors
           .getStdout()
           .includes("Invalid / command detected, valid commands:"),
+      );
+    });
+  });
+
+  describe("setModelCommand", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      dispatch(actions.resetState());
+      dispatch(actions.resetStdout());
+    });
+
+    it("sets model and prints blue confirmation when input is valid", () => {
+      dispatch(actions.setModel("old-model"));
+      setModelCommand("/model new-model");
+      assert.strictEqual(selectors.getModel(), "new-model");
+      assert.ok(
+        selectors
+          .getStdout()
+          .includes("Model updated from old-model to new-model"),
+      );
+    });
+
+    it("prints red error when input has too many parts", () => {
+      dispatch(actions.setModel("old-model"));
+      setModelCommand("/model new-model extra");
+      assert.strictEqual(selectors.getModel(), "old-model");
+      assert.ok(selectors.getStdout().includes("Usage: /model [model]"));
+    });
+
+    it("prints red error when input has only the command", () => {
+      dispatch(actions.setModel("old-model"));
+      setModelCommand("/model");
+      assert.strictEqual(selectors.getModel(), "old-model");
+      assert.ok(selectors.getStdout().includes("Usage: /model [model]"));
+    });
+
+    it("handles model name with slashes", () => {
+      dispatch(actions.setModel("old"));
+      setModelCommand("/model provider/new-model");
+      assert.strictEqual(selectors.getModel(), "provider/new-model");
+      assert.ok(
+        selectors
+          .getStdout()
+          .includes("Model updated from old to provider/new-model"),
       );
     });
   });

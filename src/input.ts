@@ -207,7 +207,7 @@ async function resolveExitConfirmation() {
 }
 
 export function resolveSlashCommand(rawInput: string) {
-  const commandWithoutSlash = rawInput.slice(1).trim();
+  const commandWithoutSlash = rawInput.trim().slice(1);
   if (commandWithoutSlash === "edit") {
     return editCommand("");
   } else if (commandWithoutSlash === "clear") {
@@ -215,6 +215,9 @@ export function resolveSlashCommand(rawInput: string) {
     return null;
   } else if (commandWithoutSlash === "edit-log") {
     editLogCommand();
+    return null;
+  } else if (commandWithoutSlash.startsWith("model")) {
+    setModelCommand(rawInput);
     return null;
   }
 
@@ -235,7 +238,10 @@ export function resolveSlashCommand(rawInput: string) {
   }
 
   colorPrint(
-    `Invalid / command detected, valid commands: ${selectors.getSlashCommands().concat(["edit", "edit-log", "clear"]).join(",")}`,
+    `Invalid / command detected, valid commands: ${selectors
+      .getSlashCommands()
+      .concat(["edit", "edit-log", "clear", "model"])
+      .join(",")}`,
     "red",
   );
   return null;
@@ -294,6 +300,20 @@ export function editLogCommand() {
     shell: true,
     stdio: "inherit",
   });
+}
+
+export function setModelCommand(rawInput: string) {
+  const parts = rawInput.trim().split(" ");
+  if (parts.length !== 2) {
+    colorPrint("Usage: /model [model]", "red");
+    return;
+  }
+  const model = parts[1];
+  assert(model !== undefined);
+
+  const prevModel = selectors.getModel();
+  dispatch(actions.setModel(model));
+  colorPrint(`Model updated from ${prevModel} to ${model}`, "blue");
 }
 
 export function isSameKey(a: Key, b: Key) {

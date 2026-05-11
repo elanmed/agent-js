@@ -6,8 +6,8 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 
 ## Features
 
-- **Minimal**: 2,500 lines of source code, 2,000 lines of tests
-- **Tools**: execute bash commands, create/edit files, fetch from the web, etc. A `git diff` is output when a tool changes a file
+- **Minimal**: 2,700 lines of source code, 2,600 lines of tests
+- **Tools**: execute bash commands, fetch from the web, create/edit files. A `git diff` is output when a tool changes a file
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
 - **Configuration**: global and local `settings.json`
 - **Cost tracking**: per-model token pricing with usage summary after each response
@@ -95,6 +95,7 @@ Slash commands are triggered with `/command` at the prompt.
 | `/edit`     | Open `$AGENT_JS_EDITOR` or `$EDITOR` with empty input for multi-line messages |
 | `/clear`    | Clear conversation context and reset message history                          |
 | `/edit-log` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view the editor log               |
+| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)                         |
 
 ### Custom Slash Commands
 
