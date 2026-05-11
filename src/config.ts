@@ -1,12 +1,11 @@
 import { z } from "zod";
 import { tryCatch } from "./utils.ts";
-import { colorPrint } from "./print.ts";
 import { getAvailableSlashCommands } from "./input.ts";
 import { getAgentsContext, getSkillsContext } from "./context.ts";
 import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
-import { fsDeps, type FsDeps } from "./deps.ts";
+import { fsDeps } from "./deps.ts";
 import {
   GLOBAL_CONFIG_PATH,
   LOCAL_CONFIG_PATH,
@@ -98,32 +97,16 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   },
 };
 
-export interface InitStateDeps {
-  fs: FsDeps;
-  parseCliArgs: typeof parseCliArgs;
-  getAgentsContext: typeof getAgentsContext;
-  getSkillsContext: typeof getSkillsContext;
-  colorPrint: typeof colorPrint;
-}
-
-const initStateDeps: InitStateDeps = {
-  fs: fsDeps,
-  parseCliArgs,
-  getAgentsContext,
-  getSkillsContext,
-  colorPrint,
-};
-
-export function initState(deps: InitStateDeps = initStateDeps) {
-  const args = deps.parseCliArgs();
+export function initState() {
+  const args = parseCliArgs();
   dispatch(actions.setDebugLog(args.debug));
   dispatch(actions.setDebugLog(args.debug)); // second time so it's logged
 
   const globalConfig: Config = (() => {
-    if (deps.fs.existsSync(GLOBAL_CONFIG_PATH)) {
+    if (fsDeps.existsSync(GLOBAL_CONFIG_PATH)) {
       debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
       const readResult = tryCatch(() =>
-        deps.fs.readFileSync(GLOBAL_CONFIG_PATH).toString(),
+        fsDeps.readFileSync(GLOBAL_CONFIG_PATH).toString(),
       );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
@@ -137,10 +120,10 @@ export function initState(deps: InitStateDeps = initStateDeps) {
   })();
 
   const localConfig: Config = (() => {
-    if (deps.fs.existsSync(LOCAL_CONFIG_PATH)) {
+    if (fsDeps.existsSync(LOCAL_CONFIG_PATH)) {
       debugLog(`${LOCAL_CONFIG_PATH} exists, reading`);
       const readResult = tryCatch(() =>
-        deps.fs.readFileSync(LOCAL_CONFIG_PATH).toString(),
+        fsDeps.readFileSync(LOCAL_CONFIG_PATH).toString(),
       );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
@@ -228,16 +211,10 @@ export function initState(deps: InitStateDeps = initStateDeps) {
     ),
   );
 
-  const agentsContext = deps.getAgentsContext({
-    fs: deps.fs,
-    debugLog,
-  });
+  const agentsContext = getAgentsContext();
   dispatch(actions.setAgentsContext(agentsContext));
 
-  const skillsContext = deps.getSkillsContext({
-    fs: deps.fs,
-    colorPrint: deps.colorPrint,
-  });
+  const skillsContext = getSkillsContext();
   dispatch(actions.setSkillsContext(skillsContext));
 }
 

@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { GLOBAL_AGENTS_PATH } from "./paths.ts";
@@ -8,7 +8,7 @@ import {
   getSkillJSON,
   parseFrontMatter,
 } from "./context.ts";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions } from "./state.ts";
 
 describe("context", () => {
   beforeEach(() => {
