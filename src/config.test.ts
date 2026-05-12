@@ -1,8 +1,13 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
+import os from "node:os";
 import { dispatch, actions, selectors } from "./state.ts";
 import { initState, DEFAULT_CONFIG } from "./config.ts";
-import { GLOBAL_CONFIG_PATH, LOCAL_CONFIG_PATH, GLOBAL_AGENTS_PATH } from "./paths.ts";
+import {
+  getGlobalConfigPath,
+  getLocalConfigPath,
+  getGlobalAgentsPath,
+} from "./paths.ts";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
 
@@ -10,20 +15,21 @@ describe("config", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
     setupFakeDeps();
+    mock.method(os, "homedir", () => "/fake-home");
     mock.method(parseCliArgsDeps, "getArgv", () => ["node", "script.js"]);
   });
 
   describe("when local config exists", () => {
     it("uses its model over the global config, default config", () => {
       testFs._files.set(
-        GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
         }),
       );
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "claude-haiku-4-5",
           baseURL: "https://api.example.com",
@@ -37,14 +43,14 @@ describe("config", () => {
 
     it("uses its provider over the global config, default config", () => {
       testFs._files.set(
-        GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           provider: "openai-compatible",
         }),
       );
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           provider: "anthropic",
@@ -58,7 +64,7 @@ describe("config", () => {
 
     it("uses its disableUsageMessage over the global config, default config", () => {
       testFs._files.set(
-        GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -66,7 +72,7 @@ describe("config", () => {
         }),
       );
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -81,7 +87,7 @@ describe("config", () => {
 
     it("uses its editorLog over the global config, default config", () => {
       testFs._files.set(
-        GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -89,7 +95,7 @@ describe("config", () => {
         }),
       );
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -104,7 +110,7 @@ describe("config", () => {
 
     it("uses its diffStyle over the global config, default config", () => {
       testFs._files.set(
-        GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -112,7 +118,7 @@ describe("config", () => {
         }),
       );
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -135,7 +141,7 @@ describe("config", () => {
       };
 
       testFs._files.set(
-        GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
         JSON.stringify({
           model: "test-model",
           baseURL: "https://api.example.com",
@@ -143,7 +149,7 @@ describe("config", () => {
         }),
       );
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "test-model",
           baseURL: "https://api.example.com",
@@ -158,7 +164,7 @@ describe("config", () => {
 
     it("uses its keymaps over the global config, default config", () => {
       testFs._files.set(
-        GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -170,7 +176,7 @@ describe("config", () => {
         }),
       );
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -206,7 +212,7 @@ describe("config", () => {
 
     it("merges partial keymaps with defaults", () => {
       testFs._files.set(
-        LOCAL_CONFIG_PATH,
+        getLocalConfigPath(),
         JSON.stringify({
           model: "claude-sonnet-4-6",
           baseURL: "https://api.example.com",
@@ -239,7 +245,7 @@ describe("config", () => {
     describe("when the global config exists", () => {
       it("uses its model over the default config", () => {
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({
             model: "claude-haiku-4-5",
             baseURL: "https://api.example.com",
@@ -252,7 +258,7 @@ describe("config", () => {
 
       it("uses its provider over the default config", () => {
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({
             model: "claude-sonnet-4-6",
             provider: "anthropic",
@@ -265,7 +271,7 @@ describe("config", () => {
 
       it("uses its disableUsageMessage over the default config", () => {
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
@@ -279,7 +285,7 @@ describe("config", () => {
 
       it("uses its editorLog over the default config", () => {
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
@@ -293,7 +299,7 @@ describe("config", () => {
 
       it("uses its diffStyle over the default config", () => {
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
@@ -315,7 +321,7 @@ describe("config", () => {
         };
 
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({
             model: "test-model",
             baseURL: "https://api.example.com",
@@ -329,7 +335,7 @@ describe("config", () => {
 
       it("uses its keymaps over the default config", () => {
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({
             model: "claude-sonnet-4-6",
             baseURL: "https://api.example.com",
@@ -373,7 +379,7 @@ describe("config", () => {
 
       it("throws when baseURL is not configured for openai-compatible provider", () => {
         testFs._files.set(
-          GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
           JSON.stringify({ model: "some-model" }),
         );
         assert.throws(() => {
@@ -384,7 +390,7 @@ describe("config", () => {
   });
 
   it("throws on invalid JSON in global config", () => {
-    testFs._files.set(GLOBAL_CONFIG_PATH, "not valid json");
+    testFs._files.set(getGlobalConfigPath(), "not valid json");
 
     assert.throws(() => {
       initState();
@@ -392,7 +398,7 @@ describe("config", () => {
   });
 
   it("throws on invalid JSON in local config", () => {
-    testFs._files.set(LOCAL_CONFIG_PATH, "not valid json");
+    testFs._files.set(getLocalConfigPath(), "not valid json");
 
     assert.throws(() => {
       initState();
@@ -400,9 +406,13 @@ describe("config", () => {
   });
 
   it("sets debug from args", () => {
-    mock.method(parseCliArgsDeps, "getArgv", () => ["node", "script.js", "--debug"]);
+    mock.method(parseCliArgsDeps, "getArgv", () => [
+      "node",
+      "script.js",
+      "--debug",
+    ]);
     testFs._files.set(
-      GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
       JSON.stringify({
         model: "claude-sonnet-4-6",
         baseURL: "https://api.example.com",
@@ -414,9 +424,9 @@ describe("config", () => {
   });
 
   it("sets agentsContext from dep", () => {
-    testFs._files.set(GLOBAL_AGENTS_PATH, "hello");
+    testFs._files.set(getGlobalAgentsPath(), "hello");
     testFs._files.set(
-      GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
       JSON.stringify({
         model: "claude-sonnet-4-6",
         baseURL: "https://api.example.com",
@@ -424,12 +434,15 @@ describe("config", () => {
     );
 
     initState();
-    assert.equal(selectors.getAgentsContext(), "\nAGENTS.md context files:\nPath: /root/.config/.agent-js/AGENTS.md\nContent: hello\n");
+    assert.equal(
+      selectors.getAgentsContext(),
+      `\nAGENTS.md context files:\nPath: ${getGlobalAgentsPath()}\nContent: hello\n`,
+    );
   });
 
   it("sets skillsContext from dep", () => {
     testFs._files.set(
-      GLOBAL_CONFIG_PATH,
+        getGlobalConfigPath(),
       JSON.stringify({
         model: "claude-sonnet-4-6",
         baseURL: "https://api.example.com",
@@ -437,6 +450,9 @@ describe("config", () => {
     );
 
     initState();
-    assert.equal(selectors.getSkillsContext().includes("Available skills:"), true);
+    assert.equal(
+      selectors.getSkillsContext().includes("Available skills:"),
+      true,
+    );
   });
 });

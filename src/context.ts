@@ -5,9 +5,9 @@ import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { dispatch, actions } from "./state.ts";
 import {
-  GLOBAL_AGENTS_PATH,
-  GLOBAL_SKILLS_DIR_PATH,
-  LOCAL_SKILLS_DIR_PATH,
+  getGlobalAgentsPath,
+  getGlobalSkillsDirPath,
+  getLocalSkillsDirPath,
 } from "./paths.ts";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
@@ -15,8 +15,8 @@ import { z } from "zod";
 export function getAgentsContext() {
   const agentFilePaths: string[] = [];
 
-  if (fsDeps.existsSync(GLOBAL_AGENTS_PATH)) {
-    agentFilePaths.push(GLOBAL_AGENTS_PATH);
+  if (fsDeps.existsSync(getGlobalAgentsPath())) {
+    agentFilePaths.push(getGlobalAgentsPath());
   }
 
   const globResult = tryCatch(() => fsDeps.globSync("**/AGENTS.md"));
@@ -59,8 +59,8 @@ export interface Skill {
 export function getSkillsContext(skillsDirPaths?: string[]) {
   const seenSkills = new Set();
   const paths = skillsDirPaths ?? [
-    LOCAL_SKILLS_DIR_PATH,
-    GLOBAL_SKILLS_DIR_PATH,
+    getLocalSkillsDirPath(),
+    getGlobalSkillsDirPath(),
   ];
   const skills: SkillMetadata[] = [];
 

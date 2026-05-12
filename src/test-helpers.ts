@@ -1,11 +1,20 @@
 import { mock } from "node:test";
-import { fsDeps, processEnv, processStdout, type FsDeps } from "./deps.ts";
+import { fsDeps, processEnv, processStdout } from "./deps.ts";
 
-export interface FakeFsDeps extends FsDeps {
+export interface FakeFsDeps {
   _files: Map<string, string>;
   _dirs: Set<string>;
   _globResults: Map<string, string[]>;
   _restore: () => void;
+  readFileSync: (path: string) => Buffer;
+  writeFileSync: (path: string, content: string, options?: { signal?: AbortSignal }) => void;
+  existsSync: (path: string) => boolean;
+  readdirSync: (path: string) => string[];
+  mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
+  unlinkSync: (path: string) => void;
+  appendFileSync: (path: string, content: string, options?: { signal?: AbortSignal }) => void;
+  statSync: (path: string) => { isFile: () => boolean; isDirectory: () => boolean };
+  globSync: (pattern: string) => string[];
 }
 
 const EXCLUDED_KEYS = ["_files", "_dirs", "_globResults", "_restore"];

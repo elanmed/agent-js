@@ -1,7 +1,8 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
+import os from "node:os";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
-import { GLOBAL_AGENTS_PATH } from "./paths.ts";
+import { getGlobalAgentsPath } from "./paths.ts";
 import {
   getAgentsContext,
   getSkillsContext,
@@ -13,6 +14,7 @@ import { dispatch, actions } from "./state.ts";
 describe("context", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
+    mock.method(os, "homedir", () => "/fake-home");
   });
 
   describe("getAgentsContext", () => {
@@ -57,16 +59,16 @@ describe("context", () => {
     });
 
     it("includes global AGENTS.md when it exists", () => {
-      testFs._files.set(GLOBAL_AGENTS_PATH, "global content");
+      testFs._files.set(getGlobalAgentsPath(), "global content");
       const result = getAgentsContext();
       assert.equal(
         result,
-        `\nAGENTS.md context files:\nPath: ${GLOBAL_AGENTS_PATH}\nContent: global content\n`,
+        `\nAGENTS.md context files:\nPath: ${getGlobalAgentsPath()}\nContent: global content\n`,
       );
     });
 
     it("combines global and globbed AGENTS.md files", () => {
-      testFs._files.set(GLOBAL_AGENTS_PATH, "global content");
+      testFs._files.set(getGlobalAgentsPath(), "global content");
       testFs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
       testFs._files.set("AGENTS.md", "local content");
       const result = getAgentsContext();
@@ -74,7 +76,7 @@ describe("context", () => {
         result,
         `
 AGENTS.md context files:
-Path: ${GLOBAL_AGENTS_PATH}
+Path: ${getGlobalAgentsPath()}
 Content: global content
 
 Path: AGENTS.md

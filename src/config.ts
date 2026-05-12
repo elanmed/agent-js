@@ -7,8 +7,8 @@ import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
 import {
-  GLOBAL_CONFIG_PATH,
-  LOCAL_CONFIG_PATH,
+  getGlobalConfigPath,
+  getLocalConfigPath,
 } from "./paths.ts";
 
 export type DiffStyle = "unified" | "lines";
@@ -101,36 +101,36 @@ export function initState() {
   dispatch(actions.setDebugLog(args.debug)); // second time so it's logged
 
   const globalConfig: Config = (() => {
-    if (fsDeps.existsSync(GLOBAL_CONFIG_PATH)) {
-      debugLog(`${GLOBAL_CONFIG_PATH} exists, returning`);
+    if (fsDeps.existsSync(getGlobalConfigPath())) {
+      debugLog(`${getGlobalConfigPath()} exists, returning`);
       const readResult = tryCatch(() =>
-        fsDeps.readFileSync(GLOBAL_CONFIG_PATH).toString(),
+        fsDeps.readFileSync(getGlobalConfigPath()).toString(),
       );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
       }
-      debugLog(`Failed to read ${GLOBAL_CONFIG_PATH}, using default`);
+      debugLog(`Failed to read ${getGlobalConfigPath()}, using default`);
       return DEFAULT_CONFIG;
     }
 
-    debugLog(`${GLOBAL_CONFIG_PATH} does not exist`);
+    debugLog(`${getGlobalConfigPath()} does not exist`);
     return DEFAULT_CONFIG;
   })();
 
   const localConfig: Config = (() => {
-    if (fsDeps.existsSync(LOCAL_CONFIG_PATH)) {
-      debugLog(`${LOCAL_CONFIG_PATH} exists, reading`);
+    if (fsDeps.existsSync(getLocalConfigPath())) {
+      debugLog(`${getLocalConfigPath()} exists, reading`);
       const readResult = tryCatch(() =>
-        fsDeps.readFileSync(LOCAL_CONFIG_PATH).toString(),
+        fsDeps.readFileSync(getLocalConfigPath()).toString(),
       );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
       }
-      debugLog(`Failed to read ${LOCAL_CONFIG_PATH}, using empty config`);
+      debugLog(`Failed to read ${getLocalConfigPath()}, using empty config`);
       return {};
     }
 
-    debugLog(`${GLOBAL_CONFIG_PATH} does not exist`);
+    debugLog(`${getLocalConfigPath()} does not exist`);
     return {};
   })();
 
@@ -138,7 +138,7 @@ export function initState() {
     localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model;
   if (defaultedModel === MISSING) {
     throw new Error(
-      `A \`model\` is required in either ${LOCAL_CONFIG_PATH} or ${GLOBAL_CONFIG_PATH}`,
+      `A \`model\` is required in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
     );
   }
 
@@ -150,7 +150,7 @@ export function initState() {
     defaultedProvider === "openai-compatible"
   ) {
     throw new Error(
-      `A \`baseURL\` is required when \`provider=openai-compatible\` in either ${LOCAL_CONFIG_PATH} or ${GLOBAL_CONFIG_PATH}`,
+      `A \`baseURL\` is required when \`provider=openai-compatible\` in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
     );
   }
 
