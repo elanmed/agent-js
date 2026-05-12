@@ -12,12 +12,20 @@ import {
 
 export interface FsDeps {
   readFileSync: (path: string) => Buffer;
-  writeFileSync: (path: string, content: string) => void;
+  writeFileSync: (
+    path: string,
+    content: string,
+    options?: { signal?: AbortSignal },
+  ) => void;
   existsSync: (path: string) => boolean;
   readdirSync: (path: string) => string[];
   mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
   unlinkSync: (path: string) => void;
-  appendFileSync: (path: string, content: string) => void;
+  appendFileSync: (
+    path: string,
+    content: string,
+    options?: { signal?: AbortSignal },
+  ) => void;
   statSync: (path: string) => {
     isFile: () => boolean;
     isDirectory: () => boolean;
@@ -27,12 +35,14 @@ export interface FsDeps {
 
 export const fsDeps: FsDeps = {
   readFileSync: (path) => readFileSync(path),
-  writeFileSync: (path, content) => writeFileSync(path, content),
+  writeFileSync: (path, content, options) =>
+    writeFileSync(path, content, options),
   existsSync: (path) => existsSync(path),
   readdirSync: (path) => readdirSync(path),
   mkdirSync: (path, options) => mkdirSync(path, options),
   unlinkSync: (path) => unlinkSync(path),
-  appendFileSync: (path, content) => appendFileSync(path, content),
+  appendFileSync: (path, content, options) =>
+    appendFileSync(path, content, options),
   statSync: (path) => statSync(path),
   globSync: (pattern) => globSync(pattern),
 };
