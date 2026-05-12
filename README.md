@@ -158,8 +158,6 @@ Minimal runtime dependencies (7 total):
 
 ## TODO (soon)
 
-- [ ] Tool call interrupt
-
 ## TODO (later)
 
 - [ ] Look into tanstack ai (codemode?) - maybe once stable
