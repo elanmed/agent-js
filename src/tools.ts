@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
+import os from "node:os";
 import {
   createTempFile,
   getMessageFromError,
@@ -705,7 +706,7 @@ export async function execGitDiff(
 
     if (isDeltaAvailable) {
       const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
-      exec(`${gitDiffCmd} | ${deltaCmd}`, (error, stdout, stderr) => {
+      exec(`${gitDiffCmd} | ${deltaCmd}`, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
         if (error && error.code !== 1) {
           debugLog(
             `execGitDiff: error with delta, code=${String(error.code)}, message=${error.message}`,
@@ -722,7 +723,7 @@ export async function execGitDiff(
     }
 
     const coloredGitDiffCmd = `${gitDiffCmd} --color=always`;
-    exec(coloredGitDiffCmd, (error, stdout, stderr) => {
+    exec(coloredGitDiffCmd, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
       if (error && error.code !== 1) {
         debugLog(
           `execGitDiff: error without delta, code=${String(error.code)}, message=${error.message}`,
