@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 import {
   executeBashTool,
@@ -31,6 +31,14 @@ describe("tools", () => {
   });
 
   describe("executeBashTool", () => {
+    beforeEach(() => {
+      dispatch(actions.setToolCallAbortController(new AbortController()));
+    });
+
+    afterEach(() => {
+      dispatch(actions.setToolCallAbortController(null));
+    });
+
     it("throws when input is invalid", async () => {
       const call = makeToolCall({
         input: "not-an-object" as unknown as Record<string, unknown>,
@@ -73,6 +81,11 @@ describe("tools", () => {
   describe("executeCreateFileTool", () => {
     beforeEach(() => {
       setupFakeDeps();
+      dispatch(actions.setToolCallAbortController(new AbortController()));
+    });
+
+    afterEach(() => {
+      dispatch(actions.setToolCallAbortController(null));
     });
 
     it("creates a new file and returns success", () => {
@@ -311,6 +324,11 @@ describe("tools", () => {
   describe("executeStrReplaceTool", () => {
     beforeEach(() => {
       setupFakeDeps();
+      dispatch(actions.setToolCallAbortController(new AbortController()));
+    });
+
+    afterEach(() => {
+      dispatch(actions.setToolCallAbortController(null));
     });
 
     it("replaces old_str with new_str when exactly one match exists", () => {
@@ -379,7 +397,7 @@ describe("tools", () => {
     it("throws on invalid input schema", () => {
       const call = makeToolCall({
         name: "str_replace",
-        input: { path: "/tmp/x" },
+        input: { bad: true },
       });
       assert.throws(() => executeStrReplaceTool(call));
     });
@@ -388,6 +406,11 @@ describe("tools", () => {
   describe("executeInsertLinesTool", () => {
     beforeEach(() => {
       setupFakeDeps();
+      dispatch(actions.setToolCallAbortController(new AbortController()));
+    });
+
+    afterEach(() => {
+      dispatch(actions.setToolCallAbortController(null));
     });
 
     it("inserts text after a specific line", () => {
@@ -489,7 +512,7 @@ describe("tools", () => {
     it("throws on invalid input schema", () => {
       const call = makeToolCall({
         name: "insert_lines",
-        input: { path: "/tmp/x" },
+        input: { bad: true },
       });
       assert.throws(() => executeInsertLinesTool(call));
     });

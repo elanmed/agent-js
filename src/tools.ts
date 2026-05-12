@@ -100,9 +100,17 @@ export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
     };
   }
 
-  const createFileResult = tryCatch(() => fsDeps.writeFileSync(path, content));
+  const abortController = selectors.getToolCallAbortController();
+  assert(abortController !== null);
+  const createFileResult = tryCatch(() =>
+    fsDeps.writeFileSync(path, content, { signal: abortController.signal }),
+  );
 
   if (!createFileResult.ok) {
+    if (isAbortError(createFileResult.error)) {
+      throw createFileResult.error;
+    }
+
     const error = getMessageFromError(createFileResult.error);
     debugLog(`executeCreateFileTool: error=${error}`);
     return {
@@ -310,10 +318,18 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
     };
   }
 
+  const abortController = selectors.getToolCallAbortController();
+  assert(abortController !== null);
   const writeResult = tryCatch(() =>
-    fsDeps.writeFileSync(path, content.replace(old_str, new_str)),
+    fsDeps.writeFileSync(path, content.replace(old_str, new_str), {
+      signal: abortController.signal,
+    }),
   );
   if (!writeResult.ok) {
+    if (isAbortError(writeResult.error)) {
+      throw writeResult.error;
+    }
+
     const error = getMessageFromError(writeResult.error);
     debugLog(`executeStrReplaceTool: error=${error}`);
     return {
@@ -375,10 +391,18 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
 
   lines.splice(after_line, 0, content);
 
+  const abortController = selectors.getToolCallAbortController();
+  assert(abortController !== null);
   const writeResult = tryCatch(() => {
-    fsDeps.writeFileSync(path, lines.join("\n"));
+    fsDeps.writeFileSync(path, lines.join("\n"), {
+      signal: abortController.signal,
+    });
   });
   if (!writeResult.ok) {
+    if (isAbortError(writeResult.error)) {
+      throw writeResult.error;
+    }
+
     const error = getMessageFromError(writeResult.error);
     debugLog(`executeInsertLinesTool: error=${error}`);
     return {
