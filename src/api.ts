@@ -79,6 +79,10 @@ async function callApi(
 
     stopSpinner();
 
+    const knownToolCalls = toolCalls.filter((tc) =>
+      Object.keys(TOOLS).includes(tc.toolName),
+    );
+
     for (const message of newMessages) {
       dispatch(actions.appendToMessageParams(message));
     }
@@ -97,7 +101,7 @@ async function callApi(
     return {
       text,
       finishReason,
-      toolCalls: toolCalls.map((toolCall) => ({
+      toolCalls: knownToolCalls.map((toolCall) => ({
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
         input: toolCall.input,
