@@ -702,12 +702,14 @@ describe("tools", () => {
 
     it("returns loaded skill content when skill exists in state", () => {
       dispatch(
-        actions.appendToSkills({
-          name: "deploy",
-          description: "Deploy skill",
-          dir: "/skills/deploy",
-          content: "# Deploy instructions",
-        }),
+        actions.setSkills([
+          {
+            name: "deploy",
+            description: "Deploy skill",
+            dir: "/skills/deploy",
+            content: "# Deploy instructions",
+          },
+        ]),
       );
       const call = makeToolCall({
         name: "load_skill",
@@ -732,20 +734,20 @@ describe("tools", () => {
 
     it("finds the correct skill when multiple skills are stored", () => {
       dispatch(
-        actions.appendToSkills({
-          name: "skill-a",
-          description: "Skill A",
-          dir: "/a",
-          content: "content a",
-        }),
-      );
-      dispatch(
-        actions.appendToSkills({
-          name: "skill-b",
-          description: "Skill B",
-          dir: "/b",
-          content: "content b",
-        }),
+        actions.setSkills([
+          {
+            name: "skill-a",
+            description: "Skill A",
+            dir: "/a",
+            content: "content a",
+          },
+          {
+            name: "skill-b",
+            description: "Skill B",
+            dir: "/b",
+            content: "content b",
+          },
+        ]),
       );
       const call = makeToolCall({
         name: "load_skill",

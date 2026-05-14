@@ -3,25 +3,26 @@ import assert from "node:assert";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { getGlobalContextDir } from "./paths.ts";
 import {
-  getAgentsContext,
-  getSkillsContext,
+  getContextStr,
+  getSkillsStr,
+  getSkills,
   getSkillJSON,
   parseFrontMatter,
 } from "./context.ts";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions } from "./state.ts";
 
 describe("context", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
   });
 
-  describe("getAgentsContext", () => {
+  describe("getContextStr", () => {
     beforeEach(() => {
       setupFakeDeps();
     });
 
     it("returns empty string when no AGENTS.md files found", () => {
-      const result = getAgentsContext();
+      const result = getContextStr();
       assert.equal(result, "");
     });
 
@@ -30,7 +31,7 @@ describe("context", () => {
         "/test-cwd/AGENTS.md",
       ]);
       testFs._files.set("/test-cwd/AGENTS.md", "# Agent Instructions");
-      const result = getAgentsContext();
+      const result = getContextStr();
       assert.equal(
         result,
         `\nAGENTS.md context files:\nPath: /test-cwd/AGENTS.md\nContent: # Agent Instructions\n`,
@@ -44,7 +45,7 @@ describe("context", () => {
       ]);
       testFs._files.set("/test-cwd/AGENTS.md", "Root content");
       testFs._files.set("/test-cwd/src/AGENTS.md", "Src content");
-      const result = getAgentsContext();
+      const result = getContextStr();
       assert.equal(
         result,
         `\nAGENTS.md context files:\nPath: /test-cwd/AGENTS.md\nContent: Root content\n\nPath: /test-cwd/src/AGENTS.md\nContent: Src content\n`,
@@ -57,7 +58,7 @@ describe("context", () => {
         "/test-cwd/src/AGENTS.md",
       ]);
       testFs._files.set("/test-cwd/src/AGENTS.md", "Src content");
-      const result = getAgentsContext();
+      const result = getContextStr();
       assert.equal(
         result,
         `\nAGENTS.md context files:\nPath: /test-cwd/src/AGENTS.md\nContent: Src content\n`,
@@ -74,7 +75,7 @@ describe("context", () => {
         "/fake-home/.config/.agent-js/context/AGENTS.md",
         "global content",
       );
-      const result = getAgentsContext();
+      const result = getContextStr();
       assert.equal(
         result,
         `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/AGENTS.md\nContent: global content\n`,
@@ -95,7 +96,7 @@ describe("context", () => {
         "/test-cwd/AGENTS.md",
       ]);
       testFs._files.set("/test-cwd/AGENTS.md", "local content");
-      const result = getAgentsContext();
+      const result = getContextStr();
       assert.equal(
         result,
         `
@@ -110,13 +111,13 @@ Content: global content
     });
   });
 
-  describe("getSkillsContext", () => {
+  describe("getSkillsStr", () => {
     beforeEach(() => {
       setupFakeDeps();
     });
 
     it("returns skills prompt with no skills when dirs are empty", () => {
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -140,7 +141,7 @@ would benefit from specialized instructions.
         "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -171,7 +172,7 @@ would benefit from specialized instructions.
         "/fake-home/.config/.agent-js/skills/global-skill/SKILL.md",
         "---\nname: deploy\ndescription: Global deploy\n---\n# Global",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -186,7 +187,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("does not dispatch duplicate skills to state", () => {
+    it("does not return duplicate skills", () => {
       testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
         "/test-cwd/.agent-js/skills/a/SKILL.md",
       ]);
@@ -202,9 +203,9 @@ would benefit from specialized instructions.
         "/fake-home/.config/.agent-js/skills/b/SKILL.md",
         "---\nname: deploy\ndescription: Second\n---\n# B",
       );
-      getSkillsContext();
-      assert.equal(selectors.getSkills().length, 1);
-      assert.deepStrictEqual(selectors.getSkills()[0], {
+      const result = getSkills();
+      assert.equal(result.length, 1);
+      assert.deepStrictEqual(result[0], {
         name: "deploy",
         description: "First",
         content: "# A",
@@ -225,7 +226,7 @@ would benefit from specialized instructions.
         "/test-cwd/.agent-js/skills/b/SKILL.md",
         "---\nname: skill-b\ndescription: Second\n---\n",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -250,7 +251,7 @@ would benefit from specialized instructions.
         "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -281,7 +282,7 @@ would benefit from specialized instructions.
         "/fake-home/.config/.agent-js/skills/good/SKILL.md",
         "---\nname: good\ndescription: Valid\n---\n",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -305,7 +306,7 @@ would benefit from specialized instructions.
         "/custom/skills/custom-skill/SKILL.md",
         "---\nname: custom-skill\ndescription: From custom dir\n---\n",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -336,7 +337,7 @@ would benefit from specialized instructions.
         "/test-cwd/.agent-js/skills/deploy/SKILL.md",
         "---\nname: deploy\ndescription: Local deploy\n---\n",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `
@@ -366,7 +367,7 @@ would benefit from specialized instructions.
         "/fake-home/.config/.agent-js/skills/ok/SKILL.md",
         "---\nname: ok\ndescription: Works\n---\n",
       );
-      const result = getSkillsContext();
+      const result = getSkillsStr();
       assert.equal(
         result,
         `

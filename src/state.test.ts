@@ -241,45 +241,49 @@ describe("state", () => {
     assert.equal(selectors.getEditorLogPath(), "/tmp/editor.log");
   });
 
-  it("set-agents-context", () => {
-    assert.equal(selectors.getAgentsContext(), "");
-    dispatch(actions.setAgentsContext("FILEPATH: AGENTS.md\nhello"));
-    assert.equal(selectors.getAgentsContext(), "FILEPATH: AGENTS.md\nhello");
+  it("set-context-str", () => {
+    assert.equal(selectors.getContextStr(), "");
+    dispatch(actions.setContextStr("FILEPATH: context\nhello"));
+    assert.equal(selectors.getContextStr(), "FILEPATH: context\nhello");
   });
 
-  it("set-skills-context", () => {
-    assert.equal(selectors.getSkillsContext(), "");
-    dispatch(actions.setSkillsContext("- skill: desc"));
-    assert.equal(selectors.getSkillsContext(), "- skill: desc");
+  it("set-skills-str", () => {
+    assert.equal(selectors.getSkillsStr(), "");
+    dispatch(actions.setSkillsStr("- skill: desc"));
+    assert.equal(selectors.getSkillsStr(), "- skill: desc");
   });
 
-  describe("append-to-skills", () => {
-    it("adds a skill to the skills array", () => {
+  describe("set-skills", () => {
+    it("sets the skills array", () => {
       assert.deepStrictEqual(selectors.getSkills(), []);
       dispatch(
-        actions.appendToSkills({
-          name: "deploy",
-          description: "Deploy skill",
-          dir: "/skills/deploy",
-          content: "# Deploy instructions",
-        }),
+        actions.setSkills([
+          {
+            name: "deploy",
+            description: "Deploy skill",
+            dir: "/skills/deploy",
+            content: "# Deploy instructions",
+          },
+        ]),
       );
       assert.deepStrictEqual(selectors.getSkills(), [
         { name: "deploy", description: "Deploy skill", dir: "/skills/deploy", content: "# Deploy instructions" },
       ]);
     });
 
-    it("appends multiple skills in order", () => {
-      assert.deepStrictEqual(selectors.getSkills(), []);
+    it("replaces existing skills", () => {
       dispatch(
-        actions.appendToSkills({ name: "a", description: "Skill A", dir: "/a", content: "content a" }),
+        actions.setSkills([
+          { name: "a", description: "Skill A", dir: "/a", content: "content a" },
+        ]),
       );
       dispatch(
-        actions.appendToSkills({ name: "b", description: "Skill B", dir: "/b", content: "content b" }),
+        actions.setSkills([
+          { name: "b", description: "Skill B", dir: "/b", content: "content b" },
+        ]),
       );
-      assert.equal(selectors.getSkills().length, 2);
-      assert.equal(selectors.getSkills()[0]!.name, "a");
-      assert.equal(selectors.getSkills()[1]!.name, "b");
+      assert.equal(selectors.getSkills().length, 1);
+      assert.equal(selectors.getSkills()[0]!.name, "b");
     });
   });
 

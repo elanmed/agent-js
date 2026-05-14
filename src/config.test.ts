@@ -437,14 +437,14 @@ describe("config", () => {
     assert.equal(selectors.getDebugLog(), true);
   });
 
-  it("sets agentsContext from dep", () => {
+  it("sets contextStr from dep", () => {
     testFs._dirs.add(getGlobalContextDir());
     testFs._globResults.set(
       "/fake-home/.config/.agent-js/context/**/AGENTS.md",
-      ["/fake-home/.config/.agent-js/context/hello.md"],
+      ["/fake-home/.config/.agent-js/context/AGENTS.md"],
     );
     testFs._files.set(
-      "/fake-home/.config/.agent-js/context/hello.md",
+      "/fake-home/.config/.agent-js/context/AGENTS.md",
       "hello",
     );
     testFs._files.set(
@@ -456,12 +456,12 @@ describe("config", () => {
 
     initState();
     assert.equal(
-      selectors.getAgentsContext(),
-      `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/hello.md\nContent: hello\n`,
+      selectors.getContextStr(),
+      `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/AGENTS.md\nContent: hello\n`,
     );
   });
 
-  it("sets skillsContext from dep", () => {
+  it("sets skillsStr from dep", () => {
     testFs._files.set(
         getGlobalConfigPath(),
       JSON.stringify({
@@ -471,7 +471,7 @@ describe("config", () => {
 
     initState();
     assert.equal(
-      selectors.getSkillsContext(),
+      selectors.getSkillsStr(),
       `
 Skills:
 

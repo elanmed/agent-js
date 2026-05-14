@@ -227,6 +227,9 @@ export function resolveSlashCommand(rawInput: string) {
   } else if (commandWithoutSlash.startsWith("model")) {
     setModelCommand(rawInput);
     return null;
+  } else if (commandWithoutSlash === "skills") {
+    printSkillsCommand();
+    return null;
   }
 
   const slashCommands = selectors.getSlashCommands();
@@ -320,6 +323,16 @@ export function setModelCommand(rawInput: string) {
   const prevModel = selectors.getModel();
   dispatch(actions.setModel(model));
   colorPrint(`Model updated from ${prevModel} to ${model}`, "blue");
+}
+
+export function printSkillsCommand() {
+  const skillsList = selectors
+    .getSkills()
+    .map((skill) => `- ${skill.name}: ${skill.description}`)
+    .join("\n");
+
+  colorPrint("Available skills:", "blue");
+  colorPrint(skillsList);
 }
 
 export function isSameKey(a: Key, b: Key) {

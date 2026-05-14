@@ -3,7 +3,7 @@ import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
-import { dispatch, actions, selectors } from "./state.ts";
+import { selectors } from "./state.ts";
 import {
   getGlobalContextDir,
   getGlobalSkillDir,
@@ -12,7 +12,25 @@ import {
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
-export function getAgentsContext() {
+export interface ContextEntry {
+  filePath: string;
+  content: string;
+}
+
+export function getContextStr() {
+  const contextFiles = getContext();
+  if (contextFiles.length === 0) return "";
+
+  const contextFilesList = contextFiles
+    .map((entry) => `Path: ${entry.filePath}\nContent: ${entry.content}\n`)
+    .join("\n");
+
+  return `
+AGENTS.md context files:
+${contextFilesList}`;
+}
+
+export function getContext() {
   const agentFileDirs: string[] = [processDeps.cwd(), getGlobalContextDir()];
 
   const agentFilePaths: string[] = [];
@@ -25,7 +43,7 @@ export function getAgentsContext() {
 
   debugLog(`AGENTS.md found: ${agentFileDirs.join(",")}`);
 
-  const entries: { filePath: string; content: string }[] = [];
+  const entries: ContextEntry[] = [];
 
   for (const filePath of agentFilePaths) {
     const readResult = tryCatch(() => fsDeps.readFileSync(filePath).toString());
@@ -34,14 +52,7 @@ export function getAgentsContext() {
     }
   }
 
-  if (entries.length === 0) return "";
-
-  const agentFilesList = entries
-    .map((entry) => `Path: ${entry.filePath}\nContent: ${entry.content}\n`)
-    .join("\n");
-  return `
-AGENTS.md context files:
-${agentFilesList}`;
+  return entries;
 }
 
 const skillMetadataSchema = z.object({
@@ -56,14 +67,30 @@ export interface Skill {
   content: string;
 }
 
-export function getSkillsContext() {
+export function getSkillsStr() {
+  const skillsList = getSkills()
+    .map((skill) => `- ${skill.name}: ${skill.description}`)
+    .join("\n");
+
+  return `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+${skillsList}
+`;
+}
+
+export function getSkills() {
   const seenSkills = new Set<string>();
   const skillGrandparentDirs = [
     ...selectors.getCustomSkillDirs(),
     getLocalSkillDir(),
     getGlobalSkillDir(),
   ];
-  const skills: SkillMetadata[] = [];
+  const skills: Skill[] = [];
   const skillPaths: string[] = [];
 
   for (const skillGrandparentDir of skillGrandparentDirs) {
@@ -80,23 +107,9 @@ export function getSkillsContext() {
     if (seenSkills.has(skill.name)) continue;
     seenSkills.add(skill.name);
     skills.push(skill);
-
-    dispatch(actions.appendToSkills(skill));
   }
 
-  const skillsList = skills
-    .map((skill) => `- ${skill.name}: ${skill.description}`)
-    .join("\n");
-
-  return `
-Skills:
-
-Use the \`loadSkill\` tool to load a skill when the user's request
-would benefit from specialized instructions.
-
- Available skills:
-${skillsList}
-`;
+  return skills;
 }
 
 export function parseFrontMatter(content: string) {

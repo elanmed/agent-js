@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tryCatch, MISSING } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
-import { getAgentsContext, getSkillsContext } from "./context.ts";
+import { getContextStr, getSkillsStr, getSkills } from "./context.ts";
 import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
@@ -216,11 +216,10 @@ export function initState() {
     ),
   );
 
-  const agentsContext = getAgentsContext();
-  dispatch(actions.setAgentsContext(agentsContext));
+  dispatch(actions.setContextStr(getContextStr()));
 
-  const skillsContext = getSkillsContext();
-  dispatch(actions.setSkillsContext(skillsContext));
+  dispatch(actions.setSkillsStr(getSkillsStr()));
+  dispatch(actions.setSkills(getSkills()));
 }
 
 function parseConfigStr(configStr: string): Config {
