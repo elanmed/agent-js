@@ -3,7 +3,7 @@ import assert from "node:assert";
 import os from "node:os";
 import { join } from "node:path";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
-import { getGlobalContextDirPath } from "./paths.ts";
+import { getGlobalContextDir } from "./paths.ts";
 import {
   getAgentsContext,
   getSkillsContext,
@@ -69,9 +69,9 @@ describe("context", () => {
     });
 
     it("includes global agents dir files", () => {
-      testFs._dirs.add(getGlobalContextDirPath());
-      const glob = join(getGlobalContextDirPath(), "**/AGENTS.md");
-      const agentFile = join(getGlobalContextDirPath(), "AGENTS.md");
+      testFs._dirs.add(getGlobalContextDir());
+      const glob = join(getGlobalContextDir(), "**/AGENTS.md");
+      const agentFile = join(getGlobalContextDir(), "AGENTS.md");
       testFs._globResults.set(glob, [agentFile]);
       testFs._files.set(agentFile, "global content");
       const result = getAgentsContext();
@@ -83,10 +83,10 @@ describe("context", () => {
 
     it("combines global and globbed AGENTS.md files", () => {
       const cwd = process.cwd();
-      testFs._dirs.add(getGlobalContextDirPath());
-      const agentFile = join(getGlobalContextDirPath(), "AGENTS.md");
+      testFs._dirs.add(getGlobalContextDir());
+      const agentFile = join(getGlobalContextDir(), "AGENTS.md");
       testFs._files.set(agentFile, "global content");
-      testFs._globResults.set(join(getGlobalContextDirPath(), "**/AGENTS.md"), [
+      testFs._globResults.set(join(getGlobalContextDir(), "**/AGENTS.md"), [
         agentFile,
       ]);
       testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);

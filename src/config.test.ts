@@ -7,7 +7,7 @@ import { initState, DEFAULT_CONFIG } from "./config.ts";
 import {
   getGlobalConfigPath,
   getLocalConfigPath,
-  getGlobalContextDirPath,
+  getGlobalContextDir,
 } from "./paths.ts";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
@@ -425,9 +425,9 @@ describe("config", () => {
   });
 
   it("sets agentsContext from dep", () => {
-    testFs._dirs.add(getGlobalContextDirPath());
-    const agentFile = join(getGlobalContextDirPath(), "hello.md");
-    testFs._globResults.set(join(getGlobalContextDirPath(), "**/AGENTS.md"), [agentFile]);
+    testFs._dirs.add(getGlobalContextDir());
+    const agentFile = join(getGlobalContextDir(), "hello.md");
+    testFs._globResults.set(join(getGlobalContextDir(), "**/AGENTS.md"), [agentFile]);
     testFs._files.set(agentFile, "hello");
     testFs._files.set(
         getGlobalConfigPath(),

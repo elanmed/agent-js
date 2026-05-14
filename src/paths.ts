@@ -2,38 +2,38 @@ import os from "node:os";
 import { join } from "node:path";
 import { processDeps } from "./deps.ts";
 
-export function getGlobalConfigDirPath() {
+export function getGlobalConfigDir() {
   return join(os.homedir(), ".config", ".agent-js");
 }
 
-export function getLocalConfigDirPath() {
+export function getLocalConfigDir() {
   return join(processDeps.cwd(), ".agent-js");
 }
 
 export function getGlobalConfigPath() {
-  return join(getGlobalConfigDirPath(), "settings.json");
+  return join(getGlobalConfigDir(), "settings.json");
 }
 
 export function getLocalConfigPath() {
-  return join(getLocalConfigDirPath(), "settings.json");
+  return join(getLocalConfigDir(), "settings.json");
 }
 
-export function getGlobalContextDirPath() {
-  return join(getGlobalConfigDirPath(), "context");
+export function getGlobalContextDir() {
+  return join(getGlobalConfigDir(), "context");
 }
 
-export function getGlobalSkillsDirPath() {
-  return join(getGlobalConfigDirPath(), "skills");
+export function getGlobalSkillsDir() {
+  return join(getGlobalConfigDir(), "skills");
 }
 
-export function getLocalSkillsDirPath() {
-  return join(getLocalConfigDirPath(), "skills");
+export function getLocalSkillsDir() {
+  return join(getLocalConfigDir(), "skills");
 }
 
-export function getLocalCommandsDirPath() {
-  return join(getLocalConfigDirPath(), "commands");
+export function getLocalCommandsDir() {
+  return join(getLocalConfigDir(), "commands");
 }
 
-export function getGlobalCommandsDirPath() {
-  return join(getGlobalConfigDirPath(), "commands");
+export function getGlobalCommandsDir() {
+  return join(getGlobalConfigDir(), "commands");
 }

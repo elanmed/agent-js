@@ -5,18 +5,15 @@ import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { dispatch, actions } from "./state.ts";
 import {
-  getGlobalContextDirPath,
-  getGlobalSkillsDirPath,
-  getLocalSkillsDirPath,
+  getGlobalContextDir,
+  getGlobalSkillsDir,
+  getLocalSkillsDir,
 } from "./paths.ts";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 export function getAgentsContext() {
-  const agentFileDirs: string[] = [
-    processDeps.cwd(),
-    getGlobalContextDirPath(),
-  ];
+  const agentFileDirs: string[] = [processDeps.cwd(), getGlobalContextDir()];
 
   const agentFilePaths: string[] = [];
   for (const agentFileDir of agentFileDirs) {
@@ -60,19 +57,19 @@ export interface Skill {
 
 export function getSkillsContext() {
   const seenSkills = new Set();
-  const paths = [getLocalSkillsDirPath(), getGlobalSkillsDirPath()];
+  const paths = [getLocalSkillsDir(), getGlobalSkillsDir()];
   const skills: SkillMetadata[] = [];
 
   paths.forEach((dirPath) => {
     if (!fsDeps.existsSync(dirPath)) return;
 
     for (const dirName of fsDeps.readdirSync(dirPath)) {
-      const fullDirPath = join(dirPath, dirName);
-      const statResult = tryCatch(() => fsDeps.statSync(fullDirPath));
+      const fullDir = join(dirPath, dirName);
+      const statResult = tryCatch(() => fsDeps.statSync(fullDir));
       if (!statResult.ok) continue;
       if (statResult.value.isFile()) continue;
 
-      const skill = getSkillJSON(fullDirPath);
+      const skill = getSkillJSON(fullDir);
       if (skill === null) continue;
       if (seenSkills.has(skill.name)) continue;
       seenSkills.add(skill.name);

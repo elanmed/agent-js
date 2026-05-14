@@ -23,7 +23,7 @@ import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, editorLog } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
-import { getGlobalCommandsDirPath, getLocalCommandsDirPath } from "./paths.ts";
+import { getGlobalCommandsDir, getLocalCommandsDir } from "./paths.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -346,8 +346,8 @@ export function getAvailableSlashCommands() {
   const slashCommandFilePaths: string[] = [];
 
   const slashCommandDirs = [
-    getLocalCommandsDirPath(),
-    getGlobalCommandsDirPath(),
+    getLocalCommandsDir(),
+    getGlobalCommandsDir(),
   ];
 
   for (const dir of slashCommandDirs) {
