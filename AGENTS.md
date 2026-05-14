@@ -75,11 +75,9 @@ Use `mock.method` from `node:test` — pass the module and method name with a re
 
 ```ts
 import { mock } from "node:test";
-import os from "node:os";
 import crypto from "node:crypto";
 
 beforeEach(() => {
-  mock.method(os, "tmpdir", () => "/tmp");
   mock.method(crypto, "randomUUID", () => "test-uuid");
 });
 ```
