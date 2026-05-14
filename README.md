@@ -188,6 +188,7 @@ Minimal runtime dependencies (7 total):
 - [ ] Progressively disclose nested AGENTS.md files?
 - [ ] Read each nested skills file
 - [ ] Custom skill dirs
+- [ ] Custom slash commands dir
 - [ ] Make fence print prettier
 
 ## TODO (later)

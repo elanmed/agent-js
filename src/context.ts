@@ -59,12 +59,9 @@ export interface Skill {
   content: string;
 }
 
-export function getSkillsContext(skillsDirPaths?: string[]) {
+export function getSkillsContext() {
   const seenSkills = new Set();
-  const paths = skillsDirPaths ?? [
-    getLocalSkillsDirPath(),
-    getGlobalSkillsDirPath(),
-  ];
+  const paths = [getLocalSkillsDirPath(), getGlobalSkillsDirPath()];
   const skills: SkillMetadata[] = [];
 
   paths.forEach((dirPath) => {

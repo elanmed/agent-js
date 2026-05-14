@@ -86,7 +86,9 @@ describe("context", () => {
       testFs._dirs.add(getGlobalContextDirPath());
       const agentFile = join(getGlobalContextDirPath(), "AGENTS.md");
       testFs._files.set(agentFile, "global content");
-      testFs._globResults.set(join(getGlobalContextDirPath(), "**/AGENTS.md"), [agentFile]);
+      testFs._globResults.set(join(getGlobalContextDirPath(), "**/AGENTS.md"), [
+        agentFile,
+      ]);
       testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);
       testFs._files.set(`${cwd}/AGENTS.md`, "local content");
       const result = getAgentsContext();
@@ -110,109 +112,117 @@ Content: global content
     });
 
     it("returns skills prompt with no skills when dirs are empty", () => {
-      const result = getSkillsContext(["/global/skills", "/local/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("Available skills:\n"));
       assert.ok(!result.includes("- "));
     });
 
     it("lists skills found in skill directories", () => {
-      testFs._dirs.add("/global/skills");
-      testFs._dirs.add("/global/skills/my-skill");
+      const dir = "/fake-home/.config/.agent-js/skills";
+      testFs._dirs.add(dir);
+      testFs._dirs.add(`${dir}/my-skill`);
       testFs._files.set(
-        "/global/skills/my-skill/SKILL.md",
+        `${dir}/my-skill/SKILL.md`,
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
       );
-      const result = getSkillsContext(["/global/skills", "/local/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("- my-skill: A test skill"));
     });
 
     it("deduplicates by parsed name, keeping first occurrence", () => {
-      testFs._dirs.add("/local/skills");
-      testFs._dirs.add("/local/skills/local-skill");
-      testFs._dirs.add("/global/skills");
-      testFs._dirs.add("/global/skills/global-skill");
+      const localDir = "/agent-js/.agent-js/skills";
+      const globalDir = "/fake-home/.config/.agent-js/skills";
+      testFs._dirs.add(localDir);
+      testFs._dirs.add(`${localDir}/local-skill`);
+      testFs._dirs.add(globalDir);
+      testFs._dirs.add(`${globalDir}/global-skill`);
       testFs._files.set(
-        "/local/skills/local-skill/SKILL.md",
+        `${localDir}/local-skill/SKILL.md`,
         "---\nname: deploy\ndescription: Local deploy\n---\n# Local",
       );
       testFs._files.set(
-        "/global/skills/global-skill/SKILL.md",
+        `${globalDir}/global-skill/SKILL.md`,
         "---\nname: deploy\ndescription: Global deploy\n---\n# Global",
       );
-      const result = getSkillsContext(["/local/skills", "/global/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("- deploy: Local deploy"));
       assert.ok(!result.includes("Global deploy"));
     });
 
     it("includes skills with different names", () => {
-      testFs._dirs.add("/local/skills");
-      testFs._dirs.add("/local/skills/a");
-      testFs._dirs.add("/local/skills/b");
+      const dir = "/agent-js/.agent-js/skills";
+      testFs._dirs.add(dir);
+      testFs._dirs.add(`${dir}/a`);
+      testFs._dirs.add(`${dir}/b`);
       testFs._files.set(
-        "/local/skills/a/SKILL.md",
+        `${dir}/a/SKILL.md`,
         "---\nname: skill-a\ndescription: First\n---\n",
       );
       testFs._files.set(
-        "/local/skills/b/SKILL.md",
+        `${dir}/b/SKILL.md`,
         "---\nname: skill-b\ndescription: Second\n---\n",
       );
-      const result = getSkillsContext(["/local/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("- skill-a: First"));
       assert.ok(result.includes("- skill-b: Second"));
     });
 
     it("skips non-existent skill directories", () => {
-      testFs._dirs.add("/global/skills");
-      testFs._dirs.add("/global/skills/my-skill");
+      const dir = "/fake-home/.config/.agent-js/skills";
+      testFs._dirs.add(dir);
+      testFs._dirs.add(`${dir}/my-skill`);
       testFs._files.set(
-        "/global/skills/my-skill/SKILL.md",
+        `${dir}/my-skill/SKILL.md`,
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
       );
-      const result = getSkillsContext(["/nonexistent", "/global/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("- my-skill: A test skill"));
     });
 
     it("skips file entries in skill directory", () => {
-      testFs._dirs.add("/global/skills");
-      testFs._files.set("/global/skills/not-a-dir", "some content");
-      testFs._dirs.add("/global/skills/actual-skill");
+      const dir = "/fake-home/.config/.agent-js/skills";
+      testFs._dirs.add(dir);
+      testFs._files.set(`${dir}/not-a-dir`, "some content");
+      testFs._dirs.add(`${dir}/actual-skill`);
       testFs._files.set(
-        "/global/skills/actual-skill/SKILL.md",
+        `${dir}/actual-skill/SKILL.md`,
         "---\nname: actual-skill\ndescription: Real\n---\n",
       );
-      const result = getSkillsContext(["/global/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("- actual-skill: Real"));
       assert.ok(!result.includes("not-a-dir"));
     });
 
     it("skips entries where statSync fails", () => {
-      testFs._dirs.add("/global/skills");
-      testFs._dirs.add("/global/skills/broken");
-      testFs._dirs.add("/global/skills/working");
+      const dir = "/fake-home/.config/.agent-js/skills";
+      testFs._dirs.add(dir);
+      testFs._dirs.add(`${dir}/broken`);
+      testFs._dirs.add(`${dir}/working`);
       testFs._files.set(
-        "/global/skills/working/SKILL.md",
+        `${dir}/working/SKILL.md`,
         "---\nname: working\ndescription: Works\n---\n",
       );
       const originalStatSync = testFs.statSync;
       testFs.statSync = (path: string) => {
-        if (path === "/global/skills/broken") throw new Error("stat failed");
+        if (path === `${dir}/broken`) throw new Error("stat failed");
         return originalStatSync(path);
       };
-      const result = getSkillsContext(["/global/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("- working: Works"));
       assert.ok(!result.includes("broken"));
     });
 
     it("skips entries where getSkillJSON returns null", () => {
-      testFs._dirs.add("/global/skills");
-      testFs._dirs.add("/global/skills/no-skill-md");
-      testFs._dirs.add("/global/skills/has-skill");
-      testFs._files.set("/global/skills/no-skill-md/readme.txt", "just a file");
+      const dir = "/fake-home/.config/.agent-js/skills";
+      testFs._dirs.add(dir);
+      testFs._dirs.add(`${dir}/no-skill-md`);
+      testFs._dirs.add(`${dir}/has-skill`);
+      testFs._files.set(`${dir}/no-skill-md/readme.txt`, "just a file");
       testFs._files.set(
-        "/global/skills/has-skill/SKILL.md",
+        `${dir}/has-skill/SKILL.md`,
         "---\nname: has-skill\ndescription: Present\n---\n",
       );
-      const result = getSkillsContext(["/global/skills"]);
+      const result = getSkillsContext();
       assert.ok(result.includes("- has-skill: Present"));
       assert.ok(!result.includes("no-skill-md"));
     });

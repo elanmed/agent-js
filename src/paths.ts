@@ -1,9 +1,9 @@
-import { homedir } from "node:os";
+import os from "node:os";
 import { join } from "node:path";
 import { processDeps } from "./deps.ts";
 
 export function getGlobalConfigDirPath() {
-  return join(homedir(), ".config", ".agent-js");
+  return join(os.homedir(), ".config", ".agent-js");
 }
 
 export function getLocalConfigDirPath() {
