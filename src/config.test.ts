@@ -1,6 +1,5 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { join } from "node:path";
 import { dispatch, actions, selectors } from "./state.ts";
 import { initState, DEFAULT_CONFIG } from "./config.ts";
 import {
@@ -424,9 +423,14 @@ describe("config", () => {
 
   it("sets agentsContext from dep", () => {
     testFs._dirs.add(getGlobalContextDir());
-    const agentFile = join(getGlobalContextDir(), "hello.md");
-    testFs._globResults.set(join(getGlobalContextDir(), "**/AGENTS.md"), [agentFile]);
-    testFs._files.set(agentFile, "hello");
+    testFs._globResults.set(
+      "/fake-home/.config/.agent-js/context/**/AGENTS.md",
+      ["/fake-home/.config/.agent-js/context/hello.md"],
+    );
+    testFs._files.set(
+      "/fake-home/.config/.agent-js/context/hello.md",
+      "hello",
+    );
     testFs._files.set(
         getGlobalConfigPath(),
       JSON.stringify({
@@ -438,7 +442,7 @@ describe("config", () => {
     initState();
     assert.equal(
       selectors.getAgentsContext(),
-      `\nAGENTS.md context files:\nPath: ${agentFile}\nContent: hello\n`,
+      `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/hello.md\nContent: hello\n`,
     );
   });
 
