@@ -10,6 +10,11 @@ import {
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
 
+const defaultConfig = {
+  model: "claude-sonnet-4-6",
+  baseURL: "https://api.example.com",
+};
+
 describe("config", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
@@ -22,15 +27,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
+          ...defaultConfig,
           model: "claude-haiku-4-5",
-          baseURL: "https://api.example.com",
         }),
       );
 
@@ -43,14 +47,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
+          ...defaultConfig,
           provider: "openai-compatible",
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
+          ...defaultConfig,
           provider: "anthropic",
         }),
       );
@@ -64,16 +68,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           editorLog: false,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           editorLog: true,
         }),
       );
@@ -87,16 +89,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           diffStyle: "lines",
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           diffStyle: "unified",
         }),
       );
@@ -118,16 +118,16 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
+          ...defaultConfig,
           model: "test-model",
-          baseURL: "https://api.example.com",
           pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
+          ...defaultConfig,
           model: "test-model",
-          baseURL: "https://api.example.com",
           pricingPerModel: localPricing,
         }),
       );
@@ -141,8 +141,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
             editLog: { name: "o", ctrl: false, meta: false, shift: false },
@@ -153,8 +152,7 @@ describe("config", () => {
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           keymaps: {
             edit: { name: "e", ctrl: true, meta: false, shift: false },
             editLog: { name: "l", ctrl: true, meta: false, shift: false },
@@ -189,16 +187,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           customSlashCommandDirs: ["/global-dir"],
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           customSlashCommandDirs: ["/local-dir"],
         }),
       );
@@ -214,16 +210,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           customSkillDirs: ["/global-skills"],
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           customSkillDirs: ["/local-skills"],
         }),
       );
@@ -237,8 +231,7 @@ describe("config", () => {
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
+          ...defaultConfig,
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
           },
@@ -270,8 +263,8 @@ describe("config", () => {
         testFs._files.set(
         getGlobalConfigPath(),
           JSON.stringify({
+            ...defaultConfig,
             model: "claude-haiku-4-5",
-            baseURL: "https://api.example.com",
           }),
         );
 
@@ -283,7 +276,7 @@ describe("config", () => {
         testFs._files.set(
         getGlobalConfigPath(),
           JSON.stringify({
-            model: "claude-sonnet-4-6",
+            ...defaultConfig,
             provider: "anthropic",
           }),
         );
@@ -296,8 +289,7 @@ describe("config", () => {
         testFs._files.set(
         getGlobalConfigPath(),
           JSON.stringify({
-            model: "claude-sonnet-4-6",
-            baseURL: "https://api.example.com",
+            ...defaultConfig,
             editorLog: true,
           }),
         );
@@ -310,8 +302,7 @@ describe("config", () => {
         testFs._files.set(
         getGlobalConfigPath(),
           JSON.stringify({
-            model: "claude-sonnet-4-6",
-            baseURL: "https://api.example.com",
+            ...defaultConfig,
             diffStyle: "unified",
           }),
         );
@@ -332,8 +323,8 @@ describe("config", () => {
         testFs._files.set(
         getGlobalConfigPath(),
           JSON.stringify({
+            ...defaultConfig,
             model: "test-model",
-            baseURL: "https://api.example.com",
             pricingPerModel: globalPricing,
           }),
         );
@@ -346,8 +337,7 @@ describe("config", () => {
         testFs._files.set(
         getGlobalConfigPath(),
           JSON.stringify({
-            model: "claude-sonnet-4-6",
-            baseURL: "https://api.example.com",
+            ...defaultConfig,
             keymaps: {
               edit: { name: "v", ctrl: false, meta: false, shift: false },
               editLog: { name: "o", ctrl: false, meta: false, shift: false },
@@ -382,8 +372,7 @@ describe("config", () => {
         testFs._files.set(
         getGlobalConfigPath(),
           JSON.stringify({
-            model: "claude-sonnet-4-6",
-            baseURL: "https://api.example.com",
+            ...defaultConfig,
             customSkillDirs: ["/global-skills"],
           }),
         );
@@ -440,8 +429,7 @@ describe("config", () => {
     testFs._files.set(
         getGlobalConfigPath(),
       JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
+        ...defaultConfig,
       }),
     );
 
@@ -462,8 +450,7 @@ describe("config", () => {
     testFs._files.set(
         getGlobalConfigPath(),
       JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
+        ...defaultConfig,
       }),
     );
 
@@ -478,15 +465,22 @@ describe("config", () => {
     testFs._files.set(
         getGlobalConfigPath(),
       JSON.stringify({
-        model: "claude-sonnet-4-6",
-        baseURL: "https://api.example.com",
+        ...defaultConfig,
       }),
     );
 
     initState();
     assert.equal(
-      selectors.getSkillsContext().includes("Available skills:"),
-      true,
+      selectors.getSkillsContext(),
+      `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+
+`,
     );
   });
 });

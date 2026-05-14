@@ -117,8 +117,18 @@ Content: global content
 
     it("returns skills prompt with no skills when dirs are empty", () => {
       const result = getSkillsContext();
-      assert.ok(result.includes("Available skills:\n"));
-      assert.ok(!result.includes("- "));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+
+`,
+      );
     });
 
     it("lists skills found in skill directories", () => {
@@ -129,7 +139,18 @@ Content: global content
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- my-skill: A test skill"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- my-skill: A test skill
+`,
+      );
     });
 
     it("deduplicates by parsed name, keeping first occurrence", () => {
@@ -146,8 +167,18 @@ Content: global content
         "---\nname: deploy\ndescription: Global deploy\n---\n# Global",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- deploy: Local deploy"));
-      assert.ok(!result.includes("Global deploy"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- deploy: Local deploy
+`,
+      );
     });
 
     it("includes skills with different names", () => {
@@ -163,8 +194,19 @@ Content: global content
         "---\nname: skill-b\ndescription: Second\n---\n",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- skill-a: First"));
-      assert.ok(result.includes("- skill-b: Second"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- skill-a: First
+- skill-b: Second
+`,
+      );
     });
 
     it("skips non-existent skill directories", () => {
@@ -175,7 +217,18 @@ Content: global content
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- my-skill: A test skill"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- my-skill: A test skill
+`,
+      );
     });
 
     it("skips file entries in skill directory", () => {
@@ -190,8 +243,18 @@ Content: global content
         "---\nname: actual-skill\ndescription: Real\n---\n",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- actual-skill: Real"));
-      assert.ok(!result.includes("not-a-dir"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- actual-skill: Real
+`,
+      );
     });
 
     it("skips entries where statSync fails", () => {
@@ -209,8 +272,18 @@ Content: global content
         return originalStatSync(path);
       };
       const result = getSkillsContext();
-      assert.ok(result.includes("- working: Works"));
-      assert.ok(!result.includes("broken"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- working: Works
+`,
+      );
     });
 
     it("skips entries where getSkillJSON returns null", () => {
@@ -226,8 +299,18 @@ Content: global content
         "---\nname: has-skill\ndescription: Present\n---\n",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- has-skill: Present"));
-      assert.ok(!result.includes("no-skill-md"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- has-skill: Present
+`,
+      );
     });
 
     it("includes skills from custom skill dirs", () => {
@@ -239,7 +322,18 @@ Content: global content
         "---\nname: custom-skill\ndescription: From custom dir\n---\n",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- custom-skill: From custom dir"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- custom-skill: From custom dir
+`,
+      );
     });
 
     it("prioritizes custom skill dirs over local and global", () => {
@@ -257,8 +351,18 @@ Content: global content
         "---\nname: deploy\ndescription: Local deploy\n---\n",
       );
       const result = getSkillsContext();
-      assert.ok(result.includes("- deploy: Custom deploy"));
-      assert.ok(!result.includes("Local deploy"));
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- deploy: Custom deploy
+`,
+      );
     });
   });
 
