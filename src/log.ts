@@ -3,9 +3,9 @@ import { actions, dispatch, selectors } from "./state.ts";
 import { homedir } from "node:os";
 import { normalizeLine, tryCatch } from "./utils.ts";
 import { randomUUID } from "node:crypto";
-import { fsDeps } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 
-export const DEBUG_LOG_PATH = join(process.cwd(), ".agent-js", "debug.log");
+export const DEBUG_LOG_PATH = join(processDeps.cwd(), ".agent-js", "debug.log");
 export const EDITOR_LOGS_PATH = join(
   homedir(),
   ".config",

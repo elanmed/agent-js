@@ -1,6 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import os from "node:os";
+import { join } from "node:path";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { getGlobalAgentsPath } from "./paths.ts";
 import {
@@ -28,59 +29,113 @@ describe("context", () => {
     });
 
     it("returns formatted content for single file", () => {
-      testFs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
-      testFs._files.set("AGENTS.md", "# Agent Instructions");
+      const cwd = process.cwd();
+      testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);
+      testFs._files.set(`${cwd}/AGENTS.md`, "# Agent Instructions");
       const result = getAgentsContext();
       assert.equal(
         result,
-        "\nAGENTS.md context files:\nPath: AGENTS.md\nContent: # Agent Instructions\n",
+        `\nAGENTS.md context files:\nPath: ${cwd}/AGENTS.md\nContent: # Agent Instructions\n`,
       );
     });
 
     it("returns formatted content for multiple files", () => {
-      testFs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
-      testFs._files.set("AGENTS.md", "Root content");
-      testFs._files.set("src/AGENTS.md", "Src content");
+      const cwd = process.cwd();
+      testFs._globResults.set(`${cwd}/**/AGENTS.md`, [
+        `${cwd}/AGENTS.md`,
+        `${cwd}/src/AGENTS.md`,
+      ]);
+      testFs._files.set(`${cwd}/AGENTS.md`, "Root content");
+      testFs._files.set(`${cwd}/src/AGENTS.md`, "Src content");
       const result = getAgentsContext();
       assert.equal(
         result,
-        "\nAGENTS.md context files:\nPath: AGENTS.md\nContent: Root content\n\nPath: src/AGENTS.md\nContent: Src content\n",
+        `\nAGENTS.md context files:\nPath: ${cwd}/AGENTS.md\nContent: Root content\n\nPath: ${cwd}/src/AGENTS.md\nContent: Src content\n`,
       );
     });
 
     it("skips files that fail to read", () => {
-      testFs._globResults.set("**/AGENTS.md", ["AGENTS.md", "src/AGENTS.md"]);
-      testFs._files.set("src/AGENTS.md", "Src content");
+      const cwd = process.cwd();
+      testFs._globResults.set(`${cwd}/**/AGENTS.md`, [
+        `${cwd}/AGENTS.md`,
+        `${cwd}/src/AGENTS.md`,
+      ]);
+      testFs._files.set(`${cwd}/src/AGENTS.md`, "Src content");
       const result = getAgentsContext();
       assert.equal(
         result,
-        "\nAGENTS.md context files:\nPath: src/AGENTS.md\nContent: Src content\n",
+        `\nAGENTS.md context files:\nPath: ${cwd}/src/AGENTS.md\nContent: Src content\n`,
       );
     });
 
-    it("includes global AGENTS.md when it exists", () => {
-      testFs._files.set(getGlobalAgentsPath(), "global content");
+    it("includes global agents dir files", () => {
+      testFs._dirs.add(getGlobalAgentsPath());
+      const glob = join(getGlobalAgentsPath(), "**/AGENTS.md");
+      const agentFile = join(getGlobalAgentsPath(), "AGENTS.md");
+      testFs._globResults.set(glob, [agentFile]);
+      testFs._files.set(agentFile, "global content");
       const result = getAgentsContext();
       assert.equal(
         result,
-        `\nAGENTS.md context files:\nPath: ${getGlobalAgentsPath()}\nContent: global content\n`,
+        `\nAGENTS.md context files:\nPath: ${agentFile}\nContent: global content\n`,
       );
+    });
+
+    it("includes custom agents paths from state", () => {
+      const customDir = "/custom/agents";
+      testFs._dirs.add(customDir);
+      dispatch(actions.setCustomAgentsPaths([customDir]));
+      const glob = join(customDir, "**/AGENTS.md");
+      testFs._globResults.set(glob, ["/custom/agents/AGENTS.md"]);
+      testFs._files.set("/custom/agents/AGENTS.md", "custom content");
+      const result = getAgentsContext();
+      assert.ok(result.includes("Path: /custom/agents/AGENTS.md"));
+      assert.ok(result.includes("Content: custom content"));
+    });
+
+    it("skips custom agents paths that do not exist", () => {
+      dispatch(actions.setCustomAgentsPaths(["/nonexistent/custom"]));
+      const result = getAgentsContext();
+      assert.equal(result, "");
+    });
+
+    it("combines global, custom, and globbed AGENTS.md files", () => {
+      const cwd = process.cwd();
+      testFs._dirs.add(getGlobalAgentsPath());
+      const agentFile = join(getGlobalAgentsPath(), "AGENTS.md");
+      testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);
+      testFs._globResults.set(join(getGlobalAgentsPath(), "**/AGENTS.md"), [agentFile]);
+      testFs._files.set(agentFile, "global content");
+      testFs._files.set(`${cwd}/AGENTS.md`, "local content");
+      const customDir = "/custom/agents";
+      testFs._dirs.add(customDir);
+      dispatch(actions.setCustomAgentsPaths([customDir]));
+      testFs._globResults.set(join(customDir, "**/AGENTS.md"), ["/custom/agents/AGENTS.md"]);
+      testFs._files.set("/custom/agents/AGENTS.md", "custom content");
+      const result = getAgentsContext();
+      assert.ok(result.includes(agentFile));
+      assert.ok(result.includes("/custom/agents/AGENTS.md"));
+      assert.ok(result.includes(`${cwd}/AGENTS.md`));
     });
 
     it("combines global and globbed AGENTS.md files", () => {
-      testFs._files.set(getGlobalAgentsPath(), "global content");
-      testFs._globResults.set("**/AGENTS.md", ["AGENTS.md"]);
-      testFs._files.set("AGENTS.md", "local content");
+      const cwd = process.cwd();
+      testFs._dirs.add(getGlobalAgentsPath());
+      const agentFile = join(getGlobalAgentsPath(), "AGENTS.md");
+      testFs._files.set(agentFile, "global content");
+      testFs._globResults.set(join(getGlobalAgentsPath(), "**/AGENTS.md"), [agentFile]);
+      testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);
+      testFs._files.set(`${cwd}/AGENTS.md`, "local content");
       const result = getAgentsContext();
       assert.equal(
         result,
         `
 AGENTS.md context files:
-Path: ${getGlobalAgentsPath()}
-Content: global content
-
-Path: AGENTS.md
+Path: ${cwd}/AGENTS.md
 Content: local content
+
+Path: ${agentFile}
+Content: global content
 `,
       );
     });

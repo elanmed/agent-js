@@ -1,6 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import os from "node:os";
+import { join } from "node:path";
 import { dispatch, actions, selectors } from "./state.ts";
 import { initState, DEFAULT_CONFIG } from "./config.ts";
 import {
@@ -424,7 +425,10 @@ describe("config", () => {
   });
 
   it("sets agentsContext from dep", () => {
-    testFs._files.set(getGlobalAgentsPath(), "hello");
+    testFs._dirs.add(getGlobalAgentsPath());
+    const agentFile = join(getGlobalAgentsPath(), "hello.md");
+    testFs._globResults.set(join(getGlobalAgentsPath(), "**/AGENTS.md"), [agentFile]);
+    testFs._files.set(agentFile, "hello");
     testFs._files.set(
         getGlobalConfigPath(),
       JSON.stringify({
@@ -436,8 +440,47 @@ describe("config", () => {
     initState();
     assert.equal(
       selectors.getAgentsContext(),
-      `\nAGENTS.md context files:\nPath: ${getGlobalAgentsPath()}\nContent: hello\n`,
+      `\nAGENTS.md context files:\nPath: ${agentFile}\nContent: hello\n`,
     );
+  });
+
+  describe("customAgentsMdPaths", () => {
+    it("uses local over global over default", () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          customAgentsMdPaths: ["/global/agents.md"],
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          customAgentsMdPaths: ["/local/agents.md"],
+        }),
+      );
+
+      initState();
+      assert.deepStrictEqual(selectors.getCustomAgentsPaths(), [
+        "/local/agents.md",
+      ]);
+    });
+
+    it("defaults to empty array when not configured", () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+        }),
+      );
+
+      initState();
+      assert.deepStrictEqual(selectors.getCustomAgentsPaths(), []);
+    });
   });
 
   it("sets skillsContext from dep", () => {

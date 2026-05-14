@@ -14,7 +14,7 @@ import type { ToolCall } from "./tools.ts";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import { dispatch, actions } from "./state.ts";
-import { processStdout } from "./deps.ts";
+import { processDeps } from "./deps.ts";
 
 function makeToolCall(overrides: Partial<ToolCall> = {}): ToolCall {
   return {
@@ -27,7 +27,7 @@ function makeToolCall(overrides: Partial<ToolCall> = {}): ToolCall {
 
 describe("tools", () => {
   beforeEach(() => {
-    mock.method(processStdout, "write", () => undefined);
+    mock.method(processDeps.stdout, "write", () => undefined);
   });
 
   describe("executeBashTool", () => {

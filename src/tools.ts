@@ -706,19 +706,23 @@ export async function execGitDiff(
 
     if (isDeltaAvailable) {
       const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
-      exec(`${gitDiffCmd} | ${deltaCmd}`, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
-        if (error && error.code !== 1) {
-          debugLog(
-            `execGitDiff: error with delta, code=${String(error.code)}, message=${error.message}`,
-          );
-          reject(error);
-        } else {
-          debugLog(
-            `execGitDiff: success with delta, stdout.length=${String(stdout.length)}`,
-          );
-          resolve({ stdout, stderr });
-        }
-      });
+      exec(
+        `${gitDiffCmd} | ${deltaCmd}`,
+        { cwd: os.tmpdir() },
+        (error, stdout, stderr) => {
+          if (error && error.code !== 1) {
+            debugLog(
+              `execGitDiff: error with delta, code=${String(error.code)}, message=${error.message}`,
+            );
+            reject(error);
+          } else {
+            debugLog(
+              `execGitDiff: success with delta, stdout.length=${String(stdout.length)}`,
+            );
+            resolve({ stdout, stderr });
+          }
+        },
+      );
       return;
     }
 

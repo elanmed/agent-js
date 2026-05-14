@@ -10,9 +10,9 @@ import {
   type Result,
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
-import { processStdout } from "./deps.ts";
+import { processDeps } from "./deps.ts";
 
-export { processStdout };
+export { processDeps };
 
 const execPromise = promisify(exec);
 
@@ -39,7 +39,7 @@ export function colorPrint(text: Uint8Array | string, color?: Color) {
 
   const wasSpinnerActive = selectors.getSpinnerTimeout() !== null;
   stopSpinner();
-  processStdout.write(out);
+  processDeps.stdout.write(out);
   if (wasSpinnerActive) startSpinner();
 
   dispatch(actions.appendToStdout(out));
@@ -91,7 +91,7 @@ const SPINNER_FRAMES = ["|", "/", "-", "\\"];
 export function startSpinner() {
   let spinnerIdx = 0;
   const timeout = setInterval(() => {
-    processStdout.write(
+    processDeps.stdout.write(
       `\r${String(SPINNER_FRAMES[spinnerIdx++ % SPINNER_FRAMES.length])}`,
     );
   }, 80);
@@ -102,7 +102,7 @@ export function stopSpinner() {
   const timeout = selectors.getSpinnerTimeout();
   if (timeout === null) return;
   clearInterval(timeout);
-  processStdout.write("\r \r");
+  processDeps.stdout.write("\r \r");
   dispatch(actions.setSpinnerTimeout(null));
 }
 

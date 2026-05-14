@@ -161,9 +161,10 @@ Minimal runtime dependencies (7 total):
 - [ ] Look into tanstack ai
   - [ ] Support code-mode
 - [ ] Progressively disclose nested AGENTS.md files?
+- [ ] Read each nested AGENTS.md file
+- [ ] Read each nested skills file
 - [ ] Custom AGENTS.md dirs
 - [ ] Custom skill dirs
-- [ ] Allow empty base URL
 - [ ] Make fence print prettier
 
 ## TODO (later)

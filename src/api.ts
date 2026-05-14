@@ -17,7 +17,7 @@ import { debugLog } from "./log.ts";
 import { getToolResultBlock, type ToolCall } from "./tools.ts";
 import { TOOLS } from "./tools.ts";
 import assert from "node:assert";
-import { processEnv } from "./deps.ts";
+import { processDeps } from "./deps.ts";
 
 interface ToolCallInfo {
   toolCallId: string;
@@ -32,7 +32,7 @@ interface CallApiResult {
 }
 
 function getLanguageModel() {
-  const apiKey = processEnv.get("AGENT_JS_API_KEY");
+  const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
 
   if (selectors.getProvider() === "anthropic") {
     return createAnthropic({ ...(apiKey && { apiKey }) })(selectors.getModel());

@@ -1,9 +1,9 @@
 import { join } from "node:path";
-import { fsDeps } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
-import { dispatch, actions } from "./state.ts";
+import { dispatch, actions, selectors } from "./state.ts";
 import {
   getGlobalAgentsPath,
   getGlobalSkillsDirPath,
@@ -13,18 +13,27 @@ import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 export function getAgentsContext() {
-  const agentFilePaths: string[] = [];
+  const agentFileDirs: string[] = [processDeps.cwd()];
 
   if (fsDeps.existsSync(getGlobalAgentsPath())) {
-    agentFilePaths.push(getGlobalAgentsPath());
+    agentFileDirs.push(getGlobalAgentsPath());
   }
 
-  const globResult = tryCatch(() => fsDeps.globSync("**/AGENTS.md"));
-  if (globResult.ok) {
+  const customAgentsDirs = selectors.getCustomAgentsPaths();
+  for (const customAgentDir of customAgentsDirs) {
+    if (!fsDeps.existsSync(customAgentDir)) continue;
+    agentFileDirs.push(customAgentDir);
+  }
+
+  const agentFilePaths: string[] = [];
+  for (const agentFileDir of agentFileDirs) {
+    const glob = join(agentFileDir, "**/AGENTS.md");
+    const globResult = tryCatch(() => fsDeps.globSync(glob));
+    if (!globResult.ok) continue;
     agentFilePaths.push(...globResult.value);
   }
 
-  debugLog(`AGENTS.md found: ${agentFilePaths.join(",")}`);
+  debugLog(`AGENTS.md found: ${agentFileDirs.join(",")}`);
 
   const entries: { filePath: string; content: string }[] = [];
 

@@ -184,6 +184,12 @@ describe("state", () => {
     });
   });
 
+  it("set-custom-agents-paths", () => {
+    assert.deepStrictEqual(selectors.getCustomAgentsPaths(), []);
+    dispatch(actions.setCustomAgentsPaths(["/custom/agents.md"]));
+    assert.deepStrictEqual(selectors.getCustomAgentsPaths(), ["/custom/agents.md"]);
+  });
+
   it("set-keymap-clear", () => {
     assert.deepStrictEqual(selectors.getKeymapClear(), DEFAULT_CONFIG.keymaps.clear);
     dispatch(

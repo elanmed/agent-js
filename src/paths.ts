@@ -1,12 +1,13 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { processDeps } from "./deps.ts";
 
 export function getGlobalConfigDirPath() {
   return join(homedir(), ".config", ".agent-js");
 }
 
 export function getLocalConfigDirPath() {
-  return join(process.cwd(), ".agent-js");
+  return join(processDeps.cwd(), ".agent-js");
 }
 
 export function getGlobalConfigPath() {
@@ -18,7 +19,7 @@ export function getLocalConfigPath() {
 }
 
 export function getGlobalAgentsPath() {
-  return join(getGlobalConfigDirPath(), "AGENTS.md");
+  return join(getGlobalConfigDirPath(), "agents");
 }
 
 export function getGlobalSkillsDirPath() {
@@ -26,5 +27,5 @@ export function getGlobalSkillsDirPath() {
 }
 
 export function getLocalSkillsDirPath() {
-  return join(process.cwd(), ".agent-js", "skills");
+  return join(processDeps.cwd(), ".agent-js", "skills");
 }

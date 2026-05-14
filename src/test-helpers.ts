@@ -1,5 +1,5 @@
 import { mock } from "node:test";
-import { fsDeps, processEnv, processStdout } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 
 export interface FakeFsDeps {
   _files: Map<string, string>;
@@ -89,8 +89,22 @@ export function makeFakeProcessEnv() {
   };
 }
 
+export function makeFakeCwd(initial: string) {
+  let cwd = initial;
+  return {
+    _cwd: cwd,
+    _set(val: string) {
+      cwd = val;
+    },
+    get() {
+      return cwd;
+    },
+  };
+}
+
 export const testFs = makeFakeFsDeps();
 export const testProcessEnv = makeFakeProcessEnv();
+export const testCwd = makeFakeCwd(process.cwd());
 
 export function setupFakeDeps() {
   testFs._restore();
@@ -105,7 +119,9 @@ export function setupFakeDeps() {
   }
 
   testProcessEnv._clear();
-  mock.method(processEnv, "get", (key: string) => testProcessEnv.get(key));
-  mock.method(processStdout, "write", () => undefined);
+  testCwd._set(process.cwd());
+  mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
+  mock.method(processDeps.stdout, "write", () => undefined);
+  mock.method(processDeps, "cwd", () => testCwd.get());
 }
 

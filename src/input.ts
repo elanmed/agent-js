@@ -22,7 +22,7 @@ import { actions, dispatch, selectors } from "./state.ts";
 import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, editorLog } from "./log.ts";
-import { fsDeps, processEnv } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -231,7 +231,7 @@ export function resolveSlashCommand(rawInput: string) {
   if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
     colorPrint(`Executing slash command: ${rawInput}`, "grey");
     const path = join(
-      process.cwd(),
+      processDeps.cwd(),
       ".agent-js",
       "commands",
       rawInput.slice(1).concat(".md"),
@@ -264,7 +264,7 @@ export function clearCommand() {
 export function editCommand(currentLine: string) {
   const tempFile = createTempFile();
   const editor =
-    processEnv.get("AGENT_JS_EDITOR") ?? processEnv.get("EDITOR") ?? "vi";
+    processDeps.env.get("AGENT_JS_EDITOR") ?? processDeps.env.get("EDITOR") ?? "vi";
   const writeResult = tryCatch(() =>
     fsDeps.writeFileSync(tempFile, currentLine),
   );
@@ -301,7 +301,7 @@ export function editLogCommand() {
     return;
   }
   const editor =
-    processEnv.get("AGENT_JS_EDITOR_LOG") ?? processEnv.get("EDITOR") ?? "vi";
+    processDeps.env.get("AGENT_JS_EDITOR_LOG") ?? processDeps.env.get("EDITOR") ?? "vi";
 
   childProcess.spawnSync(`${editor} "${selectors.getEditorLogPath()}"`, {
     shell: true,
@@ -341,11 +341,11 @@ export function clearRlLine(): readline.Interface | null {
 }
 
 export function getAvailableSlashCommands() {
-  const path = join(process.cwd(), ".agent-js", "commands");
+  // TODO: move into a separate var
+  const path = join(processDeps.cwd(), ".agent-js", "commands");
   if (!fsDeps.existsSync(path)) return [];
 
   const readdirResult = tryCatch(() => fsDeps.readdirSync(path));
   if (!readdirResult.ok) return [];
   return readdirResult.value.map((file) => parse(file).name);
 }
-

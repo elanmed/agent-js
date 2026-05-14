@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { formatMarkdown, fencePrint, calculateSessionUsage, processStdout } from "./print.ts";
+import { formatMarkdown, fencePrint, calculateSessionUsage, processDeps } from "./print.ts";
 import { dispatch, actions } from "./state.ts";
 
 describe("print", () => {
@@ -23,7 +23,7 @@ describe("print", () => {
 
     beforeEach(() => {
       captured = [];
-      mock.method(processStdout, "write", (chunk: string | Buffer) => {
+      mock.method(processDeps.stdout, "write", (chunk: string | Buffer) => {
         captured.push(chunk.toString());
         return true;
       });
