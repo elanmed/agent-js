@@ -3,3 +3,4 @@ node_modules
 .agent-js/editor.log
 dist
 .pnpm-store
+tags
