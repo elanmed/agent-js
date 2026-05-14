@@ -32,6 +32,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 | `disableUsageMessage` | boolean                                | Hide token usage/cost after responses (default: `false`) |
 | `pricingPerModel`     | object                                 | Token pricing per model per million                      |
 | `keymaps`             | object                                 | Custom keybindings (see below)                           |
+| `customSlashCommandDirs` | string[]                            | Additional directories for custom slash commands         |
 
 ### Keymaps
 
@@ -75,7 +76,8 @@ Example `settings.json`:
       "cacheReadPerToken": 1.25,
       "cacheWritePerToken": 3.75
     }
-  }
+  },
+  "customSlashCommandDirs": ["/home/me/my-commands"]
 }
 ```
 
@@ -99,7 +101,7 @@ Slash commands are triggered with `/command` at the prompt.
 
 ### Custom Slash Commands
 
-Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local) or `~/.config/.agent-js/commands/` (global). Nested subdirectories are supported via `**/*.md` glob. Local commands take precedence over global commands with the same filename.
+Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local), `~/.config/.agent-js/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Local commands take precedence over global commands with the same filename.
 
 ## AGENTS.md Context
 

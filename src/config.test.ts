@@ -208,6 +208,31 @@ describe("config", () => {
       });
     });
 
+    it("uses its customSlashCommandDirs over the global config, default config", () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          customSlashCommandDirs: ["/global-dir"],
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          customSlashCommandDirs: ["/local-dir"],
+        }),
+      );
+
+      initState();
+
+      assert.deepStrictEqual(selectors.getCustomSlashCommandDirs(), [
+        "/local-dir",
+      ]);
+    });
+
     it("merges partial keymaps with defaults", () => {
       testFs._files.set(
         getLocalConfigPath(),

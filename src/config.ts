@@ -42,6 +42,7 @@ const ConfigSchema = z.object({
       clear: KeySchema.optional(),
     })
     .optional(),
+  customSlashCommandDirs: z.array(z.string()).optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -67,6 +68,7 @@ interface DefaultConfig {
     editLog: Key;
     clear: Key;
   };
+  customSlashCommandDirs: string[];
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -90,6 +92,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
       ctrl: true,
     },
   },
+  customSlashCommandDirs: [],
 };
 
 export function initState() {
@@ -184,6 +187,13 @@ export function initState() {
   );
 
   dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
+  dispatch(
+    actions.setCustomSlashCommandDirs(
+      localConfig.customSlashCommandDirs ??
+        globalConfig.customSlashCommandDirs ??
+        DEFAULT_CONFIG.customSlashCommandDirs,
+    ),
+  );
   dispatch(
     actions.setKeymapEdit(
       localConfig.keymaps?.edit ??

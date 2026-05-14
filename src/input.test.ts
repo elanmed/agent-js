@@ -269,6 +269,22 @@ describe("input", () => {
       assert.deepStrictEqual(result, []);
     });
 
+    it("includes custom slash command dirs", () => {
+      dispatch(actions.setCustomSlashCommandDirs(["/custom-commands"]));
+      testFs._globResults.set("/custom-commands/**/*.md", [
+        "/custom-commands/foo.md",
+      ]);
+      testFs._files.set("/custom-commands/foo.md", "custom content");
+      const result = getAvailableSlashCommands();
+      assert.deepStrictEqual(result, [
+        {
+          name: "foo.md",
+          filePath: "/custom-commands/foo.md",
+          content: "custom content",
+        },
+      ]);
+    });
+
     it("returns commands from local and global dirs", () => {
       testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
         "/test-cwd/.agent-js/commands/help.md",

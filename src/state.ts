@@ -29,6 +29,7 @@ interface State {
     messageUsages: TokenUsage[];
     editorInputValue: string | null;
     slashCommands: SlashCommand[];
+    customSlashCommandDirs: string[];
     stdout: string;
     debugLog: boolean;
     editorLog: boolean;
@@ -65,6 +66,7 @@ const initialState: State = {
     messageUsages: [],
     editorInputValue: null,
     slashCommands: [],
+    customSlashCommandDirs: [],
     stdout: "",
     debugLog: false,
     editorLog: false,
@@ -179,6 +181,10 @@ type Action =
   | {
       type: "set-slash-commands";
       payload: SlashCommand[];
+    }
+  | {
+      type: "set-custom-slash-command-dirs";
+      payload: string[];
     }
   | {
       type: "reset-stdout";
@@ -461,6 +467,18 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
+    case "set-custom-slash-command-dirs": {
+      const before = state.appState.customSlashCommandDirs;
+      const next = {
+        ...state,
+        appState: {
+          ...state.appState,
+          customSlashCommandDirs: action.payload,
+        },
+      };
+      logStateChange(action.type, String(before), String(action.payload));
+      return next;
+    }
     case "reset-stdout": {
       const before = state.appState.stdout;
       const next = {
@@ -682,6 +700,10 @@ const setSlashCommands = (commands: SlashCommand[]): Action => {
   return { type: "set-slash-commands", payload: commands };
 };
 
+const setCustomSlashCommandDirs = (dirs: string[]): Action => {
+  return { type: "set-custom-slash-command-dirs", payload: dirs };
+};
+
 const resetStdout = (): Action => {
   return { type: "reset-stdout" };
 };
@@ -748,6 +770,7 @@ export const actions = {
   setToolCallAbortController,
   setEditorInputValue,
   setSlashCommands,
+  setCustomSlashCommandDirs,
   resetStdout,
   appendToStdout,
   setDebugLog,
@@ -767,6 +790,8 @@ const getMessageParams = () => getState().appState.messageParams;
 const getMessageUsages = () => getState().appState.messageUsages;
 const getEditorInputValue = () => getState().appState.editorInputValue;
 const getSlashCommands = () => getState().appState.slashCommands;
+const getCustomSlashCommandDirs = () =>
+  getState().appState.customSlashCommandDirs;
 const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
 const getEditorLog = () => getState().appState.editorLog;
@@ -808,6 +833,7 @@ export const selectors = {
   getToolCallAbortController,
   getEditorInputValue,
   getSlashCommands,
+  getCustomSlashCommandDirs,
   getStdout,
   getDebugLog,
   getEditorLog,

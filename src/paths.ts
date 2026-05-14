@@ -30,10 +30,10 @@ export function getLocalSkillsDir() {
   return join(getLocalConfigDir(), "skills");
 }
 
-export function getLocalCommandsDir() {
+export function getLocalSlashCommandDir() {
   return join(getLocalConfigDir(), "commands");
 }
 
-export function getGlobalCommandsDir() {
+export function getGlobalSlashCommandDir() {
   return join(getGlobalConfigDir(), "commands");
 }

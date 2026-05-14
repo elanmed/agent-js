@@ -23,7 +23,7 @@ import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, editorLog } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
-import { getGlobalCommandsDir, getLocalCommandsDir } from "./paths.ts";
+import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -345,7 +345,11 @@ export function getAvailableSlashCommands() {
   const entries: SlashCommand[] = [];
   const slashCommandFilePaths: string[] = [];
 
-  const slashCommandDirs = [getLocalCommandsDir(), getGlobalCommandsDir()];
+  const slashCommandDirs = [
+    ...selectors.getCustomSlashCommandDirs(),
+    getLocalSlashCommandDir(),
+    getGlobalSlashCommandDir(),
+  ];
 
   for (const dir of slashCommandDirs) {
     const glob = join(dir, "**/*.md");

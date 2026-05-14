@@ -302,6 +302,15 @@ describe("state", () => {
     ]);
   });
 
+  it("set-custom-slash-command-dirs", () => {
+    assert.deepStrictEqual(selectors.getCustomSlashCommandDirs(), []);
+    dispatch(actions.setCustomSlashCommandDirs(["/my-commands", "/more"]));
+    assert.deepStrictEqual(selectors.getCustomSlashCommandDirs(), [
+      "/my-commands",
+      "/more",
+    ]);
+  });
+
   it("reset-stdout", () => {
     dispatch(actions.appendToStdout("line1\n"));
     dispatch(actions.appendToStdout("line2\n"));
