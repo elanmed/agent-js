@@ -1,3 +1,4 @@
+import os from "node:os";
 import { mock } from "node:test";
 import { fsDeps, processDeps } from "./deps.ts";
 
@@ -7,13 +8,24 @@ export interface FakeFsDeps {
   _globResults: Map<string, string[]>;
   _restore: () => void;
   readFileSync: (path: string) => Buffer;
-  writeFileSync: (path: string, content: string, options?: { signal?: AbortSignal }) => void;
+  writeFileSync: (
+    path: string,
+    content: string,
+    options?: { signal?: AbortSignal },
+  ) => void;
   existsSync: (path: string) => boolean;
   readdirSync: (path: string) => string[];
   mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
   unlinkSync: (path: string) => void;
-  appendFileSync: (path: string, content: string, options?: { signal?: AbortSignal }) => void;
-  statSync: (path: string) => { isFile: () => boolean; isDirectory: () => boolean };
+  appendFileSync: (
+    path: string,
+    content: string,
+    options?: { signal?: AbortSignal },
+  ) => void;
+  statSync: (path: string) => {
+    isFile: () => boolean;
+    isDirectory: () => boolean;
+  };
   globSync: (pattern: string) => string[];
 }
 
@@ -89,8 +101,8 @@ export function makeFakeProcessEnv() {
   };
 }
 
-export function makeFakeCwd(initial: string) {
-  let cwd = initial;
+export function makeFakeCwd() {
+  let cwd = "/test-cwd";
   return {
     _cwd: cwd,
     _set(val: string) {
@@ -104,7 +116,7 @@ export function makeFakeCwd(initial: string) {
 
 export const testFs = makeFakeFsDeps();
 export const testProcessEnv = makeFakeProcessEnv();
-export const testCwd = makeFakeCwd(process.cwd());
+export const testCwd = makeFakeCwd();
 
 export function setupFakeDeps() {
   testFs._restore();
@@ -119,7 +131,7 @@ export function setupFakeDeps() {
   }
 
   testProcessEnv._clear();
-  testCwd._set(process.cwd());
+  mock.method(os, "homedir", () => "/fake-home");
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());

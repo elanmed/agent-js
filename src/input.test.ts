@@ -93,7 +93,6 @@ describe("input", () => {
   describe("resolveSlashCommand", () => {
     beforeEach(() => {
       setupFakeDeps();
-      mock.method(process, "cwd", () => "/agent-js");
       mock.method(childProcess, "spawnSync", () => undefined);
     });
 
@@ -120,7 +119,7 @@ describe("input", () => {
         actions.setSlashCommands([
           {
             name: "custom",
-            filePath: "/agent-js/.agent-js/commands/custom.md",
+            filePath: "/test-cwd/.agent-js/commands/custom.md",
             content: "custom command content",
           },
         ]),
@@ -134,7 +133,7 @@ describe("input", () => {
         actions.setSlashCommands([
           {
             name: "known",
-            filePath: "/agent-js/.agent-js/commands/known.md",
+            filePath: "/test-cwd/.agent-js/commands/known.md",
             content: "known content",
           },
         ]),
@@ -249,8 +248,6 @@ describe("input", () => {
   describe("getAvailableSlashCommands", () => {
     beforeEach(() => {
       setupFakeDeps();
-      mock.method(process, "cwd", () => "/agent-js");
-      mock.method(os, "homedir", () => "/home/user");
     });
 
     it("returns empty array when no commands found", () => {
@@ -267,58 +264,58 @@ describe("input", () => {
     });
 
     it("returns empty array when glob returns empty", () => {
-      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", []);
+      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", []);
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, []);
     });
 
     it("returns commands from local and global dirs", () => {
-      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", [
-        "/agent-js/.agent-js/commands/help.md",
+      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
+        "/test-cwd/.agent-js/commands/help.md",
       ]);
-      testFs._globResults.set("/home/user/.config/.agent-js/commands/**/*.md", [
-        "/home/user/.config/.agent-js/commands/status.md",
+      testFs._globResults.set("/fake-home/.config/.agent-js/commands/**/*.md", [
+        "/fake-home/.config/.agent-js/commands/status.md",
       ]);
-      testFs._files.set("/agent-js/.agent-js/commands/help.md", "help content");
+      testFs._files.set("/test-cwd/.agent-js/commands/help.md", "help content");
       testFs._files.set(
-        "/home/user/.config/.agent-js/commands/status.md",
+        "/fake-home/.config/.agent-js/commands/status.md",
         "status content",
       );
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
           name: "help.md",
-          filePath: "/agent-js/.agent-js/commands/help.md",
+          filePath: "/test-cwd/.agent-js/commands/help.md",
           content: "help content",
         },
         {
           name: "status.md",
-          filePath: "/home/user/.config/.agent-js/commands/status.md",
+          filePath: "/fake-home/.config/.agent-js/commands/status.md",
           content: "status content",
         },
       ]);
     });
 
     it("deduplicates by name keeping first occurrence", () => {
-      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", [
-        "/agent-js/.agent-js/commands/help.md",
+      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
+        "/test-cwd/.agent-js/commands/help.md",
       ]);
-      testFs._globResults.set("/home/user/.config/.agent-js/commands/**/*.md", [
-        "/home/user/.config/.agent-js/commands/help.md",
+      testFs._globResults.set("/fake-home/.config/.agent-js/commands/**/*.md", [
+        "/fake-home/.config/.agent-js/commands/help.md",
       ]);
       testFs._files.set(
-        "/agent-js/.agent-js/commands/help.md",
+        "/test-cwd/.agent-js/commands/help.md",
         "local content",
       );
       testFs._files.set(
-        "/home/user/.config/.agent-js/commands/help.md",
+        "/fake-home/.config/.agent-js/commands/help.md",
         "global content",
       );
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
           name: "help.md",
-          filePath: "/agent-js/.agent-js/commands/help.md",
+          filePath: "/test-cwd/.agent-js/commands/help.md",
           content: "local content",
         },
       ]);
@@ -329,15 +326,15 @@ describe("input", () => {
         if (path.includes("bad")) throw new Error("read failed");
         return Buffer.from("content");
       });
-      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", [
-        "/agent-js/.agent-js/commands/good.md",
-        "/agent-js/.agent-js/commands/bad.md",
+      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
+        "/test-cwd/.agent-js/commands/good.md",
+        "/test-cwd/.agent-js/commands/bad.md",
       ]);
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
           name: "good.md",
-          filePath: "/agent-js/.agent-js/commands/good.md",
+          filePath: "/test-cwd/.agent-js/commands/good.md",
           content: "content",
         },
       ]);

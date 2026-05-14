@@ -1,6 +1,5 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import os from "node:os";
 import { join } from "node:path";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { getGlobalContextDir } from "./paths.ts";
@@ -15,7 +14,6 @@ import { dispatch, actions } from "./state.ts";
 describe("context", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
-    mock.method(os, "homedir", () => "/fake-home");
   });
 
   describe("getAgentsContext", () => {
@@ -29,7 +27,7 @@ describe("context", () => {
     });
 
     it("returns formatted content for single file", () => {
-      const cwd = process.cwd();
+      const cwd = "/test-cwd";
       testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);
       testFs._files.set(`${cwd}/AGENTS.md`, "# Agent Instructions");
       const result = getAgentsContext();
@@ -40,7 +38,7 @@ describe("context", () => {
     });
 
     it("returns formatted content for multiple files", () => {
-      const cwd = process.cwd();
+      const cwd = "/test-cwd";
       testFs._globResults.set(`${cwd}/**/AGENTS.md`, [
         `${cwd}/AGENTS.md`,
         `${cwd}/src/AGENTS.md`,
@@ -55,7 +53,7 @@ describe("context", () => {
     });
 
     it("skips files that fail to read", () => {
-      const cwd = process.cwd();
+      const cwd = "/test-cwd";
       testFs._globResults.set(`${cwd}/**/AGENTS.md`, [
         `${cwd}/AGENTS.md`,
         `${cwd}/src/AGENTS.md`,
@@ -82,7 +80,7 @@ describe("context", () => {
     });
 
     it("combines global and globbed AGENTS.md files", () => {
-      const cwd = process.cwd();
+      const cwd = "/test-cwd";
       testFs._dirs.add(getGlobalContextDir());
       const agentFile = join(getGlobalContextDir(), "AGENTS.md");
       testFs._files.set(agentFile, "global content");
@@ -130,7 +128,7 @@ Content: global content
     });
 
     it("deduplicates by parsed name, keeping first occurrence", () => {
-      const localDir = "/agent-js/.agent-js/skills";
+      const localDir = "/test-cwd/.agent-js/skills";
       const globalDir = "/fake-home/.config/.agent-js/skills";
       testFs._dirs.add(localDir);
       testFs._dirs.add(`${localDir}/local-skill`);
@@ -150,7 +148,7 @@ Content: global content
     });
 
     it("includes skills with different names", () => {
-      const dir = "/agent-js/.agent-js/skills";
+      const dir = "/test-cwd/.agent-js/skills";
       testFs._dirs.add(dir);
       testFs._dirs.add(`${dir}/a`);
       testFs._dirs.add(`${dir}/b`);

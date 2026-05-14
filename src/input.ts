@@ -345,10 +345,7 @@ export function getAvailableSlashCommands() {
   const entries: SlashCommand[] = [];
   const slashCommandFilePaths: string[] = [];
 
-  const slashCommandDirs = [
-    getLocalCommandsDir(),
-    getGlobalCommandsDir(),
-  ];
+  const slashCommandDirs = [getLocalCommandsDir(), getGlobalCommandsDir()];
 
   for (const dir of slashCommandDirs) {
     const glob = join(dir, "**/*.md");

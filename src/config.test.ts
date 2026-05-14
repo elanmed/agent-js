@@ -1,6 +1,5 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import os from "node:os";
 import { join } from "node:path";
 import { dispatch, actions, selectors } from "./state.ts";
 import { initState, DEFAULT_CONFIG } from "./config.ts";
@@ -16,7 +15,6 @@ describe("config", () => {
   beforeEach(() => {
     dispatch(actions.resetState());
     setupFakeDeps();
-    mock.method(os, "homedir", () => "/fake-home");
     mock.method(parseCliArgsDeps, "getArgv", () => ["node", "script.js"]);
   });
 
