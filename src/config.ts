@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { tryCatch, MISSING } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
-import { getContextStr, getSkillsStr, getSkills } from "./context.ts";
+import {
+  getContextEntries,
+  getContextStr,
+  getSkillsStr,
+  getSkills,
+} from "./context.ts";
 import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
@@ -216,10 +221,13 @@ export function initState() {
     ),
   );
 
-  dispatch(actions.setContextStr(getContextStr()));
+  const contextEntries = getContextEntries();
+  dispatch(actions.setContextEntries(contextEntries));
+  dispatch(actions.setContextStr(getContextStr(contextEntries)));
 
-  dispatch(actions.setSkillsStr(getSkillsStr()));
-  dispatch(actions.setSkills(getSkills()));
+  const skills = getSkills();
+  dispatch(actions.setSkills(skills));
+  dispatch(actions.setSkillsStr(getSkillsStr(skills)));
 }
 
 function parseConfigStr(configStr: string): Config {

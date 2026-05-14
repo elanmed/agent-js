@@ -261,7 +261,7 @@ describe("config", () => {
     describe("when the global config exists", () => {
       it("uses its model over the default config", () => {
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
             model: "claude-haiku-4-5",
@@ -274,7 +274,7 @@ describe("config", () => {
 
       it("uses its provider over the default config", () => {
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
             provider: "anthropic",
@@ -287,7 +287,7 @@ describe("config", () => {
 
       it("uses its editorLog over the default config", () => {
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
             editorLog: true,
@@ -300,7 +300,7 @@ describe("config", () => {
 
       it("uses its diffStyle over the default config", () => {
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
             diffStyle: "unified",
@@ -321,7 +321,7 @@ describe("config", () => {
         };
 
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
             model: "test-model",
@@ -335,7 +335,7 @@ describe("config", () => {
 
       it("uses its keymaps over the default config", () => {
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
             keymaps: {
@@ -370,7 +370,7 @@ describe("config", () => {
 
       it("uses its customSkillDirs over the default config", () => {
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
             customSkillDirs: ["/global-skills"],
@@ -394,7 +394,7 @@ describe("config", () => {
 
       it("throws when baseURL is not configured for openai-compatible provider", () => {
         testFs._files.set(
-        getGlobalConfigPath(),
+          getGlobalConfigPath(),
           JSON.stringify({ model: "some-model" }),
         );
         assert.throws(() => {
@@ -427,7 +427,7 @@ describe("config", () => {
       "--debug",
     ]);
     testFs._files.set(
-        getGlobalConfigPath(),
+      getGlobalConfigPath(),
       JSON.stringify({
         ...defaultConfig,
       }),
@@ -448,7 +448,7 @@ describe("config", () => {
       "hello",
     );
     testFs._files.set(
-        getGlobalConfigPath(),
+      getGlobalConfigPath(),
       JSON.stringify({
         ...defaultConfig,
       }),
@@ -463,24 +463,13 @@ describe("config", () => {
 
   it("sets skillsStr from dep", () => {
     testFs._files.set(
-        getGlobalConfigPath(),
+      getGlobalConfigPath(),
       JSON.stringify({
         ...defaultConfig,
       }),
     );
 
     initState();
-    assert.equal(
-      selectors.getSkillsStr(),
-      `
-Skills:
-
-Use the \`loadSkill\` tool to load a skill when the user's request
-would benefit from specialized instructions.
-
- Available skills:
-
-`,
-    );
+    assert.equal(selectors.getSkillsStr(), "");
   });
 });

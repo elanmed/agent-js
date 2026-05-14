@@ -140,7 +140,10 @@ describe("state", () => {
   });
 
   it("set-keymap-edit", () => {
-    assert.deepStrictEqual(selectors.getKeymapEdit(), DEFAULT_CONFIG.keymaps.edit);
+    assert.deepStrictEqual(
+      selectors.getKeymapEdit(),
+      DEFAULT_CONFIG.keymaps.edit,
+    );
     dispatch(
       actions.setKeymapEdit({
         name: "v",
@@ -179,7 +182,10 @@ describe("state", () => {
   });
 
   it("set-keymap-clear", () => {
-    assert.deepStrictEqual(selectors.getKeymapClear(), DEFAULT_CONFIG.keymaps.clear);
+    assert.deepStrictEqual(
+      selectors.getKeymapClear(),
+      DEFAULT_CONFIG.keymaps.clear,
+    );
     dispatch(
       actions.setKeymapClear({
         name: "k",
@@ -253,6 +259,31 @@ describe("state", () => {
     assert.equal(selectors.getSkillsStr(), "- skill: desc");
   });
 
+  describe("set-context-entries", () => {
+    it("sets the context entries array", () => {
+      assert.deepStrictEqual(selectors.getContextEntries(), []);
+      dispatch(
+        actions.setContextEntries([
+          { filePath: "/test/AGENTS.md", content: "# Instructions" },
+        ]),
+      );
+      assert.deepStrictEqual(selectors.getContextEntries(), [
+        { filePath: "/test/AGENTS.md", content: "# Instructions" },
+      ]);
+    });
+
+    it("replaces existing context entries", () => {
+      dispatch(
+        actions.setContextEntries([{ filePath: "/a/AGENTS.md", content: "A" }]),
+      );
+      dispatch(
+        actions.setContextEntries([{ filePath: "/b/AGENTS.md", content: "B" }]),
+      );
+      assert.equal(selectors.getContextEntries().length, 1);
+      assert.equal(selectors.getContextEntries()[0]!.filePath, "/b/AGENTS.md");
+    });
+  });
+
   describe("set-skills", () => {
     it("sets the skills array", () => {
       assert.deepStrictEqual(selectors.getSkills(), []);
@@ -267,19 +298,34 @@ describe("state", () => {
         ]),
       );
       assert.deepStrictEqual(selectors.getSkills(), [
-        { name: "deploy", description: "Deploy skill", dir: "/skills/deploy", content: "# Deploy instructions" },
+        {
+          name: "deploy",
+          description: "Deploy skill",
+          dir: "/skills/deploy",
+          content: "# Deploy instructions",
+        },
       ]);
     });
 
     it("replaces existing skills", () => {
       dispatch(
         actions.setSkills([
-          { name: "a", description: "Skill A", dir: "/a", content: "content a" },
+          {
+            name: "a",
+            description: "Skill A",
+            dir: "/a",
+            content: "content a",
+          },
         ]),
       );
       dispatch(
         actions.setSkills([
-          { name: "b", description: "Skill B", dir: "/b", content: "content b" },
+          {
+            name: "b",
+            description: "Skill B",
+            dir: "/b",
+            content: "content b",
+          },
         ]),
       );
       assert.equal(selectors.getSkills().length, 1);

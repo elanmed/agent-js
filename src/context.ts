@@ -17,11 +17,10 @@ export interface ContextEntry {
   content: string;
 }
 
-export function getContextStr() {
-  const contextFiles = getContext();
-  if (contextFiles.length === 0) return "";
+export function getContextStr(contextEntries: ContextEntry[]) {
+  if (contextEntries.length === 0) return "";
 
-  const contextFilesList = contextFiles
+  const contextFilesList = contextEntries
     .map((entry) => `Path: ${entry.filePath}\nContent: ${entry.content}\n`)
     .join("\n");
 
@@ -30,7 +29,7 @@ AGENTS.md context files:
 ${contextFilesList}`;
 }
 
-export function getContext() {
+export function getContextEntries() {
   const agentFileDirs: string[] = [processDeps.cwd(), getGlobalContextDir()];
 
   const agentFilePaths: string[] = [];
@@ -67,8 +66,10 @@ export interface Skill {
   content: string;
 }
 
-export function getSkillsStr() {
-  const skillsList = getSkills()
+export function getSkillsStr(skills: Skill[]) {
+  if (skills.length === 0) return "";
+
+  const skillsFormatted = skills
     .map((skill) => `- ${skill.name}: ${skill.description}`)
     .join("\n");
 
@@ -79,7 +80,7 @@ Use the \`loadSkill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
-${skillsList}
+${skillsFormatted}
 `;
 }
 

@@ -13,7 +13,7 @@ import { debugLog } from "./log.ts";
 import type { TokenUsage } from "./print.ts";
 export type { EditorLog } from "./log.ts";
 export type { ToolLog } from "./tools.ts";
-import type { Skill } from "./context.ts";
+import type { ContextEntry, Skill } from "./context.ts";
 
 export interface SlashCommand {
   name: string;
@@ -35,6 +35,7 @@ interface State {
     debugLog: boolean;
     editorLog: boolean;
     editorLogPath: string;
+    contextEntries: ContextEntry[];
     contextStr: string;
     skillsStr: string;
     skills: Skill[];
@@ -72,6 +73,7 @@ const initialState: State = {
     debugLog: false,
     editorLog: false,
     editorLogPath: "",
+    contextEntries: [],
     contextStr: "",
     skillsStr: "",
     skills: [],
@@ -204,6 +206,10 @@ type Action =
   | {
       type: "set-editor-log-path";
       payload: string;
+    }
+  | {
+      type: "set-context-entries";
+      payload: ContextEntry[];
     }
   | {
       type: "set-context-str";
@@ -530,6 +536,19 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, before, action.payload);
       return next;
     }
+    case "set-context-entries": {
+      const before = state.appState.contextEntries.length;
+      const next = {
+        ...state,
+        appState: { ...state.appState, contextEntries: action.payload },
+      };
+      logStateChange(
+        action.type,
+        String(before),
+        String(next.appState.contextEntries.length),
+      );
+      return next;
+    }
     case "set-context-str": {
       const before = state.appState.contextStr;
       const next = {
@@ -724,6 +743,10 @@ const setEditorLogPath = (editorLogPath: string): Action => {
   return { type: "set-editor-log-path", payload: editorLogPath };
 };
 
+const setContextEntries = (contextEntries: ContextEntry[]): Action => {
+  return { type: "set-context-entries", payload: contextEntries };
+};
+
 const setContextStr = (contextStr: string): Action => {
   return { type: "set-context-str", payload: contextStr };
 };
@@ -776,6 +799,7 @@ export const actions = {
   setDebugLog,
   setEditorLog,
   setEditorLogPath,
+  setContextEntries,
   setContextStr,
   setSkillsStr,
   setSkills,
@@ -797,6 +821,7 @@ const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
 const getEditorLog = () => getState().appState.editorLog;
 const getEditorLogPath = () => getState().appState.editorLogPath;
+const getContextEntries = () => getState().appState.contextEntries;
 const getContextStr = () => getState().appState.contextStr;
 const getSkillsStr = () => getState().appState.skillsStr;
 const getSkills = () => getState().appState.skills;
@@ -838,6 +863,7 @@ export const selectors = {
   getDebugLog,
   getEditorLog,
   getEditorLogPath,
+  getContextEntries,
   getContextStr,
   getSkillsStr,
   getSkills,
