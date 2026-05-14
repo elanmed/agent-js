@@ -11,8 +11,10 @@
     "test": "node --test src/**/*.test.ts",
     "lint": "eslint src",
     "types": "tsc",
-    "cloc": "npx cloc src --exclude-ext=test.ts",
-    "ci": "pnpm run test && pnpm run lint && pnpm run types",
+    "cloc-source": "cloc src --not-match-f='\\.test\\.ts$' --json --quiet | jq '.SUM.code'",
+    "cloc-tests": "cloc src --match-f='\\.test\\.ts$' --json --quiet | jq '.SUM.code'",
+    "cloc": "pnpm run cloc-source && pnpm run cloc-tests",
+    "ci": "pnpm run test && pnpm run lint && pnpm run types && pnpm run cloc-source && pnpm run cloc-tests",
     "format": "prettier --write ."
   },
   "devDependencies": {
