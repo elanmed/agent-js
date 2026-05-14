@@ -3,11 +3,11 @@ import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
-import { dispatch, actions } from "./state.ts";
+import { dispatch, actions, selectors } from "./state.ts";
 import {
   getGlobalContextDir,
-  getGlobalSkillsDir,
-  getLocalSkillsDir,
+  getGlobalSkillDir,
+  getLocalSkillDir,
 } from "./paths.ts";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
@@ -57,7 +57,11 @@ export interface Skill {
 
 export function getSkillsContext() {
   const seenSkills = new Set();
-  const paths = [getLocalSkillsDir(), getGlobalSkillsDir()];
+  const paths = [
+    ...selectors.getCustomSkillDirs(),
+    getLocalSkillDir(),
+    getGlobalSkillDir(),
+  ];
   const skills: SkillMetadata[] = [];
 
   paths.forEach((dirPath) => {

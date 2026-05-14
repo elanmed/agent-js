@@ -42,6 +42,7 @@ const ConfigSchema = z.object({
     })
     .optional(),
   customSlashCommandDirs: z.array(z.string()).optional(),
+  customSkillDirs: z.array(z.string()).optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -67,6 +68,7 @@ interface DefaultConfig {
     clear: Key;
   };
   customSlashCommandDirs: string[];
+  customSkillDirs: string[];
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -90,6 +92,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
     },
   },
   customSlashCommandDirs: [],
+  customSkillDirs: [],
 };
 
 export function initState() {
@@ -182,6 +185,13 @@ export function initState() {
       localConfig.customSlashCommandDirs ??
         globalConfig.customSlashCommandDirs ??
         DEFAULT_CONFIG.customSlashCommandDirs,
+    ),
+  );
+  dispatch(
+    actions.setCustomSkillDirs(
+      localConfig.customSkillDirs ??
+        globalConfig.customSkillDirs ??
+        DEFAULT_CONFIG.customSkillDirs,
     ),
   );
   dispatch(

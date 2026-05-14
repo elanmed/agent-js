@@ -229,6 +229,37 @@ Content: global content
       assert.ok(result.includes("- has-skill: Present"));
       assert.ok(!result.includes("no-skill-md"));
     });
+
+    it("includes skills from custom skill dirs", () => {
+      dispatch(actions.setCustomSkillDirs(["/custom/skills"]));
+      testFs._dirs.add("/custom/skills");
+      testFs._dirs.add("/custom/skills/custom-skill");
+      testFs._files.set(
+        "/custom/skills/custom-skill/SKILL.md",
+        "---\nname: custom-skill\ndescription: From custom dir\n---\n",
+      );
+      const result = getSkillsContext();
+      assert.ok(result.includes("- custom-skill: From custom dir"));
+    });
+
+    it("prioritizes custom skill dirs over local and global", () => {
+      dispatch(actions.setCustomSkillDirs(["/custom/skills"]));
+      testFs._dirs.add("/custom/skills");
+      testFs._dirs.add("/custom/skills/deploy");
+      testFs._dirs.add("/test-cwd/.agent-js/skills");
+      testFs._dirs.add("/test-cwd/.agent-js/skills/deploy");
+      testFs._files.set(
+        "/custom/skills/deploy/SKILL.md",
+        "---\nname: deploy\ndescription: Custom deploy\n---\n",
+      );
+      testFs._files.set(
+        "/test-cwd/.agent-js/skills/deploy/SKILL.md",
+        "---\nname: deploy\ndescription: Local deploy\n---\n",
+      );
+      const result = getSkillsContext();
+      assert.ok(result.includes("- deploy: Custom deploy"));
+      assert.ok(!result.includes("Local deploy"));
+    });
   });
 
   describe("getSkillJSON", () => {

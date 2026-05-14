@@ -22,11 +22,11 @@ export function getGlobalContextDir() {
   return join(getGlobalConfigDir(), "context");
 }
 
-export function getGlobalSkillsDir() {
+export function getGlobalSkillDir() {
   return join(getGlobalConfigDir(), "skills");
 }
 
-export function getLocalSkillsDir() {
+export function getLocalSkillDir() {
   return join(getLocalConfigDir(), "skills");
 }
 

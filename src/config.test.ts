@@ -210,6 +210,29 @@ describe("config", () => {
       ]);
     });
 
+    it("uses its customSkillDirs over the global config, default config", () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          customSkillDirs: ["/global-skills"],
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          model: "claude-sonnet-4-6",
+          baseURL: "https://api.example.com",
+          customSkillDirs: ["/local-skills"],
+        }),
+      );
+
+      initState();
+
+      assert.deepStrictEqual(selectors.getCustomSkillDirs(), ["/local-skills"]);
+    });
+
     it("merges partial keymaps with defaults", () => {
       testFs._files.set(
         getLocalConfigPath(),
@@ -353,6 +376,23 @@ describe("config", () => {
           meta: false,
           shift: false,
         });
+      });
+
+      it("uses its customSkillDirs over the default config", () => {
+        testFs._files.set(
+        getGlobalConfigPath(),
+          JSON.stringify({
+            model: "claude-sonnet-4-6",
+            baseURL: "https://api.example.com",
+            customSkillDirs: ["/global-skills"],
+          }),
+        );
+
+        initState();
+
+        assert.deepStrictEqual(selectors.getCustomSkillDirs(), [
+          "/global-skills",
+        ]);
       });
     });
 

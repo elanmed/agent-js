@@ -30,6 +30,7 @@ interface State {
     editorInputValue: string | null;
     slashCommands: SlashCommand[];
     customSlashCommandDirs: string[];
+    customSkillDirs: string[];
     stdout: string;
     debugLog: boolean;
     editorLog: boolean;
@@ -66,6 +67,7 @@ const initialState: State = {
     editorInputValue: null,
     slashCommands: [],
     customSlashCommandDirs: [],
+    customSkillDirs: [],
     stdout: "",
     debugLog: false,
     editorLog: false,
@@ -178,6 +180,10 @@ type Action =
     }
   | {
       type: "set-custom-slash-command-dirs";
+      payload: string[];
+    }
+  | {
+      type: "set-custom-skill-dirs";
       payload: string[];
     }
   | {
@@ -461,6 +467,18 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
+    case "set-custom-skill-dirs": {
+      const before = state.appState.customSkillDirs;
+      const next = {
+        ...state,
+        appState: {
+          ...state.appState,
+          customSkillDirs: action.payload,
+        },
+      };
+      logStateChange(action.type, String(before), String(action.payload));
+      return next;
+    }
     case "reset-stdout": {
       const before = state.appState.stdout;
       const next = {
@@ -682,6 +700,10 @@ const setCustomSlashCommandDirs = (dirs: string[]): Action => {
   return { type: "set-custom-slash-command-dirs", payload: dirs };
 };
 
+const setCustomSkillDirs = (dirs: string[]): Action => {
+  return { type: "set-custom-skill-dirs", payload: dirs };
+};
+
 const resetStdout = (): Action => {
   return { type: "reset-stdout" };
 };
@@ -748,6 +770,7 @@ export const actions = {
   setEditorInputValue,
   setSlashCommands,
   setCustomSlashCommandDirs,
+  setCustomSkillDirs,
   resetStdout,
   appendToStdout,
   setDebugLog,
@@ -769,6 +792,7 @@ const getEditorInputValue = () => getState().appState.editorInputValue;
 const getSlashCommands = () => getState().appState.slashCommands;
 const getCustomSlashCommandDirs = () =>
   getState().appState.customSlashCommandDirs;
+const getCustomSkillDirs = () => getState().appState.customSkillDirs;
 const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
 const getEditorLog = () => getState().appState.editorLog;
@@ -809,6 +833,7 @@ export const selectors = {
   getEditorInputValue,
   getSlashCommands,
   getCustomSlashCommandDirs,
+  getCustomSkillDirs,
   getStdout,
   getDebugLog,
   getEditorLog,

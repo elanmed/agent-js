@@ -12,7 +12,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Configuration**: global and local `settings.json`
 - **Cost tracking**: per-model token pricing with usage summary after each response
 - **AGENTS.md discovery**: recursively includes project context from `AGENTS.md` files
-- **Skills**: load skill metadata from `SKILL.md` files in `~/.config/.agent-js/skills/` or `./.agent-js/skills/`
+- **Skills**: load skill metadata from `SKILL.md` files in `~/.config/.agent-js/skills/`, `./.agent-js/skills/`, or any directory specified in `customSkillDirs`
 - **Slash commands**: builtin (`/edit`, `/clear`, `/edit-log`, `/model`) and custom commands from `./.agent-js/commands/` or `~/.config/.agent-js/commands/`
 - **Keymaps**: customizable shortcuts for common actions
 - **Rendering**: responses piped through `bat` for markdown formatting
@@ -33,6 +33,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 | `pricingPerModel`        | object                                 | Token pricing per model per million                      |
 | `keymaps`                | object                                 | Custom keybindings (see below)                           |
 | `customSlashCommandDirs` | string[]                               | Additional directories for custom slash commands         |
+| `customSkillDirs`        | string[]                               | Additional directories for skills                        |
 
 ### Keymaps
 
@@ -77,7 +78,8 @@ Example `settings.json`:
       "cacheWritePerToken": 3.75
     }
   },
-  "customSlashCommandDirs": ["/home/me/my-commands"]
+  "customSlashCommandDirs": ["/home/me/my-commands"],
+  "customSkillDirs": ["/home/me/my-skills"]
 }
 ```
 
@@ -139,7 +141,20 @@ Files from all sources are concatenated into the system prompt with their paths.
 ./.agent-js/skills/            # local skills
   project-skill/
     SKILL.md
+/custom/skills/                # custom skills (via customSkillDirs)
+  custom-skill/
+    SKILL.md
 ```
+
+### Discovery
+
+Skills are discovered from three sources in priority order:
+
+1. **Custom skill dirs** — directories specified in `customSkillDirs`
+2. **Local skills** — `./.agent-js/skills/`
+3. **Global skills** — `~/.config/.agent-js/skills/`
+
+Skills with duplicate names are deduplicated, with the first occurrence taking precedence.
 
 ### SKILL.md Format
 
@@ -189,9 +204,6 @@ Minimal runtime dependencies (7 total):
   - [ ] Support code-mode
 - [ ] Progressively disclose nested AGENTS.md files?
 - [ ] Read each nested skills file
-- [ ] Custom skill dirs
-
-- [ ] Make fence print prettier
 
 ## TODO (later)
 

@@ -305,6 +305,15 @@ describe("state", () => {
     ]);
   });
 
+  it("set-custom-skill-dirs", () => {
+    assert.deepStrictEqual(selectors.getCustomSkillDirs(), []);
+    dispatch(actions.setCustomSkillDirs(["/my-skills", "/more"]));
+    assert.deepStrictEqual(selectors.getCustomSkillDirs(), [
+      "/my-skills",
+      "/more",
+    ]);
+  });
+
   it("reset-stdout", () => {
     dispatch(actions.appendToStdout("line1\n"));
     dispatch(actions.appendToStdout("line2\n"));
