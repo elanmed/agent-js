@@ -17,13 +17,13 @@ import {
   fencePrint,
   calculateSessionUsage,
 } from "./print.ts";
-import { join, parse } from "node:path";
-import { actions, dispatch, selectors } from "./state.ts";
+import { basename, join } from "node:path";
+import { actions, dispatch, selectors, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, editorLog } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
-import { getLocalCommandsDirPath } from "./paths.ts";
+import { getGlobalCommandsDirPath, getLocalCommandsDirPath } from "./paths.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -229,23 +229,19 @@ export function resolveSlashCommand(rawInput: string) {
     return null;
   }
 
-  if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
+  const slashCommands = selectors.getSlashCommands();
+  const matchedCommand = slashCommands.find(
+    (command) => command.name === commandWithoutSlash,
+  );
+  if (matchedCommand !== undefined) {
     colorPrint(`Executing slash command: ${rawInput}`, "grey");
-    const path = join(
-      getLocalCommandsDirPath(),
-      rawInput.slice(1).concat(".md"),
-    );
-    debugLog(`Performing the slash command at ${path}`);
-    const commandResult = tryCatch(() => fsDeps.readFileSync(path).toString());
-    if (commandResult.ok) return commandResult.value;
-
-    colorPrint(`Error reading the slash command located at ${path}`, "red");
-    return null;
+    debugLog(`Performing the slash command at ${matchedCommand.filePath}`);
+    return matchedCommand.content;
   }
 
   colorPrint(
-    `Invalid / command detected, valid commands: ${selectors
-      .getSlashCommands()
+    `Invalid / command detected, valid commands: ${slashCommands
+      .map((c) => c.name)
       .concat(["edit", "edit-log", "clear", "model"])
       .join(",")}`,
     "red",
@@ -263,7 +259,9 @@ export function clearCommand() {
 export function editCommand(currentLine: string) {
   const tempFile = createTempFile();
   const editor =
-    processDeps.env.get("AGENT_JS_EDITOR") ?? processDeps.env.get("EDITOR") ?? "vi";
+    processDeps.env.get("AGENT_JS_EDITOR") ??
+    processDeps.env.get("EDITOR") ??
+    "vi";
   const writeResult = tryCatch(() =>
     fsDeps.writeFileSync(tempFile, currentLine),
   );
@@ -300,7 +298,9 @@ export function editLogCommand() {
     return;
   }
   const editor =
-    processDeps.env.get("AGENT_JS_EDITOR_LOG") ?? processDeps.env.get("EDITOR") ?? "vi";
+    processDeps.env.get("AGENT_JS_EDITOR_LOG") ??
+    processDeps.env.get("EDITOR") ??
+    "vi";
 
   childProcess.spawnSync(`${editor} "${selectors.getEditorLogPath()}"`, {
     shell: true,
@@ -340,11 +340,32 @@ export function clearRlLine(): readline.Interface | null {
 }
 
 export function getAvailableSlashCommands() {
-  // TODO: move into a separate var
-  const path = getLocalCommandsDirPath();
-  if (!fsDeps.existsSync(path)) return [];
+  const seenSlashCommands = new Set<string>();
 
-  const readdirResult = tryCatch(() => fsDeps.readdirSync(path));
-  if (!readdirResult.ok) return [];
-  return readdirResult.value.map((file) => parse(file).name);
+  const entries: SlashCommand[] = [];
+  const slashCommandFilePaths: string[] = [];
+
+  const slashCommandDirs = [
+    getLocalCommandsDirPath(),
+    getGlobalCommandsDirPath(),
+  ];
+
+  for (const dir of slashCommandDirs) {
+    const glob = join(dir, "**/*.md");
+    const globResult = tryCatch(() => fsDeps.globSync(glob));
+    if (!globResult.ok) continue;
+    slashCommandFilePaths.push(...globResult.value);
+  }
+
+  for (const filePath of slashCommandFilePaths) {
+    const readResult = tryCatch(() => fsDeps.readFileSync(filePath).toString());
+    if (!readResult.ok) continue;
+    const name = basename(filePath);
+    if (seenSlashCommands.has(name)) continue;
+    seenSlashCommands.add(name);
+
+    entries.push({ filePath, name, content: readResult.value });
+  }
+
+  return entries;
 }

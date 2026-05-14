@@ -27,9 +27,13 @@ export function getGlobalSkillsDirPath() {
 }
 
 export function getLocalSkillsDirPath() {
-  return join(processDeps.cwd(), ".agent-js", "skills");
+  return join(getLocalConfigDirPath(), "skills");
 }
 
 export function getLocalCommandsDirPath() {
-  return join(processDeps.cwd(), ".agent-js", "commands");
+  return join(getLocalConfigDirPath(), "commands");
+}
+
+export function getGlobalCommandsDirPath() {
+  return join(getGlobalConfigDirPath(), "commands");
 }

@@ -13,11 +13,10 @@ import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 export function getAgentsContext() {
-  const agentFileDirs: string[] = [processDeps.cwd()];
-
-  if (fsDeps.existsSync(getGlobalContextDirPath())) {
-    agentFileDirs.push(getGlobalContextDirPath());
-  }
+  const agentFileDirs: string[] = [
+    processDeps.cwd(),
+    getGlobalContextDirPath(),
+  ];
 
   const agentFilePaths: string[] = [];
   for (const agentFileDir of agentFileDirs) {

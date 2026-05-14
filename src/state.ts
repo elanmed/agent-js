@@ -15,6 +15,12 @@ export type { EditorLog } from "./log.ts";
 export type { ToolLog } from "./tools.ts";
 import type { Skill } from "./context.ts";
 
+export interface SlashCommand {
+  name: string;
+  filePath: string;
+  content: string;
+}
+
 interface State {
   appState: {
     interrupted: boolean;
@@ -22,7 +28,7 @@ interface State {
     messageParams: ModelMessage[];
     messageUsages: TokenUsage[];
     editorInputValue: string | null;
-    slashCommands: string[];
+    slashCommands: SlashCommand[];
     stdout: string;
     debugLog: boolean;
     editorLog: boolean;
@@ -172,7 +178,7 @@ type Action =
     }
   | {
       type: "set-slash-commands";
-      payload: string[];
+      payload: SlashCommand[];
     }
   | {
       type: "reset-stdout";
@@ -672,7 +678,7 @@ const setEditorInputValue = (value: string | null): Action => {
   return { type: "set-editor-input-value", payload: value };
 };
 
-const setSlashCommands = (commands: string[]): Action => {
+const setSlashCommands = (commands: SlashCommand[]): Action => {
   return { type: "set-slash-commands", payload: commands };
 };
 

@@ -290,8 +290,16 @@ describe("state", () => {
 
   it("set-slash-commands", () => {
     assert.deepStrictEqual(selectors.getSlashCommands(), []);
-    dispatch(actions.setSlashCommands(["test", "deploy"]));
-    assert.deepStrictEqual(selectors.getSlashCommands(), ["test", "deploy"]);
+    dispatch(
+      actions.setSlashCommands([
+        { name: "test", filePath: "/test.md", content: "test content" },
+        { name: "deploy", filePath: "/deploy.md", content: "deploy content" },
+      ]),
+    );
+    assert.deepStrictEqual(selectors.getSlashCommands(), [
+      { name: "test", filePath: "/test.md", content: "test content" },
+      { name: "deploy", filePath: "/deploy.md", content: "deploy content" },
+    ]);
   });
 
   it("reset-stdout", () => {

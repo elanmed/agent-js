@@ -13,7 +13,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Cost tracking**: per-model token pricing with usage summary after each response
 - **AGENTS.md discovery**: recursively includes project context from `AGENTS.md` files
 - **Skills**: load skill metadata from `SKILL.md` files in `~/.config/.agent-js/skills/` or `./.agent-js/skills/`
-- **Slash commands**: builtin (`/edit`, `/clear`, `/edit-log`) and custom commands from `./.agent-js/commands/`
+- **Slash commands**: builtin (`/edit`, `/clear`, `/edit-log`, `/model`) and custom commands from `./.agent-js/commands/` or `~/.config/.agent-js/commands/`
 - **Keymaps**: customizable shortcuts for common actions
 - **Rendering**: responses piped through `bat` for markdown formatting
 
@@ -99,7 +99,7 @@ Slash commands are triggered with `/command` at the prompt.
 
 ### Custom Slash Commands
 
-Create custom commands by adding markdown files to `./.agent-js/commands/[command].md`
+Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local) or `~/.config/.agent-js/commands/` (global). Nested subdirectories are supported via `**/*.md` glob. Local commands take precedence over global commands with the same filename.
 
 ## AGENTS.md Context
 
@@ -188,7 +188,7 @@ Minimal runtime dependencies (7 total):
 - [ ] Progressively disclose nested AGENTS.md files?
 - [ ] Read each nested skills file
 - [ ] Custom skill dirs
-- [ ] Custom slash commands dir
+
 - [ ] Make fence print prettier
 
 ## TODO (later)

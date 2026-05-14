@@ -116,28 +116,29 @@ describe("input", () => {
     });
 
     it("handles custom slash command successfully", () => {
-      dispatch(actions.setSlashCommands(["custom"]));
-      testFs._dirs.add("/agent-js/.agent-js/commands");
-      testFs._files.set(
-        "/agent-js/.agent-js/commands/custom.md",
-        "custom command content",
+      dispatch(
+        actions.setSlashCommands([
+          {
+            name: "custom",
+            filePath: "/agent-js/.agent-js/commands/custom.md",
+            content: "custom command content",
+          },
+        ]),
       );
       const result = resolveSlashCommand("/custom");
       assert.strictEqual(result, "custom command content");
     });
 
-    it("handles custom slash command read error", () => {
-      dispatch(actions.setSlashCommands(["custom"]));
-      dispatch(actions.resetStdout());
-      const result = resolveSlashCommand("/custom");
-      assert.strictEqual(result, null);
-      assert.ok(
-        selectors.getStdout().includes("Error reading the slash command"),
-      );
-    });
-
     it("handles unknown slash command", () => {
-      dispatch(actions.setSlashCommands(["known"]));
+      dispatch(
+        actions.setSlashCommands([
+          {
+            name: "known",
+            filePath: "/agent-js/.agent-js/commands/known.md",
+            content: "known content",
+          },
+        ]),
+      );
       dispatch(actions.resetStdout());
       const result = resolveSlashCommand("/unknown");
       assert.strictEqual(result, null);
@@ -249,42 +250,97 @@ describe("input", () => {
     beforeEach(() => {
       setupFakeDeps();
       mock.method(process, "cwd", () => "/agent-js");
+      mock.method(os, "homedir", () => "/home/user");
     });
 
-    it("returns empty array when commands directory does not exist", () => {
+    it("returns empty array when no commands found", () => {
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, []);
     });
 
-    it("returns empty array when readdir throws", () => {
-      mock.method(fsDeps, "readdirSync", () => {
+    it("returns empty array when glob throws", () => {
+      mock.method(fsDeps, "globSync", () => {
         throw new Error("permission denied");
       });
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, []);
     });
 
-    it("returns empty array when commands directory is empty", () => {
-      testFs._dirs.add("/agent-js/.agent-js/commands");
+    it("returns empty array when glob returns empty", () => {
+      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", []);
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, []);
     });
 
-    it("returns command names without file extensions", () => {
-      testFs._dirs.add("/agent-js/.agent-js/commands");
-      testFs._files.set("/agent-js/.agent-js/commands/help.ts", "");
-      testFs._files.set("/agent-js/.agent-js/commands/status.js", "");
-      testFs._files.set("/agent-js/.agent-js/commands/deploy.mjs", "");
+    it("returns commands from local and global dirs", () => {
+      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", [
+        "/agent-js/.agent-js/commands/help.md",
+      ]);
+      testFs._globResults.set("/home/user/.config/.agent-js/commands/**/*.md", [
+        "/home/user/.config/.agent-js/commands/status.md",
+      ]);
+      testFs._files.set("/agent-js/.agent-js/commands/help.md", "help content");
+      testFs._files.set(
+        "/home/user/.config/.agent-js/commands/status.md",
+        "status content",
+      );
       const result = getAvailableSlashCommands();
-      assert.deepStrictEqual(result, ["help", "status", "deploy"]);
+      assert.deepStrictEqual(result, [
+        {
+          name: "help.md",
+          filePath: "/agent-js/.agent-js/commands/help.md",
+          content: "help content",
+        },
+        {
+          name: "status.md",
+          filePath: "/home/user/.config/.agent-js/commands/status.md",
+          content: "status content",
+        },
+      ]);
     });
 
-    it("returns command names for files without extensions", () => {
-      testFs._dirs.add("/agent-js/.agent-js/commands");
-      testFs._files.set("/agent-js/.agent-js/commands/help", "");
-      testFs._files.set("/agent-js/.agent-js/commands/status", "");
+    it("deduplicates by name keeping first occurrence", () => {
+      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", [
+        "/agent-js/.agent-js/commands/help.md",
+      ]);
+      testFs._globResults.set("/home/user/.config/.agent-js/commands/**/*.md", [
+        "/home/user/.config/.agent-js/commands/help.md",
+      ]);
+      testFs._files.set(
+        "/agent-js/.agent-js/commands/help.md",
+        "local content",
+      );
+      testFs._files.set(
+        "/home/user/.config/.agent-js/commands/help.md",
+        "global content",
+      );
       const result = getAvailableSlashCommands();
-      assert.deepStrictEqual(result, ["help", "status"]);
+      assert.deepStrictEqual(result, [
+        {
+          name: "help.md",
+          filePath: "/agent-js/.agent-js/commands/help.md",
+          content: "local content",
+        },
+      ]);
+    });
+
+    it("skips files that fail to read", () => {
+      mock.method(fsDeps, "readFileSync", (path: string) => {
+        if (path.includes("bad")) throw new Error("read failed");
+        return Buffer.from("content");
+      });
+      testFs._globResults.set("/agent-js/.agent-js/commands/**/*.md", [
+        "/agent-js/.agent-js/commands/good.md",
+        "/agent-js/.agent-js/commands/bad.md",
+      ]);
+      const result = getAvailableSlashCommands();
+      assert.deepStrictEqual(result, [
+        {
+          name: "good.md",
+          filePath: "/agent-js/.agent-js/commands/good.md",
+          content: "content",
+        },
+      ]);
     });
   });
 });
