@@ -214,6 +214,8 @@ async function resolveExitConfirmation() {
   return null;
 }
 
+const builtinSlashCommands = ["edit", "edit-log", "clear", "model"];
+
 export function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.trim().slice(1);
   if (commandWithoutSlash === "edit") {
@@ -233,6 +235,9 @@ export function resolveSlashCommand(rawInput: string) {
   } else if (commandWithoutSlash === "context") {
     printContextFilesCommand();
     return null;
+  } else if (commandWithoutSlash === "commands") {
+    printCommandsCommand();
+    return null;
   }
 
   const slashCommands = selectors.getSlashCommands();
@@ -248,7 +253,7 @@ export function resolveSlashCommand(rawInput: string) {
   colorPrint(
     `Invalid / command detected, valid commands: ${slashCommands
       .map((c) => c.name)
-      .concat(["edit", "edit-log", "clear", "model"])
+      .concat(builtinSlashCommands)
       .join(",")}`,
     "red",
   );
@@ -331,7 +336,10 @@ export function setModelCommand(rawInput: string) {
 export function printSkillsCommand() {
   const skillsList = selectors
     .getSkills()
-    .map((skill) => `- ${skill.name}: ${skill.description}`)
+    .map(
+      (skill) => `- ${skill.name}: ${skill.description}
+  ${join(skill.dir, "SKILL.md")}`,
+    )
     .join("\n");
 
   printNewline();
@@ -348,6 +356,24 @@ export function printContextFilesCommand() {
   printNewline();
   colorPrint("Available context files:", "blue");
   colorPrint(contextFilesFormatted);
+}
+
+export function printCommandsCommand() {
+  const customCommandsFormatted = selectors
+    .getSlashCommands()
+    .map((command) => `- ${command.filePath}`);
+
+  const builtinCommandsFormatted = builtinSlashCommands.map(
+    (command) => `- ${command}`,
+  );
+
+  const commandsFormatted = builtinCommandsFormatted
+    .concat(customCommandsFormatted)
+    .join("\n");
+
+  printNewline();
+  colorPrint("Available /commands:", "blue");
+  colorPrint(commandsFormatted);
 }
 
 export function isSameKey(a: Key, b: Key) {
