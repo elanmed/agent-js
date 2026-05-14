@@ -158,8 +158,15 @@ Minimal runtime dependencies (7 total):
 
 ## TODO (soon)
 
+- [ ] Look into tanstack ai
+  - [ ] Support code-mode
+- [ ] Progressively disclose nested AGENTS.md files?
+- [ ] Custom AGENTS.md dirs
+- [ ] Custom skill dirs
+- [ ] Allow empty base URL
+- [ ] Make fence print prettier
+
 ## TODO (later)
 
-- [ ] Look into tanstack ai (codemode?) - maybe once stable
 - [ ] Resume session
 - [ ] Support MCP servers
