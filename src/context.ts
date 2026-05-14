@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
@@ -51,35 +51,38 @@ const skillMetadataSchema = z.object({
 export type SkillMetadata = z.infer<typeof skillMetadataSchema>;
 export interface Skill {
   name: string;
+  description: string;
   dir: string;
   content: string;
 }
 
 export function getSkillsContext() {
-  const seenSkills = new Set();
-  const paths = [
+  const seenSkills = new Set<string>();
+  const skillGrandparentDirs = [
     ...selectors.getCustomSkillDirs(),
     getLocalSkillDir(),
     getGlobalSkillDir(),
   ];
   const skills: SkillMetadata[] = [];
+  const skillPaths: string[] = [];
 
-  paths.forEach((dirPath) => {
-    if (!fsDeps.existsSync(dirPath)) return;
+  for (const skillGrandparentDir of skillGrandparentDirs) {
+    const glob = join(skillGrandparentDir, "**/SKILL.md");
+    const globResult = tryCatch(() => fsDeps.globSync(glob));
+    if (!globResult.ok) continue;
+    skillPaths.push(...globResult.value);
+  }
 
-    for (const dirName of fsDeps.readdirSync(dirPath)) {
-      const fullDir = join(dirPath, dirName);
-      const statResult = tryCatch(() => fsDeps.statSync(fullDir));
-      if (!statResult.ok) continue;
-      if (statResult.value.isFile()) continue;
+  for (const skillPath of skillPaths) {
+    const skill = getSkillJSON(skillPath);
+    if (skill === null) continue;
 
-      const skill = getSkillJSON(fullDir);
-      if (skill === null) continue;
-      if (seenSkills.has(skill.name)) continue;
-      seenSkills.add(skill.name);
-      skills.push(skill);
-    }
-  });
+    if (seenSkills.has(skill.name)) continue;
+    seenSkills.add(skill.name);
+    skills.push(skill);
+
+    dispatch(actions.appendToSkills(skill));
+  }
 
   const skillsList = skills
     .map((skill) => `- ${skill.name}: ${skill.description}`)
@@ -114,45 +117,36 @@ export function parseFrontMatter(content: string) {
   return { data: parseResult.value, body };
 }
 
-export function getSkillJSON(dirPath: string) {
-  for (const name of fsDeps.readdirSync(dirPath)) {
-    const fullPath = join(dirPath, name);
-    const statResult = tryCatch(() => fsDeps.statSync(fullPath));
-    if (!statResult.ok) continue;
-    if (!statResult.value.isFile()) continue;
-    if (name !== "SKILL.md") continue;
+export function getSkillJSON(skillMdPath: string) {
+  const readResult = tryCatch(() =>
+    fsDeps.readFileSync(skillMdPath).toString(),
+  );
+  if (!readResult.ok) return null;
 
-    const readResult = tryCatch(() => fsDeps.readFileSync(fullPath).toString());
-    if (!readResult.ok) continue;
-
-    const parsed = parseFrontMatter(readResult.value);
-    if (parsed === null) {
-      colorPrint(
-        `Malformed skill at ${fullPath}! A skill's front matter must contain valid YAML between \`---\` and \`---\`.`,
-        "red",
-      );
-      continue;
-    }
-    const parseResult = skillMetadataSchema.safeParse(parsed.data);
-    if (!parseResult.success) {
-      colorPrint(
-        `Malformed skill at ${fullPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,
-        "red",
-      );
-      continue;
-    }
-    dispatch(
-      actions.appendToSkills({
-        name: parseResult.data.name,
-        content: parsed.body,
-        dir: dirPath,
-      }),
+  const parsed = parseFrontMatter(readResult.value);
+  if (parsed === null) {
+    colorPrint(
+      `Malformed skill at ${skillMdPath}! A skill's front matter must contain valid YAML between \`---\` and \`---\`.`,
+      "red",
     );
-
-    return parseResult.data;
+    return null;
+  }
+  const parseResult = skillMetadataSchema.safeParse(parsed.data);
+  if (!parseResult.success) {
+    colorPrint(
+      `Malformed skill at ${skillMdPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,
+      "red",
+    );
+    return null;
   }
 
-  return null;
+  const skill: Skill = {
+    content: parsed.body,
+    dir: dirname(skillMdPath),
+    name: parseResult.data.name,
+    description: parseResult.data.description,
+  };
+  return skill;
 }
 
 export const BASE_SYSTEM_PROMPT = `

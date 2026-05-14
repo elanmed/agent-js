@@ -8,7 +8,7 @@ import {
   getSkillJSON,
   parseFrontMatter,
 } from "./context.ts";
-import { dispatch, actions } from "./state.ts";
+import { dispatch, actions, selectors } from "./state.ts";
 
 describe("context", () => {
   beforeEach(() => {
@@ -132,8 +132,10 @@ would benefit from specialized instructions.
     });
 
     it("lists skills found in skill directories", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/my-skill");
+      testFs._globResults.set(
+        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/.agent-js/skills/my-skill/SKILL.md"],
+      );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
@@ -154,10 +156,13 @@ would benefit from specialized instructions.
     });
 
     it("deduplicates by parsed name, keeping first occurrence", () => {
-      testFs._dirs.add("/test-cwd/.agent-js/skills");
-      testFs._dirs.add("/test-cwd/.agent-js/skills/local-skill");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/global-skill");
+      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
+        "/test-cwd/.agent-js/skills/local-skill/SKILL.md",
+      ]);
+      testFs._globResults.set(
+        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/.agent-js/skills/global-skill/SKILL.md"],
+      );
       testFs._files.set(
         "/test-cwd/.agent-js/skills/local-skill/SKILL.md",
         "---\nname: deploy\ndescription: Local deploy\n---\n# Local",
@@ -181,10 +186,37 @@ would benefit from specialized instructions.
       );
     });
 
+    it("does not dispatch duplicate skills to state", () => {
+      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
+        "/test-cwd/.agent-js/skills/a/SKILL.md",
+      ]);
+      testFs._globResults.set(
+        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/.agent-js/skills/b/SKILL.md"],
+      );
+      testFs._files.set(
+        "/test-cwd/.agent-js/skills/a/SKILL.md",
+        "---\nname: deploy\ndescription: First\n---\n# A",
+      );
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/skills/b/SKILL.md",
+        "---\nname: deploy\ndescription: Second\n---\n# B",
+      );
+      getSkillsContext();
+      assert.equal(selectors.getSkills().length, 1);
+      assert.deepStrictEqual(selectors.getSkills()[0], {
+        name: "deploy",
+        description: "First",
+        content: "# A",
+        dir: "/test-cwd/.agent-js/skills/a",
+      });
+    });
+
     it("includes skills with different names", () => {
-      testFs._dirs.add("/test-cwd/.agent-js/skills");
-      testFs._dirs.add("/test-cwd/.agent-js/skills/a");
-      testFs._dirs.add("/test-cwd/.agent-js/skills/b");
+      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
+        "/test-cwd/.agent-js/skills/a/SKILL.md",
+        "/test-cwd/.agent-js/skills/b/SKILL.md",
+      ]);
       testFs._files.set(
         "/test-cwd/.agent-js/skills/a/SKILL.md",
         "---\nname: skill-a\ndescription: First\n---\n",
@@ -210,8 +242,10 @@ would benefit from specialized instructions.
     });
 
     it("skips non-existent skill directories", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/my-skill");
+      testFs._globResults.set(
+        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/.agent-js/skills/my-skill/SKILL.md"],
+      );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
         "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
@@ -231,16 +265,21 @@ would benefit from specialized instructions.
       );
     });
 
-    it("skips file entries in skill directory", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills");
-      testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/not-a-dir",
-        "some content",
+    it("skips malformed skill files", () => {
+      testFs._globResults.set(
+        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        [
+          "/fake-home/.config/.agent-js/skills/bad/SKILL.md",
+          "/fake-home/.config/.agent-js/skills/good/SKILL.md",
+        ],
       );
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/actual-skill");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/actual-skill/SKILL.md",
-        "---\nname: actual-skill\ndescription: Real\n---\n",
+        "/fake-home/.config/.agent-js/skills/bad/SKILL.md",
+        "not front matter",
+      );
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/skills/good/SKILL.md",
+        "---\nname: good\ndescription: Valid\n---\n",
       );
       const result = getSkillsContext();
       assert.equal(
@@ -252,71 +291,16 @@ Use the \`loadSkill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
-- actual-skill: Real
-`,
-      );
-    });
-
-    it("skips entries where statSync fails", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/broken");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/working");
-      testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/working/SKILL.md",
-        "---\nname: working\ndescription: Works\n---\n",
-      );
-      const originalStatSync = testFs.statSync;
-      testFs.statSync = (path: string) => {
-        if (path === "/fake-home/.config/.agent-js/skills/broken")
-          throw new Error("stat failed");
-        return originalStatSync(path);
-      };
-      const result = getSkillsContext();
-      assert.equal(
-        result,
-        `
-Skills:
-
-Use the \`loadSkill\` tool to load a skill when the user's request
-would benefit from specialized instructions.
-
- Available skills:
-- working: Works
-`,
-      );
-    });
-
-    it("skips entries where getSkillJSON returns null", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/no-skill-md");
-      testFs._dirs.add("/fake-home/.config/.agent-js/skills/has-skill");
-      testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/no-skill-md/readme.txt",
-        "just a file",
-      );
-      testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/has-skill/SKILL.md",
-        "---\nname: has-skill\ndescription: Present\n---\n",
-      );
-      const result = getSkillsContext();
-      assert.equal(
-        result,
-        `
-Skills:
-
-Use the \`loadSkill\` tool to load a skill when the user's request
-would benefit from specialized instructions.
-
- Available skills:
-- has-skill: Present
+- good: Valid
 `,
       );
     });
 
     it("includes skills from custom skill dirs", () => {
       dispatch(actions.setCustomSkillDirs(["/custom/skills"]));
-      testFs._dirs.add("/custom/skills");
-      testFs._dirs.add("/custom/skills/custom-skill");
+      testFs._globResults.set("/custom/skills/**/SKILL.md", [
+        "/custom/skills/custom-skill/SKILL.md",
+      ]);
       testFs._files.set(
         "/custom/skills/custom-skill/SKILL.md",
         "---\nname: custom-skill\ndescription: From custom dir\n---\n",
@@ -338,10 +322,12 @@ would benefit from specialized instructions.
 
     it("prioritizes custom skill dirs over local and global", () => {
       dispatch(actions.setCustomSkillDirs(["/custom/skills"]));
-      testFs._dirs.add("/custom/skills");
-      testFs._dirs.add("/custom/skills/deploy");
-      testFs._dirs.add("/test-cwd/.agent-js/skills");
-      testFs._dirs.add("/test-cwd/.agent-js/skills/deploy");
+      testFs._globResults.set("/custom/skills/**/SKILL.md", [
+        "/custom/skills/deploy/SKILL.md",
+      ]);
+      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
+        "/test-cwd/.agent-js/skills/deploy/SKILL.md",
+      ]);
       testFs._files.set(
         "/custom/skills/deploy/SKILL.md",
         "---\nname: deploy\ndescription: Custom deploy\n---\n",
@@ -364,6 +350,36 @@ would benefit from specialized instructions.
 `,
       );
     });
+
+    it("skips entries where globSync throws", () => {
+      const originalGlobSync = testFs.globSync;
+      testFs.globSync = (pattern: string) => {
+        if (pattern === "/test-cwd/.agent-js/skills/**/SKILL.md")
+          throw new Error("glob failed");
+        return originalGlobSync(pattern);
+      };
+      testFs._globResults.set(
+        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/.agent-js/skills/ok/SKILL.md"],
+      );
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/skills/ok/SKILL.md",
+        "---\nname: ok\ndescription: Works\n---\n",
+      );
+      const result = getSkillsContext();
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- ok: Works
+`,
+      );
+    });
   });
 
   describe("getSkillJSON", () => {
@@ -371,73 +387,48 @@ would benefit from specialized instructions.
       setupFakeDeps();
     });
 
-    it("returns null when dir is empty", () => {
-      const result = getSkillJSON("/some/dir");
+    it("returns null when file does not exist", () => {
+      const result = getSkillJSON("/some/dir/SKILL.md");
       assert.equal(result, null);
     });
 
     it("parses valid SKILL.md front matter", () => {
-      testFs._files.set("/skill-dir/other.txt", "");
       testFs._files.set(
         "/skill-dir/SKILL.md",
         "---\nname: deploy\ndescription: Deploy the app\n---\n# Deploy",
       );
-      const result = getSkillJSON("/skill-dir");
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.deepStrictEqual(result, {
         name: "deploy",
         description: "Deploy the app",
+        content: "# Deploy",
+        dir: "/skill-dir",
       });
     });
 
-    it("returns null when SKILL.md is missing name", () => {
+    it("returns null when front matter is missing name", () => {
       testFs._files.set(
         "/skill-dir/SKILL.md",
         "---\ndescription: No name here\n---\n",
       );
-      const result = getSkillJSON("/skill-dir");
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
 
-    it("returns null when SKILL.md is missing description", () => {
+    it("returns null when front matter is missing description", () => {
       testFs._files.set("/skill-dir/SKILL.md", "---\nname: deploy\n---\n");
-      const result = getSkillJSON("/skill-dir");
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
 
-    it("returns null when SKILL.md is not a file", () => {
+    it("returns null when path is a directory", () => {
       testFs._dirs.add("/skill-dir");
-      testFs._files.delete("/skill-dir/SKILL.md");
-      const result = getSkillJSON("/skill-dir");
-      assert.equal(result, null);
-    });
-
-    it("finds SKILL.md when it is not the first entry", () => {
-      testFs._files.set("/skill-dir/readme.txt", "readme");
-      testFs._files.set("/skill-dir/notes.md", "notes");
-      testFs._files.set(
-        "/skill-dir/SKILL.md",
-        "---\nname: deploy\ndescription: Deploy the app\n---\n",
-      );
-      const result = getSkillJSON("/skill-dir");
-      assert.deepStrictEqual(result, {
-        name: "deploy",
-        description: "Deploy the app",
-      });
-    });
-
-    it("skips entries where statSync fails", () => {
-      testFs._files.set("/skill-dir/SKILL.md", "content");
-      const originalStatSync = testFs.statSync;
-      testFs.statSync = (path: string) => {
-        if (path === "/skill-dir/SKILL.md") throw new Error("stat failed");
-        return originalStatSync(path);
-      };
       const result = getSkillJSON("/skill-dir");
       assert.equal(result, null);
     });
 
     it("returns null when readFileSync fails", () => {
-      const result = getSkillJSON("/skill-dir");
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
   });

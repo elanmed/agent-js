@@ -704,6 +704,7 @@ describe("tools", () => {
       dispatch(
         actions.appendToSkills({
           name: "deploy",
+          description: "Deploy skill",
           dir: "/skills/deploy",
           content: "# Deploy instructions",
         }),
@@ -719,6 +720,7 @@ describe("tools", () => {
         content: JSON.stringify(
           {
             name: "deploy",
+            description: "Deploy skill",
             dir: "/skills/deploy",
             content: "# Deploy instructions",
           },
@@ -732,6 +734,7 @@ describe("tools", () => {
       dispatch(
         actions.appendToSkills({
           name: "skill-a",
+          description: "Skill A",
           dir: "/a",
           content: "content a",
         }),
@@ -739,6 +742,7 @@ describe("tools", () => {
       dispatch(
         actions.appendToSkills({
           name: "skill-b",
+          description: "Skill B",
           dir: "/b",
           content: "content b",
         }),

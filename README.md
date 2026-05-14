@@ -11,7 +11,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
 - **Configuration**: global and local `settings.json`
 - **AGENTS.md discovery**: recursively includes project context from `AGENTS.md` files
-- **Skills**: load skill metadata from `SKILL.md` files in `~/.config/.agent-js/skills/`, `./.agent-js/skills/`, or any directory specified in `customSkillDirs`
+- **Skills**: load skill metadata from `SKILL.md` files in `~/.config/.agent-js/skills/`, `./.agent-js/skills/`, or any directory specified in `customSkillDirs`. Nested subdirectories are supported via `**/SKILL.md` glob
 - **Slash commands**: builtin (`/edit`, `/clear`, `/edit-log`, `/model`) and custom commands from `./.agent-js/commands/` or `~/.config/.agent-js/commands/`
 - **Cost tracking**: per-model token pricing with usage summary after each response
 - **Keymaps**: customizable shortcuts for built-in slash commands
@@ -138,6 +138,9 @@ Files from all sources are concatenated into the system prompt with their paths.
 ~/.config/.agent-js/skills/   # global skills
   my-skill/
     SKILL.md
+  category/
+    nested-skill/
+      SKILL.md
 ./.agent-js/skills/            # local skills
   project-skill/
     SKILL.md
@@ -148,7 +151,7 @@ Files from all sources are concatenated into the system prompt with their paths.
 
 ### Discovery
 
-Skills are discovered from three sources in priority order:
+Skills are discovered via `**/SKILL.md` glob from three sources in priority order:
 
 1. **Custom skill dirs** — directories specified in `customSkillDirs`
 2. **Local skills** — `./.agent-js/skills/`
@@ -203,7 +206,6 @@ Minimal runtime dependencies (7 total):
 - [ ] Look into tanstack ai
   - [ ] Support code-mode
 - [ ] Progressively disclose nested AGENTS.md files?
-- [ ] Read each nested skills file
 
 ## TODO (later)
 

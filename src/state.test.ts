@@ -259,22 +259,23 @@ describe("state", () => {
       dispatch(
         actions.appendToSkills({
           name: "deploy",
+          description: "Deploy skill",
           dir: "/skills/deploy",
           content: "# Deploy instructions",
         }),
       );
       assert.deepStrictEqual(selectors.getSkills(), [
-        { name: "deploy", dir: "/skills/deploy", content: "# Deploy instructions" },
+        { name: "deploy", description: "Deploy skill", dir: "/skills/deploy", content: "# Deploy instructions" },
       ]);
     });
 
     it("appends multiple skills in order", () => {
       assert.deepStrictEqual(selectors.getSkills(), []);
       dispatch(
-        actions.appendToSkills({ name: "a", dir: "/a", content: "content a" }),
+        actions.appendToSkills({ name: "a", description: "Skill A", dir: "/a", content: "content a" }),
       );
       dispatch(
-        actions.appendToSkills({ name: "b", dir: "/b", content: "content b" }),
+        actions.appendToSkills({ name: "b", description: "Skill B", dir: "/b", content: "content b" }),
       );
       assert.equal(selectors.getSkills().length, 2);
       assert.equal(selectors.getSkills()[0]!.name, "a");
