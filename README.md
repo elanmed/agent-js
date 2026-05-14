@@ -108,6 +108,9 @@ Slash commands are triggered with `/command` at the prompt.
 | `/clear`    | Clear conversation context and reset message history                          |
 | `/edit-log` | Open `$AGENT_JS_EDITOR_LOG` or `$EDITOR` to view the editor log               |
 | `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)                         |
+| `/skills`   | List available skills                                                         |
+| `/context`  | List available context files                                                  |
+| `/commands` | List available slash commands (builtin and custom)                            |
 
 ### Custom Slash Commands
 
