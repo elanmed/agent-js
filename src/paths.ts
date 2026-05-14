@@ -18,8 +18,8 @@ export function getLocalConfigPath() {
   return join(getLocalConfigDirPath(), "settings.json");
 }
 
-export function getGlobalAgentsPath() {
-  return join(getGlobalConfigDirPath(), "agents");
+export function getGlobalContextDirPath() {
+  return join(getGlobalConfigDirPath(), "context");
 }
 
 export function getGlobalSkillsDirPath() {

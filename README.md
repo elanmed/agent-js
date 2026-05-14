@@ -101,6 +101,31 @@ Slash commands are triggered with `/command` at the prompt.
 
 Create custom commands by adding markdown files to `./.agent-js/commands/[command].md`
 
+## AGENTS.md Context
+
+`AGENTS.md` files provide project context to the agent, they are discovered from three sources:
+
+### Directory Structure
+
+```
+./
+  AGENTS.md                        # nested in cwd — any depth
+  src/
+    AGENTS.md
+~/.config/.agent-js/context/       # global context dir
+  rules/
+    AGENTS.md
+  conventions/
+    AGENTS.md
+```
+
+### Discovery
+
+- **CWD glob** — all `**/AGENTS.md` files under the current working directory
+- **Global context dir** — all `**/AGENTS.md` files under `~/.config/.agent-js/context/`
+
+Files from all sources are concatenated into the system prompt with their paths.
+
 ## Skills
 
 ### Directory Structure
@@ -161,9 +186,7 @@ Minimal runtime dependencies (7 total):
 - [ ] Look into tanstack ai
   - [ ] Support code-mode
 - [ ] Progressively disclose nested AGENTS.md files?
-- [ ] Read each nested AGENTS.md file
 - [ ] Read each nested skills file
-- [ ] Custom AGENTS.md dirs
 - [ ] Custom skill dirs
 - [ ] Make fence print prettier
 

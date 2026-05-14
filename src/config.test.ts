@@ -7,7 +7,7 @@ import { initState, DEFAULT_CONFIG } from "./config.ts";
 import {
   getGlobalConfigPath,
   getLocalConfigPath,
-  getGlobalAgentsPath,
+  getGlobalContextDirPath,
 } from "./paths.ts";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
@@ -425,9 +425,9 @@ describe("config", () => {
   });
 
   it("sets agentsContext from dep", () => {
-    testFs._dirs.add(getGlobalAgentsPath());
-    const agentFile = join(getGlobalAgentsPath(), "hello.md");
-    testFs._globResults.set(join(getGlobalAgentsPath(), "**/AGENTS.md"), [agentFile]);
+    testFs._dirs.add(getGlobalContextDirPath());
+    const agentFile = join(getGlobalContextDirPath(), "hello.md");
+    testFs._globResults.set(join(getGlobalContextDirPath(), "**/AGENTS.md"), [agentFile]);
     testFs._files.set(agentFile, "hello");
     testFs._files.set(
         getGlobalConfigPath(),
@@ -442,45 +442,6 @@ describe("config", () => {
       selectors.getAgentsContext(),
       `\nAGENTS.md context files:\nPath: ${agentFile}\nContent: hello\n`,
     );
-  });
-
-  describe("customAgentsMdPaths", () => {
-    it("uses local over global over default", () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
-          customAgentsMdPaths: ["/global/agents.md"],
-        }),
-      );
-      testFs._files.set(
-        getLocalConfigPath(),
-        JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
-          customAgentsMdPaths: ["/local/agents.md"],
-        }),
-      );
-
-      initState();
-      assert.deepStrictEqual(selectors.getCustomAgentsPaths(), [
-        "/local/agents.md",
-      ]);
-    });
-
-    it("defaults to empty array when not configured", () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
-        }),
-      );
-
-      initState();
-      assert.deepStrictEqual(selectors.getCustomAgentsPaths(), []);
-    });
   });
 
   it("sets skillsContext from dep", () => {

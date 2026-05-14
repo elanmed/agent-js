@@ -3,9 +3,9 @@ import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { colorPrint } from "./print.ts";
 import { debugLog } from "./log.ts";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions } from "./state.ts";
 import {
-  getGlobalAgentsPath,
+  getGlobalContextDirPath,
   getGlobalSkillsDirPath,
   getLocalSkillsDirPath,
 } from "./paths.ts";
@@ -15,14 +15,8 @@ import { z } from "zod";
 export function getAgentsContext() {
   const agentFileDirs: string[] = [processDeps.cwd()];
 
-  if (fsDeps.existsSync(getGlobalAgentsPath())) {
-    agentFileDirs.push(getGlobalAgentsPath());
-  }
-
-  const customAgentsDirs = selectors.getCustomAgentsPaths();
-  for (const customAgentDir of customAgentsDirs) {
-    if (!fsDeps.existsSync(customAgentDir)) continue;
-    agentFileDirs.push(customAgentDir);
+  if (fsDeps.existsSync(getGlobalContextDirPath())) {
+    agentFileDirs.push(getGlobalContextDirPath());
   }
 
   const agentFilePaths: string[] = [];

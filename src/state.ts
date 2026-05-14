@@ -43,7 +43,6 @@ interface State {
     keymapEdit: Key;
     keymapEditLog: Key;
     keymapClear: Key;
-    customAgentsPaths: string[];
   };
   abortControllers: {
     question: AbortController | null;
@@ -80,7 +79,6 @@ const initialState: State = {
     keymapEdit: structuredClone(DEFAULT_CONFIG.keymaps.edit),
     keymapEditLog: structuredClone(DEFAULT_CONFIG.keymaps.editLog),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
-    customAgentsPaths: [],
   },
   abortControllers: {
     question: null,
@@ -214,10 +212,6 @@ type Action =
   | {
       type: "set-spinner-timeout";
       payload: NodeJS.Timeout | null;
-    }
-  | {
-      type: "set-custom-agents-paths";
-      payload: string[];
     }
   | {
       type: "reset-state";
@@ -572,18 +566,6 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
-    case "set-custom-agents-paths": {
-      const before = state.configState.customAgentsPaths;
-      const next = {
-        ...state,
-        configState: {
-          ...state.configState,
-          customAgentsPaths: action.payload,
-        },
-      };
-      logStateChange(action.type, stringify(before), stringify(action.payload));
-      return next;
-    }
     case "reset-state": {
       const next = structuredClone(initialState);
       logStateChange(action.type, "[truncating]", stringify(next));
@@ -734,10 +716,6 @@ const setSpinnerTimeout = (timeout: NodeJS.Timeout | null): Action => {
   return { type: "set-spinner-timeout", payload: timeout };
 };
 
-const setCustomAgentsPaths = (paths: string[]): Action => {
-  return { type: "set-custom-agents-paths", payload: paths };
-};
-
 const resetState = (): Action => {
   return { type: "reset-state" };
 };
@@ -774,7 +752,6 @@ export const actions = {
   appendToSkills,
   setRl,
   setSpinnerTimeout,
-  setCustomAgentsPaths,
   resetState,
 };
 
@@ -793,7 +770,6 @@ const getSkillsContext = () => getState().appState.skillsContext;
 const getSkills = () => getState().appState.skills;
 const getRl = () => getState().appState.rl;
 const getSpinnerTimeout = () => getState().appState.spinnerTimeout;
-const getCustomAgentsPaths = () => getState().configState.customAgentsPaths;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -813,7 +789,6 @@ export const selectors = {
   getMessageParams,
   getMessageUsages,
   getModel,
-  getCustomAgentsPaths,
   getProvider,
   getBaseURL,
   getPricingPerModel,

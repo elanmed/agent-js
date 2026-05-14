@@ -42,7 +42,6 @@ const ConfigSchema = z.object({
       clear: KeySchema.optional(),
     })
     .optional(),
-  customAgentsMdPaths: z.array(z.string()).optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -68,7 +67,6 @@ interface DefaultConfig {
     editLog: Key;
     clear: Key;
   };
-  customAgentsMdPaths: string[];
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -92,7 +90,6 @@ export const DEFAULT_CONFIG: DefaultConfig = {
       ctrl: true,
     },
   },
-  customAgentsMdPaths: [],
 };
 
 export function initState() {
@@ -206,14 +203,6 @@ export function initState() {
       localConfig.keymaps?.clear ??
         globalConfig.keymaps?.clear ??
         DEFAULT_CONFIG.keymaps.clear,
-    ),
-  );
-
-  dispatch(
-    actions.setCustomAgentsPaths(
-      localConfig.customAgentsMdPaths ??
-        globalConfig.customAgentsMdPaths ??
-        DEFAULT_CONFIG.customAgentsMdPaths,
     ),
   );
 

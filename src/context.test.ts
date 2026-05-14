@@ -3,7 +3,7 @@ import assert from "node:assert";
 import os from "node:os";
 import { join } from "node:path";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
-import { getGlobalAgentsPath } from "./paths.ts";
+import { getGlobalContextDirPath } from "./paths.ts";
 import {
   getAgentsContext,
   getSkillsContext,
@@ -69,9 +69,9 @@ describe("context", () => {
     });
 
     it("includes global agents dir files", () => {
-      testFs._dirs.add(getGlobalAgentsPath());
-      const glob = join(getGlobalAgentsPath(), "**/AGENTS.md");
-      const agentFile = join(getGlobalAgentsPath(), "AGENTS.md");
+      testFs._dirs.add(getGlobalContextDirPath());
+      const glob = join(getGlobalContextDirPath(), "**/AGENTS.md");
+      const agentFile = join(getGlobalContextDirPath(), "AGENTS.md");
       testFs._globResults.set(glob, [agentFile]);
       testFs._files.set(agentFile, "global content");
       const result = getAgentsContext();
@@ -81,49 +81,12 @@ describe("context", () => {
       );
     });
 
-    it("includes custom agents paths from state", () => {
-      const customDir = "/custom/agents";
-      testFs._dirs.add(customDir);
-      dispatch(actions.setCustomAgentsPaths([customDir]));
-      const glob = join(customDir, "**/AGENTS.md");
-      testFs._globResults.set(glob, ["/custom/agents/AGENTS.md"]);
-      testFs._files.set("/custom/agents/AGENTS.md", "custom content");
-      const result = getAgentsContext();
-      assert.ok(result.includes("Path: /custom/agents/AGENTS.md"));
-      assert.ok(result.includes("Content: custom content"));
-    });
-
-    it("skips custom agents paths that do not exist", () => {
-      dispatch(actions.setCustomAgentsPaths(["/nonexistent/custom"]));
-      const result = getAgentsContext();
-      assert.equal(result, "");
-    });
-
-    it("combines global, custom, and globbed AGENTS.md files", () => {
-      const cwd = process.cwd();
-      testFs._dirs.add(getGlobalAgentsPath());
-      const agentFile = join(getGlobalAgentsPath(), "AGENTS.md");
-      testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);
-      testFs._globResults.set(join(getGlobalAgentsPath(), "**/AGENTS.md"), [agentFile]);
-      testFs._files.set(agentFile, "global content");
-      testFs._files.set(`${cwd}/AGENTS.md`, "local content");
-      const customDir = "/custom/agents";
-      testFs._dirs.add(customDir);
-      dispatch(actions.setCustomAgentsPaths([customDir]));
-      testFs._globResults.set(join(customDir, "**/AGENTS.md"), ["/custom/agents/AGENTS.md"]);
-      testFs._files.set("/custom/agents/AGENTS.md", "custom content");
-      const result = getAgentsContext();
-      assert.ok(result.includes(agentFile));
-      assert.ok(result.includes("/custom/agents/AGENTS.md"));
-      assert.ok(result.includes(`${cwd}/AGENTS.md`));
-    });
-
     it("combines global and globbed AGENTS.md files", () => {
       const cwd = process.cwd();
-      testFs._dirs.add(getGlobalAgentsPath());
-      const agentFile = join(getGlobalAgentsPath(), "AGENTS.md");
+      testFs._dirs.add(getGlobalContextDirPath());
+      const agentFile = join(getGlobalContextDirPath(), "AGENTS.md");
       testFs._files.set(agentFile, "global content");
-      testFs._globResults.set(join(getGlobalAgentsPath(), "**/AGENTS.md"), [agentFile]);
+      testFs._globResults.set(join(getGlobalContextDirPath(), "**/AGENTS.md"), [agentFile]);
       testFs._globResults.set(`${cwd}/**/AGENTS.md`, [`${cwd}/AGENTS.md`]);
       testFs._files.set(`${cwd}/AGENTS.md`, "local content");
       const result = getAgentsContext();
