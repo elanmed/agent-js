@@ -60,29 +60,6 @@ describe("config", () => {
       assert.equal(selectors.getProvider(), "anthropic");
     });
 
-    it("uses its disableUsageMessage over the global config, default config", () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
-          disableUsageMessage: false,
-        }),
-      );
-      testFs._files.set(
-        getLocalConfigPath(),
-        JSON.stringify({
-          model: "claude-sonnet-4-6",
-          baseURL: "https://api.example.com",
-          disableUsageMessage: true,
-        }),
-      );
-
-      initState();
-
-      assert.equal(selectors.getDisableUsageMessage(), true);
-    });
-
     it("uses its editorLog over the global config, default config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
@@ -290,20 +267,6 @@ describe("config", () => {
 
         initState();
         assert.equal(selectors.getProvider(), "anthropic");
-      });
-
-      it("uses its disableUsageMessage over the default config", () => {
-        testFs._files.set(
-        getGlobalConfigPath(),
-          JSON.stringify({
-            model: "claude-sonnet-4-6",
-            baseURL: "https://api.example.com",
-            disableUsageMessage: true,
-          }),
-        );
-
-        initState();
-        assert.equal(selectors.getDisableUsageMessage(), true);
       });
 
       it("uses its editorLog over the default config", () => {

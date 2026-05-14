@@ -31,7 +31,6 @@ const ConfigSchema = z.object({
   model: z.string().optional(),
   baseURL: z.string().optional(),
   provider: z.enum(["anthropic", "openai-compatible"]).optional(),
-  disableUsageMessage: z.boolean().optional(),
   editorLog: z.boolean().optional(),
   diffStyle: z.enum(["unified", "lines"]).optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
@@ -51,7 +50,6 @@ export type Key = z.infer<typeof KeySchema>;
 interface DefaultConfig {
   model: string;
   provider: Provider;
-  disableUsageMessage: boolean;
   editorLog: boolean;
   diffStyle: "unified" | "lines";
   pricingPerModel: Record<
@@ -73,7 +71,6 @@ interface DefaultConfig {
 
 export const DEFAULT_CONFIG: DefaultConfig = {
   provider: "openai-compatible",
-  disableUsageMessage: false,
   editorLog: true,
   diffStyle: "lines",
   pricingPerModel: {},
@@ -157,13 +154,6 @@ export function initState() {
   dispatch(actions.setModel(defaultedModel));
   if (defaultedBaseURL) dispatch(actions.setBaseURL(defaultedBaseURL));
   dispatch(actions.setProvider(defaultedProvider));
-  dispatch(
-    actions.setDisableUsageMessage(
-      localConfig.disableUsageMessage ??
-        globalConfig.disableUsageMessage ??
-        DEFAULT_CONFIG.disableUsageMessage,
-    ),
-  );
   dispatch(
     actions.setEditorLog(
       localConfig.editorLog ??

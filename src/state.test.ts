@@ -133,12 +133,6 @@ describe("state", () => {
     assert.deepStrictEqual(selectors.getPricingPerModel(), newPricing);
   });
 
-  it("set-disable-usage-message", () => {
-    assert.equal(selectors.getDisableUsageMessage(), false);
-    dispatch(actions.setDisableUsageMessage(true));
-    assert.equal(selectors.getDisableUsageMessage(), true);
-  });
-
   it("set-diff-style", () => {
     assert.equal(selectors.getDiffStyle(), "lines");
     dispatch(actions.setDiffStyle("unified"));

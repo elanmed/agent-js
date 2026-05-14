@@ -45,7 +45,6 @@ interface State {
     model: string;
     baseURL: string | null;
     provider: Provider;
-    disableUsageMessage: boolean;
     diffStyle: DiffStyle;
     keymapEdit: Key;
     keymapEditLog: Key;
@@ -81,7 +80,6 @@ const initialState: State = {
     model: MISSING,
     provider: DEFAULT_CONFIG.provider,
     baseURL: null,
-    disableUsageMessage: DEFAULT_CONFIG.disableUsageMessage,
     diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
     keymapEdit: structuredClone(DEFAULT_CONFIG.keymaps.edit),
@@ -131,10 +129,6 @@ type Action =
   | {
       type: "set-pricing-per-model";
       payload: Record<string, ModelPricing>;
-    }
-  | {
-      type: "set-disable-usage-message";
-      payload: boolean;
     }
   | {
       type: "set-diff-style";
@@ -323,18 +317,6 @@ const reducer = (state: State, action: Action): State => {
         configState: { ...state.configState, pricingPerModel: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
-      return next;
-    }
-    case "set-disable-usage-message": {
-      const before = state.configState.disableUsageMessage;
-      const next = {
-        ...state,
-        configState: {
-          ...state.configState,
-          disableUsageMessage: action.payload,
-        },
-      };
-      logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-diff-style": {
@@ -642,10 +624,6 @@ const setPricingPerModel = (pricing: Record<string, ModelPricing>): Action => {
   return { type: "set-pricing-per-model", payload: pricing };
 };
 
-const setDisableUsageMessage = (disabled: boolean): Action => {
-  return { type: "set-disable-usage-message", payload: disabled };
-};
-
 const setDiffStyle = (diffStyle: DiffStyle): Action => {
   return { type: "set-diff-style", payload: diffStyle };
 };
@@ -757,7 +735,6 @@ export const actions = {
   setProvider,
   setBaseURL,
   setPricingPerModel,
-  setDisableUsageMessage,
   setDiffStyle,
   setKeymapEdit,
   setKeymapEditLog,
@@ -805,7 +782,6 @@ const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
-const getDisableUsageMessage = () => getState().configState.disableUsageMessage;
 const getDiffStyle = () => getState().configState.diffStyle;
 const getKeymapEdit = () => getState().configState.keymapEdit;
 const getKeymapEditLog = () => getState().configState.keymapEditLog;
@@ -823,7 +799,6 @@ export const selectors = {
   getProvider,
   getBaseURL,
   getPricingPerModel,
-  getDisableUsageMessage,
   getDiffStyle,
   getKeymapEdit,
   getKeymapEditLog,

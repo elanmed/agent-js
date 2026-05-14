@@ -57,14 +57,10 @@ interface FencePrintOpts {
 
 export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   let sessionUsage = "";
-  if (!opts.skipSessionUsage && !selectors.getDisableUsageMessage()) {
+  if (!opts.skipSessionUsage) {
     sessionUsage = ` (${calculateSessionUsage()})`;
   }
-  let label = `${text}${sessionUsage}`;
-  if (label.length >= 50) {
-    label = label.slice(0, 46).concat("...");
-  }
-  const line = `── ${label} ${"─".repeat(50 - label.length)}`;
+  const line = `━━ ${text}${sessionUsage} ━━`;
   colorPrint(line, opts.color ?? "grey");
 }
 

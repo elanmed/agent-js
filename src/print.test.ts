@@ -1,6 +1,6 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import { formatMarkdown, fencePrint, calculateSessionUsage, processDeps } from "./print.ts";
+import { formatMarkdown, calculateSessionUsage } from "./print.ts";
 import { dispatch, actions } from "./state.ts";
 
 describe("print", () => {
@@ -15,35 +15,6 @@ describe("print", () => {
       const invalid = null as unknown as string;
       const result = await formatMarkdown(invalid);
       assert.equal(result, invalid);
-    });
-  });
-
-  describe("fencePrint", () => {
-    let captured: string[] = [];
-
-    beforeEach(() => {
-      captured = [];
-      mock.method(processDeps.stdout, "write", (chunk: string | Buffer) => {
-        captured.push(chunk.toString());
-        return true;
-      });
-      dispatch(actions.resetState());
-    });
-
-    it("truncates labels longer than 50 characters", () => {
-      const longText = "a".repeat(60);
-      fencePrint(longText, {});
-      assert.deepStrictEqual(captured, [
-        `\x1b[90m── ${"a".repeat(46)}... ─\x1b[0m\n`,
-      ]);
-    });
-
-    it("does not truncate labels under 50 characters", () => {
-      const shortText = "short label";
-      fencePrint(shortText, {});
-      assert.deepStrictEqual(captured, [
-        `\x1b[90m── short label (0 in, 0 out) ${"─".repeat(25)}\x1b[0m\n`,
-      ]);
     });
   });
 
