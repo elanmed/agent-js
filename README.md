@@ -83,6 +83,14 @@ Example `settings.json`:
 }
 ```
 
+## Environment Variables
+
+| Variable              | Description                                               |
+| --------------------- | --------------------------------------------------------- |
+| `AGENT_JS_API_KEY`    | API key for the configured provider (required)            |
+| `AGENT_JS_EDITOR`     | Editor to open for multi-line input (fallback: `$EDITOR`) |
+| `AGENT_JS_EDITOR_LOG` | Editor to open for the editor log (fallback: `$EDITOR`)   |
+
 ## CLI Arguments
 
 | Flag                 | Description                                          |
