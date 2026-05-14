@@ -23,6 +23,7 @@ import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
 import { debugLog, editorLog } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
+import { getLocalCommandsDirPath } from "./paths.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -231,9 +232,7 @@ export function resolveSlashCommand(rawInput: string) {
   if (selectors.getSlashCommands().includes(commandWithoutSlash)) {
     colorPrint(`Executing slash command: ${rawInput}`, "grey");
     const path = join(
-      processDeps.cwd(),
-      ".agent-js",
-      "commands",
+      getLocalCommandsDirPath(),
       rawInput.slice(1).concat(".md"),
     );
     debugLog(`Performing the slash command at ${path}`);
@@ -342,7 +341,7 @@ export function clearRlLine(): readline.Interface | null {
 
 export function getAvailableSlashCommands() {
   // TODO: move into a separate var
-  const path = join(processDeps.cwd(), ".agent-js", "commands");
+  const path = getLocalCommandsDirPath();
   if (!fsDeps.existsSync(path)) return [];
 
   const readdirResult = tryCatch(() => fsDeps.readdirSync(path));
