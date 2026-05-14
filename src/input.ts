@@ -230,6 +230,9 @@ export function resolveSlashCommand(rawInput: string) {
   } else if (commandWithoutSlash === "skills") {
     printSkillsCommand();
     return null;
+  } else if (commandWithoutSlash === "context") {
+    printContextFilesCommand();
+    return null;
   }
 
   const slashCommands = selectors.getSlashCommands();
@@ -331,8 +334,20 @@ export function printSkillsCommand() {
     .map((skill) => `- ${skill.name}: ${skill.description}`)
     .join("\n");
 
+  printNewline();
   colorPrint("Available skills:", "blue");
   colorPrint(skillsList);
+}
+
+export function printContextFilesCommand() {
+  const contextFilesFormatted = selectors
+    .getContextEntries()
+    .map((context) => `- ${context.filePath}`)
+    .join("\n");
+
+  printNewline();
+  colorPrint("Available context files:", "blue");
+  colorPrint(contextFilesFormatted);
 }
 
 export function isSameKey(a: Key, b: Key) {
