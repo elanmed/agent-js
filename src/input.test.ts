@@ -7,6 +7,11 @@ import {
   setModelCommand,
   isSameKey,
   getAvailableSlashCommands,
+  clearCommand,
+  editLogCommand,
+  printSkillsCommand,
+  printContextFilesCommand,
+  printCommandsCommand,
 } from "./input.ts";
 import { testFs, testProcessEnv, setupFakeDeps } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
@@ -90,65 +95,6 @@ describe("input", () => {
     });
   });
 
-  describe("resolveSlashCommand", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-      mock.method(childProcess, "spawnSync", () => undefined);
-    });
-
-    it("handles /edit command", () => {
-      const result = resolveSlashCommand("/edit");
-      assert.strictEqual(result, null);
-    });
-
-    it("handles /clear command", () => {
-      const result = resolveSlashCommand("/clear");
-      assert.strictEqual(result, null);
-    });
-
-    it("handles /edit-log command", () => {
-      dispatch(
-        actions.setRl({ write: () => null, prompt: () => null } as never),
-      );
-      const result = resolveSlashCommand("/edit-log");
-      assert.strictEqual(result, null);
-    });
-
-    it("handles custom slash command successfully", () => {
-      dispatch(
-        actions.setSlashCommands([
-          {
-            name: "custom",
-            filePath: "/test-cwd/.agent-js/commands/custom.md",
-            content: "custom command content",
-          },
-        ]),
-      );
-      const result = resolveSlashCommand("/custom");
-      assert.strictEqual(result, "custom command content");
-    });
-
-    it("handles unknown slash command", () => {
-      dispatch(
-        actions.setSlashCommands([
-          {
-            name: "known",
-            filePath: "/test-cwd/.agent-js/commands/known.md",
-            content: "known content",
-          },
-        ]),
-      );
-      dispatch(actions.resetStdout());
-      const result = resolveSlashCommand("/unknown");
-      assert.strictEqual(result, null);
-      assert.ok(
-        selectors
-          .getStdout()
-          .includes("Invalid / command detected, valid commands:"),
-      );
-    });
-  });
-
   describe("setModelCommand", () => {
     beforeEach(() => {
       setupFakeDeps();
@@ -189,6 +135,131 @@ describe("input", () => {
         selectors
           .getStdout()
           .includes("Model updated from old to provider/new-model"),
+      );
+    });
+  });
+
+  describe("clearCommand", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      dispatch(actions.resetState());
+      dispatch(actions.resetStdout());
+    });
+
+    it("resets message usages and params", () => {
+      dispatch(
+        actions.appendToMessageUsages({
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        }),
+      );
+      dispatch(
+        actions.appendToMessageParams({
+          role: "user",
+          content: "hello",
+        } as never),
+      );
+      clearCommand();
+      assert.deepStrictEqual(selectors.getMessageUsages(), []);
+      assert.deepStrictEqual(selectors.getMessageParams(), []);
+      assert.ok(selectors.getStdout().includes("Context cleared"));
+    });
+  });
+
+  describe("editLogCommand", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      dispatch(actions.resetState());
+      mock.method(childProcess, "spawnSync", () => undefined);
+    });
+
+    it("prints warning when log does not exist", () => {
+      dispatch(actions.setEditorLogPath("/tmp/nonexistent.log"));
+      dispatch(
+        actions.setRl({ write: () => null, prompt: () => null } as never),
+      );
+      editLogCommand();
+      assert.ok(selectors.getStdout().includes("[Edit log does not exist]"));
+    });
+
+    it("spawns editor when log exists", () => {
+      let spawned = "";
+      mock.method(childProcess, "spawnSync", (cmd: string) => {
+        spawned = cmd;
+      });
+      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      testFs._files.set("/tmp/editor.log", "log content");
+      editLogCommand();
+      assert.ok(spawned.includes("vi"));
+      assert.ok(spawned.includes("/tmp/editor.log"));
+    });
+  });
+
+  describe("printSkillsCommand", () => {
+    beforeEach(() => {
+      dispatch(actions.resetState());
+      dispatch(actions.resetStdout());
+    });
+
+    it("prints available skills", () => {
+      dispatch(
+        actions.setSkills([
+          {
+            name: "test-skill",
+            description: "A test skill",
+            dir: "/skills/test-skill",
+            content: "skill content",
+          },
+        ]),
+      );
+      printSkillsCommand();
+      assert.ok(selectors.getStdout().includes("Available skills:"));
+      assert.ok(selectors.getStdout().includes("test-skill: A test skill"));
+      assert.ok(selectors.getStdout().includes("/skills/test-skill/SKILL.md"));
+    });
+  });
+
+  describe("printContextFilesCommand", () => {
+    beforeEach(() => {
+      dispatch(actions.resetState());
+      dispatch(actions.resetStdout());
+    });
+
+    it("prints available context files", () => {
+      dispatch(
+        actions.setContextEntries([
+          { filePath: "/project/AGENTS.md", content: "context" },
+        ]),
+      );
+      printContextFilesCommand();
+      assert.ok(selectors.getStdout().includes("Available context files:"));
+      assert.ok(selectors.getStdout().includes("/project/AGENTS.md"));
+    });
+  });
+
+  describe("printCommandsCommand", () => {
+    beforeEach(() => {
+      dispatch(actions.resetState());
+      dispatch(actions.resetStdout());
+    });
+
+    it("prints builtin and custom commands", () => {
+      dispatch(
+        actions.setSlashCommands([
+          {
+            name: "custom.md",
+            filePath: "/test/.agent-js/commands/custom.md",
+            content: "custom",
+          },
+        ]),
+      );
+      printCommandsCommand();
+      assert.ok(selectors.getStdout().includes("Available /commands:"));
+      assert.ok(selectors.getStdout().includes("edit"));
+      assert.ok(
+        selectors.getStdout().includes("/test/.agent-js/commands/custom.md"),
       );
     });
   });
@@ -354,6 +425,65 @@ describe("input", () => {
           content: "content",
         },
       ]);
+    });
+  });
+
+  describe("resolveSlashCommand", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      mock.method(childProcess, "spawnSync", () => undefined);
+    });
+
+    it("handles /edit command", () => {
+      const result = resolveSlashCommand("/edit");
+      assert.strictEqual(result, null);
+    });
+
+    it("handles /clear command", () => {
+      const result = resolveSlashCommand("/clear");
+      assert.strictEqual(result, null);
+    });
+
+    it("handles /edit-log command", () => {
+      dispatch(
+        actions.setRl({ write: () => null, prompt: () => null } as never),
+      );
+      const result = resolveSlashCommand("/edit-log");
+      assert.strictEqual(result, null);
+    });
+
+    it("handles custom slash command successfully", () => {
+      dispatch(
+        actions.setSlashCommands([
+          {
+            name: "custom",
+            filePath: "/test-cwd/.agent-js/commands/custom.md",
+            content: "custom command content",
+          },
+        ]),
+      );
+      const result = resolveSlashCommand("/custom");
+      assert.strictEqual(result, "custom command content");
+    });
+
+    it("handles unknown slash command", () => {
+      dispatch(
+        actions.setSlashCommands([
+          {
+            name: "known",
+            filePath: "/test-cwd/.agent-js/commands/known.md",
+            content: "known content",
+          },
+        ]),
+      );
+      dispatch(actions.resetStdout());
+      const result = resolveSlashCommand("/unknown");
+      assert.strictEqual(result, null);
+      assert.ok(
+        selectors
+          .getStdout()
+          .includes("Invalid / command detected, valid commands:"),
+      );
     });
   });
 });
