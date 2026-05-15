@@ -35,4 +35,3 @@ export const processDeps = {
   },
   cwd: () => process.cwd(),
 };
-

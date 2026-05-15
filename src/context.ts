@@ -177,4 +177,3 @@ You are an AI agent being called from a minimal terminal cli.
 
 CRITICAL: All responses will be parsed by bat as markdown, you MUST format as valid markdown.
 `;
-

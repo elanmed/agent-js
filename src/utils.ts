@@ -59,4 +59,3 @@ export function createTempFile(args?: { initialContentPath?: string }) {
 export function stringify(val: unknown) {
   return JSON.stringify(val, null, 2);
 }
-

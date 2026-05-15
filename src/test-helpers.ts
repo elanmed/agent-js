@@ -118,6 +118,14 @@ export const testFs = makeFakeFsDeps();
 export const testProcessEnv = makeFakeProcessEnv();
 export const testCwd = makeFakeCwd();
 
+const ANSI_ESCAPE_PATTERN =
+  // eslint-disable-next-line no-control-regex
+  /\x1b\[[0-9;]*m/g;
+
+export function stripAnsi(str: string): string {
+  return str.replace(ANSI_ESCAPE_PATTERN, "");
+}
+
 export function setupFakeDeps() {
   testFs._restore();
   for (const key of Object.keys(testFs)) {
@@ -136,4 +144,3 @@ export function setupFakeDeps() {
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());
 }
-

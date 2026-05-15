@@ -23,17 +23,16 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Config Options
 
-| Option                   | Type                                   | Description                                              |
-| ------------------------ | -------------------------------------- | -------------------------------------------------------- |
-| `model`                  | string                                 | Model name (required)                                    |
-| `provider`               | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)              |
-| `baseURL`                | string                                 | API base URL (required for `openai-compatible`)          |
-| `diffStyle`              | `"unified"` \| `"lines"`               | Git diff output style (default: `lines`)                 |
-| `disableUsageMessage`    | boolean                                | Hide token usage/cost after responses (default: `false`) |
-| `pricingPerModel`        | object                                 | Token pricing per model per million                      |
-| `keymaps`                | object                                 | Custom keybindings (see below)                           |
-| `customSlashCommandDirs` | string[]                               | Additional directories for custom slash commands         |
-| `customSkillDirs`        | string[]                               | Additional directories for skills                        |
+| Option                   | Type                                   | Description                                      |
+| ------------------------ | -------------------------------------- | ------------------------------------------------ |
+| `model`                  | string                                 | Model name (required)                            |
+| `provider`               | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)      |
+| `baseURL`                | string                                 | API base URL (required for `openai-compatible`)  |
+| `diffStyle`              | `"unified"` \| `"lines"`               | Git diff output style (default: `lines`)         |
+| `pricingPerModel`        | object                                 | Token pricing per model per million              |
+| `keymaps`                | object                                 | Custom keybindings (see below)                   |
+| `customSlashCommandDirs` | string[]                               | Additional directories for custom slash commands |
+| `customSkillDirs`        | string[]                               | Additional directories for skills                |
 
 ### Keymaps
 
@@ -63,7 +62,6 @@ Example `settings.json`:
   "model": "claude-sonnet-4-6",
   "provider": "anthropic",
   "diffStyle": "lines",
-  "disableUsageMessage": false,
   "keymaps": {
     "edit": {
       "name": "x",
@@ -115,6 +113,18 @@ Slash commands are triggered with `/command` at the prompt.
 ### Custom Slash Commands
 
 Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local), `~/.config/.agent-js/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Local commands take precedence over global commands with the same filename.
+
+#### Directory Structure
+
+```
+./.agent-js/commands/              # local commands
+  help.md
+  refactor.md
+~/.config/.agent-js/commands/      # global commands
+  status.md
+/home/me/my-commands/              # custom commands (via customSlashCommandDirs)
+  custom.md
+```
 
 ## AGENTS.md Context
 
@@ -199,7 +209,7 @@ Available skills are listed in the system prompt, the LLM can use the `loadSkill
 
 ## Dependencies
 
-Minimal runtime dependencies (7 total):
+Minimal runtime dependencies (8 total):
 
 | Package                     | Purpose                                 |
 | --------------------------- | --------------------------------------- |
@@ -211,6 +221,8 @@ Minimal runtime dependencies (7 total):
 | `@mozilla/readability`      | Content extraction for `web_fetch_html` |
 | `prettier`                  | Markdown formatting                     |
 | `yaml`                      | Parsing Skill metadata                  |
+
+This project uses **pnpm v11** for package management, which enforces strict dependency resolution and helps prevent supply chain attacks. All tests are written with **Node.js native test runner and mocks** — no Jest, no Vitest, no test framework dependencies. TypeScript is executed directly via `node` (no build step, no `tsx`, no `ts-node`), keeping the toolchain minimal.
 
 ## TODO (soon)
 

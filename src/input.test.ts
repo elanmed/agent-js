@@ -1,6 +1,8 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
+import type readline from "node:readline/promises";
 import { dispatch, actions, selectors } from "./state.ts";
+
 import {
   editCommand,
   resolveSlashCommand,
@@ -13,7 +15,12 @@ import {
   printContextFilesCommand,
   printCommandsCommand,
 } from "./input.ts";
-import { testFs, testProcessEnv, setupFakeDeps } from "./test-helpers.ts";
+import {
+  testFs,
+  testProcessEnv,
+  setupFakeDeps,
+  stripAnsi,
+} from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import crypto from "node:crypto";
@@ -66,6 +73,7 @@ describe("input", () => {
     });
 
     it("returns normalized content and logs it", () => {
+      mock.method(Date, "now", () => 0);
       dispatch(actions.setEditorLog(true));
       dispatch(actions.setEditorLogPath("/tmp/editor.log"));
       mock.method(childProcess, "spawnSync", () => {
@@ -74,24 +82,31 @@ describe("input", () => {
       const result = editCommand("");
       assert.strictEqual(result, "hello\n");
       assert.ok(testFs._files.has("/tmp/editor.log"));
-      assert.ok(testFs._files.get("/tmp/editor.log")!.includes("hello\n"));
+      assert.strictEqual(
+        testFs._files.get("/tmp/editor.log"),
+        `1970-01-01T00:00:00.000Z
+-------------------------
+hello
+
+`,
+      );
     });
 
     it("uses AGENT_JS_EDITOR env var when available", () => {
       testProcessEnv._set("AGENT_JS_EDITOR", "nano");
       editCommand("");
-      assert.ok(spawned[0]!.includes("nano"));
+      assert.strictEqual(spawned[0], 'nano "/tmp/agent-js-test-uuid.txt"');
     });
 
     it("falls back to EDITOR env var when AGENT_JS_EDITOR is not set", () => {
       testProcessEnv._set("EDITOR", "vim");
       editCommand("");
-      assert.ok(spawned[0]!.includes("vim"));
+      assert.strictEqual(spawned[0], 'vim "/tmp/agent-js-test-uuid.txt"');
     });
 
     it("falls back to vi when no editor env vars are set", () => {
       editCommand("");
-      assert.ok(spawned[0]!.includes("vi"));
+      assert.strictEqual(spawned[0], 'vi "/tmp/agent-js-test-uuid.txt"');
     });
   });
 
@@ -106,10 +121,9 @@ describe("input", () => {
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model new-model");
       assert.strictEqual(selectors.getModel(), "new-model");
-      assert.ok(
-        selectors
-          .getStdout()
-          .includes("Model updated from old-model to new-model"),
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Model updated from old-model to new-model\n",
       );
     });
 
@@ -117,24 +131,29 @@ describe("input", () => {
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model new-model extra");
       assert.strictEqual(selectors.getModel(), "old-model");
-      assert.ok(selectors.getStdout().includes("Usage: /model [model]"));
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Usage: /model [model]\n",
+      );
     });
 
     it("prints red error when input has only the command", () => {
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model");
       assert.strictEqual(selectors.getModel(), "old-model");
-      assert.ok(selectors.getStdout().includes("Usage: /model [model]"));
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Usage: /model [model]\n",
+      );
     });
 
     it("handles model name with slashes", () => {
       dispatch(actions.setModel("old"));
       setModelCommand("/model provider/new-model");
       assert.strictEqual(selectors.getModel(), "provider/new-model");
-      assert.ok(
-        selectors
-          .getStdout()
-          .includes("Model updated from old to provider/new-model"),
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Model updated from old to provider/new-model\n",
       );
     });
   });
@@ -159,12 +178,15 @@ describe("input", () => {
         actions.appendToMessageParams({
           role: "user",
           content: "hello",
-        } as never),
+        }),
       );
       clearCommand();
       assert.deepStrictEqual(selectors.getMessageUsages(), []);
       assert.deepStrictEqual(selectors.getMessageParams(), []);
-      assert.ok(selectors.getStdout().includes("Context cleared"));
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Context cleared (10 in, 5 out)\n",
+      );
     });
   });
 
@@ -178,10 +200,16 @@ describe("input", () => {
     it("prints warning when log does not exist", () => {
       dispatch(actions.setEditorLogPath("/tmp/nonexistent.log"));
       dispatch(
-        actions.setRl({ write: () => null, prompt: () => null } as never),
+        actions.setRl({
+          write: () => null,
+          prompt: () => null,
+        } as unknown as readline.Interface),
       );
       editLogCommand();
-      assert.ok(selectors.getStdout().includes("[Edit log does not exist]"));
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "[Edit log does not exist]\n",
+      );
     });
 
     it("spawns editor when log exists", () => {
@@ -192,8 +220,7 @@ describe("input", () => {
       dispatch(actions.setEditorLogPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
       editLogCommand();
-      assert.ok(spawned.includes("vi"));
-      assert.ok(spawned.includes("/tmp/editor.log"));
+      assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
     });
   });
 
@@ -215,9 +242,14 @@ describe("input", () => {
         ]),
       );
       printSkillsCommand();
-      assert.ok(selectors.getStdout().includes("Available skills:"));
-      assert.ok(selectors.getStdout().includes("test-skill: A test skill"));
-      assert.ok(selectors.getStdout().includes("/skills/test-skill/SKILL.md"));
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        `
+Available skills:
+- test-skill: A test skill
+  /skills/test-skill/SKILL.md
+`,
+      );
     });
   });
 
@@ -234,8 +266,13 @@ describe("input", () => {
         ]),
       );
       printContextFilesCommand();
-      assert.ok(selectors.getStdout().includes("Available context files:"));
-      assert.ok(selectors.getStdout().includes("/project/AGENTS.md"));
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        `
+Available context files:
+- /project/AGENTS.md
+`,
+      );
     });
   });
 
@@ -256,10 +293,16 @@ describe("input", () => {
         ]),
       );
       printCommandsCommand();
-      assert.ok(selectors.getStdout().includes("Available /commands:"));
-      assert.ok(selectors.getStdout().includes("edit"));
-      assert.ok(
-        selectors.getStdout().includes("/test/.agent-js/commands/custom.md"),
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        `
+Available /commands:
+- edit
+- edit-log
+- clear
+- model
+- /test/.agent-js/commands/custom.md
+`,
       );
     });
   });
@@ -446,10 +489,67 @@ describe("input", () => {
 
     it("handles /edit-log command", () => {
       dispatch(
-        actions.setRl({ write: () => null, prompt: () => null } as never),
+        actions.setRl({
+          write: () => null,
+          prompt: () => null,
+        } as unknown as readline.Interface),
       );
       const result = resolveSlashCommand("/edit-log");
       assert.strictEqual(result, null);
+    });
+
+    it("handles /model command", () => {
+      dispatch(actions.setModel("old"));
+      dispatch(actions.resetStdout());
+      const result = resolveSlashCommand("/model new-model");
+      assert.strictEqual(result, null);
+      assert.strictEqual(selectors.getModel(), "new-model");
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Model updated from old to new-model\n",
+      );
+    });
+
+    it("handles /skills command", () => {
+      dispatch(actions.resetStdout());
+      const result = resolveSlashCommand("/skills");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        `
+Available skills:
+
+`,
+      );
+    });
+
+    it("handles /context command", () => {
+      dispatch(actions.resetStdout());
+      const result = resolveSlashCommand("/context");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        `
+Available context files:
+
+`,
+      );
+    });
+
+    it("handles /commands command", () => {
+      dispatch(actions.resetStdout());
+      const result = resolveSlashCommand("/commands");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        `
+Available /commands:
+- edit
+- edit-log
+- clear
+- model
+`,
+      );
     });
 
     it("handles custom slash command successfully", () => {
@@ -479,10 +579,9 @@ describe("input", () => {
       dispatch(actions.resetStdout());
       const result = resolveSlashCommand("/unknown");
       assert.strictEqual(result, null);
-      assert.ok(
-        selectors
-          .getStdout()
-          .includes("Invalid / command detected, valid commands:"),
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Invalid / command detected, valid commands: known,edit,edit-log,clear,model\n",
       );
     });
   });

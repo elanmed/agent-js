@@ -250,7 +250,11 @@ describe("state", () => {
   it("set-context-str", () => {
     assert.equal(selectors.getContextStr(), "");
     dispatch(actions.setContextStr("FILEPATH: context\nhello"));
-    assert.equal(selectors.getContextStr(), "FILEPATH: context\nhello");
+    assert.equal(
+      selectors.getContextStr(),
+      `FILEPATH: context
+hello`,
+    );
   });
 
   it("set-skills-str", () => {
@@ -368,7 +372,12 @@ describe("state", () => {
   it("reset-stdout", () => {
     dispatch(actions.appendToStdout("line1\n"));
     dispatch(actions.appendToStdout("line2\n"));
-    assert.equal(selectors.getStdout(), "line1\nline2\n");
+    assert.equal(
+      selectors.getStdout(),
+      `line1
+line2
+`,
+    );
     dispatch(actions.resetStdout());
     assert.equal(selectors.getStdout(), "");
   });
@@ -385,7 +394,13 @@ describe("state", () => {
       dispatch(actions.appendToStdout("line1\n"));
       dispatch(actions.appendToStdout("line2\n"));
       dispatch(actions.appendToStdout("line3\n"));
-      assert.equal(selectors.getStdout(), "line1\nline2\nline3\n");
+      assert.equal(
+        selectors.getStdout(),
+        `line1
+line2
+line3
+`,
+      );
     });
   });
 

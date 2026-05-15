@@ -443,7 +443,12 @@ describe("tools", () => {
         tool_use_id: "tool_1",
         content: `/test/file.txt updated successfully`,
       });
-      assert.equal(testFs._files.get("/test/file.txt"), "top\nline1\nline2");
+      assert.equal(
+        testFs._files.get("/test/file.txt"),
+        `top
+line1
+line2`,
+      );
     });
 
     it("inserts at the end when after_line equals the number of lines", () => {
@@ -458,7 +463,12 @@ describe("tools", () => {
         tool_use_id: "tool_1",
         content: `/test/file.txt updated successfully`,
       });
-      assert.equal(testFs._files.get("/test/file.txt"), "line1\nline2\nbottom");
+      assert.equal(
+        testFs._files.get("/test/file.txt"),
+        `line1
+line2
+bottom`,
+      );
     });
 
     it("returns is_error when after_line is out of range (negative)", () => {
@@ -544,7 +554,12 @@ describe("tools", () => {
       assert.equal(result.is_error, undefined);
       const parsed = JSON.parse(result.content) as Record<string, unknown>;
       assert.equal(parsed["title"], "Test Page");
-      assert.ok((parsed["textContent"] as string).includes("main content"));
+      assert.equal(
+        parsed["textContent"],
+        `This is the main content of the article that should be extracted.
+        
+      `,
+      );
     });
 
     it("returns is_error when fetch throws", async () => {

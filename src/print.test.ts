@@ -6,9 +6,17 @@ import { dispatch, actions } from "./state.ts";
 describe("print", () => {
   describe("formatMarkdown", () => {
     it("formats markdown tables with aligned columns", async () => {
-      const unaligned = "|a|b|\n|-|-|\n|x|y|";
+      const unaligned = `|a|b|
+|-|-|
+|x|y|`;
       const result = await formatMarkdown(unaligned);
-      assert.ok(result.includes("| a   | b   |"));
+      assert.strictEqual(
+        result,
+        `| a   | b   |
+| --- | --- |
+| x   | y   |
+`,
+      );
     });
 
     it("returns original content when formatting fails", async () => {

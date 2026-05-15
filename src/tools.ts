@@ -742,4 +742,3 @@ export async function execGitDiff(
     });
   });
 }
-

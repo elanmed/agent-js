@@ -52,7 +52,9 @@ describe("log", () => {
       debugLog("message 2");
       assert.equal(
         testFs._files.get(DEBUG_LOG_PATH),
-        "2023-11-14T22:13:20.000Z :: message 1\n2023-11-14T22:13:20.000Z :: message 2\n",
+        `2023-11-14T22:13:20.000Z :: message 1
+2023-11-14T22:13:20.000Z :: message 2
+`,
       );
     });
   });

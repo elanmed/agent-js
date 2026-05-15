@@ -14,8 +14,9 @@
     "cloc-source": "cloc src --not-match-f='\\.test\\.ts$' --json --quiet | jq '.SUM.code'",
     "cloc-tests": "cloc src --match-f='\\.test\\.ts$' --json --quiet | jq '.SUM.code'",
     "cloc": "pnpm run cloc-source && pnpm run cloc-tests",
-    "ci": "pnpm run test && pnpm run lint && pnpm run types && pnpm run cloc-source && pnpm run cloc-tests",
-    "format": "prettier --write ."
+    "ci": "pnpm run test && pnpm run lint && pnpm run types && pnpm run format:check && pnpm run cloc-source && pnpm run cloc-tests",
+    "format": "prettier --write src/ AGENTS.md .agent-js/",
+    "format:check": "prettier --check src/ AGENTS.md .agent-js/"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
