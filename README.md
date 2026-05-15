@@ -222,7 +222,9 @@ Minimal runtime dependencies (8 total):
 | `prettier`                  | Markdown formatting                     |
 | `yaml`                      | Parsing Skill metadata                  |
 
-This project uses **pnpm v11** for package management, which enforces strict dependency resolution and helps prevent supply chain attacks. All tests are written with **Node.js native test runner and mocks** — no Jest, no Vitest, no test framework dependencies. TypeScript is executed directly via `node` (no build step, no `tsx`, no `ts-node`), keeping the toolchain minimal.
+- This project uses **pnpm v11** for package management, which helps prevent supply chain attacks
+- All tests are written with the Node.js native test runner and mocks i.e. no Jest
+- TypeScript is executed directly via `node` (no build step), keeping the toolchain minimal
 
 ## TODO (soon)
 
