@@ -254,7 +254,7 @@ export function resolveSlashCommand(rawInput: string) {
     `Invalid / command detected, valid commands: ${slashCommands
       .map((c) => c.name)
       .concat(builtinSlashCommands)
-      .join(",")}`,
+      .join(", ")}`,
     "red",
   );
   return null;

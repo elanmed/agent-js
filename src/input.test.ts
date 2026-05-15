@@ -2,7 +2,6 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import type readline from "node:readline/promises";
 import { dispatch, actions, selectors } from "./state.ts";
-
 import {
   editCommand,
   resolveSlashCommand,
@@ -581,7 +580,7 @@ Available /commands:
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Invalid / command detected, valid commands: known,edit,edit-log,clear,model\n",
+        "Invalid / command detected, valid commands: known, edit, edit-log, clear, model\n",
       );
     });
   });
