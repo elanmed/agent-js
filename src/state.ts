@@ -12,7 +12,7 @@ import { MISSING, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import type { TokenUsage } from "./print.ts";
 export type { EditorLog } from "./log.ts";
-export type { ToolLog } from "./tools.ts";
+export type { ToolPrint } from "./tools.ts";
 import type { ContextEntry, Skill } from "./context.ts";
 
 export interface SlashCommand {

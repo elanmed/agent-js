@@ -22,11 +22,11 @@ const execPromise = promisify(exec);
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
-function toolLog(label: string, detail: string) {
+function toolPrint(label: string, detail: string) {
   colorPrint(`${label}: ${detail}`, "blue");
 }
 
-export type ToolLog = typeof toolLog;
+export type ToolPrint = typeof toolPrint;
 
 export interface ToolCall {
   id: string;
@@ -46,7 +46,7 @@ export async function executeBashTool(
   { command: bashCommand }: BashToolInput,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  toolLog("bash", bashCommand);
+  toolPrint("bash", bashCommand);
   debugLog(`executeBashTool: command=${bashCommand}`);
 
   const bashResult = await tryCatchAsync(execPromise(bashCommand, { signal }));
@@ -127,7 +127,7 @@ export function executeViewFileTool({
   start_line,
   end_line,
 }: ViewFileToolInput): ToolResult {
-  toolLog("view_file", path);
+  toolPrint("view_file", path);
   debugLog(`executeViewFileTool: path=${path}`);
 
   const statResult = tryCatch(() => fsDeps.statSync(path));
@@ -251,7 +251,7 @@ export function executeStrReplaceTool(
   { path, old_str, new_str }: StrReplaceToolInput,
   signal?: AbortSignal,
 ): ToolResult {
-  toolLog("str_replace", path);
+  toolPrint("str_replace", path);
   debugLog(`executeStrReplaceTool: path=${path}`);
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path));
@@ -319,7 +319,7 @@ export function executeInsertLinesTool(
   { path, after_line, content }: InsertLinesToolInput,
   signal?: AbortSignal,
 ): ToolResult {
-  toolLog("insert_lines", path);
+  toolPrint("insert_lines", path);
   debugLog(
     `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
   );
@@ -380,7 +380,7 @@ export async function executeWebFetchHtmlTool(
   { href }: WebFetchTool,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  toolLog("web_fetch_html", href);
+  toolPrint("web_fetch_html", href);
   debugLog(`executeWebFetchHtmlTool: href=${href}`);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
@@ -439,7 +439,7 @@ export async function executeWebFetchJsonTool(
   { href }: WebFetchTool,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  toolLog("web_fetch_json", href);
+  toolPrint("web_fetch_json", href);
   debugLog(`executeWebFetchJsonTool: href=${href}`);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
@@ -488,7 +488,7 @@ const loadSkillToolSchema = z.object({
 export type LoadSkillTool = z.infer<typeof loadSkillToolSchema>;
 
 export function loadSkillTool({ name }: LoadSkillTool): ToolResult {
-  toolLog("load_skill", name);
+  toolPrint("load_skill", name);
   debugLog(`loadSkillTool: name=${name}`);
   const foundSkill = selectors.getSkills().find((skill) => skill.name === name);
   if (!foundSkill) {
