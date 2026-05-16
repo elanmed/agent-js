@@ -184,7 +184,6 @@ export function initState() {
     ),
   );
 
-  dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
   dispatch(
     actions.setCustomSlashCommandDirs(
       localConfig.customSlashCommandDirs ??
@@ -192,6 +191,7 @@ export function initState() {
         DEFAULT_CONFIG.customSlashCommandDirs,
     ),
   );
+  dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
   dispatch(
     actions.setCustomSkillDirs(
       localConfig.customSkillDirs ??
