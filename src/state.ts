@@ -23,8 +23,6 @@ export interface SlashCommand {
 
 interface State {
   appState: {
-    interrupted: boolean;
-    running: boolean;
     messageParams: ModelMessage[];
     messageUsages: TokenUsage[];
     editorInputValue: string | null;
@@ -60,8 +58,6 @@ interface State {
 
 const initialState: State = {
   appState: {
-    interrupted: false,
-    running: true,
     messageParams: [],
     messageUsages: [],
     editorInputValue: null,
@@ -100,14 +96,6 @@ let state: State = structuredClone(initialState);
 export const getState = () => state;
 
 type Action =
-  | {
-      type: "set-interrupted";
-      payload: boolean;
-    }
-  | {
-      type: "set-running";
-      payload: boolean;
-    }
   | {
       type: "append-to-message-params";
       payload: ModelMessage;
@@ -235,24 +223,6 @@ const logStateChange = (actionType: string, before: string, after: string) => {
 
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
-    case "set-interrupted": {
-      const before = state.appState.interrupted;
-      const next = {
-        ...state,
-        appState: { ...state.appState, interrupted: action.payload },
-      };
-      logStateChange(action.type, String(before), String(action.payload));
-      return next;
-    }
-    case "set-running": {
-      const before = state.appState.running;
-      const next = {
-        ...state,
-        appState: { ...state.appState, running: action.payload },
-      };
-      logStateChange(action.type, String(before), String(action.payload));
-      return next;
-    }
     case "append-to-message-params": {
       const before = state.appState.messageParams;
       const next = {
@@ -582,20 +552,6 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-const setInterrupted = (interrupted: boolean): Action => {
-  return {
-    type: "set-interrupted",
-    payload: interrupted,
-  };
-};
-
-const setRunning = (running: boolean): Action => {
-  return {
-    type: "set-running",
-    payload: running,
-  };
-};
-
 const appendToMessageParams = (message: ModelMessage): Action => {
   return {
     type: "append-to-message-params",
@@ -727,8 +683,6 @@ const resetState = (): Action => {
 };
 
 export const actions = {
-  setInterrupted,
-  setRunning,
   appendToMessageParams,
   appendToMessageUsages,
   setModel,
@@ -761,8 +715,6 @@ export const actions = {
   resetState,
 };
 
-const getInterrupted = () => getState().appState.interrupted;
-const getRunning = () => getState().appState.running;
 const getMessageParams = () => getState().appState.messageParams;
 const getMessageUsages = () => getState().appState.messageUsages;
 const getEditorInputValue = () => getState().appState.editorInputValue;
@@ -792,8 +744,6 @@ const getQuestionAbortController = () => getState().abortControllers.question;
 const getApiStreamAbortController = () => getState().abortControllers.apiStream;
 
 export const selectors = {
-  getInterrupted,
-  getRunning,
   getMessageParams,
   getMessageUsages,
   getModel,

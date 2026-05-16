@@ -11,8 +11,6 @@ describe("state", () => {
   });
 
   it("resetState restores initial state after mutations", () => {
-    dispatch(actions.setRunning(false));
-    dispatch(actions.setInterrupted(true));
     dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
     dispatch(actions.setQuestionAbortController(new AbortController()));
     dispatch(actions.setApiStreamAbortController(new AbortController()));
@@ -22,8 +20,6 @@ describe("state", () => {
     dispatch(actions.resetState());
     clearTimeout(timeout);
 
-    assert.equal(selectors.getRunning(), true);
-    assert.equal(selectors.getInterrupted(), false);
     assert.deepStrictEqual(selectors.getMessageParams(), []);
     assert.deepStrictEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
@@ -33,25 +29,11 @@ describe("state", () => {
   });
 
   it("initial state", () => {
-    assert.equal(selectors.getRunning(), true);
-    assert.equal(selectors.getInterrupted(), false);
     assert.deepStrictEqual(selectors.getMessageParams(), []);
     assert.deepStrictEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
     assert.equal(selectors.getEditorLogPath(), "");
-  });
-
-  it("set-interrupted", () => {
-    assert.equal(selectors.getInterrupted(), false);
-    dispatch(actions.setInterrupted(true));
-    assert.equal(selectors.getInterrupted(), true);
-  });
-
-  it("set-running", () => {
-    assert.equal(selectors.getRunning(), true);
-    dispatch(actions.setRunning(false));
-    assert.equal(selectors.getRunning(), false);
   });
 
   describe("append-to-message-params", () => {

@@ -119,12 +119,6 @@ export function initSigInt() {
       }
       question.abort();
     }
-
-    // second <C-c> during exit confirmation
-    if (selectors.getInterrupted()) {
-      rl.close();
-      process.exit(0);
-    }
   });
 }
 
@@ -132,6 +126,7 @@ export function initSigInt() {
 export async function resolveUserInput() {
   const rl = selectors.getRl();
   assert(rl !== null);
+
   if (selectors.getEditorInputValue() !== null) {
     const editorInputValue = selectors.getEditorInputValue()!;
     dispatch(actions.setEditorInputValue(null));
@@ -158,60 +153,65 @@ export async function resolveUserInput() {
       return null;
     }
 
-    // only aborts if there's an active questionAbortController, which is when there's a question, not when a tool call or api call is ongoing
-    if (selectors.getEditorInputValue() !== null) {
+    const abortedByEditor = selectors.getEditorInputValue() !== null;
+    if (abortedByEditor) {
       dispatch(actions.appendToStdout(`>[editor]\n`));
       const editorInputValue = selectors.getEditorInputValue()!;
       dispatch(actions.setEditorInputValue(null));
       return editorInputValue;
     }
 
-    // TODO: little weird, will either return null or call setRunning(false)
-    return await resolveExitConfirmation();
+    await resolveExitConfirmation();
+    return null;
   }
 
-  const rawInput = inputResult.value;
-  dispatch(actions.appendToStdout(`>${rawInput}\n`));
+  dispatch(actions.appendToStdout(`>${inputResult.value}\n`));
+  const rawInput = inputResult.value.trim();
 
   if (selectors.getEditorInputValue() === null && rawInput.at(0) === "/") {
     return resolveSlashCommand(rawInput);
   }
 
-  dispatch(actions.setEditorInputValue(null));
   return rawInput;
 }
 
 async function resolveExitConfirmation() {
   const rl = selectors.getRl();
   assert(rl !== null);
-  dispatch(actions.setInterrupted(true));
+
   dispatch(actions.setQuestionAbortController(new AbortController()));
-  const exitQuestionAbortController = selectors.getQuestionAbortController();
   const exitResult = await tryCatchAsync(
     rl.question("y(es) or <C-c> to exit: ", {
-      signal: exitQuestionAbortController!.signal,
+      signal: selectors.getQuestionAbortController()!.signal,
     }),
   );
   dispatch(actions.setQuestionAbortController(null));
 
-  if (exitResult.ok) {
-    if (/^y(es)?$/i.exec(exitResult.value)) {
-      dispatch(actions.appendToStdout(`>${exitResult.value}\n`));
-      debugLog("User confirmed exit");
-      dispatch(actions.setRunning(false));
+  if (!exitResult.ok) {
+    if (isAbortError(exitResult.error)) {
+      rl.close();
+      process.exit(0);
     }
-  } else {
-    // second <C-c> during confirmation is already handled by SIGINT
+
+    colorPrint(getMessageFromError(exitResult.error), "red");
+    return;
   }
 
-  dispatch(actions.setInterrupted(false));
-  return null;
+  if (/^y(es)?$/i.exec(exitResult.value)) {
+    dispatch(actions.appendToStdout(`>${exitResult.value}\n`));
+    debugLog("User confirmed exit");
+
+    rl.close();
+    process.exit(0);
+  }
+
+  return;
 }
 
 const builtinSlashCommands = ["edit", "edit-log", "clear", "model"];
 
 export function resolveSlashCommand(rawInput: string) {
-  const commandWithoutSlash = rawInput.trim().slice(1);
+  const commandWithoutSlash = rawInput.slice(1);
   if (commandWithoutSlash === "edit") {
     return editCommand("");
   } else if (commandWithoutSlash === "clear") {

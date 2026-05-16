@@ -1,5 +1,4 @@
 import { fileURLToPath } from "node:url";
-import { selectors } from "./state.ts";
 import { getMessageFromError } from "./utils.ts";
 import {
   colorPrint,
@@ -27,7 +26,8 @@ async function main() {
   initKeypress();
   initSigInt();
 
-  while (selectors.getRunning()) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  while (true) {
     const userInput = await resolveUserInput();
     if (userInput === null) continue;
 
@@ -44,8 +44,6 @@ async function main() {
     await executeBat(text);
     printNewline();
   }
-
-  selectors.getRl()!.close();
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
