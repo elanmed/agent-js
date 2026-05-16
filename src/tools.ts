@@ -11,7 +11,7 @@ import {
   tryCatch,
   tryCatchAsync,
 } from "./utils.ts";
-import { colorPrint, fencePrint, printNewline, checkDelta } from "./print.ts";
+import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
@@ -23,16 +23,10 @@ const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 function toolPrint(label: string, detail: string) {
-  colorPrint(`${label}: ${detail}`, "blue");
+  print.doing(`${label}: ${detail}`);
 }
 
 export type ToolPrint = typeof toolPrint;
-
-export interface ToolCall {
-  id: string;
-  name: string;
-  input: unknown;
-}
 
 export interface ToolResult {
   content: string;
@@ -403,7 +397,7 @@ export async function executeWebFetchHtmlTool(
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      colorPrint(error, "yellow");
+      print.warning(error);
       throw new Error(error);
     }
 
@@ -413,7 +407,7 @@ export async function executeWebFetchHtmlTool(
     const article = reader.parse();
     if (!article) {
       const error = `Failed to parse article from ${href}`;
-      colorPrint(error, "yellow");
+      print.warning(error);
       throw new Error(error);
     }
 
@@ -462,7 +456,7 @@ export async function executeWebFetchJsonTool(
 
     if (!response.ok) {
       const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      colorPrint(error, "yellow");
+      print.warning(error);
       throw new Error(error);
     }
 
@@ -570,7 +564,7 @@ export async function printGitDiff(args: {
   if (diffResult.ok && diffResult.value.stdout) {
     printNewline();
     fencePrint(`File change: ${args.path}`);
-    colorPrint(normalizeLine(diffResult.value.stdout));
+    print(normalizeLine(diffResult.value.stdout));
     printNewline();
   }
 }

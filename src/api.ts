@@ -9,7 +9,7 @@ import {
   getMessageFromError,
   createTempFile,
 } from "./utils.ts";
-import { colorPrint, startSpinner, stopSpinner } from "./print.ts";
+import { print, startSpinner, stopSpinner } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import { debugLog } from "./log.ts";
 import {
@@ -116,11 +116,11 @@ export async function resolveApiCall(userInput: string) {
 
   if (!generateTextResult.ok) {
     if (isAbortError(generateTextResult.error)) {
-      colorPrint("Aborted", "red");
+      print.error("Aborted");
       return null;
     }
 
-    colorPrint(getMessageFromError(generateTextResult.error), "red");
+    print.error(getMessageFromError(generateTextResult.error));
     return null;
   }
 

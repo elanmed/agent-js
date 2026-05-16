@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path";
 import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
-import { colorPrint } from "./print.ts";
+import { print } from "./print.ts";
 import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import {
@@ -139,17 +139,15 @@ export function getSkillJSON(skillMdPath: string) {
 
   const parsed = parseFrontMatter(readResult.value);
   if (parsed === null) {
-    colorPrint(
+    print.error(
       `Malformed skill at ${skillMdPath}! A skill's front matter must contain valid YAML between \`---\` and \`---\`.`,
-      "red",
     );
     return null;
   }
   const parseResult = skillMetadataSchema.safeParse(parsed.data);
   if (!parseResult.success) {
-    colorPrint(
+    print.error(
       `Malformed skill at ${skillMdPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,
-      "red",
     );
     return null;
   }

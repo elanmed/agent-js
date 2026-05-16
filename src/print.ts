@@ -21,11 +21,23 @@ const COLORS = {
   green: "\x1b[32m",
   yellow: "\x1b[33m",
   blue: "\x1b[34m",
+  purple: "\x1b[35m",
   white: "\x1b[37m",
   grey: "\x1b[90m",
 } as const;
 
 export type Color = keyof typeof COLORS;
+
+export const print = Object.assign(
+  (text: Uint8Array | string) => colorPrint(text),
+  {
+    doing: (text: Uint8Array | string) => colorPrint(text, "blue"),
+    error: (text: Uint8Array | string) => colorPrint(text, "red"),
+    info: (text: Uint8Array | string) => colorPrint(text, "purple"),
+    infoSubtle: (text: Uint8Array | string) => colorPrint(text, "grey"),
+    warning: (text: Uint8Array | string) => colorPrint(text, "yellow"),
+  },
+);
 
 export function colorPrint(text: Uint8Array | string, color?: Color) {
   const reset = "\x1b[0m";
@@ -66,19 +78,14 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
 
 export function initPrint() {
   fencePrint("agent-js", { color: "green", skipSessionUsage: true });
-  colorPrint(`model: ${selectors.getModel()}`, "grey");
-  colorPrint(`diff-style: ${selectors.getDiffStyle()}`, "grey");
-  colorPrint(
-    `keymap-edit: ${JSON.stringify(selectors.getKeymapEdit())}`,
-    "grey",
-  );
-  colorPrint(
+  print.infoSubtle(`model: ${selectors.getModel()}`);
+  print.infoSubtle(`diff-style: ${selectors.getDiffStyle()}`);
+  print.infoSubtle(`keymap-edit: ${JSON.stringify(selectors.getKeymapEdit())}`);
+  print.infoSubtle(
     `keymap-edit-log: ${JSON.stringify(selectors.getKeymapEditLog())}`,
-    "grey",
   );
-  colorPrint(
+  print.infoSubtle(
     `keymap-clear: ${JSON.stringify(selectors.getKeymapClear())}`,
-    "grey",
   );
 }
 
@@ -144,11 +151,8 @@ export async function executeBat(content: string) {
   debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
 
   if (!isBatAvailable) {
-    colorPrint(
-      "`bat` is not available, falling back to plain text rendering",
-      "red",
-    );
-    colorPrint(content);
+    print.error("`bat` is not available, falling back to plain text rendering");
+    print(content);
     return;
   }
 
@@ -157,12 +161,12 @@ export async function executeBat(content: string) {
     debugLog(
       `executeBat: writing bat output, bytes=${String(batResult.value.stdout.length)}`,
     );
-    colorPrint(batResult.value.stdout);
+    print(batResult.value.stdout);
     return;
   }
 
   debugLog("executeBat: bat spawn failed, falling back to plain text");
-  colorPrint(content);
+  print(content);
 }
 
 export interface TokenUsage {

@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { getMessageFromError } from "./utils.ts";
 import {
-  colorPrint,
+  print,
   executeBat,
   fencePrint,
   initPrint,
@@ -32,7 +32,7 @@ async function main() {
     if (userInput === null) continue;
 
     if (userInput === "") {
-      colorPrint("Empty input", "yellow");
+      print.warning("Empty input");
       continue;
     }
 
@@ -48,7 +48,7 @@ async function main() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((error: unknown) => {
-    colorPrint(getMessageFromError(error), "red");
+    print.error(getMessageFromError(error));
     process.exit(1);
   });
 }

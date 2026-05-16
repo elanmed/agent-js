@@ -12,7 +12,7 @@ import {
   createTempFile,
 } from "./utils.ts";
 import {
-  colorPrint,
+  print,
   printNewline,
   fencePrint,
   calculateSessionUsage,
@@ -150,7 +150,7 @@ export async function resolveUserInput() {
       dispatch(
         actions.appendToStdout(`>[unable to read rl.question result]\n`),
       );
-      colorPrint(getMessageFromError(inputResult.error), "red");
+      print.error(getMessageFromError(inputResult.error));
       return null;
     }
 
@@ -194,7 +194,7 @@ async function resolveExitConfirmation() {
       process.exit(0);
     }
 
-    colorPrint(getMessageFromError(exitResult.error), "red");
+    print.error(getMessageFromError(exitResult.error));
     return;
   }
 
@@ -240,24 +240,23 @@ export function resolveSlashCommand(rawInput: string) {
     (command) => command.name === commandWithoutSlash,
   );
   if (matchedCommand !== undefined) {
-    colorPrint(`Executing slash command: ${rawInput}`, "grey");
+    print.infoSubtle(`Executing slash command: ${rawInput}`);
     debugLog(`Performing the slash command at ${matchedCommand.filePath}`);
     return matchedCommand.content;
   }
 
-  colorPrint(
+  print.error(
     `Invalid / command detected, valid commands: ${slashCommands
       .map((c) => c.name)
       .concat(builtinSlashCommands)
       .join(", ")}`,
-    "red",
   );
   return null;
 }
 
 export function clearCommand() {
   debugLog("Performing the `clear` slash command");
-  colorPrint(`Context cleared (${calculateSessionUsage()})`, "grey");
+  print.infoSubtle(`Context cleared (${calculateSessionUsage()})`);
   dispatch(actions.resetMessageUsages());
   dispatch(actions.resetMessageParams());
 }
@@ -272,7 +271,7 @@ export function editCommand(currentLine: string) {
     fsDeps.writeFileSync(tempFile, currentLine),
   );
   if (!writeResult.ok) {
-    colorPrint("Failed to write to temp file", "red");
+    print.error("Failed to write to temp file");
     return null;
   }
   childProcess.spawnSync(`${editor} "${tempFile}"`, {
@@ -282,7 +281,7 @@ export function editCommand(currentLine: string) {
 
   const readResult = tryCatch(() => fsDeps.readFileSync(tempFile).toString());
   if (!readResult.ok) {
-    colorPrint("Failed to read from temp file", "red");
+    print.error("Failed to read from temp file");
     tryCatch(() => fsDeps.unlinkSync(tempFile));
     return null;
   }
@@ -298,7 +297,7 @@ export function editCommand(currentLine: string) {
 export function editLogCommand() {
   if (!fsDeps.existsSync(selectors.getEditorLogPath())) {
     if (selectors.getSpinnerTimeout() === null) {
-      colorPrint("[Edit log does not exist]", "yellow");
+      print.warning("[Edit log does not exist]");
       clearRlLine()!.prompt();
     }
     return;
@@ -317,7 +316,7 @@ export function editLogCommand() {
 export function setModelCommand(rawInput: string) {
   const parts = rawInput.trim().split(" ");
   if (parts.length !== 2) {
-    colorPrint("Usage: /model [model]", "red");
+    print.error("Usage: /model [model]");
     return;
   }
   const model = parts[1];
@@ -325,7 +324,7 @@ export function setModelCommand(rawInput: string) {
 
   const prevModel = selectors.getModel();
   dispatch(actions.setModel(model));
-  colorPrint(`Model updated from ${prevModel} to ${model}`, "blue");
+  print.doing(`Model updated from ${prevModel} to ${model}`);
 }
 
 export function printSkillsCommand() {
@@ -338,8 +337,8 @@ export function printSkillsCommand() {
     .join("\n");
 
   printNewline();
-  colorPrint("Available skills:", "blue");
-  colorPrint(skillsList);
+  print.doing("Available skills:");
+  print(skillsList);
 }
 
 export function printContextFilesCommand() {
@@ -349,8 +348,8 @@ export function printContextFilesCommand() {
     .join("\n");
 
   printNewline();
-  colorPrint("Available context files:", "blue");
-  colorPrint(contextFilesFormatted);
+  print.doing("Available context files:");
+  print(contextFilesFormatted);
 }
 
 export function printCommandsCommand() {
@@ -367,8 +366,8 @@ export function printCommandsCommand() {
     .join("\n");
 
   printNewline();
-  colorPrint("Available /commands:", "blue");
-  colorPrint(commandsFormatted);
+  print.doing("Available /commands:");
+  print(commandsFormatted);
 }
 
 export function isSameKey(a: Key, b: Key) {
