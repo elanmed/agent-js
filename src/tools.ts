@@ -580,7 +580,7 @@ export async function execGitDiff(
   debugLog(`execGitDiff: isDeltaAvailable=${String(isDeltaAvailable)}`);
 
   return new Promise((resolve, reject) => {
-    const gitDiffCmd = `git diff --no-index ${args}`;
+    const gitDiffCmd = `git diff ${args}`;
     debugLog(`execGitDiff: gitDiffCmd=${gitDiffCmd}`);
 
     if (isDeltaAvailable) {
