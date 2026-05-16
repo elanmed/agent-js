@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
-import { fsDeps } from "./deps.ts";
+import { fsDeps, childProcessDeps } from "./deps.ts";
 
 export const MISSING = "__MISSING__";
 
@@ -54,6 +54,25 @@ export function createTempFile(args?: { initialContentPath?: string }) {
     }
   }
   return tempFile;
+}
+
+export function execPromise(
+  command: string,
+  options?: { signal?: AbortSignal },
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    childProcessDeps.exec(
+      command,
+      { encoding: "utf8", ...options },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve({ stdout, stderr });
+        }
+      },
+    );
+  });
 }
 
 export function stringify(val: unknown) {

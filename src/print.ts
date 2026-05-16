@@ -4,26 +4,11 @@ import {
   tryCatch,
   tryCatchAsync,
   normalizeLine,
+  execPromise,
   type Result,
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
 import { processDeps, childProcessDeps } from "./deps.ts";
-
-export { processDeps };
-
-function execPromise(
-  command: string,
-): Promise<{ stdout: string; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    childProcessDeps.exec(command, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve({ stdout, stderr });
-      }
-    });
-  });
-}
 
 const COLORS = {
   red: "\x1b[31m",

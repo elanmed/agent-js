@@ -1,6 +1,4 @@
 import { tool } from "ai";
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { z } from "zod";
 import os from "node:os";
 import {
@@ -10,14 +8,13 @@ import {
   stringify,
   tryCatch,
   tryCatchAsync,
+  execPromise,
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
-import { fsDeps } from "./deps.ts";
-
-const execPromise = promisify(exec);
+import { fsDeps, childProcessDeps } from "./deps.ts";
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -41,7 +38,9 @@ export async function executeBashTool(
 ): Promise<ToolResult> {
   toolPrint("bash", bashCommand);
 
-  const bashResult = await tryCatchAsync(execPromise(bashCommand, { signal }));
+  const bashResult = await tryCatchAsync(
+    execPromise(bashCommand, signal ? { signal } : undefined),
+  );
 
   if (!bashResult.ok) {
     if (isAbortError(bashResult.error)) {
@@ -518,7 +517,7 @@ export async function execGitDiff(
 
     if (isDeltaAvailable) {
       const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
-      exec(
+      childProcessDeps.exec(
         `${gitDiffCmd} | ${deltaCmd}`,
         { cwd: os.tmpdir() },
         (error, stdout, stderr) => {
@@ -533,12 +532,16 @@ export async function execGitDiff(
     }
 
     const coloredGitDiffCmd = `${gitDiffCmd} --color=always`;
-    exec(coloredGitDiffCmd, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
-      if (error && error.code !== 1) {
-        reject(error);
-      } else {
-        resolve({ stdout, stderr });
-      }
-    });
+    childProcessDeps.exec(
+      coloredGitDiffCmd,
+      { cwd: os.tmpdir() },
+      (error, stdout, stderr) => {
+        if (error && error.code !== 1) {
+          reject(error);
+        } else {
+          resolve({ stdout, stderr });
+        }
+      },
+    );
   });
 }
