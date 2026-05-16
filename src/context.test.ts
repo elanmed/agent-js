@@ -35,7 +35,11 @@ describe("context", () => {
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `\nAGENTS.md context files:\nPath: /test-cwd/AGENTS.md\nContent: # Agent Instructions\n`,
+        `
+AGENTS.md context files:
+Path: /test-cwd/AGENTS.md
+Content: # Agent Instructions
+`,
       );
     });
 
@@ -49,7 +53,14 @@ describe("context", () => {
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `\nAGENTS.md context files:\nPath: /test-cwd/AGENTS.md\nContent: Root content\n\nPath: /test-cwd/src/AGENTS.md\nContent: Src content\n`,
+        `
+AGENTS.md context files:
+Path: /test-cwd/AGENTS.md
+Content: Root content
+
+Path: /test-cwd/src/AGENTS.md
+Content: Src content
+`,
       );
     });
 
@@ -62,7 +73,11 @@ describe("context", () => {
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `\nAGENTS.md context files:\nPath: /test-cwd/src/AGENTS.md\nContent: Src content\n`,
+        `
+AGENTS.md context files:
+Path: /test-cwd/src/AGENTS.md
+Content: Src content
+`,
       );
     });
 
@@ -79,7 +94,11 @@ describe("context", () => {
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/AGENTS.md\nContent: global content\n`,
+        `
+AGENTS.md context files:
+Path: /fake-home/.config/.agent-js/context/AGENTS.md
+Content: global content
+`,
       );
     });
 
@@ -129,7 +148,11 @@ Content: global content
       );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
-        "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
+        `---
+name: my-skill
+description: A test skill
+---
+# Body`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -156,11 +179,19 @@ would benefit from specialized instructions.
       );
       testFs._files.set(
         "/test-cwd/.agent-js/skills/local-skill/SKILL.md",
-        "---\nname: deploy\ndescription: Local deploy\n---\n# Local",
+        `---
+name: deploy
+description: Local deploy
+---
+# Local`,
       );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/global-skill/SKILL.md",
-        "---\nname: deploy\ndescription: Global deploy\n---\n# Global",
+        `---
+name: deploy
+description: Global deploy
+---
+# Global`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -187,11 +218,19 @@ would benefit from specialized instructions.
       );
       testFs._files.set(
         "/test-cwd/.agent-js/skills/a/SKILL.md",
-        "---\nname: deploy\ndescription: First\n---\n# A",
+        `---
+name: deploy
+description: First
+---
+# A`,
       );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/b/SKILL.md",
-        "---\nname: deploy\ndescription: Second\n---\n# B",
+        `---
+name: deploy
+description: Second
+---
+# B`,
       );
       const result = getSkills();
       assert.equal(result.length, 1);
@@ -210,11 +249,19 @@ would benefit from specialized instructions.
       ]);
       testFs._files.set(
         "/test-cwd/.agent-js/skills/a/SKILL.md",
-        "---\nname: skill-a\ndescription: First\n---\n",
+        `---
+name: skill-a
+description: First
+---
+`,
       );
       testFs._files.set(
         "/test-cwd/.agent-js/skills/b/SKILL.md",
-        "---\nname: skill-b\ndescription: Second\n---\n",
+        `---
+name: skill-b
+description: Second
+---
+`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -239,7 +286,11 @@ would benefit from specialized instructions.
       );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
-        "---\nname: my-skill\ndescription: A test skill\n---\n# Body",
+        `---
+name: my-skill
+description: A test skill
+---
+# Body`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -270,7 +321,11 @@ would benefit from specialized instructions.
       );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/good/SKILL.md",
-        "---\nname: good\ndescription: Valid\n---\n",
+        `---
+name: good
+description: Valid
+---
+`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -294,7 +349,11 @@ would benefit from specialized instructions.
       ]);
       testFs._files.set(
         "/custom/skills/custom-skill/SKILL.md",
-        "---\nname: custom-skill\ndescription: From custom dir\n---\n",
+        `---
+name: custom-skill
+description: From custom dir
+---
+`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -321,11 +380,19 @@ would benefit from specialized instructions.
       ]);
       testFs._files.set(
         "/custom/skills/deploy/SKILL.md",
-        "---\nname: deploy\ndescription: Custom deploy\n---\n",
+        `---
+name: deploy
+description: Custom deploy
+---
+`,
       );
       testFs._files.set(
         "/test-cwd/.agent-js/skills/deploy/SKILL.md",
-        "---\nname: deploy\ndescription: Local deploy\n---\n",
+        `---
+name: deploy
+description: Local deploy
+---
+`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -355,7 +422,11 @@ would benefit from specialized instructions.
       );
       testFs._files.set(
         "/fake-home/.config/.agent-js/skills/ok/SKILL.md",
-        "---\nname: ok\ndescription: Works\n---\n",
+        `---
+name: ok
+description: Works
+---
+`,
       );
       const result = getSkillsStr(getSkills());
       assert.equal(
@@ -386,7 +457,11 @@ would benefit from specialized instructions.
     it("parses valid SKILL.md front matter", () => {
       testFs._files.set(
         "/skill-dir/SKILL.md",
-        "---\nname: deploy\ndescription: Deploy the app\n---\n# Deploy",
+        `---
+name: deploy
+description: Deploy the app
+---
+# Deploy`,
       );
       const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.deepStrictEqual(result, {
@@ -400,14 +475,23 @@ would benefit from specialized instructions.
     it("returns null when front matter is missing name", () => {
       testFs._files.set(
         "/skill-dir/SKILL.md",
-        "---\ndescription: No name here\n---\n",
+        `---
+description: No name here
+---
+`,
       );
       const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
 
     it("returns null when front matter is missing description", () => {
-      testFs._files.set("/skill-dir/SKILL.md", "---\nname: deploy\n---\n");
+      testFs._files.set(
+        "/skill-dir/SKILL.md",
+        `---
+name: deploy
+---
+`,
+      );
       const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
@@ -436,18 +520,26 @@ would benefit from specialized instructions.
     });
 
     it("returns null when no closing delimiter", () => {
-      const result = parseFrontMatter("---\nname: test\n");
+      const result = parseFrontMatter(`---
+name: test
+`);
       assert.equal(result, null);
     });
 
     it("returns null when yaml string is empty", () => {
-      const result = parseFrontMatter("---\n---\nbody");
+      const result = parseFrontMatter(`---
+---
+body`);
       assert.equal(result, null);
     });
 
     it("parses valid front matter with attributes and body", () => {
       const result = parseFrontMatter(
-        "---\nname: my-skill\ndescription: A skill\n---\n# Body content",
+        `---
+name: my-skill
+description: A skill
+---
+# Body content`,
       );
       assert.deepStrictEqual(result, {
         data: { name: "my-skill", description: "A skill" },
@@ -456,7 +548,10 @@ would benefit from specialized instructions.
     });
 
     it("parses front matter with no body", () => {
-      const result = parseFrontMatter("---\nname: test\n---\n");
+      const result = parseFrontMatter(`---
+name: test
+---
+`);
       assert.deepStrictEqual(result, {
         data: { name: "test" },
         body: "",
@@ -465,26 +560,39 @@ would benefit from specialized instructions.
 
     it("preserves body containing dashes", () => {
       const result = parseFrontMatter(
-        "---\nkey: val\n---\nBody with --- inside\nand more text",
+        `---
+key: val
+---
+Body with --- inside
+and more text`,
       );
       assert.deepStrictEqual(result, {
         data: { key: "val" },
-        body: "Body with --- inside\nand more text",
+        body: `Body with --- inside
+and more text`,
       });
     });
 
     it("returns null when closing delimiter lacks trailing newline", () => {
-      const result = parseFrontMatter("---\nkey: val\n---");
+      const result = parseFrontMatter(`---
+key: val
+---`);
       assert.equal(result, null);
     });
 
     it("returns null on invalid yaml", () => {
-      const result = parseFrontMatter("---\n* invalid\n---\nbody");
+      const result = parseFrontMatter(`---
+* invalid
+* ---
+*  body`);
       assert.equal(result, null);
     });
 
     it("returns null on unclosed flow sequence in yaml", () => {
-      const result = parseFrontMatter("---\nkey: [unclosed\n---\nbody");
+      const result = parseFrontMatter(`---
+key: [unclosed
+---
+body`);
       assert.equal(result, null);
     });
   });

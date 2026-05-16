@@ -100,7 +100,9 @@ describe("tools", () => {
       testFs._files.set("/test/lines.txt", "aaa\nbbb\nccc");
       const result = executeViewFileTool({ path: "/test/lines.txt" });
       assert.deepStrictEqual(result, {
-        content: "1\taaa\n2\tbbb\n3\tccc",
+        content: `1\taaa
+2\tbbb
+3\tccc`,
       });
     });
 
@@ -112,7 +114,9 @@ describe("tools", () => {
         end_line: 4,
       });
       assert.deepStrictEqual(result, {
-        content: "2\tline2\n3\tline3\n4\tline4",
+        content: `2\tline2
+3\tline3
+4\tline4`,
       });
     });
 
@@ -124,7 +128,8 @@ describe("tools", () => {
         end_line: -1,
       });
       assert.deepStrictEqual(result, {
-        content: "2\tb\n3\tc",
+        content: `2\tb
+3\tc`,
       });
     });
 
@@ -134,7 +139,8 @@ describe("tools", () => {
       testFs._files.set("/test/dir/beta.txt", "");
       const result = executeViewFileTool({ path: "/test/dir" });
       assert.deepStrictEqual(result, {
-        content: "alpha.txt\nbeta.txt",
+        content: `alpha.txt
+beta.txt`,
       });
     });
 
@@ -289,7 +295,10 @@ describe("tools", () => {
       });
       assert.equal(
         testFs._files.get("/test/file.txt"),
-        "line1\nline2\ninserted\nline3",
+        `line1
+line2
+inserted
+line3`,
       );
     });
 
@@ -302,7 +311,12 @@ describe("tools", () => {
       assert.deepStrictEqual(result, {
         content: `/test/file.txt updated successfully`,
       });
-      assert.equal(testFs._files.get("/test/file.txt"), `top\nline1\nline2`);
+      assert.equal(
+        testFs._files.get("/test/file.txt"),
+        `top
+line1
+line2`,
+      );
     });
 
     it("inserts at the end when after_line equals the number of lines", () => {
@@ -314,7 +328,12 @@ describe("tools", () => {
       assert.deepStrictEqual(result, {
         content: `/test/file.txt updated successfully`,
       });
-      assert.equal(testFs._files.get("/test/file.txt"), `line1\nline2\nbottom`);
+      assert.equal(
+        testFs._files.get("/test/file.txt"),
+        `line1
+line2
+bottom`,
+      );
     });
 
     it("returns isError when after_line is out of range (negative)", () => {
