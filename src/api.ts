@@ -81,7 +81,9 @@ export async function callApi(userInput: string) {
         }
       },
       experimental_onToolCallFinish: async ({ toolCall, success }) => {
+        assert(tempFileBefore !== null);
         if (!success) {
+          fsDeps.unlinkSync(tempFileBefore);
           tempFileBefore = null;
           return;
         }
@@ -92,7 +94,6 @@ export async function callApi(userInput: string) {
             const tempFileAfter = createTempFile({
               initialContentPath: path,
             });
-            assert(tempFileBefore !== null);
             await printGitDiff({
               tempFileBeforePath: tempFileBefore,
               tempFileAfterPath: tempFileAfter,
