@@ -1,7 +1,7 @@
 import { basename, dirname, extname, join } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
 import { normalizeLine, tryCatch } from "./utils.ts";
-import { randomUUID } from "node:crypto";
+import crypto from "node:crypto";
 import { fsDeps } from "./deps.ts";
 import { getDebugLogPath, getEditorLogsDir } from "./paths.ts";
 
@@ -63,9 +63,10 @@ export function initEditorLog() {
     }
   }
 
+  const uuid = crypto.randomUUID().replaceAll("-", "");
   const editorLogSessionPath = join(
     editorLogsDir,
-    `editor-${randomUUID()}-${Date.now().toString()}.log`,
+    `editor-${uuid}-${Date.now().toString()}.log`,
   );
   dispatch(actions.setEditorLogPath(editorLogSessionPath));
 }

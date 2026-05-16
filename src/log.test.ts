@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import {
   debugLog,
   editorLog,
@@ -25,19 +26,13 @@ describe("log", () => {
     it("does nothing when debugLog is disabled", () => {
       dispatch(actions.setDebugLog(false));
       debugLog("test message");
-      assert.equal(
-        testFs._files.has("/test-cwd/.agent-js/debug.log"),
-        false,
-      );
+      assert.equal(testFs._files.has("/test-cwd/.agent-js/debug.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
       dispatch(actions.setDebugLog(true));
       debugLog("test message");
-      assert.equal(
-        testFs._dirs.has("/test-cwd/.agent-js"),
-        true,
-      );
+      assert.equal(testFs._dirs.has("/test-cwd/.agent-js"), true);
     });
 
     it("appends content to log file with timestamp", () => {
@@ -123,20 +118,14 @@ content 2
 
     it("does nothing when log file does not exist", () => {
       resetDebugLog();
-      assert.equal(
-        testFs._files.has("/test-cwd/.agent-js/debug.log"),
-        false,
-      );
+      assert.equal(testFs._files.has("/test-cwd/.agent-js/debug.log"), false);
     });
 
     it("clears the log file when it exists", () => {
       testFs._dirs.add("/test-cwd/.agent-js");
       testFs._files.set("/test-cwd/.agent-js/debug.log", "existing content");
       resetDebugLog();
-      assert.equal(
-        testFs._files.get("/test-cwd/.agent-js/debug.log"),
-        "",
-      );
+      assert.equal(testFs._files.get("/test-cwd/.agent-js/debug.log"), "");
     });
   });
 
@@ -144,6 +133,7 @@ content 2
     beforeEach(() => {
       setupFakeDeps();
       mock.method(Date, "now", () => 1234567890000);
+      mock.method(crypto, "randomUUID", () => "test-uuid");
     });
 
     it("creates directory and sets path when directory does not exist", () => {
@@ -154,9 +144,9 @@ content 2
         true,
       );
       assert.equal(selectors.getEditorLog(), true);
-      assert.match(
+      assert.equal(
         selectors.getEditorLogPath(),
-        /editor-[a-f0-9-]+-1234567890000\.log$/,
+        "/fake-home/.config/.agent-js/editor/editor-testuuid-1234567890000.log",
       );
     });
 
@@ -170,12 +160,12 @@ content 2
       assert.equal(selectors.getEditorLog(), false);
     });
 
-    it("generates correct log path with uuid and timestamp", () => {
+    it("generates correct log path with uuid and timestamp, stripping dashes", () => {
       dispatch(actions.setEditorLog(true));
       initEditorLog();
-      assert.match(
+      assert.equal(
         selectors.getEditorLogPath(),
-        /editor-[a-f0-9-]+-1234567890000\.log$/,
+        "/fake-home/.config/.agent-js/editor/editor-testuuid-1234567890000.log",
       );
     });
   });
@@ -240,7 +230,9 @@ content 2
       );
       deleteExpiredEditorLogs();
       assert.equal(
-        testFs._files.has("/fake-home/.config/.agent-js/editor/random-file.log"),
+        testFs._files.has(
+          "/fake-home/.config/.agent-js/editor/random-file.log",
+        ),
         true,
       );
       assert.equal(
