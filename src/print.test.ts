@@ -1,7 +1,9 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { formatMarkdown, calculateSessionUsage } from "./print.ts";
+import { formatMarkdown, calculateSessionUsage, executeBat } from "./print.ts";
 import { dispatch, actions } from "./state.ts";
+import { processDeps, childProcessDeps } from "./deps.ts";
+import { stripAnsi } from "./test-helpers.ts";
 
 describe("print", () => {
   describe("formatMarkdown", () => {
@@ -280,6 +282,68 @@ describe("print", () => {
           cacheWriteTokens: 0,
         }),
       );
+
+      describe("executeBat", () => {
+        beforeEach(() => {
+          mock.restoreAll();
+          dispatch(actions.resetState());
+          dispatch(actions.setModel("test-model"));
+        });
+
+        it("formats markdown and outputs the content through bat when available", async () => {
+          let captured = "";
+          mock.method(processDeps.stdout, "write", (out: string) => {
+            captured += out;
+          });
+
+          await executeBat("# Hello\n");
+
+          assert.strictEqual(stripAnsi(captured), "# Hello\n\n");
+        });
+
+        it("falls back to plain text when bat is not available", async () => {
+          mock.method(
+            childProcessDeps,
+            "exec",
+            (
+              _cmd: string,
+              cb: (error: Error | null, ...args: string[]) => void,
+            ) => {
+              cb(new Error("not found"), "", "");
+            },
+          );
+
+          let captured = "";
+          mock.method(processDeps.stdout, "write", (out: string) => {
+            captured += out;
+          });
+
+          await executeBat("test content\n");
+
+          assert.strictEqual(
+            stripAnsi(captured),
+            `\`bat\` is not available, falling back to plain text rendering
+test content
+
+`,
+          );
+        });
+
+        it("falls back to plain text when bat spawn fails", async () => {
+          mock.method(childProcessDeps, "spawnSync", () => {
+            throw new Error("spawn failed");
+          });
+
+          let captured = "";
+          mock.method(processDeps.stdout, "write", (out: string) => {
+            captured += out;
+          });
+
+          await executeBat("test content\n");
+
+          assert.strictEqual(stripAnsi(captured), "test content\n\n");
+        });
+      });
       const result = calculateSessionUsage();
       assert.equal(result, "125,000 in, 25,000 out");
     });

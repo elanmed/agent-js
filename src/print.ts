@@ -1,5 +1,3 @@
-import { spawnSync, exec } from "node:child_process";
-import { promisify } from "node:util";
 import { actions, dispatch, selectors } from "./state.ts";
 import { format } from "prettier";
 import {
@@ -9,11 +7,23 @@ import {
   type Result,
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
-import { processDeps } from "./deps.ts";
+import { processDeps, childProcessDeps } from "./deps.ts";
 
 export { processDeps };
 
-const execPromise = promisify(exec);
+function execPromise(
+  command: string,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    childProcessDeps.exec(command, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+}
 
 const COLORS = {
   red: "\x1b[31m",
@@ -118,7 +128,7 @@ export async function checkDelta(): Promise<boolean> {
 
 function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
   return tryCatch(() =>
-    spawnSync(
+    childProcessDeps.spawnSync(
       "bat",
       [
         "--language",
@@ -142,7 +152,6 @@ export async function formatMarkdown(content: string): Promise<string> {
   return content;
 }
 
-// NOTE: missing test coverage
 export async function executeBat(content: string) {
   content = await formatMarkdown(content);
   content = normalizeLine(content);
