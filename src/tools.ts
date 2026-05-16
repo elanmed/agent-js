@@ -12,7 +12,6 @@ import {
   tryCatchAsync,
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
-import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
@@ -41,7 +40,6 @@ export async function executeBashTool(
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   toolPrint("bash", bashCommand);
-  debugLog(`executeBashTool: command=${bashCommand}`);
 
   const bashResult = await tryCatchAsync(execPromise(bashCommand, { signal }));
 
@@ -51,16 +49,11 @@ export async function executeBashTool(
     }
 
     const error = getMessageFromError(bashResult.error);
-    debugLog(`executeBashTool: error=${error}`);
     return {
       content: error,
       isError: true,
     };
   }
-
-  debugLog(
-    `executeBashTool: stdout=${bashResult.value.stdout}, stderr=${bashResult.value.stderr}`,
-  );
   return {
     content: JSON.stringify({
       stdout: bashResult.value.stdout,
@@ -80,7 +73,6 @@ export function executeCreateFileTool(
   signal?: AbortSignal,
 ): ToolResult {
   if (fsDeps.existsSync(path)) {
-    debugLog(`executeCreatefileTool: ${path} already exists`);
     return {
       content: `${path} already exists`,
       isError: true,
@@ -97,14 +89,11 @@ export function executeCreateFileTool(
     }
 
     const error = getMessageFromError(createFileResult.error);
-    debugLog(`executeCreateFileTool: error=${error}`);
     return {
       content: error,
       isError: true,
     };
   }
-
-  debugLog(`executeCreateFileTool: ${path} created successfully `);
   return {
     content: `${path} created successfully`,
   };
@@ -122,12 +111,10 @@ export function executeViewFileTool({
   end_line,
 }: ViewFileToolInput): ToolResult {
   toolPrint("view_file", path);
-  debugLog(`executeViewFileTool: path=${path}`);
 
   const statResult = tryCatch(() => fsDeps.statSync(path));
   if (!statResult.ok) {
     const error = getMessageFromError(statResult.error);
-    debugLog(`executeViewFileTool: error=${error}`);
     return {
       content: error,
       isError: true,
@@ -138,14 +125,12 @@ export function executeViewFileTool({
     const readdirResult = tryCatch(() => fsDeps.readdirSync(path));
     if (!readdirResult.ok) {
       const error = getMessageFromError(readdirResult.error);
-      debugLog(`executeViewFileTool: error=${error}`);
       return {
         content: error,
         isError: true,
       };
     }
     const listing = readdirResult.value.join("\n");
-    debugLog(`executeViewFileTool: directory listing for ${path}`);
     return {
       content: listing,
     };
@@ -154,7 +139,6 @@ export function executeViewFileTool({
   const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    debugLog(`executeViewFileTool: error=${error}`);
     return {
       content: error,
       isError: true,
@@ -164,9 +148,6 @@ export function executeViewFileTool({
   const lines = readResult.value.toString().split("\n");
 
   if (start_line !== undefined && start_line < 1) {
-    debugLog(
-      `executeViewFileTool: start_line ${String(start_line)} is less than 1`,
-    );
     return {
       content: `start_line must be at least 1, got ${String(start_line)}`,
       isError: true,
@@ -174,9 +155,6 @@ export function executeViewFileTool({
   }
 
   if (end_line !== undefined && end_line !== -1 && end_line < 1) {
-    debugLog(
-      `executeViewFileTool: end_line ${String(end_line)} is less than 1`,
-    );
     return {
       content: `end_line must be at least 1 or -1, got ${String(end_line)}`,
       isError: true,
@@ -188,9 +166,6 @@ export function executeViewFileTool({
     end_line === undefined || end_line === -1 ? lines.length : end_line;
 
   if (start >= lines.length) {
-    debugLog(
-      `executeViewFileTool: start_line ${String(start_line)} is past end of file`,
-    );
     return {
       content: `start_line ${String(start_line)} is past end of file (file has ${String(lines.length)} lines)`,
       isError: true,
@@ -198,9 +173,6 @@ export function executeViewFileTool({
   }
 
   if (end > lines.length) {
-    debugLog(
-      `executeViewFileTool: end_line ${String(end_line)} is past end of file`,
-    );
     return {
       content: `end_line ${String(end_line)} is past end of file (file has ${String(lines.length)} lines)`,
       isError: true,
@@ -208,9 +180,6 @@ export function executeViewFileTool({
   }
 
   if (start >= end) {
-    debugLog(
-      `executeViewFileTool: start_line ${String(start_line)} is greater than or equal to end_line ${String(end_line)}`,
-    );
     return {
       content: `start_line (${String(start_line)}) must be less than end_line (${String(end_line)})`,
       isError: true,
@@ -222,9 +191,6 @@ export function executeViewFileTool({
     .map((line, i) => `${String(start + i + 1)}\t${line}`)
     .join("\n");
 
-  debugLog(
-    `executeViewFileTool: ${path} lines ${String(start + 1)}-${String(end)}`,
-  );
   return {
     content: numbered,
   };
@@ -246,12 +212,10 @@ export function executeStrReplaceTool(
   signal?: AbortSignal,
 ): ToolResult {
   toolPrint("str_replace", path);
-  debugLog(`executeStrReplaceTool: path=${path}`);
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    debugLog(`executeStrReplaceTool: error=${error}`);
     return {
       content: error,
       isError: true,
@@ -262,7 +226,6 @@ export function executeStrReplaceTool(
   const occurrences = content.split(old_str).length - 1;
 
   if (occurrences === 0) {
-    debugLog(`executeStrReplaceTool: old_str not found in ${path}`);
     return {
       content: "old_str not found in file",
       isError: true,
@@ -270,9 +233,6 @@ export function executeStrReplaceTool(
   }
 
   if (occurrences > 1) {
-    debugLog(
-      `executeStrReplaceTool: old_str matched ${String(occurrences)} times in ${path}`,
-    );
     return {
       content: `old_str matched ${String(occurrences)} times — must match exactly once`,
       isError: true,
@@ -290,14 +250,12 @@ export function executeStrReplaceTool(
     }
 
     const error = getMessageFromError(writeResult.error);
-    debugLog(`executeStrReplaceTool: error=${error}`);
     return {
       content: error,
       isError: true,
     };
   }
 
-  debugLog(`executeStrReplaceTool: ${path} updated successfully`);
   return {
     content: `${path} updated successfully`,
   };
@@ -314,14 +272,10 @@ export function executeInsertLinesTool(
   signal?: AbortSignal,
 ): ToolResult {
   toolPrint("insert_lines", path);
-  debugLog(
-    `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
-  );
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
     const error = getMessageFromError(readResult.error);
-    debugLog(`executeInsertLinesTool: error=${error}`);
     return {
       content: error,
       isError: true,
@@ -331,9 +285,6 @@ export function executeInsertLinesTool(
   const lines = readResult.value.toString().split("\n");
 
   if (after_line < 0 || after_line > lines.length) {
-    debugLog(
-      `executeInsertLinesTool: after_line ${String(after_line)} out of range`,
-    );
     return {
       content: `after_line ${String(after_line)} is out of range (file has ${String(lines.length)} lines)`,
       isError: true,
@@ -353,14 +304,12 @@ export function executeInsertLinesTool(
     }
 
     const error = getMessageFromError(writeResult.error);
-    debugLog(`executeInsertLinesTool: error=${error}`);
     return {
       content: error,
       isError: true,
     };
   }
 
-  debugLog(`executeInsertLinesTool: ${path} updated successfully`);
   return {
     content: `${path} updated successfully`,
   };
@@ -375,7 +324,6 @@ export async function executeWebFetchHtmlTool(
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   toolPrint("web_fetch_html", href);
-  debugLog(`executeWebFetchHtmlTool: href=${href}`);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "text/html");
@@ -411,15 +359,11 @@ export async function executeWebFetchHtmlTool(
       throw new Error(error);
     }
 
-    debugLog(
-      `executeWebFetchHtmlTool: success, title=${article.title ?? "null"}`,
-    );
     return {
       content: stringify(article),
     };
   } catch (error: unknown) {
     const msg = getMessageFromError(error);
-    debugLog(`executeWebFetchHtmlTool: error=${msg}`);
     return {
       isError: true,
       content: msg,
@@ -434,7 +378,6 @@ export async function executeWebFetchJsonTool(
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   toolPrint("web_fetch_json", href);
-  debugLog(`executeWebFetchJsonTool: href=${href}`);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "application/json");
@@ -461,13 +404,11 @@ export async function executeWebFetchJsonTool(
     }
 
     const json = (await response.json()) as unknown;
-    debugLog(`executeWebFetchJsonTool: success`);
     return {
       content: stringify(json),
     };
   } catch (error: unknown) {
     const msg = getMessageFromError(error);
-    debugLog(`executeWebFetchJsonTool: error=${msg}`);
     return {
       isError: true,
       content: msg,
@@ -483,17 +424,14 @@ export type LoadSkillTool = z.infer<typeof loadSkillToolSchema>;
 
 export function loadSkillTool({ name }: LoadSkillTool): ToolResult {
   toolPrint("load_skill", name);
-  debugLog(`loadSkillTool: name=${name}`);
   const foundSkill = selectors.getSkills().find((skill) => skill.name === name);
   if (!foundSkill) {
-    debugLog(`loadSkillTool: skill not found`);
     return {
       isError: true,
       content: `Could not find a skill with name: ${name}`,
     };
   }
 
-  debugLog(`loadSkillTool: loaded ${name}`);
   return {
     content: stringify(foundSkill),
   };
@@ -563,7 +501,7 @@ export async function printGitDiff(args: {
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
     printNewline();
-    fencePrint(`File change: ${args.path}`);
+    fencePrint(`File change: ${args.path}`, { skipSessionUsage: true });
     print(normalizeLine(diffResult.value.stdout));
     printNewline();
   }
@@ -573,13 +511,10 @@ export async function printGitDiff(args: {
 export async function execGitDiff(
   args: string,
 ): Promise<{ stdout: string; stderr: string }> {
-  debugLog(`execGitDiff: args=${args}`);
   const isDeltaAvailable = await checkDelta();
-  debugLog(`execGitDiff: isDeltaAvailable=${String(isDeltaAvailable)}`);
 
   return new Promise((resolve, reject) => {
     const gitDiffCmd = `git diff ${args}`;
-    debugLog(`execGitDiff: gitDiffCmd=${gitDiffCmd}`);
 
     if (isDeltaAvailable) {
       const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
@@ -588,14 +523,8 @@ export async function execGitDiff(
         { cwd: os.tmpdir() },
         (error, stdout, stderr) => {
           if (error && error.code !== 1) {
-            debugLog(
-              `execGitDiff: error with delta, code=${String(error.code)}, message=${error.message}`,
-            );
             reject(error);
           } else {
-            debugLog(
-              `execGitDiff: success with delta, stdout.length=${String(stdout.length)}`,
-            );
             resolve({ stdout, stderr });
           }
         },
@@ -606,14 +535,8 @@ export async function execGitDiff(
     const coloredGitDiffCmd = `${gitDiffCmd} --color=always`;
     exec(coloredGitDiffCmd, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
       if (error && error.code !== 1) {
-        debugLog(
-          `execGitDiff: error without delta, code=${String(error.code)}, message=${error.message}`,
-        );
         reject(error);
       } else {
-        debugLog(
-          `execGitDiff: success without delta, stdout.length=${String(stdout.length)}`,
-        );
         resolve({ stdout, stderr });
       }
     });

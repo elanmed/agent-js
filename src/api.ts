@@ -11,7 +11,6 @@ import {
 } from "./utils.ts";
 import { print, startSpinner, stopSpinner } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
-import { debugLog } from "./log.ts";
 import {
   objectWithPathSchema,
   printGitDiff,

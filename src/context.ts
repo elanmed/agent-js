@@ -2,7 +2,6 @@ import { dirname, join } from "node:path";
 import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { print } from "./print.ts";
-import { debugLog } from "./log.ts";
 import { selectors } from "./state.ts";
 import {
   getGlobalContextDir,
@@ -39,8 +38,6 @@ export function getContextEntries() {
     if (!globResult.ok) continue;
     agentFilePaths.push(...globResult.value);
   }
-
-  debugLog(`AGENTS.md found: ${agentFileDirs.join(",")}`);
 
   const entries: ContextEntry[] = [];
 

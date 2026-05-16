@@ -2,7 +2,6 @@ import { spawnSync, exec } from "node:child_process";
 import { promisify } from "node:util";
 import { actions, dispatch, selectors } from "./state.ts";
 import { format } from "prettier";
-import { debugLog } from "./log.ts";
 import {
   tryCatch,
   tryCatchAsync,
@@ -148,7 +147,6 @@ export async function executeBat(content: string) {
   content = await formatMarkdown(content);
   content = normalizeLine(content);
   const isBatAvailable = await checkBat();
-  debugLog(`executeBat: isBatAvailable=${String(isBatAvailable)}`);
 
   if (!isBatAvailable) {
     print.error("`bat` is not available, falling back to plain text rendering");
@@ -158,14 +156,10 @@ export async function executeBat(content: string) {
 
   const batResult = spawnBat(content);
   if (batResult.ok) {
-    debugLog(
-      `executeBat: writing bat output, bytes=${String(batResult.value.stdout.length)}`,
-    );
     print(batResult.value.stdout);
     return;
   }
 
-  debugLog("executeBat: bat spawn failed, falling back to plain text");
   print(content);
 }
 

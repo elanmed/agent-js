@@ -447,7 +447,6 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         appState: { ...state.appState, debugLog: action.payload },
       };
-      logStateChange(action.type, "", String(action.payload));
       return next;
     }
     case "set-editor-log": {

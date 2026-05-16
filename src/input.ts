@@ -21,7 +21,7 @@ import { basename, extname, join } from "node:path";
 import { actions, dispatch, selectors, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
-import { debugLog, editorLog } from "./log.ts";
+import { editorLog } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
 
@@ -200,7 +200,6 @@ async function resolveExitConfirmation() {
 
   if (/^y(es)?$/i.exec(exitResult.value)) {
     dispatch(actions.appendToStdout(`>${exitResult.value}\n`));
-    debugLog("User confirmed exit");
 
     rl.close();
     process.exit(0);
@@ -241,7 +240,6 @@ export function resolveSlashCommand(rawInput: string) {
   );
   if (matchedCommand !== undefined) {
     print.infoSubtle(`Executing slash command: ${rawInput}`);
-    debugLog(`Performing the slash command at ${matchedCommand.filePath}`);
     return matchedCommand.content;
   }
 
@@ -255,7 +253,6 @@ export function resolveSlashCommand(rawInput: string) {
 }
 
 export function clearCommand() {
-  debugLog("Performing the `clear` slash command");
   print.infoSubtle(`Context cleared (${calculateSessionUsage()})`);
   dispatch(actions.resetMessageUsages());
   dispatch(actions.resetMessageParams());

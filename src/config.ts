@@ -7,7 +7,6 @@ import {
   getSkillsStr,
   getSkills,
 } from "./context.ts";
-import { debugLog } from "./log.ts";
 import { actions, dispatch } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
@@ -103,39 +102,32 @@ export const DEFAULT_CONFIG: DefaultConfig = {
 export function initState() {
   const args = parseCliArgs();
   dispatch(actions.setDebugLog(args.debug));
-  dispatch(actions.setDebugLog(args.debug)); // second time so it's logged
 
   const globalConfig: Config = (() => {
     if (fsDeps.existsSync(getGlobalConfigPath())) {
-      debugLog(`${getGlobalConfigPath()} exists, returning`);
       const readResult = tryCatch(() =>
         fsDeps.readFileSync(getGlobalConfigPath()).toString(),
       );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
       }
-      debugLog(`Failed to read ${getGlobalConfigPath()}, using default`);
       return DEFAULT_CONFIG;
     }
 
-    debugLog(`${getGlobalConfigPath()} does not exist`);
     return DEFAULT_CONFIG;
   })();
 
   const localConfig: Config = (() => {
     if (fsDeps.existsSync(getLocalConfigPath())) {
-      debugLog(`${getLocalConfigPath()} exists, reading`);
       const readResult = tryCatch(() =>
         fsDeps.readFileSync(getLocalConfigPath()).toString(),
       );
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
       }
-      debugLog(`Failed to read ${getLocalConfigPath()}, using empty config`);
       return {};
     }
 
-    debugLog(`${getLocalConfigPath()} does not exist`);
     return {};
   })();
 
