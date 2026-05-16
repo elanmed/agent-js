@@ -83,6 +83,7 @@ export async function callApi(userInput: string) {
       experimental_onToolCallFinish: async ({ toolCall, success }) => {
         if (!success) {
           tempFileBefore = null;
+          return;
         }
 
         switch (toolCall.toolName as ToolName) {
