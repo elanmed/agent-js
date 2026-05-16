@@ -2,16 +2,17 @@
 
 You are running in a container. Make all changes to `/agent-js` at the root of the filesystem.
 
-This is a Node.js project. Only Node.js APIs should be used. Use `node` for running and testing, and `pnpm` as the package manager. Run `pnpm install` after pulling changes.
+This is a Node.js project. Only Node.js APIs should be used. Use `node` for running and testing, and `pnpm` as the package manager.
 
 ## Development
 
-After every change, run linting, types, and tests:
+After every change, run linting, types, tests, and formatting:
 
 ```
 pnpm run lint
 pnpm run types
 pnpm run test
+pnpm run format
 ```
 
 Or all at once:
@@ -25,12 +26,10 @@ pnpm run ci
 - Never add comments
 - Minimize diffs — only change what's necessary
 - All changes must have test coverage
-- Never put selectors, actions, or dispatch in deps (legacy DI deps sometimes still have them — remove when migrating to mocking)
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
 - Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value
 - Never use `assert.ok(result.includes(...))` — assert on the whole string with `assert.equal` or `assert.strictEqual`
 - For string assertions with newlines: use template literals when the string contains any newline that is not a single trailing one. If it's just a single trailing newline, use `"...\n"` instead
-- Run `prettier --check` via `pnpm run format:check` in CI; write with `pnpm run format`
 - For fs, import `fsDeps` directly from `deps.ts`. In tests, use `setupFakeDeps()` from `test-helpers.ts` to mock all fs methods, `processEnv`, and `processStdout` globally. Use `testFs._files` / `testFs._dirs` / `testFs._globResults` to set up fixture state. Import `testFs` and `setupFakeDeps` from `./test-helpers.ts`.
 - `processEnv.get` and `processStdout.write` are also in `deps.ts` and mocked by `setupFakeDeps()`. Use `testProcessEnv._set(key, value)` for env vars. Override `processStdout.write` with an additional `mock.method(processStdout, "write", ...)` if you need to capture output.
 - Pure utility functions do not need deps — import and call them directly in tests.
