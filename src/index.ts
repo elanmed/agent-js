@@ -15,7 +15,7 @@ import {
   initSigInt,
   resolveUserInput,
 } from "./input.ts";
-import { resolveApiCall } from "./api.ts";
+import { callApi } from "./api.ts";
 import { initLogs } from "./log.ts";
 
 async function main() {
@@ -36,13 +36,13 @@ async function main() {
       continue;
     }
 
-    const text = await resolveApiCall(userInput);
-    if (text) {
-      printNewline();
-      fencePrint("Output");
-      await executeBat(text);
-      printNewline();
-    }
+    const text = await callApi(userInput);
+    if (text === null) continue;
+
+    printNewline();
+    fencePrint("Output");
+    await executeBat(text);
+    printNewline();
   }
 
   selectors.getRl()!.close();

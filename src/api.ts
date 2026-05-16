@@ -38,7 +38,12 @@ function getLanguageModel() {
   })(selectors.getModel());
 }
 
-async function callApi(newMessage: ModelMessage) {
+export async function callApi(userInput: string) {
+  const inputMessageParam: ModelMessage = {
+    role: "user",
+    content: userInput,
+  };
+
   const newMessageCount = 1;
   const messageCount = selectors.getMessageParams().length + newMessageCount;
   debugLog(
@@ -53,15 +58,16 @@ async function callApi(newMessage: ModelMessage) {
     selectors.getSkillsStr(),
   ].join("\n");
 
+  dispatch(actions.setApiStreamAbortController(new AbortController()));
   const abortController = selectors.getApiStreamAbortController();
   assert(abortController !== null);
 
   let tempFileBefore: string | null = null;
-  try {
-    const { text, usage, response } = await generateText({
+  const generateTextResult = await tryCatchAsync(
+    generateText({
       model: getLanguageModel(),
       system: systemContent,
-      messages: [...selectors.getMessageParams(), newMessage],
+      messages: [...selectors.getMessageParams(), inputMessageParam],
       tools: TOOLS,
       stopWhen: isLoopFinished(),
       abortSignal: abortController.signal,
@@ -82,7 +88,9 @@ async function callApi(newMessage: ModelMessage) {
         switch (toolCall.toolName as ToolName) {
           case "str_replace": {
             const { path } = strReplaceToolInputSchema.parse(toolCall.input);
-            const tempFileAfter = createTempFile({ initialContentPath: path });
+            const tempFileAfter = createTempFile({
+              initialContentPath: path,
+            });
             assert(tempFileBefore !== null);
             await printGitDiff({
               tempFileBeforePath: tempFileBefore,
@@ -96,49 +104,37 @@ async function callApi(newMessage: ModelMessage) {
           }
         }
       },
-    });
+    }),
+  );
 
-    stopSpinner();
-
-    dispatch(
-      actions.appendToMessageUsages({
-        inputTokens: usage.inputTokens ?? 0,
-        outputTokens: usage.outputTokens ?? 0,
-        cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
-        cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
-      }),
-    );
-
-    dispatch(actions.appendToMessageParams(newMessage));
-    for (const msg of response.messages) {
-      dispatch(actions.appendToMessageParams(msg));
-    }
-
-    return text;
-  } finally {
-    stopSpinner();
-  }
-}
-
-export async function resolveApiCall(userInput: string) {
-  const inputMessageParam: ModelMessage = {
-    role: "user",
-    content: userInput,
-  };
-
-  dispatch(actions.setApiStreamAbortController(new AbortController()));
-  const apiResult = await tryCatchAsync(callApi(inputMessageParam));
+  stopSpinner();
   dispatch(actions.setApiStreamAbortController(null));
 
-  if (!apiResult.ok) {
-    if (isAbortError(apiResult.error)) {
-      colorPrint("Aborted API call", "red");
+  if (!generateTextResult.ok) {
+    if (isAbortError(generateTextResult.error)) {
+      colorPrint("Aborted", "red");
       return null;
     }
 
-    colorPrint(getMessageFromError(apiResult.error), "red");
+    colorPrint(getMessageFromError(generateTextResult.error), "red");
     return null;
   }
 
-  return apiResult.value;
+  const { usage, text, response } = generateTextResult.value;
+
+  dispatch(
+    actions.appendToMessageUsages({
+      inputTokens: usage.inputTokens ?? 0,
+      outputTokens: usage.outputTokens ?? 0,
+      cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
+      cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
+    }),
+  );
+
+  dispatch(actions.appendToMessageParams(inputMessageParam));
+  for (const msg of response.messages) {
+    dispatch(actions.appendToMessageParams(msg));
+  }
+
+  return text;
 }
