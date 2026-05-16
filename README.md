@@ -222,7 +222,7 @@ Minimal runtime dependencies (8 total):
 | `prettier`                  | Markdown formatting                     |
 | `yaml`                      | Parsing Skill metadata                  |
 
-- This project uses **pnpm v11** for package management, which helps prevent supply chain attacks
+- This project uses **pnpm v11** for package management, which helps [prevent supply chain attacks](https://pnpm.io/supply-chain-security)
 - All tests are written with the Node.js native test runner and mocks i.e. no Jest
 - TypeScript is executed directly via `node` (no build step), keeping the toolchain minimal
 
