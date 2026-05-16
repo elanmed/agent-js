@@ -391,7 +391,7 @@ Available /commands:
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
-          name: "foo.md",
+          name: "foo",
           filePath: "/custom-commands/foo.md",
           content: "custom content",
         },
@@ -413,12 +413,12 @@ Available /commands:
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
-          name: "help.md",
+          name: "help",
           filePath: "/test-cwd/.agent-js/commands/help.md",
           content: "help content",
         },
         {
-          name: "status.md",
+          name: "status",
           filePath: "/fake-home/.config/.agent-js/commands/status.md",
           content: "status content",
         },
@@ -443,7 +443,7 @@ Available /commands:
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
-          name: "help.md",
+          name: "help",
           filePath: "/test-cwd/.agent-js/commands/help.md",
           content: "local content",
         },
@@ -462,7 +462,7 @@ Available /commands:
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
-          name: "good.md",
+          name: "good",
           filePath: "/test-cwd/.agent-js/commands/good.md",
           content: "content",
         },

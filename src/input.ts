@@ -17,7 +17,7 @@ import {
   fencePrint,
   calculateSessionUsage,
 } from "./print.ts";
-import { basename, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { actions, dispatch, selectors, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import type { Key } from "./config.ts";
@@ -409,7 +409,7 @@ export function getAvailableSlashCommands() {
   for (const filePath of slashCommandFilePaths) {
     const readResult = tryCatch(() => fsDeps.readFileSync(filePath).toString());
     if (!readResult.ok) continue;
-    const name = basename(filePath);
+    const name = basename(filePath, extname(filePath));
     if (seenSlashCommands.has(name)) continue;
     seenSlashCommands.add(name);
 
