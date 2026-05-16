@@ -38,7 +38,7 @@ function getLanguageModel() {
   })(selectors.getModel());
 }
 
-export async function callApi(userInput: string) {
+export async function resolveApiCall(userInput: string) {
   const inputMessageParam: ModelMessage = {
     role: "user",
     content: userInput,
@@ -47,7 +47,7 @@ export async function callApi(userInput: string) {
   const newMessageCount = 1;
   const messageCount = selectors.getMessageParams().length + newMessageCount;
   debugLog(
-    `callApi: model=${selectors.getModel()}, messageCount=${String(messageCount)}`,
+    `resolveApiCall: model=${selectors.getModel()}, messageCount=${String(messageCount)}`,
   );
 
   startSpinner();

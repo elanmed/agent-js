@@ -136,6 +136,7 @@ export async function resolveUserInput() {
   printNewline();
   fencePrint("Input", { color: "yellow", skipSessionUsage: true });
   dispatch(actions.resetStdout());
+
   dispatch(actions.setQuestionAbortController(new AbortController()));
   const inputResult = await tryCatchAsync(
     rl.question("> ", {
