@@ -13,8 +13,8 @@ import { colorPrint, startSpinner, stopSpinner } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import { debugLog } from "./log.ts";
 import {
+  objectWithPathSchema,
   printGitDiff,
-  strReplaceToolInputSchema,
   TOOLS,
   type ToolName,
 } from "./tools.ts";
@@ -73,24 +73,26 @@ export async function resolveApiCall(userInput: string) {
       abortSignal: abortController.signal,
       experimental_onToolCallStart: ({ toolCall }) => {
         switch (toolCall.toolName as ToolName) {
+          case "insert_lines":
           case "str_replace": {
-            const { path } = strReplaceToolInputSchema.parse(toolCall.input);
+            const { path } = objectWithPathSchema.parse(toolCall.input);
             tempFileBefore = createTempFile({ initialContentPath: path });
             break;
           }
         }
       },
       experimental_onToolCallFinish: async ({ toolCall, success }) => {
-        assert(tempFileBefore !== null);
-        if (!success) {
-          fsDeps.unlinkSync(tempFileBefore);
-          tempFileBefore = null;
-          return;
-        }
-
         switch (toolCall.toolName as ToolName) {
+          case "insert_lines":
           case "str_replace": {
-            const { path } = strReplaceToolInputSchema.parse(toolCall.input);
+            assert(tempFileBefore !== null);
+            if (!success) {
+              fsDeps.unlinkSync(tempFileBefore);
+              tempFileBefore = null;
+              return;
+            }
+
+            const { path } = objectWithPathSchema.parse(toolCall.input);
             const tempFileAfter = createTempFile({
               initialContentPath: path,
             });

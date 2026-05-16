@@ -236,6 +236,10 @@ export function executeViewFileTool({
   };
 }
 
+export const objectWithPathSchema = z.object({
+  path: z.string(),
+});
+
 export const strReplaceToolInputSchema = z.object({
   path: z.string(),
   old_str: z.string(),
