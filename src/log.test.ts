@@ -6,13 +6,10 @@ import {
   resetDebugLog,
   initEditorLog,
   deleteExpiredEditorLogs,
-  DEBUG_LOG_PATH,
-  EDITOR_LOGS_PATH,
 } from "./log.ts";
 import { dispatch, actions, selectors } from "./state.ts";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
-import { dirname } from "node:path";
 
 describe("log", () => {
   beforeEach(() => {
@@ -28,20 +25,26 @@ describe("log", () => {
     it("does nothing when debugLog is disabled", () => {
       dispatch(actions.setDebugLog(false));
       debugLog("test message");
-      assert.equal(testFs._files.has(DEBUG_LOG_PATH), false);
+      assert.equal(
+        testFs._files.has("/test-cwd/.agent-js/debug.log"),
+        false,
+      );
     });
 
     it("creates directory when log file does not exist", () => {
       dispatch(actions.setDebugLog(true));
       debugLog("test message");
-      assert.equal(testFs._dirs.has(dirname(DEBUG_LOG_PATH)), true);
+      assert.equal(
+        testFs._dirs.has("/test-cwd/.agent-js"),
+        true,
+      );
     });
 
     it("appends content to log file with timestamp", () => {
       dispatch(actions.setDebugLog(true));
       debugLog("test message");
       assert.equal(
-        testFs._files.get(DEBUG_LOG_PATH),
+        testFs._files.get("/test-cwd/.agent-js/debug.log"),
         "2023-11-14T22:13:20.000Z :: test message\n",
       );
     });
@@ -51,7 +54,7 @@ describe("log", () => {
       debugLog("message 1");
       debugLog("message 2");
       assert.equal(
-        testFs._files.get(DEBUG_LOG_PATH),
+        testFs._files.get("/test-cwd/.agent-js/debug.log"),
         `2023-11-14T22:13:20.000Z :: message 1
 2023-11-14T22:13:20.000Z :: message 2
 `,
@@ -120,14 +123,20 @@ content 2
 
     it("does nothing when log file does not exist", () => {
       resetDebugLog();
-      assert.equal(testFs._files.has(DEBUG_LOG_PATH), false);
+      assert.equal(
+        testFs._files.has("/test-cwd/.agent-js/debug.log"),
+        false,
+      );
     });
 
     it("clears the log file when it exists", () => {
-      testFs._dirs.add(dirname(DEBUG_LOG_PATH));
-      testFs._files.set(DEBUG_LOG_PATH, "existing content");
+      testFs._dirs.add("/test-cwd/.agent-js");
+      testFs._files.set("/test-cwd/.agent-js/debug.log", "existing content");
       resetDebugLog();
-      assert.equal(testFs._files.get(DEBUG_LOG_PATH), "");
+      assert.equal(
+        testFs._files.get("/test-cwd/.agent-js/debug.log"),
+        "",
+      );
     });
   });
 
@@ -140,7 +149,10 @@ content 2
     it("creates directory and sets path when directory does not exist", () => {
       dispatch(actions.setEditorLog(true));
       initEditorLog();
-      assert.equal(testFs._dirs.has(EDITOR_LOGS_PATH), true);
+      assert.equal(
+        testFs._dirs.has("/fake-home/.config/.agent-js/editor"),
+        true,
+      );
       assert.equal(selectors.getEditorLog(), true);
       assert.match(
         selectors.getEditorLogPath(),
@@ -176,64 +188,86 @@ content 2
 
     it("returns early when directory does not exist", () => {
       deleteExpiredEditorLogs();
-      assert.equal(testFs._dirs.has(EDITOR_LOGS_PATH), false);
+      assert.equal(
+        testFs._dirs.has("/fake-home/.config/.agent-js/editor"),
+        false,
+      );
     });
 
     it("deletes expired files older than 24 hours", () => {
-      testFs._dirs.add(EDITOR_LOGS_PATH);
+      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
       testFs._files.set(
-        `${EDITOR_LOGS_PATH}/editor-uuid-999900000000.log`,
+        "/fake-home/.config/.agent-js/editor/editor-uuid-999900000000.log",
         "old",
       );
       deleteExpiredEditorLogs();
       assert.equal(
-        testFs._files.has(`${EDITOR_LOGS_PATH}/editor-uuid-999900000000.log`),
+        testFs._files.has(
+          "/fake-home/.config/.agent-js/editor/editor-uuid-999900000000.log",
+        ),
         false,
       );
     });
 
     it("keeps files newer than 24 hours", () => {
-      testFs._dirs.add(EDITOR_LOGS_PATH);
+      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
       testFs._files.set(
-        `${EDITOR_LOGS_PATH}/editor-uuid-999990000000.log`,
+        "/fake-home/.config/.agent-js/editor/editor-uuid-999990000000.log",
         "new",
       );
       deleteExpiredEditorLogs();
       assert.equal(
-        testFs._files.has(`${EDITOR_LOGS_PATH}/editor-uuid-999990000000.log`),
+        testFs._files.has(
+          "/fake-home/.config/.agent-js/editor/editor-uuid-999990000000.log",
+        ),
         true,
       );
     });
 
     it("skips files without correct format", () => {
-      testFs._dirs.add(EDITOR_LOGS_PATH);
-      testFs._files.set(`${EDITOR_LOGS_PATH}/random-file.log`, "");
+      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
       testFs._files.set(
-        `${EDITOR_LOGS_PATH}/other-uuid-123-notimestamp.log`,
+        "/fake-home/.config/.agent-js/editor/random-file.log",
         "",
       );
-      testFs._files.set(`${EDITOR_LOGS_PATH}/editor-uuid-999990000001.log`, "");
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/editor/other-uuid-123-notimestamp.log",
+        "",
+      );
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/editor/editor-uuid-999990000001.log",
+        "",
+      );
       deleteExpiredEditorLogs();
       assert.equal(
-        testFs._files.has(`${EDITOR_LOGS_PATH}/random-file.log`),
+        testFs._files.has("/fake-home/.config/.agent-js/editor/random-file.log"),
         true,
       );
       assert.equal(
-        testFs._files.has(`${EDITOR_LOGS_PATH}/other-uuid-123-notimestamp.log`),
+        testFs._files.has(
+          "/fake-home/.config/.agent-js/editor/other-uuid-123-notimestamp.log",
+        ),
         true,
       );
       assert.equal(
-        testFs._files.has(`${EDITOR_LOGS_PATH}/editor-uuid-999990000001.log`),
+        testFs._files.has(
+          "/fake-home/.config/.agent-js/editor/editor-uuid-999990000001.log",
+        ),
         true,
       );
     });
 
     it("skips non-editor files with 3 parts", () => {
-      testFs._dirs.add(EDITOR_LOGS_PATH);
-      testFs._files.set(`${EDITOR_LOGS_PATH}/other-uuid-999997600000.log`, "");
+      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/editor/other-uuid-999997600000.log",
+        "",
+      );
       deleteExpiredEditorLogs();
       assert.equal(
-        testFs._files.has(`${EDITOR_LOGS_PATH}/other-uuid-999997600000.log`),
+        testFs._files.has(
+          "/fake-home/.config/.agent-js/editor/other-uuid-999997600000.log",
+        ),
         true,
       );
     });

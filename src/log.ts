@@ -1,22 +1,14 @@
 import { basename, dirname, extname, join } from "node:path";
 import { actions, dispatch, selectors } from "./state.ts";
-import { homedir } from "node:os";
 import { normalizeLine, tryCatch } from "./utils.ts";
 import { randomUUID } from "node:crypto";
-import { fsDeps, processDeps } from "./deps.ts";
-
-export const DEBUG_LOG_PATH = join(processDeps.cwd(), ".agent-js", "debug.log");
-export const EDITOR_LOGS_PATH = join(
-  homedir(),
-  ".config",
-  ".agent-js",
-  "editor",
-);
+import { fsDeps } from "./deps.ts";
+import { getDebugLogPath, getEditorLogsDir } from "./paths.ts";
 
 export function debugLog(content: string) {
   if (!selectors.getDebugLog()) return;
 
-  const path = DEBUG_LOG_PATH;
+  const path = getDebugLogPath();
   if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
       fsDeps.mkdirSync(dirname(path), { recursive: true }),
@@ -53,16 +45,17 @@ ${normalizeLine(content)}
 }
 
 export function resetDebugLog() {
-  const path = DEBUG_LOG_PATH;
+  const path = getDebugLogPath();
   if (fsDeps.existsSync(path)) {
     tryCatch(() => fsDeps.writeFileSync(path, ""));
   }
 }
 
 export function initEditorLog() {
-  if (!fsDeps.existsSync(EDITOR_LOGS_PATH)) {
+  const editorLogsDir = getEditorLogsDir();
+  if (!fsDeps.existsSync(editorLogsDir)) {
     const mkdirResult = tryCatch(() =>
-      fsDeps.mkdirSync(EDITOR_LOGS_PATH, { recursive: true }),
+      fsDeps.mkdirSync(editorLogsDir, { recursive: true }),
     );
     if (!mkdirResult.ok) {
       dispatch(actions.setEditorLog(false));
@@ -71,14 +64,14 @@ export function initEditorLog() {
   }
 
   const editorLogSessionPath = join(
-    EDITOR_LOGS_PATH,
+    editorLogsDir,
     `editor-${randomUUID()}-${Date.now().toString()}.log`,
   );
   dispatch(actions.setEditorLogPath(editorLogSessionPath));
 }
 
 export function deleteExpiredEditorLogs() {
-  const editorLogsPath = EDITOR_LOGS_PATH;
+  const editorLogsPath = getEditorLogsDir();
   if (!fsDeps.existsSync(editorLogsPath)) return;
 
   for (const name of fsDeps.readdirSync(editorLogsPath)) {

@@ -37,3 +37,11 @@ export function getLocalSlashCommandDir() {
 export function getGlobalSlashCommandDir() {
   return join(getGlobalConfigDir(), "commands");
 }
+
+export function getDebugLogPath() {
+  return join(getLocalConfigDir(), "debug.log");
+}
+
+export function getEditorLogsDir() {
+  return join(getGlobalConfigDir(), "editor");
+}
