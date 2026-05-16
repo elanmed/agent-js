@@ -1,35 +1,25 @@
-import type { ModelMessage, ToolSet } from "ai";
-import { generateText } from "ai";
+import type { ModelMessage } from "ai";
+import { generateText, isLoopFinished } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { actions, dispatch, selectors } from "./state.ts";
-import { isAbortError, tryCatchAsync, getMessageFromError } from "./utils.ts";
 import {
-  colorPrint,
-  executeBat,
-  fencePrint,
-  printNewline,
-  startSpinner,
-  stopSpinner,
-} from "./print.ts";
+  isAbortError,
+  tryCatchAsync,
+  getMessageFromError,
+  createTempFile,
+} from "./utils.ts";
+import { colorPrint, startSpinner, stopSpinner } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import { debugLog } from "./log.ts";
-import { getToolResultBlock, type ToolCall } from "./tools.ts";
-import { TOOLS } from "./tools.ts";
+import {
+  printGitDiff,
+  strReplaceToolInputSchema,
+  TOOLS,
+  type ToolName,
+} from "./tools.ts";
 import assert from "node:assert";
-import { processDeps } from "./deps.ts";
-
-interface ToolCallInfo {
-  toolCallId: string;
-  toolName: string;
-  input: unknown;
-}
-
-interface CallApiResult {
-  finishReason: string;
-  toolCalls: ToolCallInfo[];
-  text: string;
-}
+import { fsDeps, processDeps } from "./deps.ts";
 
 function getLanguageModel() {
   const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
@@ -48,11 +38,9 @@ function getLanguageModel() {
   })(selectors.getModel());
 }
 
-async function callApi(
-  newMessages: ModelMessage[],
-  abortSignal?: AbortSignal,
-): Promise<CallApiResult> {
-  const messageCount = selectors.getMessageParams().length + newMessages.length;
+async function callApi(newMessage: ModelMessage) {
+  const newMessageCount = 1;
+  const messageCount = selectors.getMessageParams().length + newMessageCount;
   debugLog(
     `callApi: model=${selectors.getModel()}, messageCount=${String(messageCount)}`,
   );
@@ -65,27 +53,53 @@ async function callApi(
     selectors.getSkillsStr(),
   ].join("\n");
 
-  try {
-    const { text, finishReason, toolCalls, usage, response } =
-      await generateText({
-        model: getLanguageModel(),
-        system: systemContent,
-        messages: [...selectors.getMessageParams(), ...newMessages],
-        tools: TOOLS as unknown as ToolSet,
-        ...(abortSignal && { abortSignal }),
-      });
+  const abortController = selectors.getApiStreamAbortController();
+  assert(abortController !== null);
 
-    debugLog(`callApi: finishReason=${finishReason}`);
+  let tempFileBefore: string | null = null;
+  try {
+    const { text, usage, response } = await generateText({
+      model: getLanguageModel(),
+      system: systemContent,
+      messages: [...selectors.getMessageParams(), newMessage],
+      tools: TOOLS,
+      stopWhen: isLoopFinished(),
+      abortSignal: abortController.signal,
+      experimental_onToolCallStart: ({ toolCall }) => {
+        switch (toolCall.toolName as ToolName) {
+          case "str_replace": {
+            const { path } = strReplaceToolInputSchema.parse(toolCall.input);
+            tempFileBefore = createTempFile({ initialContentPath: path });
+            break;
+          }
+        }
+      },
+      experimental_onToolCallFinish: async ({ toolCall, success }) => {
+        if (!success) {
+          tempFileBefore = null;
+        }
+
+        switch (toolCall.toolName as ToolName) {
+          case "str_replace": {
+            const { path } = strReplaceToolInputSchema.parse(toolCall.input);
+            const tempFileAfter = createTempFile({ initialContentPath: path });
+            assert(tempFileBefore !== null);
+            await printGitDiff({
+              tempFileBeforePath: tempFileBefore,
+              tempFileAfterPath: tempFileAfter,
+              path,
+            });
+            fsDeps.unlinkSync(tempFileBefore);
+            fsDeps.unlinkSync(tempFileAfter);
+            tempFileBefore = null;
+            break;
+          }
+        }
+      },
+    });
 
     stopSpinner();
 
-    const knownToolCalls = toolCalls.filter((tc) =>
-      Object.keys(TOOLS).includes(tc.toolName),
-    );
-
-    for (const message of newMessages) {
-      dispatch(actions.appendToMessageParams(message));
-    }
     dispatch(
       actions.appendToMessageUsages({
         inputTokens: usage.inputTokens ?? 0,
@@ -94,35 +108,26 @@ async function callApi(
         cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
       }),
     );
+
+    dispatch(actions.appendToMessageParams(newMessage));
     for (const msg of response.messages) {
       dispatch(actions.appendToMessageParams(msg));
     }
 
-    return {
-      text,
-      finishReason,
-      toolCalls: knownToolCalls.map((toolCall) => ({
-        toolCallId: toolCall.toolCallId,
-        toolName: toolCall.toolName,
-        input: toolCall.input,
-      })),
-    };
+    return text;
   } finally {
     stopSpinner();
   }
 }
 
-// NOTE: missing test coverage
-export async function resolveUserInputApiCall(initialContent: string) {
+export async function resolveApiCall(userInput: string) {
   const inputMessageParam: ModelMessage = {
     role: "user",
-    content: initialContent,
+    content: userInput,
   };
+
   dispatch(actions.setApiStreamAbortController(new AbortController()));
-  const apiStreamController = selectors.getApiStreamAbortController();
-  const apiResult = await tryCatchAsync(
-    callApi([inputMessageParam], apiStreamController!.signal),
-  );
+  const apiResult = await tryCatchAsync(callApi(inputMessageParam));
   dispatch(actions.setApiStreamAbortController(null));
 
   if (!apiResult.ok) {
@@ -136,97 +141,4 @@ export async function resolveUserInputApiCall(initialContent: string) {
   }
 
   return apiResult.value;
-}
-
-interface ToolMessage {
-  type: "tool-result";
-  toolCallId: string;
-  toolName: string;
-  output:
-    | { type: "text"; value: string }
-    | { type: "error-text"; value: string };
-}
-
-export async function runToolLoop(
-  initialResult: CallApiResult,
-  messageCountBeforeTurn: number,
-) {
-  let currentResult = initialResult;
-  let logged = false;
-  while (currentResult.finishReason === "tool-calls") {
-    if (!logged) {
-      printNewline();
-      fencePrint("Tool calls");
-      logged = true;
-    }
-
-    const toolMessages: ToolMessage[] = [];
-
-    for (const toolCall of currentResult.toolCalls) {
-      const localToolCall: ToolCall = {
-        id: toolCall.toolCallId,
-        name: toolCall.toolName,
-        input: toolCall.input,
-      };
-
-      dispatch(actions.setToolCallAbortController(new AbortController()));
-      startSpinner();
-      const toolResult = await tryCatchAsync(getToolResultBlock(localToolCall));
-      stopSpinner();
-      dispatch(actions.setToolCallAbortController(null));
-
-      if (!toolResult.ok) {
-        assert(isAbortError(toolResult.error));
-        colorPrint("Aborted tool call", "red");
-        dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
-        return currentResult;
-      }
-
-      toolMessages.push({
-        type: "tool-result",
-        toolCallId: toolCall.toolCallId,
-        toolName: toolCall.toolName,
-        output: toolResult.value.is_error
-          ? { type: "error-text", value: toolResult.value.content }
-          : { type: "text", value: toolResult.value.content },
-      });
-    }
-
-    const toolMessage: ModelMessage = {
-      role: "tool",
-      content: toolMessages,
-    };
-
-    dispatch(actions.setApiStreamAbortController(new AbortController()));
-    const toolApiStreamController = selectors.getApiStreamAbortController();
-    const toolApiCallResult = await tryCatchAsync(
-      callApi([toolMessage], toolApiStreamController!.signal),
-    );
-    dispatch(actions.setApiStreamAbortController(null));
-
-    if (!toolApiCallResult.ok) {
-      if (isAbortError(toolApiCallResult.error)) {
-        colorPrint("Aborted API call", "red");
-        dispatch(actions.truncateMessageParams(messageCountBeforeTurn));
-      } else {
-        colorPrint(getMessageFromError(toolApiCallResult.error), "red");
-      }
-
-      return currentResult;
-    }
-
-    if (toolApiCallResult.value.text) {
-      printNewline();
-      await executeBat(toolApiCallResult.value.text);
-      printNewline();
-    }
-
-    currentResult = toolApiCallResult.value;
-  }
-
-  if (logged) {
-    printNewline();
-  }
-
-  return currentResult;
 }

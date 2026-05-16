@@ -55,7 +55,6 @@ interface State {
   abortControllers: {
     question: AbortController | null;
     apiStream: AbortController | null;
-    toolCall: AbortController | null;
   };
 }
 
@@ -93,7 +92,6 @@ const initialState: State = {
   abortControllers: {
     question: null,
     apiStream: null,
-    toolCall: null,
   },
 };
 
@@ -425,18 +423,6 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
-    case "set-tool-call-abort-controller": {
-      const before = state.abortControllers.toolCall;
-      const next = {
-        ...state,
-        abortControllers: {
-          ...state.abortControllers,
-          toolCall: action.payload,
-        },
-      };
-      logStateChange(action.type, String(before), String(action.payload));
-      return next;
-    }
     case "set-editor-input-value": {
       const before = state.appState.editorInputValue;
       const next = {
@@ -614,6 +600,9 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, "[truncating]", stringify(next));
       return next;
     }
+    default: {
+      return state;
+    }
   }
 };
 
@@ -701,12 +690,6 @@ const setApiStreamAbortController = (
   return { type: "set-api-stream-abort-controller", payload: controller };
 };
 
-const setToolCallAbortController = (
-  controller: AbortController | null,
-): Action => {
-  return { type: "set-tool-call-abort-controller", payload: controller };
-};
-
 const setEditorInputValue = (value: string | null): Action => {
   return { type: "set-editor-input-value", payload: value };
 };
@@ -789,7 +772,6 @@ export const actions = {
   resetMessageParams,
   setQuestionAbortController,
   setApiStreamAbortController,
-  setToolCallAbortController,
   setEditorInputValue,
   setSlashCommands,
   setCustomSlashCommandDirs,
@@ -837,7 +819,6 @@ const getKeymapEditLog = () => getState().configState.keymapEditLog;
 const getKeymapClear = () => getState().configState.keymapClear;
 const getQuestionAbortController = () => getState().abortControllers.question;
 const getApiStreamAbortController = () => getState().abortControllers.apiStream;
-const getToolCallAbortController = () => getState().abortControllers.toolCall;
 
 export const selectors = {
   getInterrupted,
@@ -854,7 +835,6 @@ export const selectors = {
   getKeymapClear,
   getQuestionAbortController,
   getApiStreamAbortController,
-  getToolCallAbortController,
   getEditorInputValue,
   getSlashCommands,
   getCustomSlashCommandDirs,

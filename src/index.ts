@@ -15,7 +15,7 @@ import {
   initSigInt,
   resolveUserInput,
 } from "./input.ts";
-import { resolveUserInputApiCall, runToolLoop } from "./api.ts";
+import { resolveApiCall } from "./api.ts";
 import { initLogs } from "./log.ts";
 
 async function main() {
@@ -36,23 +36,12 @@ async function main() {
       continue;
     }
 
-    const messageCountBefore = selectors.getMessageParams().length;
-    const userInputApiCall = await resolveUserInputApiCall(userInput);
-    if (userInputApiCall == null) continue;
-
-    if (userInputApiCall.text) {
+    const text = await resolveApiCall(userInput);
+    if (text) {
       printNewline();
       fencePrint("Output");
-      await executeBat(userInputApiCall.text);
+      await executeBat(text);
       printNewline();
-    }
-
-    const toolLoopApiCall = await runToolLoop(
-      userInputApiCall,
-      messageCountBefore,
-    );
-    if (toolLoopApiCall.finishReason === "length") {
-      colorPrint("Response truncated, output hit the token limit", "yellow");
     }
   }
 

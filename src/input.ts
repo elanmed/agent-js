@@ -111,19 +111,13 @@ export function initSigInt() {
       return;
     }
 
-    const toolCall = selectors.getToolCallAbortController();
-    if (toolCall) {
-      toolCall.abort();
-      return;
-    }
-
-    const questionAbortController = selectors.getQuestionAbortController();
-    if (questionAbortController) {
+    const question = selectors.getQuestionAbortController();
+    if (question) {
       if (rl.line.length > 0) {
         clearRlLine();
         return;
       }
-      questionAbortController.abort();
+      question.abort();
     }
 
     // second <C-c> during exit confirmation

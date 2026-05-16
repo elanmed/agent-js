@@ -16,7 +16,6 @@ describe("state", () => {
     dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
     dispatch(actions.setQuestionAbortController(new AbortController()));
     dispatch(actions.setApiStreamAbortController(new AbortController()));
-    dispatch(actions.setToolCallAbortController(new AbortController()));
     const timeout = setTimeout(() => undefined, 1000);
     dispatch(actions.setSpinnerTimeout(timeout));
     dispatch(actions.setEditorLogPath("/tmp/test.log"));
@@ -29,7 +28,6 @@ describe("state", () => {
     assert.deepStrictEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
-    assert.equal(selectors.getToolCallAbortController(), null);
     assert.equal(selectors.getSpinnerTimeout(), null);
     assert.equal(selectors.getEditorLogPath(), "");
   });
@@ -41,7 +39,6 @@ describe("state", () => {
     assert.deepStrictEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
-    assert.equal(selectors.getToolCallAbortController(), null);
     assert.equal(selectors.getEditorLogPath(), "");
   });
 
@@ -214,13 +211,6 @@ describe("state", () => {
     const controller = new AbortController();
     dispatch(actions.setApiStreamAbortController(controller));
     assert.equal(selectors.getApiStreamAbortController(), controller);
-  });
-
-  it("set-tool-call-abort-controller", () => {
-    assert.equal(selectors.getToolCallAbortController(), null);
-    const controller = new AbortController();
-    dispatch(actions.setToolCallAbortController(controller));
-    assert.equal(selectors.getToolCallAbortController(), controller);
   });
 
   it("set-editor-input-value", () => {

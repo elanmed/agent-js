@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach, mock } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import {
   executeBashTool,
@@ -10,20 +10,10 @@ import {
   executeWebFetchJsonTool,
   loadSkillTool,
 } from "./tools.ts";
-import type { ToolCall } from "./tools.ts";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import { dispatch, actions } from "./state.ts";
 import { processDeps } from "./deps.ts";
-
-function makeToolCall(overrides: Partial<ToolCall> = {}): ToolCall {
-  return {
-    id: "tool_1",
-    name: "bash",
-    input: { command: "echo hello" },
-    ...overrides,
-  };
-}
 
 describe("tools", () => {
   beforeEach(() => {
@@ -31,49 +21,29 @@ describe("tools", () => {
   });
 
   describe("executeBashTool", () => {
-    beforeEach(() => {
-      dispatch(actions.setToolCallAbortController(new AbortController()));
-    });
-
-    afterEach(() => {
-      dispatch(actions.setToolCallAbortController(null));
-    });
-
-    it("throws when input is invalid", async () => {
-      const call = makeToolCall({
-        input: "not-an-object" as unknown as Record<string, unknown>,
-      });
-      await assert.rejects(() => executeBashTool(call));
-    });
-
     it("returns a successful tool_result with stdout/stderr JSON", async () => {
-      const call = makeToolCall({ input: { command: "echo hello" } });
-      const result = await executeBashTool(call);
+      const result = await executeBashTool(
+        { command: "echo hello" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: JSON.stringify({ stdout: "hello\n", stderr: "" }),
       });
     });
 
     it("captures stderr in the JSON payload", async () => {
-      const call = makeToolCall({
-        input: { command: "echo error >&2" },
-      });
-      const result = await executeBashTool(call);
+      const result = await executeBashTool(
+        { command: "echo error >&2" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: JSON.stringify({ stdout: "", stderr: "error\n" }),
       });
     });
 
-    it("returns is_error when command exits with non-zero code", async () => {
-      const call = makeToolCall({ input: { command: "exit 1" } });
-      const result = await executeBashTool(call);
-      assert.deepStrictEqual(result.type, "tool_result");
-      assert.deepStrictEqual(result.tool_use_id, "tool_1");
-      assert.deepStrictEqual(result.is_error, true);
+    it("returns isError when command exits with non-zero code", async () => {
+      const result = await executeBashTool({ command: "exit 1" }, undefined);
+      assert.strictEqual(result.isError, true);
       assert.match(result.content, /Command failed: exit 1/);
     });
   });
@@ -81,68 +51,43 @@ describe("tools", () => {
   describe("executeCreateFileTool", () => {
     beforeEach(() => {
       setupFakeDeps();
-      dispatch(actions.setToolCallAbortController(new AbortController()));
-    });
-
-    afterEach(() => {
-      dispatch(actions.setToolCallAbortController(null));
     });
 
     it("creates a new file and returns success", () => {
-      const call = makeToolCall({
-        name: "create_file",
-        input: { path: "/test/new.txt", content: "hello world" },
-      });
-      const result = executeCreateFileTool(call);
+      const result = executeCreateFileTool(
+        { content: "hello world", path: "/test/new.txt" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: `/test/new.txt created successfully`,
       });
       assert.equal(testFs._files.get("/test/new.txt"), "hello world");
     });
 
-    it("returns is_error when the file already exists", () => {
+    it("returns isError when the file already exists", () => {
       testFs._files.set("/test/existing.txt", "already here");
-      const call = makeToolCall({
-        name: "create_file",
-        input: { path: "/test/existing.txt", content: "new content" },
-      });
-      const result = executeCreateFileTool(call);
+      const result = executeCreateFileTool(
+        { content: "new content", path: "/test/existing.txt" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: `/test/existing.txt already exists`,
       });
     });
 
-    it("returns is_error when write fails", () => {
+    it("returns isError when write fails", () => {
       mock.method(fsDeps, "writeFileSync", () => {
         throw new Error("EIO");
       });
-      const call = makeToolCall({
-        name: "create_file",
-        input: {
-          path: "/test/file.txt",
-          content: "x",
-        },
-      });
-      const result = executeCreateFileTool(call);
+      const result = executeCreateFileTool(
+        { content: "x", path: "/test/file.txt" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "EIO",
       });
-    });
-
-    it("throws on invalid input schema", () => {
-      const call = makeToolCall({
-        name: "create_file",
-        input: { bad: true },
-      });
-      assert.throws(() => executeCreateFileTool(call));
     });
   });
 
@@ -153,42 +98,32 @@ describe("tools", () => {
 
     it("returns file contents with line numbers", () => {
       testFs._files.set("/test/lines.txt", "aaa\nbbb\nccc");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt" },
-      });
-      const result = executeViewFileTool(call);
+      const result = executeViewFileTool({ path: "/test/lines.txt" });
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: "1\taaa\n2\tbbb\n3\tccc",
       });
     });
 
     it("returns a slice when start_line and end_line are specified", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3\nline4\nline5");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", start_line: 2, end_line: 4 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        start_line: 2,
+        end_line: 4,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: "2\tline2\n3\tline3\n4\tline4",
       });
     });
 
     it("treats end_line=-1 as end of file", () => {
       testFs._files.set("/test/lines.txt", "a\nb\nc");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", start_line: 2, end_line: -1 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        start_line: 2,
+        end_line: -1,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: "2\tb\n3\tc",
       });
     });
@@ -197,125 +132,89 @@ describe("tools", () => {
       testFs._dirs.add("/test/dir");
       testFs._files.set("/test/dir/alpha.txt", "");
       testFs._files.set("/test/dir/beta.txt", "");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/dir" },
-      });
-      const result = executeViewFileTool(call);
+      const result = executeViewFileTool({ path: "/test/dir" });
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: "alpha.txt\nbeta.txt",
       });
     });
 
-    it("returns is_error for a nonexistent path", () => {
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/no/such/path/file.txt" },
-      });
-      const result = executeViewFileTool(call);
+    it("returns isError for a nonexistent path", () => {
+      const result = executeViewFileTool({ path: "/no/such/path/file.txt" });
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "ENOENT: /no/such/path/file.txt",
       });
     });
 
-    it("throws on invalid input schema", () => {
-      const call = makeToolCall({
-        name: "view_file",
-        input: { wrong: 123 },
-      });
-      assert.throws(() => executeViewFileTool(call));
-    });
-
-    it("returns is_error when start_line is less than 1", () => {
+    it("returns isError when start_line is less than 1", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", start_line: 0 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        start_line: 0,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "start_line must be at least 1, got 0",
       });
     });
 
-    it("returns is_error when end_line is less than 1 (and not -1)", () => {
+    it("returns isError when end_line is less than 1 (and not -1)", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", end_line: 0 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        end_line: 0,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "end_line must be at least 1 or -1, got 0",
       });
     });
 
-    it("returns is_error when start_line is past end of file", () => {
+    it("returns isError when start_line is past end of file", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", start_line: 5 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        start_line: 5,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "start_line 5 is past end of file (file has 2 lines)",
       });
     });
 
-    it("returns is_error when end_line is past end of file", () => {
+    it("returns isError when end_line is past end of file", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", end_line: 10 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        end_line: 10,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "end_line 10 is past end of file (file has 2 lines)",
       });
     });
 
-    it("returns is_error when start_line is greater than or equal to end_line", () => {
+    it("returns isError when start_line is greater than or equal to end_line", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", start_line: 3, end_line: 2 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        start_line: 3,
+        end_line: 2,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "start_line (3) must be less than end_line (2)",
       });
     });
 
     it("returns single line when start_line equals end_line", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const call = makeToolCall({
-        name: "view_file",
-        input: { path: "/test/lines.txt", start_line: 2, end_line: 2 },
+      const result = executeViewFileTool({
+        path: "/test/lines.txt",
+        start_line: 2,
+        end_line: 2,
       });
-      const result = executeViewFileTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: "2\tline2",
       });
     });
@@ -324,105 +223,68 @@ describe("tools", () => {
   describe("executeStrReplaceTool", () => {
     beforeEach(() => {
       setupFakeDeps();
-      dispatch(actions.setToolCallAbortController(new AbortController()));
-    });
-
-    afterEach(() => {
-      dispatch(actions.setToolCallAbortController(null));
     });
 
     it("replaces old_str with new_str when exactly one match exists", () => {
       testFs._files.set("/test/file.txt", "foo bar baz");
-      const call = makeToolCall({
-        name: "str_replace",
-        input: { path: "/test/file.txt", old_str: "bar", new_str: "qux" },
-      });
-      const result = executeStrReplaceTool(call);
+      const result = executeStrReplaceTool(
+        { path: "/test/file.txt", old_str: "bar", new_str: "qux" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: `/test/file.txt updated successfully`,
       });
       assert.equal(testFs._files.get("/test/file.txt"), "foo qux baz");
     });
 
-    it("returns is_error when old_str is not found", () => {
+    it("returns isError when old_str is not found", () => {
       testFs._files.set("/test/file.txt", "foo bar baz");
-      const call = makeToolCall({
-        name: "str_replace",
-        input: { path: "/test/file.txt", old_str: "missing", new_str: "x" },
-      });
-      const result = executeStrReplaceTool(call);
+      const result = executeStrReplaceTool(
+        { path: "/test/file.txt", old_str: "missing", new_str: "x" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "old_str not found in file",
       });
     });
 
-    it("returns is_error when old_str matches more than once", () => {
+    it("returns isError when old_str matches more than once", () => {
       testFs._files.set("/test/file.txt", "aaa bbb aaa");
-      const call = makeToolCall({
-        name: "str_replace",
-        input: { path: "/test/file.txt", old_str: "aaa", new_str: "x" },
-      });
-      const result = executeStrReplaceTool(call);
+      const result = executeStrReplaceTool(
+        { path: "/test/file.txt", old_str: "aaa", new_str: "x" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "old_str matched 2 times — must match exactly once",
       });
     });
 
-    it("returns is_error when the file does not exist", () => {
-      const call = makeToolCall({
-        name: "str_replace",
-        input: {
-          path: "/no/such/path/file.txt",
-          old_str: "a",
-          new_str: "b",
-        },
-      });
-      const result = executeStrReplaceTool(call);
+    it("returns isError when the file does not exist", () => {
+      const result = executeStrReplaceTool(
+        { path: "/no/such/path/file.txt", old_str: "a", new_str: "b" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "ENOENT: /no/such/path/file.txt",
       });
-    });
-
-    it("throws on invalid input schema", () => {
-      const call = makeToolCall({
-        name: "str_replace",
-        input: { bad: true },
-      });
-      assert.throws(() => executeStrReplaceTool(call));
     });
   });
 
   describe("executeInsertLinesTool", () => {
     beforeEach(() => {
       setupFakeDeps();
-      dispatch(actions.setToolCallAbortController(new AbortController()));
-    });
-
-    afterEach(() => {
-      dispatch(actions.setToolCallAbortController(null));
     });
 
     it("inserts text after a specific line", () => {
       testFs._files.set("/test/file.txt", "line1\nline2\nline3");
-      const call = makeToolCall({
-        name: "insert_lines",
-        input: { path: "/test/file.txt", after_line: 2, content: "inserted" },
-      });
-      const result = executeInsertLinesTool(call);
+      const result = executeInsertLinesTool(
+        { path: "/test/file.txt", after_line: 2, content: "inserted" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: `/test/file.txt updated successfully`,
       });
       assert.equal(
@@ -433,98 +295,61 @@ describe("tools", () => {
 
     it("inserts at the beginning when after_line is 0", () => {
       testFs._files.set("/test/file.txt", "line1\nline2");
-      const call = makeToolCall({
-        name: "insert_lines",
-        input: { path: "/test/file.txt", after_line: 0, content: "top" },
-      });
-      const result = executeInsertLinesTool(call);
+      const result = executeInsertLinesTool(
+        { path: "/test/file.txt", after_line: 0, content: "top" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: `/test/file.txt updated successfully`,
       });
-      assert.equal(
-        testFs._files.get("/test/file.txt"),
-        `top
-line1
-line2`,
-      );
+      assert.equal(testFs._files.get("/test/file.txt"), `top\nline1\nline2`);
     });
 
     it("inserts at the end when after_line equals the number of lines", () => {
       testFs._files.set("/test/file.txt", "line1\nline2");
-      const call = makeToolCall({
-        name: "insert_lines",
-        input: { path: "/test/file.txt", after_line: 2, content: "bottom" },
-      });
-      const result = executeInsertLinesTool(call);
+      const result = executeInsertLinesTool(
+        { path: "/test/file.txt", after_line: 2, content: "bottom" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: `/test/file.txt updated successfully`,
       });
-      assert.equal(
-        testFs._files.get("/test/file.txt"),
-        `line1
-line2
-bottom`,
-      );
+      assert.equal(testFs._files.get("/test/file.txt"), `line1\nline2\nbottom`);
     });
 
-    it("returns is_error when after_line is out of range (negative)", () => {
+    it("returns isError when after_line is out of range (negative)", () => {
       testFs._files.set("/test/file.txt", "line1");
-      const call = makeToolCall({
-        name: "insert_lines",
-        input: { path: "/test/file.txt", after_line: -1, content: "x" },
-      });
-      const result = executeInsertLinesTool(call);
+      const result = executeInsertLinesTool(
+        { path: "/test/file.txt", after_line: -1, content: "x" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: `after_line -1 is out of range (file has 1 lines)`,
       });
     });
 
-    it("returns is_error when after_line is out of range (too large)", () => {
+    it("returns isError when after_line is out of range (too large)", () => {
       testFs._files.set("/test/file.txt", "line1");
-      const call = makeToolCall({
-        name: "insert_lines",
-        input: { path: "/test/file.txt", after_line: 5, content: "x" },
-      });
-      const result = executeInsertLinesTool(call);
+      const result = executeInsertLinesTool(
+        { path: "/test/file.txt", after_line: 5, content: "x" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: `after_line 5 is out of range (file has 1 lines)`,
       });
     });
 
-    it("returns is_error when the file does not exist", () => {
-      const call = makeToolCall({
-        name: "insert_lines",
-        input: {
-          path: "/no/such/path/file.txt",
-          after_line: 0,
-          content: "x",
-        },
-      });
-      const result = executeInsertLinesTool(call);
+    it("returns isError when the file does not exist", () => {
+      const result = executeInsertLinesTool(
+        { path: "/no/such/path/file.txt", after_line: 0, content: "x" },
+        undefined,
+      );
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: `ENOENT: /no/such/path/file.txt`,
       });
-    });
-
-    it("throws on invalid input schema", () => {
-      const call = makeToolCall({
-        name: "insert_lines",
-        input: { bad: true },
-      });
-      assert.throws(() => executeInsertLinesTool(call));
     });
   });
 
@@ -544,52 +369,34 @@ bottom`,
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
-      const call = makeToolCall({
-        name: "web_fetch_html",
-        input: { href: "https://example.com/article" },
+      const result = await executeWebFetchHtmlTool({
+        href: "https://example.com/article",
       });
-      const result = await executeWebFetchHtmlTool(call);
-      assert.equal(result.type, "tool_result");
-      assert.equal(result.tool_use_id, "tool_1");
-      assert.equal(result.is_error, undefined);
+      assert.strictEqual(result.isError, undefined);
       const parsed = JSON.parse(result.content) as Record<string, unknown>;
       assert.equal(parsed["title"], "Test Page");
       assert.equal(
         parsed["textContent"],
-        `This is the main content of the article that should be extracted.
-        
-      `,
+        `This is the main content of the article that should be extracted.\n        \n      `,
       );
     });
 
-    it("returns is_error when fetch throws", async () => {
+    it("returns isError when fetch throws", async () => {
       const fakeFetch = () => {
         throw new Error("network error");
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
-      const call = makeToolCall({
-        name: "web_fetch_html",
-        input: { href: "https://example.com/fail" },
+      const result = await executeWebFetchHtmlTool({
+        href: "https://example.com/fail",
       });
-      const result = await executeWebFetchHtmlTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "network error",
       });
     });
 
-    it("throws on invalid input schema", async () => {
-      const call = makeToolCall({
-        name: "web_fetch_html",
-        input: { bad: true },
-      });
-      await assert.rejects(() => executeWebFetchHtmlTool(call));
-    });
-
-    it("returns is_error when response is not ok", async () => {
+    it("returns isError when response is not ok", async () => {
       const fakeFetch = () => {
         return Promise.resolve({
           ok: false,
@@ -600,15 +407,11 @@ bottom`,
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
-      const call = makeToolCall({
-        name: "web_fetch_html",
-        input: { href: "https://example.com/broken" },
+      const result = await executeWebFetchHtmlTool({
+        href: "https://example.com/broken",
       });
-      const result = await executeWebFetchHtmlTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "HTTP 500: Internal Server Error",
       });
     });
@@ -625,46 +428,30 @@ bottom`,
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
-      const call = makeToolCall({
-        name: "web_fetch_json",
-        input: { href: "https://api.example.com/data" },
+      const result = await executeWebFetchJsonTool({
+        href: "https://api.example.com/data",
       });
-      const result = await executeWebFetchJsonTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: JSON.stringify(jsonData, null, 2),
       });
     });
 
-    it("returns is_error when fetch throws", async () => {
+    it("returns isError when fetch throws", async () => {
       const fakeFetch = () => {
         throw new Error("network error");
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
-      const call = makeToolCall({
-        name: "web_fetch_json",
-        input: { href: "https://api.example.com/fail" },
+      const result = await executeWebFetchJsonTool({
+        href: "https://api.example.com/fail",
       });
-      const result = await executeWebFetchJsonTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "network error",
       });
     });
 
-    it("throws on invalid input schema", async () => {
-      const call = makeToolCall({
-        name: "web_fetch_json",
-        input: { bad: true },
-      });
-      await assert.rejects(() => executeWebFetchJsonTool(call));
-    });
-
-    it("returns is_error when response is not ok", async () => {
+    it("returns isError when response is not ok", async () => {
       const fakeFetch = () => {
         return Promise.resolve({
           ok: false,
@@ -674,20 +461,16 @@ bottom`,
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
-      const call = makeToolCall({
-        name: "web_fetch_json",
-        input: { href: "https://api.example.com/missing" },
+      const result = await executeWebFetchJsonTool({
+        href: "https://api.example.com/missing",
       });
-      const result = await executeWebFetchJsonTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "HTTP 404: Not Found",
       });
     });
 
-    it("returns is_error when JSON parsing fails", async () => {
+    it("returns isError when JSON parsing fails", async () => {
       const fakeFetch = () => {
         return Promise.resolve({
           ok: true,
@@ -696,15 +479,11 @@ bottom`,
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
-      const call = makeToolCall({
-        name: "web_fetch_json",
-        input: { href: "https://api.example.com/bad-json" },
+      const result = await executeWebFetchJsonTool({
+        href: "https://api.example.com/bad-json",
       });
-      const result = await executeWebFetchJsonTool(call);
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "Invalid JSON",
       });
     });
@@ -726,14 +505,8 @@ bottom`,
           },
         ]),
       );
-      const call = makeToolCall({
-        name: "load_skill",
-        input: { name: "deploy" },
-      });
-      const result = loadSkillTool(call);
+      const result = loadSkillTool({ name: "deploy" });
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
         content: JSON.stringify(
           {
             name: "deploy",
@@ -764,44 +537,22 @@ bottom`,
           },
         ]),
       );
-      const call = makeToolCall({
-        name: "load_skill",
-        input: { name: "skill-b" },
-      });
-      const result = loadSkillTool(call);
+      const result = loadSkillTool({ name: "skill-b" });
       const parsed = JSON.parse(result.content) as Record<string, unknown>;
       assert.equal(parsed["name"], "skill-b");
     });
 
-    it("returns is_error when skill is not found", () => {
-      const call = makeToolCall({
-        name: "load_skill",
-        input: { name: "nonexistent" },
-      });
-      const result = loadSkillTool(call);
+    it("returns isError when skill is not found", () => {
+      const result = loadSkillTool({ name: "nonexistent" });
       assert.deepStrictEqual(result, {
-        type: "tool_result",
-        tool_use_id: "tool_1",
-        is_error: true,
+        isError: true,
         content: "Could not find a skill with name: nonexistent",
       });
     });
 
-    it("returns is_error when no skills are loaded", () => {
-      const call = makeToolCall({
-        name: "load_skill",
-        input: { name: "any" },
-      });
-      const result = loadSkillTool(call);
-      assert.ok(result.is_error);
-    });
-
-    it("throws on invalid input schema", () => {
-      const call = makeToolCall({
-        name: "load_skill",
-        input: { bad: true },
-      });
-      assert.throws(() => loadSkillTool(call));
+    it("returns isError when no skills are loaded", () => {
+      const result = loadSkillTool({ name: "any" });
+      assert.strictEqual(result.isError, true);
     });
   });
 });

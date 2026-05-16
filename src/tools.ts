@@ -4,7 +4,6 @@ import { promisify } from "node:util";
 import { z } from "zod";
 import os from "node:os";
 import {
-  createTempFile,
   getMessageFromError,
   isAbortError,
   normalizeLine,
@@ -18,7 +17,6 @@ import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import { fsDeps } from "./deps.ts";
-import assert from "node:assert";
 
 const execPromise = promisify(exec);
 const userAgent =
@@ -37,24 +35,21 @@ export interface ToolCall {
 }
 
 export interface ToolResult {
-  type: "tool_result";
-  tool_use_id: string;
   content: string;
-  is_error?: boolean;
+  isError?: boolean;
 }
 
-const BashToolInputSchema = z.object({ command: z.string() });
+const bashToolInputSchema = z.object({ command: z.string() });
+export type BashToolInput = z.infer<typeof bashToolInputSchema>;
 
-export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
-  const { command: bashCommand } = BashToolInputSchema.parse(toolCall.input);
+export async function executeBashTool(
+  { command: bashCommand }: BashToolInput,
+  signal?: AbortSignal,
+): Promise<ToolResult> {
   toolLog("bash", bashCommand);
   debugLog(`executeBashTool: command=${bashCommand}`);
 
-  const abortController = selectors.getToolCallAbortController();
-  assert(abortController !== null);
-  const bashResult = await tryCatchAsync(
-    execPromise(bashCommand, { signal: abortController.signal }),
-  );
+  const bashResult = await tryCatchAsync(execPromise(bashCommand, { signal }));
 
   if (!bashResult.ok) {
     if (isAbortError(bashResult.error)) {
@@ -64,10 +59,8 @@ export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
     const error = getMessageFromError(bashResult.error);
     debugLog(`executeBashTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -75,8 +68,6 @@ export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
     `executeBashTool: stdout=${bashResult.value.stdout}, stderr=${bashResult.value.stderr}`,
   );
   return {
-    type: "tool_result",
-    tool_use_id: toolCall.id,
     content: JSON.stringify({
       stdout: bashResult.value.stdout,
       stderr: bashResult.value.stderr,
@@ -84,27 +75,26 @@ export async function executeBashTool(toolCall: ToolCall): Promise<ToolResult> {
   };
 }
 
-const CreateFileToolSchema = z.object({
+const createFileToolSchema = z.object({
   path: z.string(),
   content: z.string(),
 });
+export type CreateFileTool = z.infer<typeof createFileToolSchema>;
 
-export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
-  const { content, path } = CreateFileToolSchema.parse(toolCall.input);
+export function executeCreateFileTool(
+  { content, path }: CreateFileTool,
+  signal?: AbortSignal,
+): ToolResult {
   if (fsDeps.existsSync(path)) {
     debugLog(`executeCreatefileTool: ${path} already exists`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `${path} already exists`,
-      is_error: true,
+      isError: true,
     };
   }
 
-  const abortController = selectors.getToolCallAbortController();
-  assert(abortController !== null);
   const createFileResult = tryCatch(() =>
-    fsDeps.writeFileSync(path, content, { signal: abortController.signal }),
+    fsDeps.writeFileSync(path, content, { signal }),
   );
 
   if (!createFileResult.ok) {
@@ -115,31 +105,28 @@ export function executeCreateFileTool(toolCall: ToolCall): ToolResult {
     const error = getMessageFromError(createFileResult.error);
     debugLog(`executeCreateFileTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
   debugLog(`executeCreateFileTool: ${path} created successfully `);
   return {
-    type: "tool_result",
-    tool_use_id: toolCall.id,
     content: `${path} created successfully`,
   };
 }
-
-const ViewFileToolInputSchema = z.object({
+const viewFileToolInputSchema = z.object({
   path: z.string(),
   start_line: z.number().int().optional(),
   end_line: z.number().int().optional(),
 });
+export type ViewFileToolInput = z.infer<typeof viewFileToolInputSchema>;
 
-export function executeViewFileTool(toolCall: ToolCall): ToolResult {
-  const { path, start_line, end_line } = ViewFileToolInputSchema.parse(
-    toolCall.input,
-  );
+export function executeViewFileTool({
+  path,
+  start_line,
+  end_line,
+}: ViewFileToolInput): ToolResult {
   toolLog("view_file", path);
   debugLog(`executeViewFileTool: path=${path}`);
 
@@ -148,10 +135,8 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
     const error = getMessageFromError(statResult.error);
     debugLog(`executeViewFileTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -161,17 +146,13 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
       const error = getMessageFromError(readdirResult.error);
       debugLog(`executeViewFileTool: error=${error}`);
       return {
-        type: "tool_result",
-        tool_use_id: toolCall.id,
         content: error,
-        is_error: true,
+        isError: true,
       };
     }
     const listing = readdirResult.value.join("\n");
     debugLog(`executeViewFileTool: directory listing for ${path}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: listing,
     };
   }
@@ -181,10 +162,8 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
     const error = getMessageFromError(readResult.error);
     debugLog(`executeViewFileTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -195,10 +174,8 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
       `executeViewFileTool: start_line ${String(start_line)} is less than 1`,
     );
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `start_line must be at least 1, got ${String(start_line)}`,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -207,10 +184,8 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
       `executeViewFileTool: end_line ${String(end_line)} is less than 1`,
     );
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `end_line must be at least 1 or -1, got ${String(end_line)}`,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -223,10 +198,8 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
       `executeViewFileTool: start_line ${String(start_line)} is past end of file`,
     );
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `start_line ${String(start_line)} is past end of file (file has ${String(lines.length)} lines)`,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -235,10 +208,8 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
       `executeViewFileTool: end_line ${String(end_line)} is past end of file`,
     );
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `end_line ${String(end_line)} is past end of file (file has ${String(lines.length)} lines)`,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -247,10 +218,8 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
       `executeViewFileTool: start_line ${String(start_line)} is greater than or equal to end_line ${String(end_line)}`,
     );
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `start_line (${String(start_line)}) must be less than end_line (${String(end_line)})`,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -263,22 +232,21 @@ export function executeViewFileTool(toolCall: ToolCall): ToolResult {
     `executeViewFileTool: ${path} lines ${String(start + 1)}-${String(end)}`,
   );
   return {
-    type: "tool_result",
-    tool_use_id: toolCall.id,
     content: numbered,
   };
 }
 
-const StrReplaceToolInputSchema = z.object({
+export const strReplaceToolInputSchema = z.object({
   path: z.string(),
   old_str: z.string(),
   new_str: z.string(),
 });
+export type StrReplaceToolInput = z.infer<typeof strReplaceToolInputSchema>;
 
-export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
-  const { path, old_str, new_str } = StrReplaceToolInputSchema.parse(
-    toolCall.input,
-  );
+export function executeStrReplaceTool(
+  { path, old_str, new_str }: StrReplaceToolInput,
+  signal?: AbortSignal,
+): ToolResult {
   toolLog("str_replace", path);
   debugLog(`executeStrReplaceTool: path=${path}`);
 
@@ -287,10 +255,8 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
     const error = getMessageFromError(readResult.error);
     debugLog(`executeStrReplaceTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -300,10 +266,8 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
   if (occurrences === 0) {
     debugLog(`executeStrReplaceTool: old_str not found in ${path}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: "old_str not found in file",
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -312,18 +276,14 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
       `executeStrReplaceTool: old_str matched ${String(occurrences)} times in ${path}`,
     );
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `old_str matched ${String(occurrences)} times — must match exactly once`,
-      is_error: true,
+      isError: true,
     };
   }
 
-  const abortController = selectors.getToolCallAbortController();
-  assert(abortController !== null);
   const writeResult = tryCatch(() =>
     fsDeps.writeFileSync(path, content.replace(old_str, new_str), {
-      signal: abortController.signal,
+      signal,
     }),
   );
   if (!writeResult.ok) {
@@ -334,31 +294,27 @@ export function executeStrReplaceTool(toolCall: ToolCall): ToolResult {
     const error = getMessageFromError(writeResult.error);
     debugLog(`executeStrReplaceTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
   debugLog(`executeStrReplaceTool: ${path} updated successfully`);
   return {
-    type: "tool_result",
-    tool_use_id: toolCall.id,
     content: `${path} updated successfully`,
   };
 }
-
-const InsertLinesToolInputSchema = z.object({
+const insertLinesToolInputSchema = z.object({
   path: z.string(),
   after_line: z.number().int(),
   content: z.string(),
 });
+export type InsertLinesToolInput = z.infer<typeof insertLinesToolInputSchema>;
 
-export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
-  const { path, after_line, content } = InsertLinesToolInputSchema.parse(
-    toolCall.input,
-  );
+export function executeInsertLinesTool(
+  { path, after_line, content }: InsertLinesToolInput,
+  signal?: AbortSignal,
+): ToolResult {
   toolLog("insert_lines", path);
   debugLog(
     `executeInsertLinesTool: path=${path}, after_line=${String(after_line)}`,
@@ -369,10 +325,8 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
     const error = getMessageFromError(readResult.error);
     debugLog(`executeInsertLinesTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
@@ -383,20 +337,16 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
       `executeInsertLinesTool: after_line ${String(after_line)} out of range`,
     );
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: `after_line ${String(after_line)} is out of range (file has ${String(lines.length)} lines)`,
-      is_error: true,
+      isError: true,
     };
   }
 
   lines.splice(after_line, 0, content);
 
-  const abortController = selectors.getToolCallAbortController();
-  assert(abortController !== null);
   const writeResult = tryCatch(() => {
     fsDeps.writeFileSync(path, lines.join("\n"), {
-      signal: abortController.signal,
+      signal,
     });
   });
   if (!writeResult.ok) {
@@ -407,29 +357,25 @@ export function executeInsertLinesTool(toolCall: ToolCall): ToolResult {
     const error = getMessageFromError(writeResult.error);
     debugLog(`executeInsertLinesTool: error=${error}`);
     return {
-      type: "tool_result",
-      tool_use_id: toolCall.id,
       content: error,
-      is_error: true,
+      isError: true,
     };
   }
 
   debugLog(`executeInsertLinesTool: ${path} updated successfully`);
   return {
-    type: "tool_result",
-    tool_use_id: toolCall.id,
     content: `${path} updated successfully`,
   };
 }
-
-const WebFetchToolSchema = z.object({
+const webFetchToolSchema = z.object({
   href: z.string(),
 });
+export type WebFetchTool = z.infer<typeof webFetchToolSchema>;
 
 export async function executeWebFetchHtmlTool(
-  toolCall: ToolCall,
+  { href }: WebFetchTool,
+  signal?: AbortSignal,
 ): Promise<ToolResult> {
-  const { href } = WebFetchToolSchema.parse(toolCall.input);
   toolLog("web_fetch_html", href);
   debugLog(`executeWebFetchHtmlTool: href=${href}`);
   const headers = new Headers();
@@ -440,6 +386,10 @@ export async function executeWebFetchHtmlTool(
   const timeoutId = setTimeout(() => {
     fetchController.abort();
   }, 10_000);
+
+  if (signal) {
+    signal.addEventListener("abort", () => fetchController.abort());
+  }
 
   try {
     const response = await fetch(href, {
@@ -468,17 +418,13 @@ export async function executeWebFetchHtmlTool(
     );
     return {
       content: stringify(article),
-      tool_use_id: toolCall.id,
-      type: "tool_result",
     };
   } catch (error: unknown) {
     const msg = getMessageFromError(error);
     debugLog(`executeWebFetchHtmlTool: error=${msg}`);
     return {
-      is_error: true,
-      type: "tool_result",
+      isError: true,
       content: msg,
-      tool_use_id: toolCall.id,
     };
   } finally {
     clearTimeout(timeoutId);
@@ -486,9 +432,9 @@ export async function executeWebFetchHtmlTool(
 }
 
 export async function executeWebFetchJsonTool(
-  toolCall: ToolCall,
+  { href }: WebFetchTool,
+  signal?: AbortSignal,
 ): Promise<ToolResult> {
-  const { href } = WebFetchToolSchema.parse(toolCall.input);
   toolLog("web_fetch_json", href);
   debugLog(`executeWebFetchJsonTool: href=${href}`);
   const headers = new Headers();
@@ -499,6 +445,10 @@ export async function executeWebFetchJsonTool(
   const timeoutId = setTimeout(() => {
     fetchController.abort();
   }, 10_000);
+
+  if (signal) {
+    signal.addEventListener("abort", () => fetchController.abort());
+  }
 
   try {
     const response = await fetch(href, {
@@ -516,164 +466,93 @@ export async function executeWebFetchJsonTool(
     debugLog(`executeWebFetchJsonTool: success`);
     return {
       content: stringify(json),
-      tool_use_id: toolCall.id,
-      type: "tool_result",
     };
   } catch (error: unknown) {
     const msg = getMessageFromError(error);
     debugLog(`executeWebFetchJsonTool: error=${msg}`);
     return {
-      is_error: true,
-      type: "tool_result",
+      isError: true,
       content: msg,
-      tool_use_id: toolCall.id,
     };
   } finally {
     clearTimeout(timeoutId);
   }
 }
-
-const LoadSkillToolSchema = z.object({
+const loadSkillToolSchema = z.object({
   name: z.string(),
 });
+export type LoadSkillTool = z.infer<typeof loadSkillToolSchema>;
 
-export function loadSkillTool(toolCall: ToolCall): ToolResult {
-  const { name } = LoadSkillToolSchema.parse(toolCall.input);
+export function loadSkillTool({ name }: LoadSkillTool): ToolResult {
   toolLog("load_skill", name);
   debugLog(`loadSkillTool: name=${name}`);
   const foundSkill = selectors.getSkills().find((skill) => skill.name === name);
   if (!foundSkill) {
     debugLog(`loadSkillTool: skill not found`);
     return {
-      is_error: true,
-      type: "tool_result",
+      isError: true,
       content: `Could not find a skill with name: ${name}`,
-      tool_use_id: toolCall.id,
     };
   }
 
   debugLog(`loadSkillTool: loaded ${name}`);
   return {
-    type: "tool_result",
     content: stringify(foundSkill),
-    tool_use_id: toolCall.id,
   };
 }
 
 export const TOOLS = {
   bash: tool({
     description: "Execute a bash command and return its output.",
-    inputSchema: BashToolInputSchema,
+    inputSchema: bashToolInputSchema,
+    execute: (args, opts) => executeBashTool(args, opts.abortSignal),
   }),
   create_file: tool({
     description:
       "Create a new file with the given content. Fails if the file already exists.",
-    inputSchema: CreateFileToolSchema,
+    inputSchema: createFileToolSchema,
+    execute: (args, opts) => executeCreateFileTool(args, opts.abortSignal),
   }),
   view_file: tool({
     description:
       "View the contents of a file or list a directory. File contents are returned with line numbers.",
-    inputSchema: ViewFileToolInputSchema,
+    inputSchema: viewFileToolInputSchema,
+    execute: (args) => executeViewFileTool(args),
   }),
   str_replace: tool({
     description:
       "Replace an exact string in a file. The old_str must match exactly once. Include enough surrounding lines to make the match unique.",
-    inputSchema: StrReplaceToolInputSchema,
+    inputSchema: strReplaceToolInputSchema,
+    execute: (args, opts) => executeStrReplaceTool(args, opts.abortSignal),
   }),
   insert_lines: tool({
     description:
       "Insert text after a specific line number in a file. Use line 0 to insert at the beginning of the file.",
-    inputSchema: InsertLinesToolInputSchema,
+    inputSchema: insertLinesToolInputSchema,
+    execute: (args, opts) => executeInsertLinesTool(args, opts.abortSignal),
   }),
   web_fetch_html: tool({
     description:
       "Fetch a web page by URL and return its readable content, parsed to extract the main article.",
-    inputSchema: WebFetchToolSchema,
+    inputSchema: webFetchToolSchema,
+    execute: (args, opts) => executeWebFetchHtmlTool(args, opts.abortSignal),
   }),
   web_fetch_json: tool({
     description:
       "Fetch a JSON API endpoint by URL and return the parsed JSON response.",
-    inputSchema: WebFetchToolSchema,
+    inputSchema: webFetchToolSchema,
+    execute: (args, opts) => executeWebFetchJsonTool(args, opts.abortSignal),
   }),
   load_skill: tool({
     description: "Load a skill to get specialized instructions",
-    inputSchema: LoadSkillToolSchema,
+    inputSchema: loadSkillToolSchema,
+    execute: (args) => loadSkillTool(args),
   }),
 };
 
-export async function getToolResultBlock(toolCall: ToolCall) {
-  let toolResult: ToolResult | null = null;
+export type ToolName = keyof typeof TOOLS;
 
-  switch (toolCall.name) {
-    case "bash": {
-      toolResult = await executeBashTool(toolCall);
-      break;
-    }
-    case "create_file": {
-      toolResult = executeCreateFileTool(toolCall);
-      break;
-    }
-    case "view_file": {
-      toolResult = executeViewFileTool(toolCall);
-      break;
-    }
-    case "str_replace": {
-      const { path } = StrReplaceToolInputSchema.parse(toolCall.input);
-      const tempFileBefore = createTempFile({ initialContentPath: path });
-      toolResult = executeStrReplaceTool(toolCall);
-      if (!toolResult.is_error) {
-        const tempFileAfter = createTempFile({ initialContentPath: path });
-        await printGitDiff({
-          tempFileBeforePath: tempFileBefore,
-          tempFileAfterPath: tempFileAfter,
-          path,
-        });
-        fsDeps.unlinkSync(tempFileBefore);
-        fsDeps.unlinkSync(tempFileAfter);
-      }
-      break;
-    }
-    case "insert_lines": {
-      const { path } = InsertLinesToolInputSchema.parse(toolCall.input);
-      const tempFileBefore = createTempFile({ initialContentPath: path });
-      toolResult = executeInsertLinesTool(toolCall);
-      if (!toolResult.is_error) {
-        const tempFileAfter = createTempFile({ initialContentPath: path });
-        await printGitDiff({
-          tempFileBeforePath: tempFileBefore,
-          tempFileAfterPath: tempFileAfter,
-          path,
-        });
-        fsDeps.unlinkSync(tempFileBefore);
-        fsDeps.unlinkSync(tempFileAfter);
-      }
-      break;
-    }
-    case "web_fetch_html": {
-      toolResult = await executeWebFetchHtmlTool(toolCall);
-      break;
-    }
-    case "web_fetch_json": {
-      toolResult = await executeWebFetchJsonTool(toolCall);
-      break;
-    }
-    case "load_skill": {
-      toolResult = loadSkillTool(toolCall);
-      break;
-    }
-  }
-
-  toolResult ??= {
-    type: "tool_result",
-    tool_use_id: toolCall.id,
-    content: `Unsupported tool: ${toolCall.name}`,
-    is_error: true,
-  };
-
-  return toolResult;
-}
-
-async function printGitDiff(args: {
+export async function printGitDiff(args: {
   tempFileBeforePath: string;
   tempFileAfterPath: string;
   path: string;
