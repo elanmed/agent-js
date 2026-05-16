@@ -149,10 +149,6 @@ type Action =
       payload: Key;
     }
   | {
-      type: "truncate-message-params";
-      payload: number;
-    }
-  | {
       type: "reset-message-usages";
     }
   | {
@@ -164,10 +160,6 @@ type Action =
     }
   | {
       type: "set-api-stream-abort-controller";
-      payload: AbortController | null;
-    }
-  | {
-      type: "set-tool-call-abort-controller";
       payload: AbortController | null;
     }
   | {
@@ -363,22 +355,6 @@ const reducer = (state: State, action: Action): State => {
         configState: { ...state.configState, keymapClear: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
-      return next;
-    }
-    case "truncate-message-params": {
-      const before = state.appState.messageParams.length;
-      const next = {
-        ...state,
-        appState: {
-          ...state.appState,
-          messageParams: state.appState.messageParams.slice(0, action.payload),
-        },
-      };
-      logStateChange(
-        action.type,
-        String(before),
-        String(next.appState.messageParams.length),
-      );
       return next;
     }
     case "reset-message-usages": {
@@ -666,10 +642,6 @@ const setKeymapClear = (keymap: Key): Action => {
   return { type: "set-keymap-clear", payload: keymap };
 };
 
-const truncateMessageParams = (count: number): Action => {
-  return { type: "truncate-message-params", payload: count };
-};
-
 const resetMessageUsages = (): Action => {
   return { type: "reset-message-usages" };
 };
@@ -767,7 +739,6 @@ export const actions = {
   setKeymapEdit,
   setKeymapEditLog,
   setKeymapClear,
-  truncateMessageParams,
   resetMessageUsages,
   resetMessageParams,
   setQuestionAbortController,
