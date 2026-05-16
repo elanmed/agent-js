@@ -39,18 +39,11 @@ function getLanguageModel() {
 }
 
 export async function resolveApiCall(userInput: string) {
+  let tempFileBefore: string | null = null;
   const inputMessageParam: ModelMessage = {
     role: "user",
     content: userInput,
   };
-
-  const newMessageCount = 1;
-  const messageCount = selectors.getMessageParams().length + newMessageCount;
-  debugLog(
-    `resolveApiCall: model=${selectors.getModel()}, messageCount=${String(messageCount)}`,
-  );
-
-  startSpinner();
 
   const systemContent = [
     BASE_SYSTEM_PROMPT,
@@ -59,10 +52,7 @@ export async function resolveApiCall(userInput: string) {
   ].join("\n");
 
   dispatch(actions.setApiStreamAbortController(new AbortController()));
-  const abortController = selectors.getApiStreamAbortController();
-  assert(abortController !== null);
-
-  let tempFileBefore: string | null = null;
+  startSpinner();
   const generateTextResult = await tryCatchAsync(
     generateText({
       model: getLanguageModel(),
@@ -70,7 +60,7 @@ export async function resolveApiCall(userInput: string) {
       messages: [...selectors.getMessageParams(), inputMessageParam],
       tools: TOOLS,
       stopWhen: isLoopFinished(),
-      abortSignal: abortController.signal,
+      abortSignal: selectors.getApiStreamAbortController()!.signal,
       experimental_onToolCallStart: ({ toolCall }) => {
         switch (toolCall.toolName as ToolName) {
           case "insert_lines":
@@ -110,13 +100,12 @@ export async function resolveApiCall(userInput: string) {
       },
     }),
   );
-
   stopSpinner();
   dispatch(actions.setApiStreamAbortController(null));
 
   if (!generateTextResult.ok) {
     if (isAbortError(generateTextResult.error)) {
-      print.error("Aborted");
+      print.error("Interrupted");
       return null;
     }
 
