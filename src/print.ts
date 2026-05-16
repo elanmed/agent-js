@@ -129,11 +129,11 @@ function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
 }
 
 export async function formatMarkdown(content: string): Promise<string> {
-  try {
-    return await format(content, { parser: "markdown" });
-  } catch {
-    return content;
-  }
+  const formatResult = await tryCatchAsync(
+    format(content, { parser: "markdown" }),
+  );
+  if (formatResult.ok) return formatResult.value;
+  return content;
 }
 
 // NOTE: missing test coverage

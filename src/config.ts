@@ -231,11 +231,9 @@ export function initState() {
 }
 
 function parseConfigStr(configStr: string): Config {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(configStr);
-  } catch {
-    throw new Error("Failed to parse config as JSON");
+  const parseResult = tryCatch((): unknown => JSON.parse(configStr));
+  if (parseResult.ok) {
+    return ConfigSchema.parse(parseResult.value);
   }
-  return ConfigSchema.parse(parsed);
+  throw new Error("Failed to parse config as JSON");
 }
