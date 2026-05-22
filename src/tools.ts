@@ -500,7 +500,7 @@ export async function printGitDiff(args: {
   const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
     printNewline();
-    fencePrint(`File change: ${args.path}`, { skipSessionUsage: true });
+    fencePrint(`File change: ${args.path}`);
     print(normalizeLine(diffResult.value.stdout));
     printNewline();
   }

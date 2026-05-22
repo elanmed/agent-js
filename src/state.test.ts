@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { MISSING } from "./utils.ts";
 import type { TokenUsage } from "./print.ts";
@@ -25,6 +25,8 @@ describe("state", () => {
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
     assert.equal(selectors.getSpinnerTimeout(), null);
+    assert.equal(selectors.getApiStartTime(), null);
+    assert.equal(selectors.getApiEndTime(), null);
     assert.equal(selectors.getEditorLogPath(), "");
   });
 
@@ -33,6 +35,8 @@ describe("state", () => {
     assert.deepStrictEqual(selectors.getMessageUsages(), []);
     assert.equal(selectors.getQuestionAbortController(), null);
     assert.equal(selectors.getApiStreamAbortController(), null);
+    assert.equal(selectors.getApiStartTime(), null);
+    assert.equal(selectors.getApiEndTime(), null);
     assert.equal(selectors.getEditorLogPath(), "");
   });
 
@@ -384,6 +388,20 @@ line3
     } as unknown as NonNullable<ReturnType<typeof selectors.getRl>>;
     dispatch(actions.setRl(fakeRl));
     assert.equal(selectors.getRl(), fakeRl);
+  });
+
+  it("set-api-start-time", () => {
+    mock.method(Date, "now", () => 42_000);
+    assert.equal(selectors.getApiStartTime(), null);
+    dispatch(actions.setApiStartTime());
+    assert.strictEqual(selectors.getApiStartTime(), 42_000);
+  });
+
+  it("set-api-end-time", () => {
+    mock.method(Date, "now", () => 99_000);
+    assert.equal(selectors.getApiEndTime(), null);
+    dispatch(actions.setApiEndTime());
+    assert.strictEqual(selectors.getApiEndTime(), 99_000);
   });
 
   it("set-spinner-timeout", () => {

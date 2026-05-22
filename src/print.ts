@@ -9,6 +9,7 @@ import {
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
 import { processDeps, childProcessDeps } from "./deps.ts";
+import assert from "node:assert";
 
 const COLORS = {
   red: "\x1b[31m",
@@ -57,21 +58,31 @@ export function printNewline() {
 }
 
 interface FencePrintOpts {
-  skipSessionUsage?: boolean;
+  showSessionUsage?: boolean;
+  showApiDuration?: boolean;
   color?: Color;
 }
 
 export function fencePrint(text: string, opts: FencePrintOpts = {}) {
+  const showSessionUsage = opts.showSessionUsage ?? false;
+  const showApiDuration = opts.showApiDuration ?? false;
+
   let sessionUsage = "";
-  if (!opts.skipSessionUsage) {
+  if (showSessionUsage) {
     sessionUsage = ` (${calculateSessionUsage()})`;
   }
-  const line = `━━ ${text}${sessionUsage} ━━`;
+
+  let apiDuration = "";
+  if (showApiDuration) {
+    apiDuration = ` (${calculateApiDuration()})`;
+  }
+
+  const line = `━━ ${text}${sessionUsage}${apiDuration} ━━`;
   colorPrint(line, opts.color ?? "grey");
 }
 
 export function initPrint() {
-  fencePrint("agent-js", { color: "green", skipSessionUsage: true });
+  fencePrint("agent-js", { color: "green" });
   print.infoSubtle(`model: ${selectors.getModel()}`);
   print.infoSubtle(`diff-style: ${selectors.getDiffStyle()}`);
   print.infoSubtle(`keymap-edit: ${JSON.stringify(selectors.getKeymapEdit())}`);
@@ -211,4 +222,28 @@ export function calculateSessionUsage(): string {
 
   const cost = inputCost + outputCost + cacheReadCost + cacheWriteCost;
   return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+}
+
+export function calculateApiDuration() {
+  const startTime = selectors.getApiStartTime();
+  assert(startTime !== null);
+  const endTime = selectors.getApiEndTime();
+  assert(endTime !== null);
+
+  const diff = endTime - startTime;
+  const prettyMs = `${String(diff % 1_000)}ms`;
+
+  const sec = Math.floor((diff / 1_000) % 60);
+  let prettySec = "";
+  if (sec > 0) {
+    prettySec = `${String(sec)}s `;
+  }
+
+  const min = Math.floor(diff / 60_000);
+  let prettyMin = "";
+  if (min > 0) {
+    prettyMin = `${String(min)}m `;
+  }
+
+  return `${prettyMin}${prettySec}${prettyMs}`;
 }

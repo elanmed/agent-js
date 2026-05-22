@@ -134,7 +134,7 @@ export async function resolveUserInput() {
   }
 
   printNewline();
-  fencePrint("Input", { color: "yellow", skipSessionUsage: true });
+  fencePrint("Input", { color: "yellow" });
   dispatch(actions.resetStdout());
 
   dispatch(actions.setQuestionAbortController(new AbortController()));
@@ -208,7 +208,7 @@ async function resolveExitConfirmation() {
   return;
 }
 
-const builtinSlashCommands = ["edit", "edit-log", "clear", "model"];
+const builtinSlashCommands = ["edit", "edit-log", "clear", "model", "skills"];
 
 export function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);

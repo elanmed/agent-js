@@ -50,6 +50,7 @@ export async function resolveApiCall(userInput: string) {
     selectors.getSkillsStr(),
   ].join("\n");
 
+  dispatch(actions.setApiStartTime());
   dispatch(actions.setApiStreamAbortController(new AbortController()));
   startSpinner();
   const generateTextResult = await tryCatchAsync(
@@ -101,6 +102,7 @@ export async function resolveApiCall(userInput: string) {
   );
   stopSpinner();
   dispatch(actions.setApiStreamAbortController(null));
+  dispatch(actions.setApiEndTime());
 
   if (!generateTextResult.ok) {
     if (isAbortError(generateTextResult.error)) {

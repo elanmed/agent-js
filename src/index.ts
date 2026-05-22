@@ -40,7 +40,7 @@ async function main() {
     if (text === null) continue;
 
     printNewline();
-    fencePrint("Output");
+    fencePrint("Output", { showSessionUsage: true, showApiDuration: true });
     await executeBat(text);
     printNewline();
   }

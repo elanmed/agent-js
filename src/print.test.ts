@@ -1,6 +1,11 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { formatMarkdown, calculateSessionUsage, executeBat } from "./print.ts";
+import {
+  formatMarkdown,
+  calculateSessionUsage,
+  calculateApiDuration,
+  executeBat,
+} from "./print.ts";
 import { dispatch, actions } from "./state.ts";
 import { processDeps, childProcessDeps } from "./deps.ts";
 import { stripAnsi } from "./test-helpers.ts";
@@ -25,6 +30,39 @@ describe("print", () => {
       const invalid = null as unknown as string;
       const result = await formatMarkdown(invalid);
       assert.equal(result, invalid);
+    });
+  });
+
+  describe("calculateApiDuration", () => {
+    beforeEach(() => {
+      dispatch(actions.resetState());
+    });
+
+    it("formats sub-second duration as milliseconds", () => {
+      mock.method(Date, "now", () => 1_000);
+      dispatch(actions.setApiStartTime());
+      mock.method(Date, "now", () => 1_500);
+      dispatch(actions.setApiEndTime());
+      const result = calculateApiDuration();
+      assert.strictEqual(result, "500ms");
+    });
+
+    it("formats seconds and milliseconds", () => {
+      mock.method(Date, "now", () => 1_000);
+      dispatch(actions.setApiStartTime());
+      mock.method(Date, "now", () => 6_500);
+      dispatch(actions.setApiEndTime());
+      const result = calculateApiDuration();
+      assert.strictEqual(result, "5s 500ms");
+    });
+
+    it("formats minutes, seconds, and milliseconds", () => {
+      mock.method(Date, "now", () => 1_000);
+      dispatch(actions.setApiStartTime());
+      mock.method(Date, "now", () => 126_500);
+      dispatch(actions.setApiEndTime());
+      const result = calculateApiDuration();
+      assert.strictEqual(result, "2m 5s 500ms");
     });
   });
 

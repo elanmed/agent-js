@@ -39,6 +39,8 @@ interface State {
     skills: Skill[];
     rl: readline.Interface | null;
     spinnerTimeout: NodeJS.Timeout | null;
+    apiStartTime: number | null;
+    apiEndTime: number | null;
   };
   configState: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -74,6 +76,8 @@ const initialState: State = {
     skills: [],
     rl: null,
     spinnerTimeout: null,
+    apiStartTime: null,
+    apiEndTime: null,
   },
   configState: {
     model: MISSING,
@@ -208,6 +212,12 @@ type Action =
   | {
       type: "set-spinner-timeout";
       payload: NodeJS.Timeout | null;
+    }
+  | {
+      type: "set-api-start-time";
+    }
+  | {
+      type: "set-api-end-time";
     }
   | {
       type: "reset-state";
@@ -540,6 +550,26 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
+    case "set-api-start-time": {
+      const before = state.appState.apiStartTime;
+      const now = Date.now();
+      const next = {
+        ...state,
+        appState: { ...state.appState, apiStartTime: now },
+      };
+      logStateChange(action.type, String(before), String(now));
+      return next;
+    }
+    case "set-api-end-time": {
+      const before = state.appState.apiEndTime;
+      const now = Date.now();
+      const next = {
+        ...state,
+        appState: { ...state.appState, apiEndTime: now },
+      };
+      logStateChange(action.type, String(before), String(now));
+      return next;
+    }
     case "reset-state": {
       const next = structuredClone(initialState);
       logStateChange(action.type, "[truncating]", stringify(next));
@@ -677,6 +707,14 @@ const setSpinnerTimeout = (timeout: NodeJS.Timeout | null): Action => {
   return { type: "set-spinner-timeout", payload: timeout };
 };
 
+const setApiStartTime = (): Action => {
+  return { type: "set-api-start-time" };
+};
+
+const setApiEndTime = (): Action => {
+  return { type: "set-api-end-time" };
+};
+
 const resetState = (): Action => {
   return { type: "reset-state" };
 };
@@ -711,6 +749,8 @@ export const actions = {
   setSkills,
   setRl,
   setSpinnerTimeout,
+  setApiStartTime,
+  setApiEndTime,
   resetState,
 };
 
@@ -731,6 +771,8 @@ const getSkillsStr = () => getState().appState.skillsStr;
 const getSkills = () => getState().appState.skills;
 const getRl = () => getState().appState.rl;
 const getSpinnerTimeout = () => getState().appState.spinnerTimeout;
+const getApiStartTime = () => getState().appState.apiStartTime;
+const getApiEndTime = () => getState().appState.apiEndTime;
 const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
@@ -769,4 +811,6 @@ export const selectors = {
   getSkills,
   getRl,
   getSpinnerTimeout,
+  getApiStartTime,
+  getApiEndTime,
 };
