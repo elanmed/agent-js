@@ -229,6 +229,8 @@ Minimal runtime dependencies (8 total):
 ## TODO (soon)
 
 - [ ] Progressively disclose nested AGENTS.md files?
+- [ ] Intercept control v
+- [ ] Time API calls
 
 ## TODO (later)
 
