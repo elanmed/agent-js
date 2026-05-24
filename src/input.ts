@@ -10,6 +10,7 @@ import {
   getMessageFromError,
   normalizeLine,
   createTempFile,
+  execPromise,
 } from "./utils.ts";
 import {
   print,
@@ -20,9 +21,10 @@ import {
 import { basename, extname, join } from "node:path";
 import { actions, dispatch, selectors, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
+import os from "node:os";
 import type { Key } from "./config.ts";
 import { editorLog } from "./log.ts";
-import { fsDeps, processDeps } from "./deps.ts";
+import { childProcessDeps, fsDeps, processDeps } from "./deps.ts";
 import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
 
 // https://stackoverflow.com/a/33500118
@@ -57,44 +59,82 @@ export function initReadline() {
   return rl;
 }
 
+async function getEditorInitialContent(opts: {
+  includeClipboardSuffix: boolean;
+}) {
+  const rl = selectors.getRl();
+  assert(rl !== null);
+
+  let prefilledEditorContent = "";
+  const editorInputValue = selectors.getEditorInputValue();
+  if (editorInputValue !== null) {
+    prefilledEditorContent = `${normalizeLine(editorInputValue)}\n`;
+  }
+
+  let readlineContent = "";
+  if (rl.line.length) {
+    readlineContent = rl.line;
+  }
+
+  let clipboardContent = "";
+  if (opts.includeClipboardSuffix) {
+    let defaultPasteCmd = "";
+    if (os.platform() === "darwin") {
+      defaultPasteCmd = "pbpaste";
+    } else if (os.platform() === "linux") {
+      defaultPasteCmd = "xclip -selection clipboard -o";
+    }
+
+    const pasteCmd =
+      processDeps.env.get("AGENT_JS_CLIPBOARD_PASTE") ?? defaultPasteCmd;
+
+    const pasteResult = await tryCatchAsync(execPromise(pasteCmd));
+    if (pasteResult.ok) {
+      clipboardContent = normalizeLine(pasteResult.value.stdout);
+    }
+  }
+
+  return `${prefilledEditorContent}${readlineContent}${clipboardContent}`;
+}
+
+function abortRlQuestionForEditor(editorContent: string) {
+  dispatch(actions.setEditorInputValue(editorContent));
+  const questionAbortController = selectors.getQuestionAbortController();
+  if (questionAbortController) {
+    const rl = clearRlLine()!;
+    rl.write("[editor]");
+    dispatch(actions.appendToStdout("[editor]"));
+
+    questionAbortController.abort();
+  }
+}
+
 export function initKeypress() {
   const rl = selectors.getRl();
   assert(rl !== null);
-  stdin.on("keypress", (_char, key: Key) => {
+  stdin.on("keypress", async (_char, key: Key) => {
     if (isSameKey(key, selectors.getKeymapEdit())) {
-      let initialContentPrefix = "";
-      if (selectors.getEditorInputValue() !== null) {
-        initialContentPrefix = selectors.getEditorInputValue()!;
-      }
-
-      let initialContentSuffix = "";
-      if (rl.line.length) {
-        initialContentSuffix = rl.line;
-      }
-
-      let initialContent = initialContentSuffix;
-      if (initialContentPrefix.length) {
-        initialContent = `${normalizeLine(initialContentPrefix)}\n\n${initialContentSuffix}`;
-      }
-
-      const editorContent = editCommand(initialContent);
-      if (editorContent) {
-        dispatch(actions.setEditorInputValue(editorContent));
-        const questionAbortController = selectors.getQuestionAbortController();
-        if (questionAbortController) {
-          const rl = clearRlLine()!;
-          rl.write("[editor]");
-          dispatch(actions.appendToStdout("[editor]"));
-
-          questionAbortController.abort();
-        }
+      const editorContent = await spawnAndReadEditorContent();
+      if (editorContent !== null) {
+        abortRlQuestionForEditor(editorContent);
       }
     } else if (isSameKey(key, selectors.getKeymapClear())) {
       if (selectors.getQuestionAbortController() === null) return;
+
       rl.write("/clear\n");
       dispatch(actions.appendToStdout("/clear\n"));
     } else if (isSameKey(key, selectors.getKeymapEditLog())) {
       editLogCommand();
+    } else if (
+      isSameKey(key, { name: "v", ctrl: true }) ||
+      isSameKey(key, { name: "v", meta: true })
+    ) {
+      const editorContent = await spawnAndReadEditorContent({
+        includeClipboardSuffix: true,
+      });
+      if (editorContent !== null) {
+        abortRlQuestionForEditor(editorContent);
+      }
     } else if (selectors.getSpinnerTimeout() !== null) {
       rl.write(null, { ctrl: true, name: "u" });
     }
@@ -170,7 +210,7 @@ export async function resolveUserInput() {
   const rawInput = inputResult.value.trim();
 
   if (selectors.getEditorInputValue() === null && rawInput.at(0) === "/") {
-    return resolveSlashCommand(rawInput);
+    return await resolveSlashCommand(rawInput);
   }
 
   return rawInput;
@@ -210,10 +250,10 @@ async function resolveExitConfirmation() {
 
 const builtinSlashCommands = ["edit", "edit-log", "clear", "model", "skills"];
 
-export function resolveSlashCommand(rawInput: string) {
+export async function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);
   if (commandWithoutSlash === "edit") {
-    return editCommand("");
+    return await spawnAndReadEditorContent();
   } else if (commandWithoutSlash === "clear") {
     clearCommand();
     return null;
@@ -258,20 +298,28 @@ export function clearCommand() {
   dispatch(actions.resetMessageParams());
 }
 
-export function editCommand(currentLine: string) {
+export async function spawnAndReadEditorContent(opts?: {
+  includeClipboardSuffix?: boolean;
+}) {
+  const includeClipboardSuffix = opts?.includeClipboardSuffix ?? false;
+
+  const initialContent = await getEditorInitialContent({
+    includeClipboardSuffix,
+  });
   const tempFile = createTempFile();
   const editor =
     processDeps.env.get("AGENT_JS_EDITOR") ??
     processDeps.env.get("EDITOR") ??
     "vi";
+
   const writeResult = tryCatch(() =>
-    fsDeps.writeFileSync(tempFile, currentLine),
+    fsDeps.writeFileSync(tempFile, initialContent),
   );
   if (!writeResult.ok) {
     print.error("Failed to write to temp file");
     return null;
   }
-  childProcess.spawnSync(`${editor} "${tempFile}"`, {
+  childProcess.spawnSync(`${editor} ${tempFile}`, {
     shell: true,
     stdio: "inherit",
   });
