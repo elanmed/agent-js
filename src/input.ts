@@ -132,21 +132,33 @@ export function initKeypress() {
         if (editorContent !== null) {
           abortRlQuestionForEditor(editorContent);
         }
-      } else if (isSameKey(key, selectors.getKeymapClear())) {
+        return;
+      }
+
+      if (isSameKey(key, selectors.getKeymapClear())) {
         if (selectors.getQuestionAbortController() === null) return;
 
         rl.write("/clear\n");
         dispatch(actions.appendToStdout("/clear\n"));
-      } else if (isSameKey(key, selectors.getKeymapEditPaste())) {
+        return;
+      }
+
+      if (isSameKey(key, selectors.getKeymapEditPaste())) {
         const editorContent = await spawnAndReadEditorContent({
           includeClipboardSuffix: true,
         });
         if (editorContent !== null) {
           abortRlQuestionForEditor(editorContent);
         }
-      } else if (isSameKey(key, selectors.getKeymapEditLog())) {
+        return;
+      }
+
+      if (isSameKey(key, selectors.getKeymapEditLog())) {
         editLogCommand();
-      } else if (selectors.getSpinnerTimeout() !== null) {
+        return;
+      }
+
+      if (selectors.getSpinnerTimeout() !== null) {
         rl.write(null, { ctrl: true, name: "u" });
       }
     })();
@@ -210,6 +222,7 @@ export async function resolveUserInput() {
     if (abortedByEditor) {
       dispatch(actions.appendToStdout(`>[editor]\n`));
       const editorInputValue = selectors.getEditorInputValue()!;
+      console.log(editorInputValue);
       dispatch(actions.setEditorInputValue(null));
       return editorInputValue;
     }
@@ -266,22 +279,34 @@ export async function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);
   if (commandWithoutSlash === "edit") {
     return await spawnAndReadEditorContent();
-  } else if (commandWithoutSlash === "clear") {
+  }
+
+  if (commandWithoutSlash === "clear") {
     clearCommand();
     return null;
-  } else if (commandWithoutSlash === "edit-log") {
+  }
+
+  if (commandWithoutSlash === "edit-log") {
     editLogCommand();
     return null;
-  } else if (commandWithoutSlash.startsWith("model")) {
+  }
+
+  if (commandWithoutSlash.startsWith("model")) {
     setModelCommand(rawInput);
     return null;
-  } else if (commandWithoutSlash === "skills") {
+  }
+
+  if (commandWithoutSlash === "skills") {
     printSkillsCommand();
     return null;
-  } else if (commandWithoutSlash === "context") {
+  }
+
+  if (commandWithoutSlash === "context") {
     printContextFilesCommand();
     return null;
-  } else if (commandWithoutSlash === "commands") {
+  }
+
+  if (commandWithoutSlash === "commands") {
     printCommandsCommand();
     return null;
   }
