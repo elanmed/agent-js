@@ -407,10 +407,8 @@ export function editLogCommand() {
   }
   const logPath = selectors.getEditorLogPath();
   const editCommand = compute(() => {
-    if (isExisty(processDeps.env.get("AGENT_JS_EDITOR"))) {
-      return processDeps.env
-        .get("AGENT_JS_EDITOR")!
-        .replace("__FILE__", logPath);
+    if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
+      return processDeps.env.get("AGENT_JS_EDIT")!.replace("__FILE__", logPath);
     }
 
     if (isExisty(processDeps.env.get("EDITOR"))) {

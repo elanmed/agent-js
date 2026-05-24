@@ -247,19 +247,19 @@ hello
       );
     });
 
-    it("uses AGENT_JS_EDITOR env var with __FILE__ when available", () => {
+    it("uses AGENT_JS_EDIT env var with __FILE__ when available", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      testProcessEnv._set("AGENT_JS_EDITOR", "nano __FILE__");
+      testProcessEnv._set("AGENT_JS_EDIT", "nano __FILE__");
       dispatch(actions.setEditorLogPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
       editLogCommand();
       assert.strictEqual(spawned, "nano /tmp/editor.log");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_EDITOR is not set", () => {
+    it("falls back to EDITOR env var when AGENT_JS_EDIT is not set", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
