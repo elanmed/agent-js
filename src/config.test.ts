@@ -144,6 +144,7 @@ describe("config", () => {
           ...defaultConfig,
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
+            editPaste: { name: "p", ctrl: false, meta: false, shift: false },
             editLog: { name: "o", ctrl: false, meta: false, shift: false },
             clear: { name: "j", ctrl: false, meta: false, shift: false },
           },
@@ -155,6 +156,7 @@ describe("config", () => {
           ...defaultConfig,
           keymaps: {
             edit: { name: "e", ctrl: true, meta: false, shift: false },
+            editPaste: { name: "t", ctrl: true, meta: false, shift: false },
             editLog: { name: "l", ctrl: true, meta: false, shift: false },
             clear: { name: "k", ctrl: true, meta: false, shift: false },
           },
@@ -165,6 +167,12 @@ describe("config", () => {
 
       assert.deepEqual(selectors.getKeymapEdit(), {
         name: "e",
+        ctrl: true,
+        meta: false,
+        shift: false,
+      });
+      assert.deepEqual(selectors.getKeymapEditPaste(), {
+        name: "t",
         ctrl: true,
         meta: false,
         shift: false,
@@ -246,6 +254,10 @@ describe("config", () => {
         meta: false,
         shift: false,
       });
+      assert.deepEqual(
+        selectors.getKeymapEditPaste(),
+        DEFAULT_CONFIG.keymaps.editPaste,
+      );
       assert.deepEqual(
         selectors.getKeymapEditLog(),
         DEFAULT_CONFIG.keymaps.editLog,
@@ -340,6 +352,7 @@ describe("config", () => {
             ...defaultConfig,
             keymaps: {
               edit: { name: "v", ctrl: false, meta: false, shift: false },
+              editPaste: { name: "p", ctrl: false, meta: false, shift: false },
               editLog: { name: "o", ctrl: false, meta: false, shift: false },
               clear: { name: "j", ctrl: false, meta: false, shift: false },
             },
@@ -350,6 +363,12 @@ describe("config", () => {
 
         assert.deepEqual(selectors.getKeymapEdit(), {
           name: "v",
+          ctrl: false,
+          meta: false,
+          shift: false,
+        });
+        assert.deepEqual(selectors.getKeymapEditPaste(), {
+          name: "p",
           ctrl: false,
           meta: false,
           shift: false,

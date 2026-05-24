@@ -41,6 +41,7 @@ const ConfigSchema = z.object({
   keymaps: z
     .object({
       edit: KeySchema.optional(),
+      editPaste: KeySchema.optional(),
       editLog: KeySchema.optional(),
       clear: KeySchema.optional(),
     })
@@ -68,6 +69,7 @@ interface DefaultConfig {
   >;
   keymaps: {
     edit: Key;
+    editPaste: Key;
     editLog: Key;
     clear: Key;
   };
@@ -84,6 +86,10 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   keymaps: {
     edit: {
       name: "g",
+      ctrl: true,
+    },
+    editPaste: {
+      name: "v",
       ctrl: true,
     },
     editLog: {
@@ -196,6 +202,13 @@ export function initState() {
       localConfig.keymaps?.edit ??
         globalConfig.keymaps?.edit ??
         DEFAULT_CONFIG.keymaps.edit,
+    ),
+  );
+  dispatch(
+    actions.setKeymapEditPaste(
+      localConfig.keymaps?.editPaste ??
+        globalConfig.keymaps?.editPaste ??
+        DEFAULT_CONFIG.keymaps.editPaste,
     ),
   );
   dispatch(

@@ -49,6 +49,7 @@ interface State {
     provider: Provider;
     diffStyle: DiffStyle;
     keymapEdit: Key;
+    keymapEditPaste: Key;
     keymapEditLog: Key;
     keymapClear: Key;
   };
@@ -86,6 +87,7 @@ const initialState: State = {
     diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
     keymapEdit: structuredClone(DEFAULT_CONFIG.keymaps.edit),
+    keymapEditPaste: structuredClone(DEFAULT_CONFIG.keymaps.editPaste),
     keymapEditLog: structuredClone(DEFAULT_CONFIG.keymaps.editLog),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
   },
@@ -130,6 +132,10 @@ type Action =
     }
   | {
       type: "set-keymap-edit";
+      payload: Key;
+    }
+  | {
+      type: "set-keymap-edit-paste";
       payload: Key;
     }
   | {
@@ -315,6 +321,15 @@ const reducer = (state: State, action: Action): State => {
       const next = {
         ...state,
         configState: { ...state.configState, keymapEdit: action.payload },
+      };
+      logStateChange(action.type, stringify(before), stringify(action.payload));
+      return next;
+    }
+    case "set-keymap-edit-paste": {
+      const before = state.configState.keymapEditPaste;
+      const next = {
+        ...state,
+        configState: { ...state.configState, keymapEditPaste: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
@@ -619,6 +634,10 @@ const setKeymapEdit = (keymap: Key): Action => {
   return { type: "set-keymap-edit", payload: keymap };
 };
 
+const setKeymapEditPaste = (keymap: Key): Action => {
+  return { type: "set-keymap-edit-paste", payload: keymap };
+};
+
 const setKeymapEditLog = (keymap: Key): Action => {
   return { type: "set-keymap-edit-log", payload: keymap };
 };
@@ -728,6 +747,7 @@ export const actions = {
   setPricingPerModel,
   setDiffStyle,
   setKeymapEdit,
+  setKeymapEditPaste,
   setKeymapEditLog,
   setKeymapClear,
   resetMessageUsages,
@@ -779,6 +799,7 @@ const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
 const getDiffStyle = () => getState().configState.diffStyle;
 const getKeymapEdit = () => getState().configState.keymapEdit;
+const getKeymapEditPaste = () => getState().configState.keymapEditPaste;
 const getKeymapEditLog = () => getState().configState.keymapEditLog;
 const getKeymapClear = () => getState().configState.keymapClear;
 const getQuestionAbortController = () => getState().abortControllers.question;
@@ -793,6 +814,7 @@ export const selectors = {
   getPricingPerModel,
   getDiffStyle,
   getKeymapEdit,
+  getKeymapEditPaste,
   getKeymapEditLog,
   getKeymapClear,
   getQuestionAbortController,

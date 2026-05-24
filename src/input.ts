@@ -11,6 +11,7 @@ import {
   normalizeLine,
   createTempFile,
   execPromise,
+  isExisty,
 } from "./utils.ts";
 import {
   print,
@@ -124,18 +125,15 @@ export function initKeypress() {
 
         rl.write("/clear\n");
         dispatch(actions.appendToStdout("/clear\n"));
-      } else if (isSameKey(key, selectors.getKeymapEditLog())) {
-        editLogCommand();
-      } else if (
-        isSameKey(key, { name: "v", ctrl: true }) ||
-        isSameKey(key, { name: "v", meta: true })
-      ) {
+      } else if (isSameKey(key, selectors.getKeymapEditPaste())) {
         const editorContent = await spawnAndReadEditorContent({
           includeClipboardSuffix: true,
         });
         if (editorContent !== null) {
           abortRlQuestionForEditor(editorContent);
         }
+      } else if (isSameKey(key, selectors.getKeymapEditLog())) {
+        editLogCommand();
       } else if (selectors.getSpinnerTimeout() !== null) {
         rl.write(null, { ctrl: true, name: "u" });
       }
@@ -309,10 +307,17 @@ export async function spawnAndReadEditorContent(opts?: {
     includeClipboardSuffix,
   });
   const tempFile = createTempFile();
-  const editor =
-    processDeps.env.get("AGENT_JS_EDITOR") ??
-    processDeps.env.get("EDITOR") ??
-    "vi";
+
+  let editCommand = "";
+  if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
+    editCommand = processDeps.env
+      .get("AGENT_JS_EDIT")!
+      .replace("__FILE__", tempFile);
+  } else if (isExisty(processDeps.env.get("EDITOR"))) {
+    editCommand = `${processDeps.env.get("EDITOR")!} ${tempFile}`;
+  } else {
+    editCommand = `vi ${tempFile}`;
+  }
 
   const writeResult = tryCatch(() =>
     fsDeps.writeFileSync(tempFile, initialContent),
@@ -321,7 +326,7 @@ export async function spawnAndReadEditorContent(opts?: {
     print.error("Failed to write to temp file");
     return null;
   }
-  childProcess.spawnSync(`${editor} ${tempFile}`, {
+  childProcess.spawnSync(editCommand, {
     shell: true,
     stdio: "inherit",
   });
@@ -349,12 +354,19 @@ export function editLogCommand() {
     }
     return;
   }
-  const editor =
-    processDeps.env.get("AGENT_JS_EDITOR_LOG") ??
-    processDeps.env.get("EDITOR") ??
-    "vi";
+  const logPath = selectors.getEditorLogPath();
+  let editCommand = "";
+  if (isExisty(processDeps.env.get("AGENT_JS_EDITOR"))) {
+    editCommand = processDeps.env
+      .get("AGENT_JS_EDITOR")!
+      .replace("__FILE__", logPath);
+  } else if (isExisty(processDeps.env.get("EDITOR"))) {
+    editCommand = `${processDeps.env.get("EDITOR")!} "${logPath}"`;
+  } else {
+    editCommand = `vi "${logPath}"`;
+  }
 
-  childProcess.spawnSync(`${editor} "${selectors.getEditorLogPath()}"`, {
+  childProcess.spawnSync(editCommand, {
     shell: true,
     stdio: "inherit",
   });

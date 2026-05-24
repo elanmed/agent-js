@@ -78,3 +78,7 @@ export function execPromise(
 export function stringify(val: unknown) {
   return JSON.stringify(val, null, 2);
 }
+
+export function isExisty(val: unknown) {
+  return val !== undefined && val !== null;
+}
