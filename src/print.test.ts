@@ -8,6 +8,7 @@ import {
 } from "./print.ts";
 import { dispatch, actions } from "./state.ts";
 import { processDeps, childProcessDeps } from "./deps.ts";
+import childProcess from "node:child_process";
 import { stripAnsi } from "./test-helpers.ts";
 
 describe("print", () => {
@@ -368,7 +369,7 @@ test content
         });
 
         it("falls back to plain text when bat spawn fails", async () => {
-          mock.method(childProcessDeps, "spawnSync", () => {
+          mock.method(childProcess, "spawnSync", () => {
             throw new Error("spawn failed");
           });
 

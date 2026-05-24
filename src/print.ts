@@ -9,7 +9,8 @@ import {
   compute,
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
-import { processDeps, childProcessDeps } from "./deps.ts";
+import { processDeps } from "./deps.ts";
+import { spawnSync } from "node:child_process";
 import assert from "node:assert";
 
 const COLORS = {
@@ -131,7 +132,7 @@ export async function checkDelta(): Promise<boolean> {
 
 function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
   return tryCatch(() =>
-    childProcessDeps.spawnSync(
+    spawnSync(
       "bat",
       [
         "--language",
