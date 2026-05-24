@@ -24,7 +24,7 @@ import childProcess from "node:child_process";
 import os from "node:os";
 import type { Key } from "./config.ts";
 import { editorLog } from "./log.ts";
-import { childProcessDeps, fsDeps, processDeps } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
 
 // https://stackoverflow.com/a/33500118
@@ -112,32 +112,34 @@ function abortRlQuestionForEditor(editorContent: string) {
 export function initKeypress() {
   const rl = selectors.getRl();
   assert(rl !== null);
-  stdin.on("keypress", async (_char, key: Key) => {
-    if (isSameKey(key, selectors.getKeymapEdit())) {
-      const editorContent = await spawnAndReadEditorContent();
-      if (editorContent !== null) {
-        abortRlQuestionForEditor(editorContent);
-      }
-    } else if (isSameKey(key, selectors.getKeymapClear())) {
-      if (selectors.getQuestionAbortController() === null) return;
+  stdin.on("keypress", (_char, key: Key) => {
+    void (async () => {
+      if (isSameKey(key, selectors.getKeymapEdit())) {
+        const editorContent = await spawnAndReadEditorContent();
+        if (editorContent !== null) {
+          abortRlQuestionForEditor(editorContent);
+        }
+      } else if (isSameKey(key, selectors.getKeymapClear())) {
+        if (selectors.getQuestionAbortController() === null) return;
 
-      rl.write("/clear\n");
-      dispatch(actions.appendToStdout("/clear\n"));
-    } else if (isSameKey(key, selectors.getKeymapEditLog())) {
-      editLogCommand();
-    } else if (
-      isSameKey(key, { name: "v", ctrl: true }) ||
-      isSameKey(key, { name: "v", meta: true })
-    ) {
-      const editorContent = await spawnAndReadEditorContent({
-        includeClipboardSuffix: true,
-      });
-      if (editorContent !== null) {
-        abortRlQuestionForEditor(editorContent);
+        rl.write("/clear\n");
+        dispatch(actions.appendToStdout("/clear\n"));
+      } else if (isSameKey(key, selectors.getKeymapEditLog())) {
+        editLogCommand();
+      } else if (
+        isSameKey(key, { name: "v", ctrl: true }) ||
+        isSameKey(key, { name: "v", meta: true })
+      ) {
+        const editorContent = await spawnAndReadEditorContent({
+          includeClipboardSuffix: true,
+        });
+        if (editorContent !== null) {
+          abortRlQuestionForEditor(editorContent);
+        }
+      } else if (selectors.getSpinnerTimeout() !== null) {
+        rl.write(null, { ctrl: true, name: "u" });
       }
-    } else if (selectors.getSpinnerTimeout() !== null) {
-      rl.write(null, { ctrl: true, name: "u" });
-    }
+    })();
   });
 }
 

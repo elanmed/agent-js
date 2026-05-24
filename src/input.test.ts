@@ -3,7 +3,6 @@ import assert from "node:assert";
 import type readline from "node:readline/promises";
 import { dispatch, actions, selectors } from "./state.ts";
 import {
-  editCommand,
   resolveSlashCommand,
   setModelCommand,
   isSameKey,
@@ -13,6 +12,7 @@ import {
   printSkillsCommand,
   printContextFilesCommand,
   printCommandsCommand,
+  spawnAndReadEditorContent,
 } from "./input.ts";
 import {
   testFs,
@@ -20,7 +20,7 @@ import {
   setupFakeDeps,
   stripAnsi,
 } from "./test-helpers.ts";
-import { fsDeps } from "./deps.ts";
+import { fsDeps, childProcessDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import crypto from "node:crypto";
 import os from "node:os";
@@ -30,12 +30,19 @@ describe("input", () => {
     dispatch(actions.resetState());
   });
 
-  describe("editCommand", () => {
+  describe("spawnAndReadEditorContent", () => {
     let spawned: string[];
 
     beforeEach(() => {
       setupFakeDeps();
       spawned = [];
+      dispatch(
+        actions.setRl({
+          write: () => null,
+          prompt: () => null,
+          line: "",
+        } as unknown as readline.Interface),
+      );
       mock.method(crypto, "randomUUID", () => "test-uuid");
       mock.method(os, "tmpdir", () => "/tmp");
       mock.method(childProcess, "spawnSync", (cmd: string) => {
@@ -43,19 +50,19 @@ describe("input", () => {
       });
     });
 
-    it("returns null when writeFile fails", () => {
+    it("returns null when writeFile fails", async () => {
       mock.method(fsDeps, "writeFileSync", () => {
         throw new Error("write failed");
       });
-      const result = editCommand("");
+      const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, null);
     });
 
-    it("returns null and cleans up when readFile fails", () => {
+    it("returns null and cleans up when readFile fails", async () => {
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
-      const result = editCommand("content");
+      const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.has("/tmp/agent-js-test-uuid.txt"),
@@ -63,22 +70,22 @@ describe("input", () => {
       );
     });
 
-    it("returns null when editor returns empty content", () => {
+    it("returns null when editor returns empty content", async () => {
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/agent-js-test-uuid.txt", "");
       });
-      const result = editCommand("content");
+      const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, null);
     });
 
-    it("returns normalized content and logs it", () => {
+    it("returns normalized content and logs it", async () => {
       mock.method(Date, "now", () => 0);
       dispatch(actions.setEditorLog(true));
       dispatch(actions.setEditorLogPath("/tmp/editor.log"));
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/agent-js-test-uuid.txt", "  hello  ");
       });
-      const result = editCommand("");
+      const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, "hello\n");
       assert.ok(testFs._files.has("/tmp/editor.log"));
       assert.strictEqual(
@@ -91,21 +98,50 @@ hello
       );
     });
 
-    it("uses AGENT_JS_EDITOR env var when available", () => {
+    it("uses AGENT_JS_EDITOR env var when available", async () => {
       testProcessEnv._set("AGENT_JS_EDITOR", "nano");
-      editCommand("");
-      assert.strictEqual(spawned[0], 'nano "/tmp/agent-js-test-uuid.txt"');
+      await spawnAndReadEditorContent();
+      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_EDITOR is not set", () => {
+    it("falls back to EDITOR env var when AGENT_JS_EDITOR is not set", async () => {
       testProcessEnv._set("EDITOR", "vim");
-      editCommand("");
-      assert.strictEqual(spawned[0], 'vim "/tmp/agent-js-test-uuid.txt"');
+      await spawnAndReadEditorContent();
+      assert.strictEqual(spawned[0], "vim /tmp/agent-js-test-uuid.txt");
     });
 
-    it("falls back to vi when no editor env vars are set", () => {
-      editCommand("");
-      assert.strictEqual(spawned[0], 'vi "/tmp/agent-js-test-uuid.txt"');
+    it("falls back to vi when no editor env vars are set", async () => {
+      await spawnAndReadEditorContent();
+      assert.strictEqual(spawned[0], "vi /tmp/agent-js-test-uuid.txt");
+    });
+
+    it("includes clipboard content when includeClipboardSuffix is true", async () => {
+      dispatch(
+        actions.setRl({
+          write: () => null,
+          prompt: () => null,
+          line: "hello ",
+        } as unknown as readline.Interface),
+      );
+      mock.method(os, "platform", () => "linux");
+      mock.method(
+        childProcessDeps,
+        "exec",
+        (
+          _cmd: string,
+          _opts: unknown,
+          callback: (error: unknown, stdout: string, stderr: string) => void,
+        ) => {
+          callback(null, "world", "");
+        },
+      );
+      mock.method(childProcess, "spawnSync", () => {
+        testFs._files.set("/tmp/agent-js-test-uuid.txt", "hello world\n");
+      });
+      const result = await spawnAndReadEditorContent({
+        includeClipboardSuffix: true,
+      });
+      assert.strictEqual(result, "hello world\n");
     });
   });
 
@@ -300,6 +336,7 @@ Available /commands:
 - edit-log
 - clear
 - model
+- skills
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -473,34 +510,41 @@ Available /commands:
   describe("resolveSlashCommand", () => {
     beforeEach(() => {
       setupFakeDeps();
+      dispatch(
+        actions.setRl({
+          write: () => null,
+          prompt: () => null,
+          line: "",
+        } as unknown as readline.Interface),
+      );
       mock.method(childProcess, "spawnSync", () => undefined);
     });
 
-    it("handles /edit command", () => {
-      const result = resolveSlashCommand("/edit");
+    it("handles /edit command", async () => {
+      const result = await resolveSlashCommand("/edit");
       assert.strictEqual(result, null);
     });
 
-    it("handles /clear command", () => {
-      const result = resolveSlashCommand("/clear");
+    it("handles /clear command", async () => {
+      const result = await resolveSlashCommand("/clear");
       assert.strictEqual(result, null);
     });
 
-    it("handles /edit-log command", () => {
+    it("handles /edit-log command", async () => {
       dispatch(
         actions.setRl({
           write: () => null,
           prompt: () => null,
         } as unknown as readline.Interface),
       );
-      const result = resolveSlashCommand("/edit-log");
+      const result = await resolveSlashCommand("/edit-log");
       assert.strictEqual(result, null);
     });
 
-    it("handles /model command", () => {
+    it("handles /model command", async () => {
       dispatch(actions.setModel("old"));
       dispatch(actions.resetStdout());
-      const result = resolveSlashCommand("/model new-model");
+      const result = await resolveSlashCommand("/model new-model");
       assert.strictEqual(result, null);
       assert.strictEqual(selectors.getModel(), "new-model");
       assert.strictEqual(
@@ -509,9 +553,9 @@ Available /commands:
       );
     });
 
-    it("handles /skills command", () => {
+    it("handles /skills command", async () => {
       dispatch(actions.resetStdout());
-      const result = resolveSlashCommand("/skills");
+      const result = await resolveSlashCommand("/skills");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
@@ -522,9 +566,9 @@ Available skills:
       );
     });
 
-    it("handles /context command", () => {
+    it("handles /context command", async () => {
       dispatch(actions.resetStdout());
-      const result = resolveSlashCommand("/context");
+      const result = await resolveSlashCommand("/context");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
@@ -535,9 +579,9 @@ Available context files:
       );
     });
 
-    it("handles /commands command", () => {
+    it("handles /commands command", async () => {
       dispatch(actions.resetStdout());
-      const result = resolveSlashCommand("/commands");
+      const result = await resolveSlashCommand("/commands");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
@@ -547,11 +591,12 @@ Available /commands:
 - edit-log
 - clear
 - model
+- skills
 `,
       );
     });
 
-    it("handles custom slash command successfully", () => {
+    it("handles custom slash command successfully", async () => {
       dispatch(
         actions.setSlashCommands([
           {
@@ -561,11 +606,11 @@ Available /commands:
           },
         ]),
       );
-      const result = resolveSlashCommand("/custom");
+      const result = await resolveSlashCommand("/custom");
       assert.strictEqual(result, "custom command content");
     });
 
-    it("handles unknown slash command", () => {
+    it("handles unknown slash command", async () => {
       dispatch(
         actions.setSlashCommands([
           {
@@ -576,11 +621,11 @@ Available /commands:
         ]),
       );
       dispatch(actions.resetStdout());
-      const result = resolveSlashCommand("/unknown");
+      const result = await resolveSlashCommand("/unknown");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Invalid / command detected, valid commands: known, edit, edit-log, clear, model\n",
+        "Invalid / command detected, valid commands: known, edit, edit-log, clear, model, skills\n",
       );
     });
   });
