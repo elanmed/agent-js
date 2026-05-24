@@ -115,8 +115,21 @@ function abortRlQuestionForEditor(editorContent: string) {
   const questionAbortController = selectors.getQuestionAbortController();
   if (questionAbortController) {
     const rl = clearRlLine()!;
-    rl.write("[editor]");
-    dispatch(actions.appendToStdout("[editor]"));
+
+    const firstLine = compute(() => {
+      const newlineIdx = editorContent.indexOf("\n");
+      if (newlineIdx === -1) return editorContent;
+      return editorContent.substring(0, newlineIdx);
+    });
+    const truncatedFirstLine = compute(() => {
+      if (firstLine.length > 50) {
+        return firstLine.substring(0, 50).concat("…");
+      }
+      return firstLine;
+    });
+
+    rl.write(truncatedFirstLine);
+    dispatch(actions.appendToStdout(truncatedFirstLine));
 
     questionAbortController.abort();
   }
@@ -220,9 +233,7 @@ export async function resolveUserInput() {
 
     const abortedByEditor = selectors.getEditorInputValue() !== null;
     if (abortedByEditor) {
-      dispatch(actions.appendToStdout(`>[editor]\n`));
       const editorInputValue = selectors.getEditorInputValue()!;
-      console.log(editorInputValue);
       dispatch(actions.setEditorInputValue(null));
       return editorInputValue;
     }
