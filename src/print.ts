@@ -6,6 +6,7 @@ import {
   normalizeLine,
   execPromise,
   type Result,
+  compute,
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
 import { processDeps, childProcessDeps } from "./deps.ts";
@@ -67,15 +68,21 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   const showSessionUsage = opts.showSessionUsage ?? false;
   const showApiDuration = opts.showApiDuration ?? false;
 
-  let sessionUsage = "";
-  if (showSessionUsage) {
-    sessionUsage = ` (${calculateSessionUsage()})`;
-  }
+  const sessionUsage = compute(() => {
+    if (showSessionUsage) {
+      return ` (${calculateSessionUsage()})`;
+    }
 
-  let apiDuration = "";
-  if (showApiDuration) {
-    apiDuration = ` (${calculateApiDuration()})`;
-  }
+    return "";
+  });
+
+  const apiDuration = compute(() => {
+    if (showApiDuration) {
+      return ` (${calculateApiDuration()})`;
+    }
+
+    return "";
+  });
 
   const line = `━━ ${text}${sessionUsage}${apiDuration} ━━`;
   colorPrint(line, opts.color ?? "grey");
@@ -234,16 +241,22 @@ export function calculateApiDuration() {
   const prettyMs = `${String(diff % 1_000)}ms`;
 
   const sec = Math.floor((diff / 1_000) % 60);
-  let prettySec = "";
-  if (sec > 0) {
-    prettySec = `${String(sec)}s `;
-  }
+  const prettySec = compute(() => {
+    if (sec > 0) {
+      return `${String(sec)}s `;
+    }
+
+    return "";
+  });
 
   const min = Math.floor(diff / 60_000);
-  let prettyMin = "";
-  if (min > 0) {
-    prettyMin = `${String(min)}m `;
-  }
+  const prettyMin = compute(() => {
+    if (min > 0) {
+      return `${String(min)}m `;
+    }
+
+    return "";
+  });
 
   return `${prettyMin}${prettySec}${prettyMs}`;
 }

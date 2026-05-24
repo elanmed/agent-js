@@ -12,6 +12,7 @@ import {
   createTempFile,
   execPromise,
   isExisty,
+  compute,
 } from "./utils.ts";
 import {
   print,
@@ -66,25 +67,36 @@ async function getEditorInitialContent(opts: {
   const rl = selectors.getRl();
   assert(rl !== null);
 
-  let prefilledEditorContent = "";
-  const editorInputValue = selectors.getEditorInputValue();
-  if (editorInputValue !== null) {
-    prefilledEditorContent = `${normalizeLine(editorInputValue)}\n`;
-  }
+  const prefilledEditorContent = compute(() => {
+    const editorInputValue = selectors.getEditorInputValue();
+    if (editorInputValue !== null) {
+      return `${normalizeLine(editorInputValue)}\n`;
+    }
 
-  let readlineContent = "";
-  if (rl.line.length) {
-    readlineContent = rl.line;
-  }
+    return "";
+  });
+
+  const readlineContent = compute(() => {
+    if (rl.line.length) {
+      return rl.line;
+    }
+
+    return "";
+  });
 
   let clipboardContent = "";
   if (opts.includeClipboardSuffix) {
-    let defaultPasteCmd = "";
-    if (os.platform() === "darwin") {
-      defaultPasteCmd = "pbpaste";
-    } else if (os.platform() === "linux") {
-      defaultPasteCmd = "xclip -selection clipboard -o";
-    }
+    const defaultPasteCmd = compute(() => {
+      if (os.platform() === "darwin") {
+        return "pbpaste";
+      }
+
+      if (os.platform() === "linux") {
+        return "xclip -selection clipboard -o";
+      }
+
+      return "";
+    });
 
     const pasteCmd =
       processDeps.env.get("AGENT_JS_CLIPBOARD_PASTE") ?? defaultPasteCmd;
@@ -308,16 +320,19 @@ export async function spawnAndReadEditorContent(opts?: {
   });
   const tempFile = createTempFile();
 
-  let editCommand = "";
-  if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
-    editCommand = processDeps.env
-      .get("AGENT_JS_EDIT")!
-      .replace("__FILE__", tempFile);
-  } else if (isExisty(processDeps.env.get("EDITOR"))) {
-    editCommand = `${processDeps.env.get("EDITOR")!} ${tempFile}`;
-  } else {
-    editCommand = `vi ${tempFile}`;
-  }
+  const editCommand = compute(() => {
+    if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
+      return processDeps.env
+        .get("AGENT_JS_EDIT")!
+        .replace("__FILE__", tempFile);
+    }
+
+    if (isExisty(processDeps.env.get("EDITOR"))) {
+      return `${processDeps.env.get("EDITOR")!} ${tempFile}`;
+    }
+
+    return `vi ${tempFile}`;
+  });
 
   const writeResult = tryCatch(() =>
     fsDeps.writeFileSync(tempFile, initialContent),
@@ -355,16 +370,19 @@ export function editLogCommand() {
     return;
   }
   const logPath = selectors.getEditorLogPath();
-  let editCommand = "";
-  if (isExisty(processDeps.env.get("AGENT_JS_EDITOR"))) {
-    editCommand = processDeps.env
-      .get("AGENT_JS_EDITOR")!
-      .replace("__FILE__", logPath);
-  } else if (isExisty(processDeps.env.get("EDITOR"))) {
-    editCommand = `${processDeps.env.get("EDITOR")!} "${logPath}"`;
-  } else {
-    editCommand = `vi "${logPath}"`;
-  }
+  const editCommand = compute(() => {
+    if (isExisty(processDeps.env.get("AGENT_JS_EDITOR"))) {
+      return processDeps.env
+        .get("AGENT_JS_EDITOR")!
+        .replace("__FILE__", logPath);
+    }
+
+    if (isExisty(processDeps.env.get("EDITOR"))) {
+      return `${processDeps.env.get("EDITOR")!} "${logPath}"`;
+    }
+
+    return `vi "${logPath}"`;
+  });
 
   childProcess.spawnSync(editCommand, {
     shell: true,
