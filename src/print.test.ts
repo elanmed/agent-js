@@ -7,7 +7,7 @@ import {
   executeBat,
 } from "./print.ts";
 import { dispatch, actions } from "./state.ts";
-import { processDeps, childProcessDeps } from "./deps.ts";
+import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import { stripAnsi } from "./test-helpers.ts";
 
@@ -342,7 +342,7 @@ describe("print", () => {
 
         it("falls back to plain text when bat is not available", async () => {
           mock.method(
-            childProcessDeps,
+            childProcess,
             "exec",
             (
               _cmd: string,

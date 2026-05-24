@@ -9,8 +9,6 @@ import {
   statSync,
   globSync,
 } from "node:fs";
-import { exec } from "node:child_process";
-
 export const fsDeps = {
   readFileSync,
   writeFileSync,
@@ -35,8 +33,4 @@ export const processDeps = {
     },
   },
   cwd: () => process.cwd(),
-};
-
-export const childProcessDeps = {
-  exec,
 };

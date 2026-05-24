@@ -20,7 +20,7 @@ import {
   setupFakeDeps,
   stripAnsi,
 } from "./test-helpers.ts";
-import { fsDeps, childProcessDeps } from "./deps.ts";
+import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import crypto from "node:crypto";
 import os from "node:os";
@@ -125,7 +125,7 @@ hello
       );
       mock.method(os, "platform", () => "linux");
       mock.method(
-        childProcessDeps,
+        childProcess,
         "exec",
         (
           _cmd: string,

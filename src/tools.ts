@@ -14,7 +14,8 @@ import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { selectors } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
-import { fsDeps, childProcessDeps } from "./deps.ts";
+import { fsDeps } from "./deps.ts";
+import childProcess from "node:child_process";
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -517,7 +518,7 @@ export async function execGitDiff(
 
     if (isDeltaAvailable) {
       const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
-      childProcessDeps.exec(
+      childProcess.exec(
         `${gitDiffCmd} | ${deltaCmd}`,
         { cwd: os.tmpdir() },
         (error, stdout, stderr) => {
@@ -532,7 +533,7 @@ export async function execGitDiff(
     }
 
     const coloredGitDiffCmd = `${gitDiffCmd} --color=always`;
-    childProcessDeps.exec(
+    childProcess.exec(
       coloredGitDiffCmd,
       { cwd: os.tmpdir() },
       (error, stdout, stderr) => {

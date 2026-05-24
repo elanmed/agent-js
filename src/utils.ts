@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
-import { fsDeps, childProcessDeps } from "./deps.ts";
+import childProcess from "node:child_process";
+import { fsDeps } from "./deps.ts";
 
 export const MISSING = "__MISSING__";
 
@@ -61,7 +62,7 @@ export function execPromise(
   options?: { signal?: AbortSignal },
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    childProcessDeps.exec(
+    childProcess.exec(
       command,
       { encoding: "utf8", ...options },
       (error, stdout, stderr) => {
