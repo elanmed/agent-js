@@ -1,11 +1,9 @@
 export interface CliArgs {
   debug: boolean;
-  resumeSessionId: string | null;
 }
 
 export const defaultCliArgs: CliArgs = {
   debug: false,
-  resumeSessionId: null,
 };
 
 export const parseCliArgsDeps = {
@@ -21,14 +19,8 @@ export function parseCliArgs() {
 
     if (arg === "--debug") {
       parsedArgs.debug = true;
-    } else if (arg.startsWith("--resume")) {
-      const resumeSessionId = arg.split("=")[1];
-      if (!resumeSessionId) {
-        throw new Error("Usage: [--debug] [--resume=sessionId]");
-      }
-      parsedArgs.resumeSessionId = resumeSessionId;
     } else {
-      throw new Error("Usage: [--debug] [--resume=sessionId]");
+      throw new Error("Usage: [--debug]");
     }
   }
   return parsedArgs;
