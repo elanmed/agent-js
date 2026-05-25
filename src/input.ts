@@ -406,6 +406,15 @@ export function editLogCommand() {
     return;
   }
   const logPath = selectors.getEditorLogPath();
+  const logContentResult = tryCatch(() =>
+    fsDeps.readFileSync(logPath).toString(),
+  );
+  if (!logContentResult.ok) {
+    print.warning("[Cannot read edit log]");
+    clearRlLine()!.prompt();
+    return;
+  }
+
   const editCommand = compute(() => {
     if (isExisty(processDeps.env.get("AGENT_JS_EDIT_LOG"))) {
       return processDeps.env
@@ -424,6 +433,8 @@ export function editLogCommand() {
     shell: true,
     stdio: "inherit",
   });
+
+  tryCatch(() => fsDeps.writeFileSync(logPath, logContentResult.value));
 }
 
 export function setModelCommand(rawInput: string) {

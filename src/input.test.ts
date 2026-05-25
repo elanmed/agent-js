@@ -281,6 +281,38 @@ hello
       editLogCommand();
       assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
     });
+
+    it("prints warning when log cannot be read", () => {
+      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      testFs._files.set("/tmp/editor.log", "log content");
+      dispatch(
+        actions.setRl({
+          write: () => null,
+          prompt: () => null,
+        } as unknown as readline.Interface),
+      );
+      mock.method(fsDeps, "readFileSync", () => {
+        throw new Error("read failed");
+      });
+      editLogCommand();
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "[Cannot read edit log]\n",
+      );
+    });
+
+    it("restores original log content after editing", () => {
+      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      testFs._files.set("/tmp/editor.log", "original content");
+      mock.method(childProcess, "spawnSync", () => {
+        testFs._files.set("/tmp/editor.log", "modified by editor");
+      });
+      editLogCommand();
+      assert.strictEqual(
+        testFs._files.get("/tmp/editor.log"),
+        "original content",
+      );
+    });
   });
 
   describe("printSkillsCommand", () => {
