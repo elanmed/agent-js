@@ -100,6 +100,9 @@ export function initPrint() {
   print.infoSubtle(
     `keymap-clear: ${JSON.stringify(selectors.getKeymapClear())}`,
   );
+  print.infoSubtle(
+    `keymap-edit-paste: ${JSON.stringify(selectors.getKeymapEditPaste())}`,
+  );
 }
 
 const SPINNER_FRAMES = ["|", "/", "-", "\\"];
