@@ -357,9 +357,9 @@ export async function spawnAndReadEditorContent(opts?: {
   const tempFile = createTempFile();
 
   const editCommand = compute(() => {
-    if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
+    if (isExisty(processDeps.env.get("AGENT_JS_EDIT_PROMPT"))) {
       return processDeps.env
-        .get("AGENT_JS_EDIT")!
+        .get("AGENT_JS_EDIT_PROMPT")!
         .replace("__FILE__", tempFile);
     }
 
@@ -407,8 +407,10 @@ export function editLogCommand() {
   }
   const logPath = selectors.getEditorLogPath();
   const editCommand = compute(() => {
-    if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
-      return processDeps.env.get("AGENT_JS_EDIT")!.replace("__FILE__", logPath);
+    if (isExisty(processDeps.env.get("AGENT_JS_EDIT_LOG"))) {
+      return processDeps.env
+        .get("AGENT_JS_EDIT_LOG")!
+        .replace("__FILE__", logPath);
     }
 
     if (isExisty(processDeps.env.get("EDITOR"))) {

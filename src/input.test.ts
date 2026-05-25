@@ -98,13 +98,13 @@ hello
       );
     });
 
-    it("uses AGENT_JS_EDIT env var with __FILE__ when available", async () => {
-      testProcessEnv._set("AGENT_JS_EDIT", "nano __FILE__");
+    it("uses AGENT_JS_EDIT_PROMPT env var with __FILE__ when available", async () => {
+      testProcessEnv._set("AGENT_JS_EDIT_PROMPT", "nano __FILE__");
       await spawnAndReadEditorContent();
       assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_EDIT is not set", async () => {
+    it("falls back to EDITOR env var when AGENT_JS_EDIT_PROMPT is not set", async () => {
       testProcessEnv._set("EDITOR", "vim");
       await spawnAndReadEditorContent();
       assert.strictEqual(spawned[0], "vim /tmp/agent-js-test-uuid.txt");
@@ -247,19 +247,19 @@ hello
       );
     });
 
-    it("uses AGENT_JS_EDIT env var with __FILE__ when available", () => {
+    it("uses AGENT_JS_EDIT_LOG env var with __FILE__ when available", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      testProcessEnv._set("AGENT_JS_EDIT", "nano __FILE__");
+      testProcessEnv._set("AGENT_JS_EDIT_LOG", "nano __FILE__");
       dispatch(actions.setEditorLogPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
       editLogCommand();
       assert.strictEqual(spawned, "nano /tmp/editor.log");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_EDIT is not set", () => {
+    it("falls back to EDITOR env var when AGENT_JS_EDIT_LOG is not set", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
