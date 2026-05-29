@@ -1,9 +1,10 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import type readline from "node:readline/promises";
+import readline from "node:readline/promises";
 import { dispatch, actions, selectors } from "./state.ts";
 import {
   resolveSlashCommand,
+  resolveUserInput,
   setModelCommand,
   isSameKey,
   getAvailableSlashCommands,
@@ -142,6 +143,112 @@ hello
         includeClipboardSuffix: true,
       });
       assert.strictEqual(result, "hello world\n");
+    });
+  });
+
+  describe("resolveUserInput", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      dispatch(actions.resetState());
+      dispatch(actions.resetStdout());
+      dispatch(
+        actions.setRl({
+          write: () => null,
+          prompt: () => null,
+          close: () => null,
+          line: "",
+          question: () => Promise.resolve(""),
+        } as unknown as readline.Interface),
+      );
+    });
+
+    it("returns editor input value when set and clears it", async () => {
+      dispatch(actions.setEditorInputValue("editor content"));
+      const result = await resolveUserInput();
+      assert.strictEqual(result, "editor content");
+      assert.strictEqual(selectors.getEditorInputValue(), null);
+    });
+
+    it("returns trimmed user input", async () => {
+      mock.method(selectors.getRl()!, "question", () =>
+        Promise.resolve("  hello  "),
+      );
+      const result = await resolveUserInput();
+      assert.strictEqual(result, "hello");
+      assert.strictEqual(stripAnsi(selectors.getStdout()), ">  hello  \n");
+    });
+
+    it("resolves slash commands when input starts with /", async () => {
+      dispatch(actions.setModel("old"));
+      dispatch(actions.resetStdout());
+      mock.method(selectors.getRl()!, "question", () =>
+        Promise.resolve("/model new-model"),
+      );
+      const result = await resolveUserInput();
+      assert.strictEqual(result, null);
+      assert.strictEqual(selectors.getModel(), "new-model");
+    });
+
+    it("returns null and prints error on non-abort error", async () => {
+      mock.method(selectors.getRl()!, "question", () =>
+        Promise.reject(new Error("read failed")),
+      );
+      const result = await resolveUserInput();
+      assert.strictEqual(result, null);
+      assert.ok(
+        selectors.getStdout().includes(">[unable to read rl.question result]"),
+      );
+    });
+
+    it("returns editor value when aborted by editor", async () => {
+      mock.method(selectors.getRl()!, "question", () => {
+        dispatch(actions.setEditorInputValue("from editor"));
+        const err = new Error("This operation was aborted");
+        err.name = "AbortError";
+        return Promise.reject(err);
+      });
+      const result = await resolveUserInput();
+      assert.strictEqual(result, "from editor");
+      assert.strictEqual(selectors.getEditorInputValue(), null);
+    });
+
+    it("exits on abort during exit confirmation", async () => {
+      mock.method(process, "exit", () => {
+        throw new Error("process.exit called");
+      });
+      const questionMock = mock.method(selectors.getRl()!, "question", () => {
+        const err = new Error("This operation was aborted");
+        err.name = "AbortError";
+        return Promise.reject(err);
+      });
+      await assert.rejects(resolveUserInput(), /process.exit called/);
+      assert.strictEqual(questionMock.mock.callCount(), 2);
+    });
+
+    it("returns null when user declines exit confirmation", async () => {
+      const err = new Error("This operation was aborted");
+      err.name = "AbortError";
+      const questionMock = mock.method(selectors.getRl()!, "question", () =>
+        Promise.resolve("n"),
+      );
+      questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
+      const result = await resolveUserInput();
+      assert.strictEqual(result, null);
+      assert.strictEqual(questionMock.mock.callCount(), 2);
+    });
+
+    it("exits when user confirms exit confirmation", async () => {
+      mock.method(process, "exit", () => {
+        throw new Error("process.exit called");
+      });
+      const err = new Error("This operation was aborted");
+      err.name = "AbortError";
+      const questionMock = mock.method(selectors.getRl()!, "question", () =>
+        Promise.resolve("yes"),
+      );
+      questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
+      await assert.rejects(resolveUserInput(), /process.exit called/);
+      assert.strictEqual(questionMock.mock.callCount(), 2);
     });
   });
 
