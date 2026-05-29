@@ -116,16 +116,18 @@ function abortRlQuestionForEditor(editorContent: string) {
   if (questionAbortController) {
     const rl = clearRlLine()!;
 
+    const newlineIdx = editorContent.indexOf("\n");
+
     const firstLine = compute(() => {
-      const newlineIdx = editorContent.indexOf("\n");
       if (newlineIdx === -1) return editorContent;
       return editorContent.substring(0, newlineIdx);
     });
+
     const truncatedFirstLine = compute(() => {
-      if (firstLine.length > 50) {
-        return firstLine.substring(0, 50).concat("…");
+      if (newlineIdx === -1) {
+        return firstLine.substring(0, 50);
       }
-      return firstLine;
+      return firstLine.substring(0, 50).concat("…");
     });
 
     rl.write(truncatedFirstLine);
@@ -199,7 +201,6 @@ export function initSigInt() {
   });
 }
 
-// NOTE: missing test coverage
 export async function resolveUserInput() {
   const rl = selectors.getRl();
   assert(rl !== null);
