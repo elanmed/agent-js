@@ -1,5 +1,4 @@
 import type { ModelMessage } from "ai";
-import { generateText, isLoopFinished } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { actions, dispatch, selectors } from "./state.ts";
@@ -18,7 +17,7 @@ import {
   type ToolName,
 } from "./tools.ts";
 import assert from "node:assert";
-import { fsDeps, processDeps } from "./deps.ts";
+import { aiDeps, fsDeps, processDeps } from "./deps.ts";
 
 function getLanguageModel() {
   const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
@@ -55,12 +54,12 @@ export async function resolveApiCall(userInput: string) {
   dispatch(actions.setApiStreamAbortController(new AbortController()));
   startSpinner();
   const generateTextResult = await tryCatchAsync(
-    generateText({
+    aiDeps.generateText({
       model: getLanguageModel(),
       system: systemContent,
       messages: [...selectors.getMessageParams(), inputMessageParam],
       tools: TOOLS,
-      stopWhen: isLoopFinished(),
+      stopWhen: aiDeps.isLoopFinished(),
       abortSignal: selectors.getApiStreamAbortController()!.signal,
       experimental_onToolCallStart: ({ toolCall }) => {
         switch (toolCall.toolName as ToolName) {

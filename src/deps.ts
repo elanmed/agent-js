@@ -9,6 +9,7 @@ import {
   statSync,
   globSync,
 } from "node:fs";
+import { generateText, isLoopFinished } from "ai";
 export const fsDeps = {
   readFileSync,
   writeFileSync,
@@ -33,4 +34,9 @@ export const processDeps = {
     },
   },
   cwd: () => process.cwd(),
+};
+
+export const aiDeps = {
+  generateText,
+  isLoopFinished,
 };
