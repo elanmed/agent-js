@@ -340,12 +340,9 @@ export async function resolveSlashCommand(rawInput: string) {
     return matchedCommand.content;
   }
 
-  print.error(
-    `Invalid / command detected, valid commands: ${slashCommands
-      .map((c) => c.name)
-      .concat(builtinSlashCommands)
-      .join(", ")}`,
-  );
+  printNewline();
+  print.error(`Invalid command: ${rawInput}, valid commands:`);
+  print(getCommandsStr());
   return null;
 }
 
@@ -447,7 +444,7 @@ export function editLogCommand() {
 }
 
 export function setModelCommand(rawInput: string) {
-  const parts = rawInput.trim().split(" ");
+  const parts = rawInput.trim().split(/\s+/);
   if (parts.length !== 2) {
     print.error("Usage: /model [model]");
     return;
@@ -485,22 +482,22 @@ export function printContextFilesCommand() {
   print(contextFilesFormatted);
 }
 
-export function printCommandsCommand() {
+function getCommandsStr() {
   const customCommandsFormatted = selectors
     .getSlashCommands()
     .map((command) => `- ${command.filePath}`);
 
   const builtinCommandsFormatted = builtinSlashCommands.map(
-    (command) => `- ${command}`,
+    (command) => `- /${command}`,
   );
 
-  const commandsFormatted = builtinCommandsFormatted
-    .concat(customCommandsFormatted)
-    .join("\n");
+  return builtinCommandsFormatted.concat(customCommandsFormatted).join("\n");
+}
 
+export function printCommandsCommand() {
   printNewline();
-  print.doing("Available /commands:");
-  print(commandsFormatted);
+  print.doing("Available commands:");
+  print(getCommandsStr());
 }
 
 export function isSameKey(a: Key, b: Key) {

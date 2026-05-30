@@ -493,14 +493,14 @@ Available context files:
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
         `
-Available /commands:
-- edit
-- edit-log
-- clear
-- model
-- skills
-- context
-- commands
+Available commands:
+- /edit
+- /edit-log
+- /clear
+- /model
+- /skills
+- /context
+- /commands
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -750,14 +750,14 @@ Available context files:
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
         `
-Available /commands:
-- edit
-- edit-log
-- clear
-- model
-- skills
-- context
-- commands
+Available commands:
+- /edit
+- /edit-log
+- /clear
+- /model
+- /skills
+- /context
+- /commands
 `,
       );
     });
@@ -791,7 +791,17 @@ Available /commands:
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Invalid / command detected, valid commands: known, edit, edit-log, clear, model, skills, context, commands\n",
+        `
+Invalid command: /unknown, valid commands:
+- /edit
+- /edit-log
+- /clear
+- /model
+- /skills
+- /context
+- /commands
+- /test-cwd/.agent-js/commands/known.md
+`,
       );
     });
   });
