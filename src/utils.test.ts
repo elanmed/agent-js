@@ -1,7 +1,6 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import os from "node:os";
-import crypto from "node:crypto";
+
 import {
   isAbortError,
   tryCatch,
@@ -106,8 +105,6 @@ describe("utils", () => {
   describe("createTempFile", () => {
     beforeEach(() => {
       setupFakeDeps();
-      mock.method(os, "tmpdir", () => "/tmp");
-      mock.method(crypto, "randomUUID", () => "test-uuid");
     });
 
     it("returns temp file path without initial content", () => {

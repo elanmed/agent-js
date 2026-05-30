@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import crypto from "node:crypto";
+
 import {
   debugLog,
   editorLog,
@@ -123,7 +123,6 @@ content 2
     beforeEach(() => {
       setupFakeDeps();
       mock.method(Date, "now", () => 1234567890000);
-      mock.method(crypto, "randomUUID", () => "test-uuid");
     });
 
     it("creates directory and sets path when directory does not exist", () => {

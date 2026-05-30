@@ -23,7 +23,6 @@ import {
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
-import crypto from "node:crypto";
 import os from "node:os";
 
 describe("input", () => {
@@ -44,8 +43,6 @@ describe("input", () => {
           line: "",
         } as unknown as readline.Interface),
       );
-      mock.method(crypto, "randomUUID", () => "test-uuid");
-      mock.method(os, "tmpdir", () => "/tmp");
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned.push(cmd);
       });
