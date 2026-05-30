@@ -201,7 +201,11 @@ export function initSigInt() {
   });
 }
 
-export async function resolveUserInput() {
+export async function resolveUserInput({
+  isFirstInput,
+}: {
+  isFirstInput: boolean;
+}) {
   const rl = selectors.getRl();
   assert(rl !== null);
 
@@ -211,7 +215,9 @@ export async function resolveUserInput() {
     return editorInputValue;
   }
 
-  printNewline();
+  if (!isFirstInput) {
+    printNewline();
+  }
   fencePrint("Input", { color: "yellow" });
   dispatch(actions.resetStdout());
 
@@ -294,6 +300,7 @@ const builtinSlashCommands = [
   "skills",
   "context",
   "commands",
+  "keymaps",
 ];
 
 export async function resolveSlashCommand(rawInput: string) {
@@ -329,6 +336,11 @@ export async function resolveSlashCommand(rawInput: string) {
 
   if (commandWithoutSlash === "commands") {
     printCommandsCommand();
+    return null;
+  }
+
+  if (commandWithoutSlash === "keymaps") {
+    printKeymapsCommand();
     return null;
   }
 
@@ -446,8 +458,14 @@ export function promptHistoryCommand() {
 
 export function setModelCommand(rawInput: string) {
   const parts = rawInput.trim().split(/\s+/);
+
+  if (parts.length === 1) {
+    print.doing(selectors.getModel());
+    return;
+  }
+
   if (parts.length !== 2) {
-    print.error("Usage: /model [model]");
+    print.error("Usage: /model [model]?");
     return;
   }
   const model = parts[1];
@@ -508,6 +526,19 @@ export function isSameKey(a: Key, b: Key) {
     (a.meta ?? false) === (b.meta ?? false) &&
     (a.shift ?? false) === (b.shift ?? false)
   );
+}
+
+export function printKeymapsCommand() {
+  printNewline();
+  print.doing("Keymaps:");
+  print(`- keymap-edit: ${JSON.stringify(selectors.getKeymapEditPrompt())}`);
+  print(
+    `- keymap-history: ${JSON.stringify(selectors.getKeymapPromptHistory())}`,
+  );
+  print(
+    `- keymap-edit-paste: ${JSON.stringify(selectors.getKeymapEditPastePrompt())}`,
+  );
+  print(`- keymap-clear: ${JSON.stringify(selectors.getKeymapClear())}`);
 }
 
 export function clearRlLine(): readline.Interface | null {

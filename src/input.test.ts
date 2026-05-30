@@ -137,7 +137,7 @@ hello
 
     it("returns editor input value when set and clears it", async () => {
       dispatch(actions.setEditorInputValue("editor content"));
-      const result = await resolveUserInput();
+      const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "editor content");
       assert.strictEqual(selectors.getEditorInputValue(), null);
     });
@@ -148,7 +148,7 @@ hello
       );
       mock.method(Date, "now", () => 0);
       dispatch(actions.setPromptHistoryPath("/tmp/test-history.log"));
-      const result = await resolveUserInput();
+      const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
       assert.strictEqual(stripAnsi(selectors.getStdout()), ">  hello  \n");
       assert.strictEqual(
@@ -167,7 +167,7 @@ hello
       mock.method(selectors.getRl()!, "question", () =>
         Promise.resolve("/model new-model"),
       );
-      const result = await resolveUserInput();
+      const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
       assert.strictEqual(selectors.getModel(), "new-model");
     });
@@ -176,7 +176,7 @@ hello
       mock.method(selectors.getRl()!, "question", () =>
         Promise.reject(new Error("read failed")),
       );
-      const result = await resolveUserInput();
+      const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
       assert.ok(
         selectors.getStdout().includes(">[unable to read rl.question result]"),
@@ -190,7 +190,7 @@ hello
         err.name = "AbortError";
         return Promise.reject(err);
       });
-      const result = await resolveUserInput();
+      const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "from editor");
       assert.strictEqual(selectors.getEditorInputValue(), null);
     });
@@ -204,7 +204,10 @@ hello
         err.name = "AbortError";
         return Promise.reject(err);
       });
-      await assert.rejects(resolveUserInput(), /process.exit called/);
+      await assert.rejects(
+        resolveUserInput({ isFirstInput: false }),
+        /process.exit called/,
+      );
       assert.strictEqual(questionMock.mock.callCount(), 2);
     });
 
@@ -215,7 +218,7 @@ hello
         Promise.resolve("n"),
       );
       questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
-      const result = await resolveUserInput();
+      const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
       assert.strictEqual(questionMock.mock.callCount(), 2);
     });
@@ -230,7 +233,10 @@ hello
         Promise.resolve("yes"),
       );
       questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
-      await assert.rejects(resolveUserInput(), /process.exit called/);
+      await assert.rejects(
+        resolveUserInput({ isFirstInput: false }),
+        /process.exit called/,
+      );
       assert.strictEqual(questionMock.mock.callCount(), 2);
     });
   });
@@ -256,7 +262,7 @@ hello
       assert.strictEqual(selectors.getModel(), "old-model");
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Usage: /model [model]\n",
+        "Usage: /model [model]?\n",
       );
     });
 
@@ -264,10 +270,7 @@ hello
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model");
       assert.strictEqual(selectors.getModel(), "old-model");
-      assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
-        "Usage: /model [model]\n",
-      );
+      assert.strictEqual(stripAnsi(selectors.getStdout()), "old-model\n");
     });
 
     it("handles model name with slashes", () => {
@@ -481,6 +484,7 @@ Available commands:
 - /skills
 - /context
 - /commands
+- /keymaps
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -726,6 +730,7 @@ Available commands:
 - /skills
 - /context
 - /commands
+- /keymaps
 `,
       );
     });
@@ -768,6 +773,7 @@ Invalid command: /unknown, valid commands:
 - /skills
 - /context
 - /commands
+- /keymaps
 - /test-cwd/.agent-js/commands/known.md
 `,
       );

@@ -1,12 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { getMessageFromError } from "./utils.ts";
-import {
-  print,
-  executeBat,
-  fencePrint,
-  initPrint,
-  printNewline,
-} from "./print.ts";
+import { print, executeBat, fencePrint, printNewline } from "./print.ts";
 import { initState } from "./config.ts";
 import {
   initKeypress,
@@ -20,15 +14,16 @@ import { initLogs } from "./log.ts";
 async function main() {
   initLogs();
   initState();
-  initPrint();
 
   initReadline();
   initKeypress();
   initSigInt();
 
+  let isFirstInput = true;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   while (true) {
-    const userInput = await resolveUserInput();
+    const userInput = await resolveUserInput({ isFirstInput });
+    isFirstInput = false;
     if (userInput === null) continue;
 
     if (userInput === "") {
