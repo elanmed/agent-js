@@ -38,7 +38,8 @@ function getLanguageModel() {
 }
 
 export async function resolveApiCall(userInput: string) {
-  let tempFileBefore: string | null = null;
+  const toolCallIdToTempFile = new Map<string, string>();
+
   const inputMessageParam: ModelMessage = {
     role: "user",
     content: userInput,
@@ -66,7 +67,8 @@ export async function resolveApiCall(userInput: string) {
           case "insert_lines":
           case "str_replace": {
             const { path } = objectWithPathSchema.parse(toolCall.input);
-            tempFileBefore = createTempFile({ initialContentPath: path });
+            const tempFileBefore = createTempFile({ initialContentPath: path });
+            toolCallIdToTempFile.set(toolCall.toolCallId, tempFileBefore);
             break;
           }
         }
@@ -75,10 +77,14 @@ export async function resolveApiCall(userInput: string) {
         switch (toolCall.toolName as ToolName) {
           case "insert_lines":
           case "str_replace": {
-            assert(tempFileBefore !== null);
+            const tempFileBefore = toolCallIdToTempFile.get(
+              toolCall.toolCallId,
+            );
+            assert(tempFileBefore !== undefined);
+
             if (!success) {
               fsDeps.unlinkSync(tempFileBefore);
-              tempFileBefore = null;
+              toolCallIdToTempFile.delete(toolCall.toolCallId);
               return;
             }
 
@@ -93,7 +99,7 @@ export async function resolveApiCall(userInput: string) {
             });
             fsDeps.unlinkSync(tempFileBefore);
             fsDeps.unlinkSync(tempFileAfter);
-            tempFileBefore = null;
+            toolCallIdToTempFile.delete(toolCall.toolCallId);
             break;
           }
         }
