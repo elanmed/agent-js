@@ -9,17 +9,16 @@ import {
   deleteExpiredPromptHistory,
 } from "./log.ts";
 import { dispatch, actions, selectors } from "./state.ts";
-import { testFs, setupFakeDeps } from "./test-helpers.ts";
+import { testFs, setupTestContext } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 
 describe("log", () => {
   beforeEach(() => {
-    dispatch(actions.resetState());
+    setupTestContext();
   });
 
   describe("debugLog", () => {
     beforeEach(() => {
-      setupFakeDeps();
       mock.method(Date, "now", () => 1700000000000);
     });
 
@@ -59,7 +58,6 @@ describe("log", () => {
 
   describe("appendToPromptHistory", () => {
     beforeEach(() => {
-      setupFakeDeps();
       mock.method(Date, "now", () => 1700000000000);
     });
 
@@ -102,10 +100,6 @@ content 2
   });
 
   describe("resetDebugLog", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("does nothing when log file does not exist", () => {
       resetDebugLog();
       assert.equal(testFs._files.has("/test-cwd/.agent-js/debug.log"), false);
@@ -121,7 +115,6 @@ content 2
 
   describe("initPromptHistory", () => {
     beforeEach(() => {
-      setupFakeDeps();
       mock.method(Date, "now", () => 1234567890000);
     });
 
@@ -156,7 +149,6 @@ content 2
 
   describe("deleteExpiredPromptHistory", () => {
     beforeEach(() => {
-      setupFakeDeps();
       mock.method(Date, "now", () => 1000000000000);
     });
 

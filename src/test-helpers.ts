@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import childProcess from "node:child_process";
 import { mock } from "node:test";
 import { fsDeps, processDeps } from "./deps.ts";
+import { dispatch, actions } from "./state.ts";
 
 export interface FakeFsDeps {
   _files: Map<string, string>;
@@ -141,12 +142,28 @@ export function setupFakeDeps() {
   }
 
   testProcessEnv._clear();
-  mock.method(os, "homedir", () => "/fake-home");
-  mock.method(os, "tmpdir", () => "/tmp");
-  mock.method(crypto, "randomUUID", () => "test-uuid");
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());
+}
+
+export function makeFakeRl(overrides: object = {}) {
+  return {
+    write: () => null,
+    prompt: () => null,
+    line: "",
+    close: () => null,
+    question: () => Promise.resolve(""),
+    ...overrides,
+  };
+}
+
+export function setupTestContext() {
+  dispatch(actions.resetState());
+  setupFakeDeps();
+  mock.method(os, "homedir", () => "/fake-home");
+  mock.method(os, "tmpdir", () => "/tmp");
+  mock.method(crypto, "randomUUID", () => "test-uuid");
 }
 
 type ExecCallback = (

@@ -9,12 +9,11 @@ import {
   getMessageFromError,
   createTempFile,
 } from "./utils.ts";
-import { dispatch, actions } from "./state.ts";
-import { testFs, setupFakeDeps } from "./test-helpers.ts";
+import { testFs, setupTestContext } from "./test-helpers.ts";
 
 describe("utils", () => {
   beforeEach(() => {
-    dispatch(actions.resetState());
+    setupTestContext();
   });
 
   describe("getMessageFromError", () => {
@@ -103,10 +102,6 @@ describe("utils", () => {
   });
 
   describe("createTempFile", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("returns temp file path without initial content", () => {
       const result = createTempFile();
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");

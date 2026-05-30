@@ -18,7 +18,8 @@ import {
 import {
   testFs,
   testProcessEnv,
-  setupFakeDeps,
+  setupTestContext,
+  makeFakeRl,
   mockExec,
   stripAnsi,
 } from "./test-helpers.ts";
@@ -28,21 +29,18 @@ import os from "node:os";
 
 describe("input", () => {
   beforeEach(() => {
-    dispatch(actions.resetState());
+    setupTestContext();
   });
 
   describe("spawnAndReadEditorContent", () => {
     let spawned: string[];
 
     beforeEach(() => {
-      setupFakeDeps();
       spawned = [];
       dispatch(
-        actions.setRl({
-          write: () => null,
-          prompt: () => null,
-          line: "",
-        } as unknown as readline.Interface),
+        actions.setRl(
+          makeFakeRl({ line: "" }) as unknown as readline.Interface,
+        ),
       );
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned.push(cmd);
@@ -115,11 +113,9 @@ hello
 
     it("includes clipboard content when includeClipboardSuffix is true", async () => {
       dispatch(
-        actions.setRl({
-          write: () => null,
-          prompt: () => null,
-          line: "hello ",
-        } as unknown as readline.Interface),
+        actions.setRl(
+          makeFakeRl({ line: "hello " }) as unknown as readline.Interface,
+        ),
       );
       mock.method(os, "platform", () => "linux");
       mockExec({ stdout: "world" });
@@ -135,18 +131,8 @@ hello
 
   describe("resolveUserInput", () => {
     beforeEach(() => {
-      setupFakeDeps();
-      dispatch(actions.resetState());
       dispatch(actions.resetStdout());
-      dispatch(
-        actions.setRl({
-          write: () => null,
-          prompt: () => null,
-          close: () => null,
-          line: "",
-          question: () => Promise.resolve(""),
-        } as unknown as readline.Interface),
-      );
+      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
     });
 
     it("returns editor input value when set and clears it", async () => {
@@ -251,8 +237,6 @@ hello
 
   describe("setModelCommand", () => {
     beforeEach(() => {
-      setupFakeDeps();
-      dispatch(actions.resetState());
       dispatch(actions.resetStdout());
     });
 
@@ -311,8 +295,6 @@ hello
 
   describe("clearCommand", () => {
     beforeEach(() => {
-      setupFakeDeps();
-      dispatch(actions.resetState());
       dispatch(actions.resetStdout());
     });
 
@@ -343,19 +325,12 @@ hello
 
   describe("promptHistoryCommand", () => {
     beforeEach(() => {
-      setupFakeDeps();
-      dispatch(actions.resetState());
       mock.method(childProcess, "spawnSync", () => undefined);
     });
 
     it("prints warning when log does not exist", () => {
       dispatch(actions.setPromptHistoryPath("/tmp/nonexistent.log"));
-      dispatch(
-        actions.setRl({
-          write: () => null,
-          prompt: () => null,
-        } as unknown as readline.Interface),
-      );
+      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
       promptHistoryCommand();
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
@@ -401,12 +376,7 @@ hello
     it("prints warning when log cannot be read", () => {
       dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
-      dispatch(
-        actions.setRl({
-          write: () => null,
-          prompt: () => null,
-        } as unknown as readline.Interface),
-      );
+      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
@@ -570,10 +540,6 @@ Available commands:
   });
 
   describe("getAvailableSlashCommands", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("returns empty array when no commands found", () => {
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, []);
@@ -683,13 +649,10 @@ Available commands:
 
   describe("resolveSlashCommand", () => {
     beforeEach(() => {
-      setupFakeDeps();
       dispatch(
-        actions.setRl({
-          write: () => null,
-          prompt: () => null,
-          line: "",
-        } as unknown as readline.Interface),
+        actions.setRl(
+          makeFakeRl({ line: "" }) as unknown as readline.Interface,
+        ),
       );
       mock.method(childProcess, "spawnSync", () => undefined);
     });
@@ -705,12 +668,7 @@ Available commands:
     });
 
     it("handles /history command", async () => {
-      dispatch(
-        actions.setRl({
-          write: () => null,
-          prompt: () => null,
-        } as unknown as readline.Interface),
-      );
+      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
       const result = await resolveSlashCommand("/history");
       assert.strictEqual(result, null);
     });

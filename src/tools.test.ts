@@ -12,14 +12,18 @@ import {
   printGitDiff,
   execGitDiff,
 } from "./tools.ts";
-import { testFs, setupFakeDeps, mockExec, stripAnsi } from "./test-helpers.ts";
+import {
+  testFs,
+  setupTestContext,
+  mockExec,
+  stripAnsi,
+} from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import { dispatch, actions, selectors } from "./state.ts";
-import { processDeps } from "./deps.ts";
 
 describe("tools", () => {
   beforeEach(() => {
-    mock.method(processDeps.stdout, "write", () => undefined);
+    setupTestContext();
   });
 
   describe("executeBashTool", () => {
@@ -51,10 +55,6 @@ describe("tools", () => {
   });
 
   describe("executeCreateFileTool", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("creates a new file and returns success", () => {
       const result = executeCreateFileTool(
         { content: "hello world", path: "/test/new.txt" },
@@ -94,10 +94,6 @@ describe("tools", () => {
   });
 
   describe("executeViewFileTool", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("returns file contents with line numbers", () => {
       testFs._files.set("/test/lines.txt", "aaa\nbbb\nccc");
       const result = executeViewFileTool({ path: "/test/lines.txt" });
@@ -229,10 +225,6 @@ beta.txt`,
   });
 
   describe("executeStrReplaceTool", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("replaces old_str with new_str when exactly one match exists", () => {
       testFs._files.set("/test/file.txt", "foo bar baz");
       const result = executeStrReplaceTool(
@@ -282,10 +274,6 @@ beta.txt`,
   });
 
   describe("executeInsertLinesTool", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("inserts text after a specific line", () => {
       testFs._files.set("/test/file.txt", "line1\nline2\nline3");
       const result = executeInsertLinesTool(
@@ -635,8 +623,6 @@ bottom`,
 
   describe("printGitDiff", () => {
     beforeEach(() => {
-      setupFakeDeps();
-      dispatch(actions.resetState());
       dispatch(actions.resetStdout());
     });
 

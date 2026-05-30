@@ -2,7 +2,12 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { dispatch, actions, selectors } from "./state.ts";
 import { resolveApiCall } from "./api.ts";
-import { setupFakeDeps, testFs, mockExec, stripAnsi } from "./test-helpers.ts";
+import {
+  setupTestContext,
+  testFs,
+  mockExec,
+  stripAnsi,
+} from "./test-helpers.ts";
 import { aiDeps } from "./deps.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import type { ModelMessage } from "ai";
@@ -22,8 +27,7 @@ function makeGenerateTextResult(overrides: Record<string, unknown> = {}) {
 
 describe("api", () => {
   beforeEach(() => {
-    dispatch(actions.resetState());
-    setupFakeDeps();
+    setupTestContext();
     dispatch(actions.setProvider("anthropic"));
     dispatch(actions.setModel("claude-sonnet-4-20250514"));
     dispatch(actions.setBaseURL("https://api.anthropic.com"));

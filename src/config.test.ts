@@ -1,13 +1,13 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { dispatch, actions, selectors } from "./state.ts";
+import { selectors } from "./state.ts";
 import { initState, DEFAULT_CONFIG } from "./config.ts";
 import {
   getGlobalConfigPath,
   getLocalConfigPath,
   getGlobalContextDir,
 } from "./paths.ts";
-import { testFs, setupFakeDeps } from "./test-helpers.ts";
+import { testFs, setupTestContext } from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
 
 const defaultConfig = {
@@ -17,8 +17,7 @@ const defaultConfig = {
 
 describe("config", () => {
   beforeEach(() => {
-    dispatch(actions.resetState());
-    setupFakeDeps();
+    setupTestContext();
     mock.method(parseCliArgsDeps, "getArgv", () => ["node", "script.js"]);
   });
 

@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import { testFs, setupFakeDeps } from "./test-helpers.ts";
+import { testFs, setupTestContext } from "./test-helpers.ts";
 import { getGlobalContextDir } from "./paths.ts";
 import {
   getContextStr,
@@ -14,14 +14,10 @@ import { dispatch, actions } from "./state.ts";
 
 describe("context", () => {
   beforeEach(() => {
-    dispatch(actions.resetState());
+    setupTestContext();
   });
 
   describe("getContextStr", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("returns empty string when no AGENTS.md files found", () => {
       const result = getContextStr(getContextEntries());
       assert.equal(result, "");
@@ -132,10 +128,6 @@ Content: global content
   });
 
   describe("getSkillsStr", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("returns empty string when no skills are found", () => {
       const result = getSkillsStr([]);
       assert.equal(result, "");
@@ -445,10 +437,6 @@ would benefit from specialized instructions.
   });
 
   describe("getSkillJSON", () => {
-    beforeEach(() => {
-      setupFakeDeps();
-    });
-
     it("returns null when file does not exist", () => {
       const result = getSkillJSON("/some/dir/SKILL.md");
       assert.equal(result, null);
