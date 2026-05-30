@@ -285,7 +285,15 @@ async function resolveExitConfirmation() {
   return;
 }
 
-const builtinSlashCommands = ["edit", "edit-log", "clear", "model", "skills"];
+const builtinSlashCommands = [
+  "edit",
+  "edit-log",
+  "clear",
+  "model",
+  "skills",
+  "context",
+  "commands",
+];
 
 export async function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);

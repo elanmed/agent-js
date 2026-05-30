@@ -64,27 +64,6 @@ describe("config", () => {
       assert.equal(selectors.getProvider(), "anthropic");
     });
 
-    it("uses its editorLog over the global config, default config", () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          editorLog: false,
-        }),
-      );
-      testFs._files.set(
-        getLocalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          editorLog: true,
-        }),
-      );
-
-      initState();
-
-      assert.equal(selectors.getEditorLog(), true);
-    });
-
     it("uses its diffStyle over the global config, default config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
@@ -295,19 +274,6 @@ describe("config", () => {
 
         initState();
         assert.equal(selectors.getProvider(), "anthropic");
-      });
-
-      it("uses its editorLog over the default config", () => {
-        testFs._files.set(
-          getGlobalConfigPath(),
-          JSON.stringify({
-            ...defaultConfig,
-            editorLog: true,
-          }),
-        );
-
-        initState();
-        assert.equal(selectors.getEditorLog(), true);
       });
 
       it("uses its diffStyle over the default config", () => {

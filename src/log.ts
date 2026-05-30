@@ -24,8 +24,6 @@ export function debugLog(content: string) {
 }
 
 export function editorLog(content: string) {
-  if (!selectors.getEditorLog()) return;
-
   const path = selectors.getEditorLogPath();
   if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
@@ -54,13 +52,7 @@ export function resetDebugLog() {
 export function initEditorLog() {
   const editorLogsDir = getEditorLogsDir();
   if (!fsDeps.existsSync(editorLogsDir)) {
-    const mkdirResult = tryCatch(() =>
-      fsDeps.mkdirSync(editorLogsDir, { recursive: true }),
-    );
-    if (!mkdirResult.ok) {
-      dispatch(actions.setEditorLog(false));
-      return;
-    }
+    tryCatch(() => fsDeps.mkdirSync(editorLogsDir, { recursive: true }));
   }
 
   const uuid = crypto.randomUUID().replaceAll("-", "");

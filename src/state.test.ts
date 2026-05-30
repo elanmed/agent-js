@@ -211,12 +211,6 @@ describe("state", () => {
     assert.equal(selectors.getDebugLog(), true);
   });
 
-  it("set-editor-log", () => {
-    assert.equal(selectors.getEditorLog(), false);
-    dispatch(actions.setEditorLog(true));
-    assert.equal(selectors.getEditorLog(), true);
-  });
-
   it("set-editor-log-path", () => {
     assert.equal(selectors.getEditorLogPath(), "");
     dispatch(actions.setEditorLogPath("/tmp/editor.log"));

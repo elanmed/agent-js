@@ -31,7 +31,6 @@ interface State {
     customSkillDirs: string[];
     stdout: string;
     debugLog: boolean;
-    editorLog: boolean;
     editorLogPath: string;
     contextEntries: ContextEntry[];
     contextStr: string;
@@ -69,7 +68,6 @@ const initialState: State = {
     customSkillDirs: [],
     stdout: "",
     debugLog: false,
-    editorLog: false,
     editorLogPath: "",
     contextEntries: [],
     contextStr: "",
@@ -474,15 +472,6 @@ const reducer = (state: State, action: Action): State => {
       };
       return next;
     }
-    case "set-editor-log": {
-      const before = state.appState.editorLog;
-      const next = {
-        ...state,
-        appState: { ...state.appState, editorLog: action.payload },
-      };
-      logStateChange(action.type, String(before), String(action.payload));
-      return next;
-    }
     case "set-editor-log-path": {
       const before = state.appState.editorLogPath;
       const next = {
@@ -694,10 +683,6 @@ const setDebugLog = (debugLog: boolean): Action => {
   return { type: "set-debug-log", payload: debugLog };
 };
 
-const setEditorLog = (editorLog: boolean): Action => {
-  return { type: "set-editor-log", payload: editorLog };
-};
-
 const setEditorLogPath = (editorLogPath: string): Action => {
   return { type: "set-editor-log-path", payload: editorLogPath };
 };
@@ -761,7 +746,6 @@ export const actions = {
   resetStdout,
   appendToStdout,
   setDebugLog,
-  setEditorLog,
   setEditorLogPath,
   setContextEntries,
   setContextStr,
@@ -783,7 +767,6 @@ const getCustomSlashCommandDirs = () =>
 const getCustomSkillDirs = () => getState().appState.customSkillDirs;
 const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
-const getEditorLog = () => getState().appState.editorLog;
 const getEditorLogPath = () => getState().appState.editorLogPath;
 const getContextEntries = () => getState().appState.contextEntries;
 const getContextStr = () => getState().appState.contextStr;
@@ -825,7 +808,6 @@ export const selectors = {
   getCustomSkillDirs,
   getStdout,
   getDebugLog,
-  getEditorLog,
   getEditorLogPath,
   getContextEntries,
   getContextStr,

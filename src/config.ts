@@ -161,13 +161,6 @@ export function initState() {
   if (defaultedBaseURL) dispatch(actions.setBaseURL(defaultedBaseURL));
   dispatch(actions.setProvider(defaultedProvider));
   dispatch(
-    actions.setEditorLog(
-      localConfig.editorLog ??
-        globalConfig.editorLog ??
-        DEFAULT_CONFIG.editorLog,
-    ),
-  );
-  dispatch(
     actions.setDiffStyle(
       localConfig.diffStyle ??
         globalConfig.diffStyle ??

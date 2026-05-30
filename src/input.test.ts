@@ -81,7 +81,6 @@ describe("input", () => {
 
     it("returns normalized content and logs it", async () => {
       mock.method(Date, "now", () => 0);
-      dispatch(actions.setEditorLog(true));
       dispatch(actions.setEditorLogPath("/tmp/editor.log"));
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/agent-js-test-uuid.txt", "  hello  ");
@@ -500,6 +499,8 @@ Available /commands:
 - clear
 - model
 - skills
+- context
+- commands
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -755,6 +756,8 @@ Available /commands:
 - clear
 - model
 - skills
+- context
+- commands
 `,
       );
     });
@@ -788,7 +791,7 @@ Available /commands:
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Invalid / command detected, valid commands: known, edit, edit-log, clear, model, skills\n",
+        "Invalid / command detected, valid commands: known, edit, edit-log, clear, model, skills, context, commands\n",
       );
     });
   });

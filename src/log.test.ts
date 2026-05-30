@@ -63,22 +63,13 @@ describe("log", () => {
       mock.method(Date, "now", () => 1700000000000);
     });
 
-    it("does nothing when editorLog is disabled", () => {
-      dispatch(actions.setEditorLog(false));
-      dispatch(actions.setEditorLogPath("/test/editor.log"));
-      editorLog("test message");
-      assert.equal(testFs._files.has("/test/editor.log"), false);
-    });
-
     it("creates directory when log file does not exist", () => {
-      dispatch(actions.setEditorLog(true));
       dispatch(actions.setEditorLogPath("/test/editor.log"));
       editorLog("test message");
       assert.equal(testFs._dirs.has("/test"), true);
     });
 
     it("appends content with timestamp and separator", () => {
-      dispatch(actions.setEditorLog(true));
       dispatch(actions.setEditorLogPath("/test/editor.log"));
       editorLog("test content");
       assert.equal(
@@ -92,7 +83,6 @@ test content
     });
 
     it("appends multiple messages with separators", () => {
-      dispatch(actions.setEditorLog(true));
       dispatch(actions.setEditorLogPath("/test/editor.log"));
       editorLog("content 1");
       editorLog("content 2");
@@ -137,13 +127,11 @@ content 2
     });
 
     it("creates directory and sets path when directory does not exist", () => {
-      dispatch(actions.setEditorLog(true));
       initEditorLog();
       assert.equal(
         testFs._dirs.has("/fake-home/.config/.agent-js/editor"),
         true,
       );
-      assert.equal(selectors.getEditorLog(), true);
       assert.equal(
         selectors.getEditorLogPath(),
         "/fake-home/.config/.agent-js/editor/editor-testuuid-1234567890000.log",
@@ -151,17 +139,14 @@ content 2
     });
 
     it("disables editor log when mkdir fails", () => {
-      dispatch(actions.setEditorLog(true));
       mock.method(fsDeps, "existsSync", () => false);
       mock.method(fsDeps, "mkdirSync", () => {
         throw new Error("Permission denied");
       });
       initEditorLog();
-      assert.equal(selectors.getEditorLog(), false);
     });
 
     it("generates correct log path with uuid and timestamp, stripping dashes", () => {
-      dispatch(actions.setEditorLog(true));
       initEditorLog();
       assert.equal(
         selectors.getEditorLogPath(),
