@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   debugLog,
-  editorLog,
+  appendToPromptHistory,
   resetDebugLog,
-  initEditorLog,
-  deleteExpiredEditorLogs,
+  initPromptHistory,
+  deleteExpiredPromptHistory,
 } from "./log.ts";
 import { dispatch, actions, selectors } from "./state.ts";
 import { testFs, setupFakeDeps } from "./test-helpers.ts";
@@ -57,21 +57,21 @@ describe("log", () => {
     });
   });
 
-  describe("editorLog", () => {
+  describe("appendToPromptHistory", () => {
     beforeEach(() => {
       setupFakeDeps();
       mock.method(Date, "now", () => 1700000000000);
     });
 
     it("creates directory when log file does not exist", () => {
-      dispatch(actions.setEditorLogPath("/test/editor.log"));
-      editorLog("test message");
+      dispatch(actions.setPromptHistoryPath("/test/editor.log"));
+      appendToPromptHistory("test message");
       assert.equal(testFs._dirs.has("/test"), true);
     });
 
     it("appends content with timestamp and separator", () => {
-      dispatch(actions.setEditorLogPath("/test/editor.log"));
-      editorLog("test content");
+      dispatch(actions.setPromptHistoryPath("/test/editor.log"));
+      appendToPromptHistory("test content");
       assert.equal(
         testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z
@@ -83,9 +83,9 @@ test content
     });
 
     it("appends multiple messages with separators", () => {
-      dispatch(actions.setEditorLogPath("/test/editor.log"));
-      editorLog("content 1");
-      editorLog("content 2");
+      dispatch(actions.setPromptHistoryPath("/test/editor.log"));
+      appendToPromptHistory("content 1");
+      appendToPromptHistory("content 2");
       assert.equal(
         testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z
@@ -119,130 +119,130 @@ content 2
     });
   });
 
-  describe("initEditorLog", () => {
+  describe("initPromptHistory", () => {
     beforeEach(() => {
       setupFakeDeps();
       mock.method(Date, "now", () => 1234567890000);
     });
 
     it("creates directory and sets path when directory does not exist", () => {
-      initEditorLog();
+      initPromptHistory();
       assert.equal(
-        testFs._dirs.has("/fake-home/.config/.agent-js/editor"),
+        testFs._dirs.has("/fake-home/.config/.agent-js/history"),
         true,
       );
       assert.equal(
-        selectors.getEditorLogPath(),
-        "/fake-home/.config/.agent-js/editor/editor-testuuid-1234567890000.log",
+        selectors.getPromptHistoryPath(),
+        "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
       );
     });
 
-    it("disables editor log when mkdir fails", () => {
+    it("disables history when mkdir fails", () => {
       mock.method(fsDeps, "existsSync", () => false);
       mock.method(fsDeps, "mkdirSync", () => {
         throw new Error("Permission denied");
       });
-      initEditorLog();
+      initPromptHistory();
     });
 
     it("generates correct log path with uuid and timestamp, stripping dashes", () => {
-      initEditorLog();
+      initPromptHistory();
       assert.equal(
-        selectors.getEditorLogPath(),
-        "/fake-home/.config/.agent-js/editor/editor-testuuid-1234567890000.log",
+        selectors.getPromptHistoryPath(),
+        "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
       );
     });
   });
 
-  describe("deleteExpiredEditorLogs", () => {
+  describe("deleteExpiredPromptHistory", () => {
     beforeEach(() => {
       setupFakeDeps();
       mock.method(Date, "now", () => 1000000000000);
     });
 
     it("returns early when directory does not exist", () => {
-      deleteExpiredEditorLogs();
+      deleteExpiredPromptHistory();
       assert.equal(
-        testFs._dirs.has("/fake-home/.config/.agent-js/editor"),
+        testFs._dirs.has("/fake-home/.config/.agent-js/history"),
         false,
       );
     });
 
     it("deletes expired files older than 24 hours", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/editor/editor-uuid-999900000000.log",
+        "/fake-home/.config/.agent-js/history/prompt-history-uuid-999900000000.log",
         "old",
       );
-      deleteExpiredEditorLogs();
+      deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/editor/editor-uuid-999900000000.log",
+          "/fake-home/.config/.agent-js/history/prompt-history-uuid-999900000000.log",
         ),
         false,
       );
     });
 
     it("keeps files newer than 24 hours", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/editor/editor-uuid-999990000000.log",
+        "/fake-home/.config/.agent-js/history/prompt-history-uuid-999990000000.log",
         "new",
       );
-      deleteExpiredEditorLogs();
+      deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/editor/editor-uuid-999990000000.log",
+          "/fake-home/.config/.agent-js/history/prompt-history-uuid-999990000000.log",
         ),
         true,
       );
     });
 
     it("skips files without correct format", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/editor/random-file.log",
+        "/fake-home/.config/.agent-js/history/random-file.log",
         "",
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/editor/other-uuid-123-notimestamp.log",
+        "/fake-home/.config/.agent-js/history/other-uuid-123-notimestamp.log",
         "",
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/editor/editor-uuid-999990000001.log",
+        "/fake-home/.config/.agent-js/history/prompt-history-uuid-999990000001.log",
         "",
       );
-      deleteExpiredEditorLogs();
+      deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/editor/random-file.log",
+          "/fake-home/.config/.agent-js/history/random-file.log",
         ),
         true,
       );
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/editor/other-uuid-123-notimestamp.log",
+          "/fake-home/.config/.agent-js/history/other-uuid-123-notimestamp.log",
         ),
         true,
       );
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/editor/editor-uuid-999990000001.log",
+          "/fake-home/.config/.agent-js/history/prompt-history-uuid-999990000001.log",
         ),
         true,
       );
     });
 
-    it("skips non-editor files with 3 parts", () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/editor");
+    it("skips non-prompt-history files with 4 parts", () => {
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/editor/other-uuid-999997600000.log",
+        "/fake-home/.config/.agent-js/history/other-uuid-999997600000.log",
         "",
       );
-      deleteExpiredEditorLogs();
+      deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/editor/other-uuid-999997600000.log",
+          "/fake-home/.config/.agent-js/history/other-uuid-999997600000.log",
         ),
         true,
       );

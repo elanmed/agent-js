@@ -9,7 +9,7 @@ import {
   isSameKey,
   getAvailableSlashCommands,
   clearCommand,
-  editLogCommand,
+  promptHistoryCommand,
   printSkillsCommand,
   printContextFilesCommand,
   printCommandsCommand,
@@ -79,7 +79,7 @@ describe("input", () => {
 
     it("returns normalized content and logs it", async () => {
       mock.method(Date, "now", () => 0);
-      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/agent-js-test-uuid.txt", "  hello  ");
       });
@@ -96,13 +96,13 @@ hello
       );
     });
 
-    it("uses AGENT_JS_EDIT_PROMPT env var with __FILE__ when available", async () => {
-      testProcessEnv._set("AGENT_JS_EDIT_PROMPT", "nano __FILE__");
+    it("uses AGENT_JS_EDIT env var with __FILE__ when available", async () => {
+      testProcessEnv._set("AGENT_JS_EDIT", "nano __FILE__");
       await spawnAndReadEditorContent();
       assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_EDIT_PROMPT is not set", async () => {
+    it("falls back to EDITOR env var when AGENT_JS_EDIT is not set", async () => {
       testProcessEnv._set("EDITOR", "vim");
       await spawnAndReadEditorContent();
       assert.strictEqual(spawned[0], "vim /tmp/agent-js-test-uuid.txt");
@@ -331,7 +331,7 @@ hello
     });
   });
 
-  describe("editLogCommand", () => {
+  describe("promptHistoryCommand", () => {
     beforeEach(() => {
       setupFakeDeps();
       dispatch(actions.resetState());
@@ -339,41 +339,41 @@ hello
     });
 
     it("prints warning when log does not exist", () => {
-      dispatch(actions.setEditorLogPath("/tmp/nonexistent.log"));
+      dispatch(actions.setPromptHistoryPath("/tmp/nonexistent.log"));
       dispatch(
         actions.setRl({
           write: () => null,
           prompt: () => null,
         } as unknown as readline.Interface),
       );
-      editLogCommand();
+      promptHistoryCommand();
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "[Edit log does not exist]\n",
+        "[History does not exist]\n",
       );
     });
 
-    it("uses AGENT_JS_EDIT_LOG env var with __FILE__ when available", () => {
+    it("uses AGENT_JS_HISTORY env var with __FILE__ when available", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      testProcessEnv._set("AGENT_JS_EDIT_LOG", "nano __FILE__");
-      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      testProcessEnv._set("AGENT_JS_HISTORY", "nano __FILE__");
+      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
-      editLogCommand();
+      promptHistoryCommand();
       assert.strictEqual(spawned, "nano /tmp/editor.log");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_EDIT_LOG is not set", () => {
+    it("falls back to EDITOR env var when AGENT_JS_HISTORY is not set", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
       testProcessEnv._set("EDITOR", "vim");
-      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
-      editLogCommand();
+      promptHistoryCommand();
       assert.strictEqual(spawned, 'vim "/tmp/editor.log"');
     });
 
@@ -382,14 +382,14 @@ hello
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
-      editLogCommand();
+      promptHistoryCommand();
       assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
     });
 
     it("prints warning when log cannot be read", () => {
-      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "log content");
       dispatch(
         actions.setRl({
@@ -400,20 +400,20 @@ hello
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
-      editLogCommand();
+      promptHistoryCommand();
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "[Cannot read edit log]\n",
+        "[Cannot read history]\n",
       );
     });
 
     it("restores original log content after editing", () => {
-      dispatch(actions.setEditorLogPath("/tmp/editor.log"));
+      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
       testFs._files.set("/tmp/editor.log", "original content");
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/editor.log", "modified by editor");
       });
-      editLogCommand();
+      promptHistoryCommand();
       assert.strictEqual(
         testFs._files.get("/tmp/editor.log"),
         "original content",
@@ -495,7 +495,7 @@ Available context files:
         `
 Available commands:
 - /edit
-- /edit-log
+- /history
 - /clear
 - /model
 - /skills
@@ -694,14 +694,14 @@ Available commands:
       assert.strictEqual(result, null);
     });
 
-    it("handles /edit-log command", async () => {
+    it("handles /history command", async () => {
       dispatch(
         actions.setRl({
           write: () => null,
           prompt: () => null,
         } as unknown as readline.Interface),
       );
-      const result = await resolveSlashCommand("/edit-log");
+      const result = await resolveSlashCommand("/history");
       assert.strictEqual(result, null);
     });
 
@@ -752,7 +752,7 @@ Available context files:
         `
 Available commands:
 - /edit
-- /edit-log
+- /history
 - /clear
 - /model
 - /skills
@@ -794,7 +794,7 @@ Available commands:
         `
 Invalid command: /unknown, valid commands:
 - /edit
-- /edit-log
+- /history
 - /clear
 - /model
 - /skills

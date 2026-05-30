@@ -42,6 +42,6 @@ export function getDebugLogPath() {
   return join(getLocalConfigDir(), "debug.log");
 }
 
-export function getEditorLogsDir() {
-  return join(getGlobalConfigDir(), "editor");
+export function getPromptHistoryDir() {
+  return join(getGlobalConfigDir(), "history");
 }

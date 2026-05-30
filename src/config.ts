@@ -34,13 +34,12 @@ const ConfigSchema = z.object({
   model: z.string().optional(),
   baseURL: z.string().optional(),
   provider: z.enum(["anthropic", "openai-compatible"]).optional(),
-  editorLog: z.boolean().optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
   keymaps: z
     .object({
       edit: KeySchema.optional(),
       editPaste: KeySchema.optional(),
-      editLog: KeySchema.optional(),
+      history: KeySchema.optional(),
       clear: KeySchema.optional(),
     })
     .optional(),
@@ -54,7 +53,6 @@ export type Key = z.infer<typeof KeySchema>;
 interface DefaultConfig {
   model: string;
   provider: Provider;
-  editorLog: boolean;
   pricingPerModel: Record<
     string,
     {
@@ -67,7 +65,7 @@ interface DefaultConfig {
   keymaps: {
     edit: Key;
     editPaste: Key;
-    editLog: Key;
+    history: Key;
     clear: Key;
   };
   customSlashCommandDirs: string[];
@@ -76,7 +74,6 @@ interface DefaultConfig {
 
 export const DEFAULT_CONFIG: DefaultConfig = {
   provider: "openai-compatible",
-  editorLog: true,
   pricingPerModel: {},
   model: MISSING,
   keymaps: {
@@ -88,7 +85,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
       name: "v",
       ctrl: true,
     },
-    editLog: {
+    history: {
       name: "o",
       ctrl: true,
     },
@@ -180,24 +177,24 @@ export function initState() {
     ),
   );
   dispatch(
-    actions.setKeymapEdit(
+    actions.setKeymapEditPrompt(
       localConfig.keymaps?.edit ??
         globalConfig.keymaps?.edit ??
         DEFAULT_CONFIG.keymaps.edit,
     ),
   );
   dispatch(
-    actions.setKeymapEditPaste(
+    actions.setKeymapEditPastePrompt(
       localConfig.keymaps?.editPaste ??
         globalConfig.keymaps?.editPaste ??
         DEFAULT_CONFIG.keymaps.editPaste,
     ),
   );
   dispatch(
-    actions.setKeymapEditLog(
-      localConfig.keymaps?.editLog ??
-        globalConfig.keymaps?.editLog ??
-        DEFAULT_CONFIG.keymaps.editLog,
+    actions.setKeymapPromptHistory(
+      localConfig.keymaps?.history ??
+        globalConfig.keymaps?.history ??
+        DEFAULT_CONFIG.keymaps.history,
     ),
   );
   dispatch(

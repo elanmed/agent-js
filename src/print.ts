@@ -93,15 +93,17 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
 export function initPrint() {
   fencePrint("agent-js", { color: "green" });
   print.infoSubtle(`model: ${selectors.getModel()}`);
-  print.infoSubtle(`keymap-edit: ${JSON.stringify(selectors.getKeymapEdit())}`);
   print.infoSubtle(
-    `keymap-edit-log: ${JSON.stringify(selectors.getKeymapEditLog())}`,
+    `keymap-edit: ${JSON.stringify(selectors.getKeymapEditPrompt())}`,
+  );
+  print.infoSubtle(
+    `keymap-history: ${JSON.stringify(selectors.getKeymapPromptHistory())}`,
   );
   print.infoSubtle(
     `keymap-clear: ${JSON.stringify(selectors.getKeymapClear())}`,
   );
   print.infoSubtle(
-    `keymap-edit-paste: ${JSON.stringify(selectors.getKeymapEditPaste())}`,
+    `keymap-edit-paste: ${JSON.stringify(selectors.getKeymapEditPastePrompt())}`,
   );
 }
 

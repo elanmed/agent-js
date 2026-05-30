@@ -10,8 +10,6 @@ import {
 import { MISSING, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import type { TokenUsage } from "./print.ts";
-export type { EditorLog } from "./log.ts";
-export type { ToolPrint } from "./tools.ts";
 import type { ContextEntry, Skill } from "./context.ts";
 
 export interface SlashCommand {
@@ -30,7 +28,7 @@ interface State {
     customSkillDirs: string[];
     stdout: string;
     debugLog: boolean;
-    editorLogPath: string;
+    promptHistoryPath: string;
     contextEntries: ContextEntry[];
     contextStr: string;
     skillsStr: string;
@@ -45,9 +43,9 @@ interface State {
     model: string;
     baseURL: string | null;
     provider: Provider;
-    keymapEdit: Key;
-    keymapEditPaste: Key;
-    keymapEditLog: Key;
+    keymapEditPrompt: Key;
+    keymapEditPastePrompt: Key;
+    keymapPromptHistory: Key;
     keymapClear: Key;
   };
   abortControllers: {
@@ -66,7 +64,7 @@ const initialState: State = {
     customSkillDirs: [],
     stdout: "",
     debugLog: false,
-    editorLogPath: "",
+    promptHistoryPath: "",
     contextEntries: [],
     contextStr: "",
     skillsStr: "",
@@ -81,9 +79,9 @@ const initialState: State = {
     provider: DEFAULT_CONFIG.provider,
     baseURL: null,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
-    keymapEdit: structuredClone(DEFAULT_CONFIG.keymaps.edit),
-    keymapEditPaste: structuredClone(DEFAULT_CONFIG.keymaps.editPaste),
-    keymapEditLog: structuredClone(DEFAULT_CONFIG.keymaps.editLog),
+    keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
+    keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.editPaste),
+    keymapPromptHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
   },
   abortControllers: {
@@ -122,15 +120,15 @@ type Action =
       payload: Record<string, ModelPricing>;
     }
   | {
-      type: "set-keymap-edit";
+      type: "set-keymap-edit-prompt";
       payload: Key;
     }
   | {
-      type: "set-keymap-edit-paste";
+      type: "set-keymap-edit-paste-prompt";
       payload: Key;
     }
   | {
-      type: "set-keymap-edit-log";
+      type: "set-keymap-prompt-history";
       payload: Key;
     }
   | {
@@ -179,11 +177,7 @@ type Action =
       payload: boolean;
     }
   | {
-      type: "set-editor-log";
-      payload: boolean;
-    }
-  | {
-      type: "set-editor-log-path";
+      type: "set-prompt-history-path";
       payload: string;
     }
   | {
@@ -298,29 +292,35 @@ const reducer = (state: State, action: Action): State => {
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
-    case "set-keymap-edit": {
-      const before = state.configState.keymapEdit;
+    case "set-keymap-edit-prompt": {
+      const before = state.configState.keymapEditPrompt;
       const next = {
         ...state,
-        configState: { ...state.configState, keymapEdit: action.payload },
+        configState: { ...state.configState, keymapEditPrompt: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
-    case "set-keymap-edit-paste": {
-      const before = state.configState.keymapEditPaste;
+    case "set-keymap-edit-paste-prompt": {
+      const before = state.configState.keymapEditPastePrompt;
       const next = {
         ...state,
-        configState: { ...state.configState, keymapEditPaste: action.payload },
+        configState: {
+          ...state.configState,
+          keymapEditPastePrompt: action.payload,
+        },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
-    case "set-keymap-edit-log": {
-      const before = state.configState.keymapEditLog;
+    case "set-keymap-prompt-history": {
+      const before = state.configState.keymapPromptHistory;
       const next = {
         ...state,
-        configState: { ...state.configState, keymapEditLog: action.payload },
+        configState: {
+          ...state.configState,
+          keymapPromptHistory: action.payload,
+        },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
@@ -456,11 +456,11 @@ const reducer = (state: State, action: Action): State => {
       };
       return next;
     }
-    case "set-editor-log-path": {
-      const before = state.appState.editorLogPath;
+    case "set-prompt-history-path": {
+      const before = state.appState.promptHistoryPath;
       const next = {
         ...state,
-        appState: { ...state.appState, editorLogPath: action.payload },
+        appState: { ...state.appState, promptHistoryPath: action.payload },
       };
       logStateChange(action.type, before, action.payload);
       return next;
@@ -599,16 +599,16 @@ const setPricingPerModel = (pricing: Record<string, ModelPricing>): Action => {
   return { type: "set-pricing-per-model", payload: pricing };
 };
 
-const setKeymapEdit = (keymap: Key): Action => {
-  return { type: "set-keymap-edit", payload: keymap };
+const setKeymapEditPrompt = (keymap: Key): Action => {
+  return { type: "set-keymap-edit-prompt", payload: keymap };
 };
 
-const setKeymapEditPaste = (keymap: Key): Action => {
-  return { type: "set-keymap-edit-paste", payload: keymap };
+const setKeymapEditPastePrompt = (keymap: Key): Action => {
+  return { type: "set-keymap-edit-paste-prompt", payload: keymap };
 };
 
-const setKeymapEditLog = (keymap: Key): Action => {
-  return { type: "set-keymap-edit-log", payload: keymap };
+const setKeymapPromptHistory = (keymap: Key): Action => {
+  return { type: "set-keymap-prompt-history", payload: keymap };
 };
 
 const setKeymapClear = (keymap: Key): Action => {
@@ -663,8 +663,8 @@ const setDebugLog = (debugLog: boolean): Action => {
   return { type: "set-debug-log", payload: debugLog };
 };
 
-const setEditorLogPath = (editorLogPath: string): Action => {
-  return { type: "set-editor-log-path", payload: editorLogPath };
+const setPromptHistoryPath = (promptHistoryPath: string): Action => {
+  return { type: "set-prompt-history-path", payload: promptHistoryPath };
 };
 
 const setContextEntries = (contextEntries: ContextEntry[]): Action => {
@@ -710,9 +710,9 @@ export const actions = {
   setProvider,
   setBaseURL,
   setPricingPerModel,
-  setKeymapEdit,
-  setKeymapEditPaste,
-  setKeymapEditLog,
+  setKeymapEditPrompt,
+  setKeymapEditPastePrompt,
+  setKeymapPromptHistory,
   setKeymapClear,
   resetMessageUsages,
   resetMessageParams,
@@ -725,7 +725,7 @@ export const actions = {
   resetStdout,
   appendToStdout,
   setDebugLog,
-  setEditorLogPath,
+  setPromptHistoryPath,
   setContextEntries,
   setContextStr,
   setSkillsStr,
@@ -746,7 +746,7 @@ const getCustomSlashCommandDirs = () =>
 const getCustomSkillDirs = () => getState().appState.customSkillDirs;
 const getStdout = () => getState().appState.stdout;
 const getDebugLog = () => getState().appState.debugLog;
-const getEditorLogPath = () => getState().appState.editorLogPath;
+const getPromptHistoryPath = () => getState().appState.promptHistoryPath;
 const getContextEntries = () => getState().appState.contextEntries;
 const getContextStr = () => getState().appState.contextStr;
 const getSkillsStr = () => getState().appState.skillsStr;
@@ -759,9 +759,10 @@ const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
-const getKeymapEdit = () => getState().configState.keymapEdit;
-const getKeymapEditPaste = () => getState().configState.keymapEditPaste;
-const getKeymapEditLog = () => getState().configState.keymapEditLog;
+const getKeymapEditPrompt = () => getState().configState.keymapEditPrompt;
+const getKeymapEditPastePrompt = () =>
+  getState().configState.keymapEditPastePrompt;
+const getKeymapPromptHistory = () => getState().configState.keymapPromptHistory;
 const getKeymapClear = () => getState().configState.keymapClear;
 const getQuestionAbortController = () => getState().abortControllers.question;
 const getApiStreamAbortController = () => getState().abortControllers.apiStream;
@@ -773,9 +774,9 @@ export const selectors = {
   getProvider,
   getBaseURL,
   getPricingPerModel,
-  getKeymapEdit,
-  getKeymapEditPaste,
-  getKeymapEditLog,
+  getKeymapEditPrompt,
+  getKeymapEditPastePrompt,
+  getKeymapPromptHistory,
   getKeymapClear,
   getQuestionAbortController,
   getApiStreamAbortController,
@@ -785,7 +786,7 @@ export const selectors = {
   getCustomSkillDirs,
   getStdout,
   getDebugLog,
-  getEditorLogPath,
+  getPromptHistoryPath,
   getContextEntries,
   getContextStr,
   getSkillsStr,

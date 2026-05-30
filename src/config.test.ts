@@ -103,7 +103,7 @@ describe("config", () => {
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
             editPaste: { name: "p", ctrl: false, meta: false, shift: false },
-            editLog: { name: "o", ctrl: false, meta: false, shift: false },
+            history: { name: "o", ctrl: false, meta: false, shift: false },
             clear: { name: "j", ctrl: false, meta: false, shift: false },
           },
         }),
@@ -115,7 +115,7 @@ describe("config", () => {
           keymaps: {
             edit: { name: "e", ctrl: true, meta: false, shift: false },
             editPaste: { name: "t", ctrl: true, meta: false, shift: false },
-            editLog: { name: "l", ctrl: true, meta: false, shift: false },
+            history: { name: "l", ctrl: true, meta: false, shift: false },
             clear: { name: "k", ctrl: true, meta: false, shift: false },
           },
         }),
@@ -123,19 +123,19 @@ describe("config", () => {
 
       initState();
 
-      assert.deepEqual(selectors.getKeymapEdit(), {
+      assert.deepEqual(selectors.getKeymapEditPrompt(), {
         name: "e",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(selectors.getKeymapEditPaste(), {
+      assert.deepEqual(selectors.getKeymapEditPastePrompt(), {
         name: "t",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(selectors.getKeymapEditLog(), {
+      assert.deepEqual(selectors.getKeymapPromptHistory(), {
         name: "l",
         ctrl: true,
         meta: false,
@@ -206,19 +206,19 @@ describe("config", () => {
 
       initState();
 
-      assert.deepEqual(selectors.getKeymapEdit(), {
+      assert.deepEqual(selectors.getKeymapEditPrompt(), {
         name: "v",
         ctrl: false,
         meta: false,
         shift: false,
       });
       assert.deepEqual(
-        selectors.getKeymapEditPaste(),
+        selectors.getKeymapEditPastePrompt(),
         DEFAULT_CONFIG.keymaps.editPaste,
       );
       assert.deepEqual(
-        selectors.getKeymapEditLog(),
-        DEFAULT_CONFIG.keymaps.editLog,
+        selectors.getKeymapPromptHistory(),
+        DEFAULT_CONFIG.keymaps.history,
       );
       assert.deepEqual(
         selectors.getKeymapClear(),
@@ -285,7 +285,12 @@ describe("config", () => {
             keymaps: {
               edit: { name: "v", ctrl: false, meta: false, shift: false },
               editPaste: { name: "p", ctrl: false, meta: false, shift: false },
-              editLog: { name: "o", ctrl: false, meta: false, shift: false },
+              history: {
+                name: "o",
+                ctrl: false,
+                meta: false,
+                shift: false,
+              },
               clear: { name: "j", ctrl: false, meta: false, shift: false },
             },
           }),
@@ -293,19 +298,19 @@ describe("config", () => {
 
         initState();
 
-        assert.deepEqual(selectors.getKeymapEdit(), {
+        assert.deepEqual(selectors.getKeymapEditPrompt(), {
           name: "v",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(selectors.getKeymapEditPaste(), {
+        assert.deepEqual(selectors.getKeymapEditPastePrompt(), {
           name: "p",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(selectors.getKeymapEditLog(), {
+        assert.deepEqual(selectors.getKeymapPromptHistory(), {
           name: "o",
           ctrl: false,
           meta: false,

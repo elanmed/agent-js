@@ -25,7 +25,7 @@ import { actions, dispatch, selectors, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
 import type { Key } from "./config.ts";
-import { editorLog } from "./log.ts";
+import { appendToPromptHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
 
@@ -142,7 +142,7 @@ export function initKeypress() {
   assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
     void (async () => {
-      if (isSameKey(key, selectors.getKeymapEdit())) {
+      if (isSameKey(key, selectors.getKeymapEditPrompt())) {
         const editorContent = await spawnAndReadEditorContent();
         if (editorContent !== null) {
           abortRlQuestionForEditor(editorContent);
@@ -158,7 +158,7 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, selectors.getKeymapEditPaste())) {
+      if (isSameKey(key, selectors.getKeymapEditPastePrompt())) {
         const editorContent = await spawnAndReadEditorContent({
           includeClipboardSuffix: true,
         });
@@ -168,8 +168,8 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, selectors.getKeymapEditLog())) {
-        editLogCommand();
+      if (isSameKey(key, selectors.getKeymapPromptHistory())) {
+        promptHistoryCommand();
         return;
       }
 
@@ -287,7 +287,7 @@ async function resolveExitConfirmation() {
 
 const builtinSlashCommands = [
   "edit",
-  "edit-log",
+  "history",
   "clear",
   "model",
   "skills",
@@ -306,8 +306,8 @@ export async function resolveSlashCommand(rawInput: string) {
     return null;
   }
 
-  if (commandWithoutSlash === "edit-log") {
-    editLogCommand();
+  if (commandWithoutSlash === "history") {
+    promptHistoryCommand();
     return null;
   }
 
@@ -363,9 +363,9 @@ export async function spawnAndReadEditorContent(opts?: {
   const tempFile = createTempFile();
 
   const editCommand = compute(() => {
-    if (isExisty(processDeps.env.get("AGENT_JS_EDIT_PROMPT"))) {
+    if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
       return processDeps.env
-        .get("AGENT_JS_EDIT_PROMPT")!
+        .get("AGENT_JS_EDIT")!
         .replace("__FILE__", tempFile);
     }
 
@@ -399,32 +399,32 @@ export async function spawnAndReadEditorContent(opts?: {
   if (readResult.value === "") return null;
 
   const content = normalizeLine(readResult.value);
-  editorLog(content);
+  appendToPromptHistory(content);
   return content;
 }
 
-export function editLogCommand() {
-  if (!fsDeps.existsSync(selectors.getEditorLogPath())) {
+export function promptHistoryCommand() {
+  if (!fsDeps.existsSync(selectors.getPromptHistoryPath())) {
     if (selectors.getSpinnerTimeout() === null) {
-      print.warning("[Edit log does not exist]");
+      print.warning("[History does not exist]");
       clearRlLine()!.prompt();
     }
     return;
   }
-  const logPath = selectors.getEditorLogPath();
+  const logPath = selectors.getPromptHistoryPath();
   const logContentResult = tryCatch(() =>
     fsDeps.readFileSync(logPath).toString(),
   );
   if (!logContentResult.ok) {
-    print.warning("[Cannot read edit log]");
+    print.warning("[Cannot read history]");
     clearRlLine()!.prompt();
     return;
   }
 
   const editCommand = compute(() => {
-    if (isExisty(processDeps.env.get("AGENT_JS_EDIT_LOG"))) {
+    if (isExisty(processDeps.env.get("AGENT_JS_HISTORY"))) {
       return processDeps.env
-        .get("AGENT_JS_EDIT_LOG")!
+        .get("AGENT_JS_HISTORY")!
         .replace("__FILE__", logPath);
     }
 

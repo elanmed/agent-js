@@ -16,7 +16,7 @@ describe("state", () => {
     dispatch(actions.setApiStreamAbortController(new AbortController()));
     const timeout = setTimeout(() => undefined, 1000);
     dispatch(actions.setSpinnerTimeout(timeout));
-    dispatch(actions.setEditorLogPath("/tmp/test.log"));
+    dispatch(actions.setPromptHistoryPath("/tmp/test.log"));
     dispatch(actions.resetState());
     clearTimeout(timeout);
 
@@ -27,7 +27,7 @@ describe("state", () => {
     assert.equal(selectors.getSpinnerTimeout(), null);
     assert.equal(selectors.getApiStartTime(), null);
     assert.equal(selectors.getApiEndTime(), null);
-    assert.equal(selectors.getEditorLogPath(), "");
+    assert.equal(selectors.getPromptHistoryPath(), "");
   });
 
   it("initial state", () => {
@@ -37,7 +37,7 @@ describe("state", () => {
     assert.equal(selectors.getApiStreamAbortController(), null);
     assert.equal(selectors.getApiStartTime(), null);
     assert.equal(selectors.getApiEndTime(), null);
-    assert.equal(selectors.getEditorLogPath(), "");
+    assert.equal(selectors.getPromptHistoryPath(), "");
   });
 
   describe("append-to-message-params", () => {
@@ -116,20 +116,20 @@ describe("state", () => {
     assert.deepStrictEqual(selectors.getPricingPerModel(), newPricing);
   });
 
-  it("set-keymap-edit", () => {
+  it("set-keymap-edit-prompt", () => {
     assert.deepStrictEqual(
-      selectors.getKeymapEdit(),
+      selectors.getKeymapEditPrompt(),
       DEFAULT_CONFIG.keymaps.edit,
     );
     dispatch(
-      actions.setKeymapEdit({
+      actions.setKeymapEditPrompt({
         name: "v",
         ctrl: false,
         meta: false,
         shift: false,
       }),
     );
-    assert.deepStrictEqual(selectors.getKeymapEdit(), {
+    assert.deepStrictEqual(selectors.getKeymapEditPrompt(), {
       name: "v",
       ctrl: false,
       meta: false,
@@ -137,20 +137,20 @@ describe("state", () => {
     });
   });
 
-  it("set-keymap-edit-log", () => {
+  it("set-keymap-prompt-history", () => {
     assert.deepStrictEqual(
-      selectors.getKeymapEditLog(),
-      DEFAULT_CONFIG.keymaps.editLog,
+      selectors.getKeymapPromptHistory(),
+      DEFAULT_CONFIG.keymaps.history,
     );
     dispatch(
-      actions.setKeymapEditLog({
+      actions.setKeymapPromptHistory({
         name: "o",
         ctrl: false,
         meta: false,
         shift: false,
       }),
     );
-    assert.deepStrictEqual(selectors.getKeymapEditLog(), {
+    assert.deepStrictEqual(selectors.getKeymapPromptHistory(), {
       name: "o",
       ctrl: false,
       meta: false,
@@ -205,10 +205,10 @@ describe("state", () => {
     assert.equal(selectors.getDebugLog(), true);
   });
 
-  it("set-editor-log-path", () => {
-    assert.equal(selectors.getEditorLogPath(), "");
-    dispatch(actions.setEditorLogPath("/tmp/editor.log"));
-    assert.equal(selectors.getEditorLogPath(), "/tmp/editor.log");
+  it("set-prompt-history-path", () => {
+    assert.equal(selectors.getPromptHistoryPath(), "");
+    dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
+    assert.equal(selectors.getPromptHistoryPath(), "/tmp/editor.log");
   });
 
   it("set-context-str", () => {

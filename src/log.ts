@@ -3,7 +3,7 @@ import { actions, dispatch, selectors } from "./state.ts";
 import { normalizeLine, tryCatch } from "./utils.ts";
 import crypto from "node:crypto";
 import { fsDeps } from "./deps.ts";
-import { getDebugLogPath, getEditorLogsDir } from "./paths.ts";
+import { getDebugLogPath, getPromptHistoryDir } from "./paths.ts";
 
 export function debugLog(content: string) {
   if (!selectors.getDebugLog()) return;
@@ -23,8 +23,8 @@ export function debugLog(content: string) {
   );
 }
 
-export function editorLog(content: string) {
-  const path = selectors.getEditorLogPath();
+export function appendToPromptHistory(content: string) {
+  const path = selectors.getPromptHistoryPath();
   if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
       fsDeps.mkdirSync(dirname(path), { recursive: true }),
@@ -49,36 +49,36 @@ export function resetDebugLog() {
   }
 }
 
-export function initEditorLog() {
-  const editorLogsDir = getEditorLogsDir();
-  if (!fsDeps.existsSync(editorLogsDir)) {
-    tryCatch(() => fsDeps.mkdirSync(editorLogsDir, { recursive: true }));
+export function initPromptHistory() {
+  const promptHistoryDir = getPromptHistoryDir();
+  if (!fsDeps.existsSync(promptHistoryDir)) {
+    tryCatch(() => fsDeps.mkdirSync(promptHistoryDir, { recursive: true }));
   }
 
   const uuid = crypto.randomUUID().replaceAll("-", "");
-  const editorLogSessionPath = join(
-    editorLogsDir,
-    `editor-${uuid}-${Date.now().toString()}.log`,
+  const promptHistorySessionPath = join(
+    promptHistoryDir,
+    `prompt-history-${uuid}-${Date.now().toString()}.log`,
   );
-  dispatch(actions.setEditorLogPath(editorLogSessionPath));
+  dispatch(actions.setPromptHistoryPath(promptHistorySessionPath));
 }
 
-export function deleteExpiredEditorLogs() {
-  const editorLogsPath = getEditorLogsDir();
-  if (!fsDeps.existsSync(editorLogsPath)) return;
+export function deleteExpiredPromptHistory() {
+  const promptHistoryPath = getPromptHistoryDir();
+  if (!fsDeps.existsSync(promptHistoryPath)) return;
 
-  for (const name of fsDeps.readdirSync(editorLogsPath)) {
-    const fullPath = join(editorLogsPath, name);
+  for (const name of fsDeps.readdirSync(promptHistoryPath)) {
+    const fullPath = join(promptHistoryPath, name);
     const statResult = tryCatch(() => fsDeps.statSync(fullPath));
     if (!statResult.ok) continue;
     if (!statResult.value.isFile()) continue;
 
     const fileName = basename(name, extname(name));
     const parts = fileName.split("-");
-    if (parts.length !== 3) continue;
-    if (parts[0] !== "editor") continue;
+    if (parts.length !== 4) continue;
+    if (parts[0] !== "prompt" || parts[1] !== "history") continue;
 
-    const fileTimestampMs = Number(parts[2]);
+    const fileTimestampMs = Number(parts[3]);
     if (Number.isNaN(fileTimestampMs)) continue;
 
     const oneDay = 1_000 * 60 * 60 * 24;
@@ -88,10 +88,8 @@ export function deleteExpiredEditorLogs() {
   }
 }
 
-export type EditorLog = typeof editorLog;
-
 export function initLogs() {
   resetDebugLog();
-  deleteExpiredEditorLogs();
-  initEditorLog();
+  deleteExpiredPromptHistory();
+  initPromptHistory();
 }
