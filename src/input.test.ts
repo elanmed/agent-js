@@ -337,7 +337,7 @@ hello
       promptHistoryCommand();
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "[History does not exist]\n",
+        "[Cannot read history]\n",
       );
     });
 

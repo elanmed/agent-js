@@ -417,13 +417,6 @@ export async function spawnAndReadEditorContent(opts?: {
 }
 
 export function promptHistoryCommand() {
-  if (!fsDeps.existsSync(selectors.getPromptHistoryPath())) {
-    if (selectors.getSpinnerTimeout() === null) {
-      print.warning("[History does not exist]");
-      clearRlLine()!.prompt();
-    }
-    return;
-  }
   const logPath = selectors.getPromptHistoryPath();
   const logContentResult = tryCatch(() =>
     fsDeps.readFileSync(logPath).toString(),

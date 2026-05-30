@@ -128,6 +128,12 @@ content 2
         selectors.getPromptHistoryPath(),
         "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
       );
+      assert.equal(
+        testFs._files.get(
+          "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
+        ),
+        "",
+      );
     });
 
     it("disables history when mkdir fails", () => {
@@ -136,6 +142,7 @@ content 2
         throw new Error("Permission denied");
       });
       initPromptHistory();
+      assert.equal(selectors.getPromptHistoryPath(), "");
     });
 
     it("generates correct log path with uuid and timestamp, stripping dashes", () => {
@@ -143,6 +150,12 @@ content 2
       assert.equal(
         selectors.getPromptHistoryPath(),
         "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
+      );
+      assert.equal(
+        testFs._files.get(
+          "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
+        ),
+        "",
       );
     });
   });

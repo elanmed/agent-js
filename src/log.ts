@@ -52,7 +52,10 @@ export function resetDebugLog() {
 export function initPromptHistory() {
   const promptHistoryDir = getPromptHistoryDir();
   if (!fsDeps.existsSync(promptHistoryDir)) {
-    tryCatch(() => fsDeps.mkdirSync(promptHistoryDir, { recursive: true }));
+    const mkDirResult = tryCatch(() =>
+      fsDeps.mkdirSync(promptHistoryDir, { recursive: true }),
+    );
+    if (!mkDirResult.ok) return;
   }
 
   const uuid = crypto.randomUUID().replaceAll("-", "");
@@ -61,6 +64,7 @@ export function initPromptHistory() {
     `prompt-history-${uuid}-${Date.now().toString()}.log`,
   );
   dispatch(actions.setPromptHistoryPath(promptHistorySessionPath));
+  tryCatch(() => fsDeps.writeFileSync(promptHistorySessionPath, ""));
 }
 
 export function deleteExpiredPromptHistory() {
