@@ -297,6 +297,18 @@ hello
         "Model updated from old to provider/new-model\n",
       );
     });
+
+    it("handles input with multiple spaces", () => {
+      dispatch(actions.setModel("old"));
+      setModelCommand("/model   new-model");
+      assert.strictEqual(selectors.getModel(), "new-model");
+    });
+
+    it("handles input with tabs", () => {
+      dispatch(actions.setModel("old"));
+      setModelCommand("/model\tnew-model");
+      assert.strictEqual(selectors.getModel(), "new-model");
+    });
   });
 
   describe("clearCommand", () => {
