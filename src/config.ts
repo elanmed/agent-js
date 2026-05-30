@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { tryCatch, MISSING } from "./utils.ts";
+import { tryCatch, MISSING, compute } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
 import {
   getContextEntries,
@@ -105,7 +105,7 @@ export function initState() {
   const args = parseCliArgs();
   dispatch(actions.setDebugLog(args.debug));
 
-  const globalConfig: Config = (() => {
+  const globalConfig: Config = compute(() => {
     if (fsDeps.existsSync(getGlobalConfigPath())) {
       const readResult = tryCatch(() =>
         fsDeps.readFileSync(getGlobalConfigPath()).toString(),
@@ -117,9 +117,9 @@ export function initState() {
     }
 
     return DEFAULT_CONFIG;
-  })();
+  });
 
-  const localConfig: Config = (() => {
+  const localConfig: Config = compute(() => {
     if (fsDeps.existsSync(getLocalConfigPath())) {
       const readResult = tryCatch(() =>
         fsDeps.readFileSync(getLocalConfigPath()).toString(),
@@ -131,7 +131,7 @@ export function initState() {
     }
 
     return {};
-  })();
+  });
 
   const defaultedModel =
     localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model;

@@ -38,13 +38,14 @@ export const print = Object.assign(
 
 export function colorPrint(text: Uint8Array | string, color?: Color) {
   const reset = "\x1b[0m";
-  let out: string;
-  if (color) {
-    const colorCode = COLORS[color];
-    out = `${colorCode}${text.toString()}${reset}\n`;
-  } else {
-    out = `${text.toString()}\n`;
-  }
+  const out = compute(() => {
+    if (color) {
+      const colorCode = COLORS[color];
+      return `${colorCode}${text.toString()}${reset}\n`;
+    } else {
+      return `${text.toString()}\n`;
+    }
+  });
 
   const wasSpinnerActive = selectors.getSpinnerTimeout() !== null;
   stopSpinner();
