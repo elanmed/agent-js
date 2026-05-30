@@ -160,9 +160,19 @@ hello
       mock.method(selectors.getRl()!, "question", () =>
         Promise.resolve("  hello  "),
       );
+      mock.method(Date, "now", () => 0);
+      dispatch(actions.setPromptHistoryPath("/tmp/test-history.log"));
       const result = await resolveUserInput();
       assert.strictEqual(result, "hello");
       assert.strictEqual(stripAnsi(selectors.getStdout()), ">  hello  \n");
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z
+-------------------------
+hello
+
+`,
+      );
     });
 
     it("resolves slash commands when input starts with /", async () => {

@@ -250,6 +250,7 @@ export async function resolveUserInput() {
     return await resolveSlashCommand(rawInput);
   }
 
+  appendToPromptHistory(inputResult.value);
   return rawInput;
 }
 
