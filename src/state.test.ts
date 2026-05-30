@@ -116,12 +116,6 @@ describe("state", () => {
     assert.deepStrictEqual(selectors.getPricingPerModel(), newPricing);
   });
 
-  it("set-diff-style", () => {
-    assert.equal(selectors.getDiffStyle(), "lines");
-    dispatch(actions.setDiffStyle("unified"));
-    assert.equal(selectors.getDiffStyle(), "unified");
-  });
-
   it("set-keymap-edit", () => {
     assert.deepStrictEqual(
       selectors.getKeymapEdit(),

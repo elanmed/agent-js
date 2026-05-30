@@ -157,7 +157,6 @@ describe("api", () => {
 
     it("prints diff and cleans up on tool call finish success", async () => {
       dispatch(actions.resetStdout());
-      dispatch(actions.setDiffStyle("lines"));
       testFs._files.set("/test/file.txt", "modified content");
       mock.method(
         aiDeps,

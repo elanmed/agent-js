@@ -92,7 +92,6 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
 export function initPrint() {
   fencePrint("agent-js", { color: "green" });
   print.infoSubtle(`model: ${selectors.getModel()}`);
-  print.infoSubtle(`diff-style: ${selectors.getDiffStyle()}`);
   print.infoSubtle(`keymap-edit: ${JSON.stringify(selectors.getKeymapEdit())}`);
   print.infoSubtle(
     `keymap-edit-log: ${JSON.stringify(selectors.getKeymapEditLog())}`,

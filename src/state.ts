@@ -3,7 +3,6 @@ import type readline from "node:readline/promises";
 import type { ModelMessage } from "ai";
 import {
   DEFAULT_CONFIG,
-  type DiffStyle,
   type Key,
   type ModelPricing,
   type Provider,
@@ -46,7 +45,6 @@ interface State {
     model: string;
     baseURL: string | null;
     provider: Provider;
-    diffStyle: DiffStyle;
     keymapEdit: Key;
     keymapEditPaste: Key;
     keymapEditLog: Key;
@@ -82,7 +80,6 @@ const initialState: State = {
     model: MISSING,
     provider: DEFAULT_CONFIG.provider,
     baseURL: null,
-    diffStyle: DEFAULT_CONFIG.diffStyle,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
     keymapEdit: structuredClone(DEFAULT_CONFIG.keymaps.edit),
     keymapEditPaste: structuredClone(DEFAULT_CONFIG.keymaps.editPaste),
@@ -123,10 +120,6 @@ type Action =
   | {
       type: "set-pricing-per-model";
       payload: Record<string, ModelPricing>;
-    }
-  | {
-      type: "set-diff-style";
-      payload: "unified" | "lines";
     }
   | {
       type: "set-keymap-edit";
@@ -303,15 +296,6 @@ const reducer = (state: State, action: Action): State => {
         configState: { ...state.configState, pricingPerModel: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
-      return next;
-    }
-    case "set-diff-style": {
-      const before = state.configState.diffStyle;
-      const next = {
-        ...state,
-        configState: { ...state.configState, diffStyle: action.payload },
-      };
-      logStateChange(action.type, before, action.payload);
       return next;
     }
     case "set-keymap-edit": {
@@ -615,10 +599,6 @@ const setPricingPerModel = (pricing: Record<string, ModelPricing>): Action => {
   return { type: "set-pricing-per-model", payload: pricing };
 };
 
-const setDiffStyle = (diffStyle: DiffStyle): Action => {
-  return { type: "set-diff-style", payload: diffStyle };
-};
-
 const setKeymapEdit = (keymap: Key): Action => {
   return { type: "set-keymap-edit", payload: keymap };
 };
@@ -730,7 +710,6 @@ export const actions = {
   setProvider,
   setBaseURL,
   setPricingPerModel,
-  setDiffStyle,
   setKeymapEdit,
   setKeymapEditPaste,
   setKeymapEditLog,
@@ -780,7 +759,6 @@ const getModel = () => getState().configState.model;
 const getProvider = () => getState().configState.provider;
 const getBaseURL = () => getState().configState.baseURL;
 const getPricingPerModel = () => getState().configState.pricingPerModel;
-const getDiffStyle = () => getState().configState.diffStyle;
 const getKeymapEdit = () => getState().configState.keymapEdit;
 const getKeymapEditPaste = () => getState().configState.keymapEditPaste;
 const getKeymapEditLog = () => getState().configState.keymapEditLog;
@@ -795,7 +773,6 @@ export const selectors = {
   getProvider,
   getBaseURL,
   getPricingPerModel,
-  getDiffStyle,
   getKeymapEdit,
   getKeymapEditPaste,
   getKeymapEditLog,

@@ -9,6 +9,7 @@ import {
   tryCatch,
   tryCatchAsync,
   execPromise,
+  compute,
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { selectors } from "./state.ts";
@@ -495,12 +496,13 @@ export async function printGitDiff(args: {
   tempFileAfterPath: string;
   path: string;
 }) {
-  const diffArgs =
-    selectors.getDiffStyle() === "lines"
-      ? `--no-index --color=always ${args.tempFileBeforePath} ${args.tempFileAfterPath}`
-      : `--no-index --color=always --stat ${args.tempFileBeforePath} ${args.tempFileAfterPath}`;
+  const diffResult = await tryCatchAsync(
+    execGitDiff({
+      tempFileBeforePath: args.tempFileBeforePath,
+      tempFileAfterPath: args.tempFileAfterPath,
+    }),
+  );
 
-  const diffResult = await tryCatchAsync(execGitDiff(diffArgs));
   if (diffResult.ok && diffResult.value.stdout) {
     printNewline();
     fencePrint(`File change: ${args.path}`);
@@ -509,41 +511,28 @@ export async function printGitDiff(args: {
   }
 }
 
-export async function execGitDiff(
-  args: string,
-): Promise<{ stdout: string; stderr: string }> {
-  const isDeltaAvailable = await checkDelta();
+export async function execGitDiff(opts: {
+  tempFileBeforePath: string;
+  tempFileAfterPath: string;
+}): Promise<{ stdout: string; stderr: string }> {
+  const cmd = await compute(async () => {
+    const linesGitDiffCmd = `git diff --no-index --color=always ${opts.tempFileBeforePath} ${opts.tempFileAfterPath}`;
 
-  return new Promise((resolve, reject) => {
-    const gitDiffCmd = `git diff ${args}`;
-
+    const isDeltaAvailable = await checkDelta();
     if (isDeltaAvailable) {
-      const deltaCmd = `delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
-      childProcess.exec(
-        `${gitDiffCmd} | ${deltaCmd}`,
-        { cwd: os.tmpdir() },
-        (error, stdout, stderr) => {
-          if (error && error.code !== 1) {
-            reject(error);
-          } else {
-            resolve({ stdout, stderr });
-          }
-        },
-      );
-      return;
+      return `${linesGitDiffCmd} | delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
     }
 
-    const coloredGitDiffCmd = `${gitDiffCmd} --color=always`;
-    childProcess.exec(
-      coloredGitDiffCmd,
-      { cwd: os.tmpdir() },
-      (error, stdout, stderr) => {
-        if (error && error.code !== 1) {
-          reject(error);
-        } else {
-          resolve({ stdout, stderr });
-        }
-      },
-    );
+    return linesGitDiffCmd;
+  });
+
+  return new Promise((resolve, reject) => {
+    childProcess.exec(cmd, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
+      if (error && error.code !== 1) {
+        reject(error);
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
   });
 }

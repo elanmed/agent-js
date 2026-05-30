@@ -581,7 +581,10 @@ bottom`,
     it("uses delta when available and resolves with stdout", async () => {
       mockExec({ stdout: "delta 0.18.2", once: true });
       mockExec({ stdout: "diff output" });
-      const result = await execGitDiff("--no-index a b");
+      const result = await execGitDiff({
+        tempFileBeforePath: "a",
+        tempFileAfterPath: "b",
+      });
       assert.deepStrictEqual(result, { stdout: "diff output", stderr: "" });
     });
 
@@ -590,7 +593,10 @@ bottom`,
       err.code = 1;
       mockExec({ stdout: "delta 0.18.2", once: true });
       mockExec({ stdout: "", error: err });
-      const result = await execGitDiff("--no-index a b");
+      const result = await execGitDiff({
+        tempFileBeforePath: "a",
+        tempFileAfterPath: "b",
+      });
       assert.deepStrictEqual(result, { stdout: "", stderr: "" });
     });
 
@@ -599,13 +605,19 @@ bottom`,
       err.code = 128;
       mockExec({ stdout: "delta 0.18.2", once: true });
       mockExec({ stdout: "", error: err });
-      await assert.rejects(execGitDiff("--no-index a b"), /fatal/);
+      await assert.rejects(
+        execGitDiff({ tempFileBeforePath: "a", tempFileAfterPath: "b" }),
+        /fatal/,
+      );
     });
 
     it("falls back to plain git diff when delta is not available", async () => {
       mockExec({ stdout: "", error: new Error("not found"), once: true });
       mockExec({ stdout: "plain diff" });
-      const result = await execGitDiff("--no-index a b");
+      const result = await execGitDiff({
+        tempFileBeforePath: "a",
+        tempFileAfterPath: "b",
+      });
       assert.deepStrictEqual(result, { stdout: "plain diff", stderr: "" });
     });
 
@@ -614,7 +626,10 @@ bottom`,
       err.code = 128;
       mockExec({ stdout: "", error: new Error("not found"), once: true });
       mockExec({ stdout: "", error: err });
-      await assert.rejects(execGitDiff("--no-index a b"), /fatal/);
+      await assert.rejects(
+        execGitDiff({ tempFileBeforePath: "a", tempFileAfterPath: "b" }),
+        /fatal/,
+      );
     });
   });
 
@@ -626,7 +641,6 @@ bottom`,
     });
 
     it("prints diff with lines style", async () => {
-      dispatch(actions.setDiffStyle("lines"));
       mockExec({ stdout: "+added line" });
       await printGitDiff({
         tempFileBeforePath: "/tmp/before",
@@ -643,26 +657,7 @@ bottom`,
       );
     });
 
-    it("prints diff with stat style", async () => {
-      dispatch(actions.setDiffStyle("unified"));
-      mockExec({ stdout: " 1 file changed, 1 insertion(+)" });
-      await printGitDiff({
-        tempFileBeforePath: "/tmp/before",
-        tempFileAfterPath: "/tmp/after",
-        path: "/test/file.txt",
-      });
-      assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
-        `
-━━ File change: /test/file.txt ━━
-1 file changed, 1 insertion(+)
-
-`,
-      );
-    });
-
     it("does not print when execGitDiff fails", async () => {
-      dispatch(actions.setDiffStyle("lines"));
       mockExec({ stdout: "", error: new Error("fatal") });
       await printGitDiff({
         tempFileBeforePath: "/tmp/before",
@@ -673,7 +668,6 @@ bottom`,
     });
 
     it("does not print when execGitDiff returns empty stdout", async () => {
-      dispatch(actions.setDiffStyle("lines"));
       mockExec({ stdout: "" });
       await printGitDiff({
         tempFileBeforePath: "/tmp/before",

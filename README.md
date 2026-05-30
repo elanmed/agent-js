@@ -28,7 +28,6 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 | `model`                  | string                                 | Model name (required)                            |
 | `provider`               | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)      |
 | `baseURL`                | string                                 | API base URL (required for `openai-compatible`)  |
-| `diffStyle`              | `"unified"` \| `"lines"`               | Git diff output style (default: `lines`)         |
 | `pricingPerModel`        | object                                 | Token pricing per model per million              |
 | `keymaps`                | object                                 | Custom keybindings (see below)                   |
 | `customSlashCommandDirs` | string[]                               | Additional directories for custom slash commands |
@@ -62,7 +61,6 @@ Example `settings.json`:
 {
   "model": "claude-sonnet-4-6",
   "provider": "anthropic",
-  "diffStyle": "lines",
   "keymaps": {
     "edit": {
       "name": "x",

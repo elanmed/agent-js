@@ -12,7 +12,6 @@ import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
 import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
 
-export type DiffStyle = "unified" | "lines";
 export type Provider = "anthropic" | "openai-compatible";
 
 const KeySchema = z.object({
@@ -36,7 +35,6 @@ const ConfigSchema = z.object({
   baseURL: z.string().optional(),
   provider: z.enum(["anthropic", "openai-compatible"]).optional(),
   editorLog: z.boolean().optional(),
-  diffStyle: z.enum(["unified", "lines"]).optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
   keymaps: z
     .object({
@@ -57,7 +55,6 @@ interface DefaultConfig {
   model: string;
   provider: Provider;
   editorLog: boolean;
-  diffStyle: "unified" | "lines";
   pricingPerModel: Record<
     string,
     {
@@ -80,7 +77,6 @@ interface DefaultConfig {
 export const DEFAULT_CONFIG: DefaultConfig = {
   provider: "openai-compatible",
   editorLog: true,
-  diffStyle: "lines",
   pricingPerModel: {},
   model: MISSING,
   keymaps: {
@@ -160,13 +156,6 @@ export function initState() {
   dispatch(actions.setModel(defaultedModel));
   if (defaultedBaseURL) dispatch(actions.setBaseURL(defaultedBaseURL));
   dispatch(actions.setProvider(defaultedProvider));
-  dispatch(
-    actions.setDiffStyle(
-      localConfig.diffStyle ??
-        globalConfig.diffStyle ??
-        DEFAULT_CONFIG.diffStyle,
-    ),
-  );
   dispatch(
     actions.setPricingPerModel(
       localConfig.pricingPerModel ??

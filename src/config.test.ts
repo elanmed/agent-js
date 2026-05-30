@@ -64,27 +64,6 @@ describe("config", () => {
       assert.equal(selectors.getProvider(), "anthropic");
     });
 
-    it("uses its diffStyle over the global config, default config", () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          diffStyle: "lines",
-        }),
-      );
-      testFs._files.set(
-        getLocalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          diffStyle: "unified",
-        }),
-      );
-
-      initState();
-
-      assert.equal(selectors.getDiffStyle(), "unified");
-    });
-
     it("uses its pricingPerModel over the global config, default config", () => {
       const localPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
       localPricing["test-model"] = {
@@ -274,19 +253,6 @@ describe("config", () => {
 
         initState();
         assert.equal(selectors.getProvider(), "anthropic");
-      });
-
-      it("uses its diffStyle over the default config", () => {
-        testFs._files.set(
-          getGlobalConfigPath(),
-          JSON.stringify({
-            ...defaultConfig,
-            diffStyle: "unified",
-          }),
-        );
-
-        initState();
-        assert.equal(selectors.getDiffStyle(), "unified");
       });
 
       it("uses its pricingPerModel over the default config", () => {
