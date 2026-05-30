@@ -155,13 +155,17 @@ type ExecCallback = (
   stderr: string,
 ) => void;
 
-export function mockExec(opts: { stdout: string; error?: Error }) {
-  const { stdout, error } = opts;
-  mock.method(
-    childProcess,
-    "exec",
-    (_cmd: string, _opts: unknown, cb: ExecCallback) => {
-      cb(error ?? null, stdout, "");
-    },
-  );
+export function mockExec(opts: {
+  stdout: string;
+  error?: Error;
+  once?: boolean;
+}) {
+  const { stdout, error, once } = opts;
+  const impl = (_cmd: string, _opts: unknown, cb: ExecCallback) => {
+    cb(error ?? null, stdout, "");
+  };
+  const m = mock.method(childProcess, "exec", impl);
+  if (once) {
+    m.mock.mockImplementationOnce(impl);
+  }
 }

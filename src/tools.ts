@@ -509,7 +509,6 @@ export async function printGitDiff(args: {
   }
 }
 
-// NOTE: missing test coverage
 export async function execGitDiff(
   args: string,
 ): Promise<{ stdout: string; stderr: string }> {
