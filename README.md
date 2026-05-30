@@ -6,7 +6,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 
 ## Features
 
-- **Minimal**: 2,800 lines of source code, 3,600 lines of tests
+- **Minimal**: 2,800 lines of source code, 3,500 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 7 tools to execute bash, fetch from the web, and edit files
