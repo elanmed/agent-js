@@ -72,6 +72,8 @@ export function executeCreateFileTool(
   { content, path }: CreateFileTool,
   signal?: AbortSignal,
 ): ToolResult {
+  toolPrint("create_file", path);
+
   if (fsDeps.existsSync(path)) {
     return {
       content: `${path} already exists`,
