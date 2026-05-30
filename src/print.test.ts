@@ -9,7 +9,7 @@ import {
 import { dispatch, actions } from "./state.ts";
 import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
-import { stripAnsi } from "./test-helpers.ts";
+import { stripAnsi, mockExec } from "./test-helpers.ts";
 
 describe("print", () => {
   describe("formatMarkdown", () => {
@@ -341,16 +341,7 @@ describe("print", () => {
         });
 
         it("falls back to plain text when bat is not available", async () => {
-          mock.method(
-            childProcess,
-            "exec",
-            (
-              _cmd: string,
-              cb: (error: Error | null, ...args: string[]) => void,
-            ) => {
-              cb(new Error("not found"), "", "");
-            },
-          );
+          mockExec({ stdout: "", error: new Error("not found") });
 
           let captured = "";
           mock.method(processDeps.stdout, "write", (out: string) => {

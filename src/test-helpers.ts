@@ -1,5 +1,6 @@
 import os from "node:os";
 import crypto from "node:crypto";
+import childProcess from "node:child_process";
 import { mock } from "node:test";
 import { fsDeps, processDeps } from "./deps.ts";
 
@@ -146,4 +147,21 @@ export function setupFakeDeps() {
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());
+}
+
+type ExecCallback = (
+  error: Error | null,
+  stdout: string,
+  stderr: string,
+) => void;
+
+export function mockExec(opts: { stdout: string; error?: Error }) {
+  const { stdout, error } = opts;
+  mock.method(
+    childProcess,
+    "exec",
+    (_cmd: string, _opts: unknown, cb: ExecCallback) => {
+      cb(error ?? null, stdout, "");
+    },
+  );
 }

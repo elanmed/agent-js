@@ -19,6 +19,7 @@ import {
   testFs,
   testProcessEnv,
   setupFakeDeps,
+  mockExec,
   stripAnsi,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
@@ -121,17 +122,7 @@ hello
         } as unknown as readline.Interface),
       );
       mock.method(os, "platform", () => "linux");
-      mock.method(
-        childProcess,
-        "exec",
-        (
-          _cmd: string,
-          _opts: unknown,
-          callback: (error: unknown, stdout: string, stderr: string) => void,
-        ) => {
-          callback(null, "world", "");
-        },
-      );
+      mockExec({ stdout: "world" });
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/agent-js-test-uuid.txt", "hello world\n");
       });
