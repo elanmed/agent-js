@@ -556,7 +556,7 @@ export function getAvailableSlashCommands() {
 
   for (const dir of slashCommandDirs) {
     const glob = join(dir, "**/*.md");
-    const globResult = tryCatch(() => fsDeps.globSync(glob));
+    const globResult = tryCatch(() => fsDeps.globbySync(glob));
     if (!globResult.ok) continue;
     slashCommandFilePaths.push(...globResult.value);
   }

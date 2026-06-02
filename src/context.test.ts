@@ -401,9 +401,9 @@ would benefit from specialized instructions.
       );
     });
 
-    it("skips entries where globSync throws", () => {
-      const originalGlobSync = testFs.globSync;
-      testFs.globSync = (pattern: string) => {
+    it("skips entries where globbySync throws", () => {
+      const originalGlobSync = testFs.globbySync;
+      testFs.globbySync = (pattern: string) => {
         if (pattern === "/test-cwd/.agent-js/skills/**/SKILL.md")
           throw new Error("glob failed");
         return originalGlobSync(pattern);

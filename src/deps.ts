@@ -19,7 +19,7 @@ export const fsDeps = {
   unlinkSync,
   appendFileSync,
   statSync,
-  globSync: (pattern: string) => globbySync(pattern, { gitignore: true }),
+  globbySync: (pattern: string) => globbySync(pattern, { gitignore: true }),
 };
 
 export type FsDeps = typeof fsDeps;

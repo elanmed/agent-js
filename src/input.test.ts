@@ -550,7 +550,7 @@ Available commands:
     });
 
     it("returns empty array when glob throws", () => {
-      mock.method(fsDeps, "globSync", () => {
+      mock.method(fsDeps, "globbySync", () => {
         throw new Error("permission denied");
       });
       const result = getAvailableSlashCommands();

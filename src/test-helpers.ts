@@ -29,7 +29,7 @@ export interface FakeFsDeps {
     isFile: () => boolean;
     isDirectory: () => boolean;
   };
-  globSync: (pattern: string) => string[];
+  globbySync: (pattern: string) => string[];
 }
 
 const EXCLUDED_KEYS = ["_files", "_dirs", "_globResults", "_restore"];
@@ -78,7 +78,7 @@ export function makeFakeFsDeps(
       isFile: () => _files.has(path),
       isDirectory: () => _dirs.has(path),
     }),
-    globSync: (pattern: string) => _globResults.get(pattern) ?? [],
+    globbySync: (pattern: string) => _globResults.get(pattern) ?? [],
     _restore: () => {
       _files.clear();
       _dirs.clear();

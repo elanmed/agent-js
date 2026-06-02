@@ -34,7 +34,7 @@ export function getContextEntries() {
   const agentFilePaths: string[] = [];
   for (const agentFileDir of agentFileDirs) {
     const glob = join(agentFileDir, "**/AGENTS.md");
-    const globResult = tryCatch(() => fsDeps.globSync(glob));
+    const globResult = tryCatch(() => fsDeps.globbySync(glob));
     if (!globResult.ok) continue;
     agentFilePaths.push(...globResult.value);
   }
@@ -93,7 +93,7 @@ export function getSkills() {
 
   for (const skillGrandparentDir of skillGrandparentDirs) {
     const glob = join(skillGrandparentDir, "**/SKILL.md");
-    const globResult = tryCatch(() => fsDeps.globSync(glob));
+    const globResult = tryCatch(() => fsDeps.globbySync(glob));
     if (!globResult.ok) continue;
     skillPaths.push(...globResult.value);
   }
