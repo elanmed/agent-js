@@ -7,9 +7,9 @@ import {
   unlinkSync,
   appendFileSync,
   statSync,
-  globSync,
 } from "node:fs";
 import { generateText, isLoopFinished } from "ai";
+import { globbySync } from "globby";
 export const fsDeps = {
   readFileSync,
   writeFileSync,
@@ -19,7 +19,7 @@ export const fsDeps = {
   unlinkSync,
   appendFileSync,
   statSync,
-  globSync,
+  globSync: (pattern: string) => globbySync(pattern, { gitignore: true }),
 };
 
 export type FsDeps = typeof fsDeps;

@@ -219,6 +219,7 @@ Minimal runtime dependencies (8 total):
 | `@mozilla/readability`      | Content extraction for `web_fetch_html` |
 | `prettier`                  | Markdown formatting                     |
 | `yaml`                      | Parsing Skill metadata                  |
+| `globby`                    | Glob with .gitignore support            |
 
 - This project uses **pnpm v11** for package management, which helps [prevent supply chain attacks](https://pnpm.io/supply-chain-security)
 - All tests are written with the Node.js native test runner and mocks i.e. no Jest
