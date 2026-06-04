@@ -35,12 +35,12 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Keymaps
 
-| Key         | Type  | Default                     | Description                                                      |
-| ----------- | ----- | --------------------------- | ---------------------------------------------------------------- |
-| `edit`      | `Key` | `{ name: "g", ctrl: true }` | Open `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line input |
-| `editPaste` | `Key` | `{ name: "v", ctrl: true }` | Open editor with current line + clipboard pasted in              |
-| `history`   | `Key` | `{ name: "o", ctrl: true }` | Open `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view history   |
-| `clear`     | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                       |
+| Key         | Type  | Default                     | Description                                                                                     |
+| ----------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `edit`      | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line input                                |
+| `editPaste` | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
+| `history`   | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view history                                  |
+| `clear`     | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                      |
 
 The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
 
@@ -100,9 +100,9 @@ Slash commands are triggered with `/command` at the prompt.
 
 | Command     | Description                                                         |
 | ----------- | ------------------------------------------------------------------- |
-| `/edit`     | Open `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line messages |
+| `/edit`     | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line messages |
 | `/clear`    | Clear conversation context and reset message history                |
-| `/history`  | Open `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view the history  |
+| `/history`  | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view the history  |
 | `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)               |
 | `/skills`   | List available skills                                               |
 | `/context`  | List available context files                                        |
