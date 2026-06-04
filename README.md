@@ -12,7 +12,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Tools**: 7 tools to execute bash, fetch from the web, and edit files
   - A `git diff` with `delta` is output whenever a tool changes a file
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
-- **AGENTS.md support**: The root file is included in context, nested files internally represented as skills
+- **AGENTS.md support**: The root file is included in context, nested files are internally represented as skills
 - **Slash commands**: Change agent settings or execute reusable prompts
 - **Cost tracking**: Per-model token pricing
 - **Keymaps**: Customizable shortcuts for executing built-in slash commands
