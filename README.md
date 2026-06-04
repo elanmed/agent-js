@@ -25,13 +25,13 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 | Option                   | Type                                   | Description                                      |
 | ------------------------ | -------------------------------------- | ------------------------------------------------ |
-| `model`                  | string                                 | Model name (required)                            |
+| `model`                  | `string`                               | Model name (required)                            |
 | `provider`               | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)      |
-| `baseURL`                | string                                 | API base URL (required for `openai-compatible`)  |
-| `pricingPerModel`        | object                                 | Token pricing per model per million              |
-| `keymaps`                | object                                 | Custom keybindings (see below)                   |
-| `customSlashCommandDirs` | string[]                               | Additional directories for custom slash commands |
-| `customSkillDirs`        | string[]                               | Additional directories for skills                |
+| `baseURL`                | `string`                               | API base URL (required for `openai-compatible`)  |
+| `pricingPerModel`        | `object`                               | Token pricing per model per million              |
+| `keymaps`                | `object`                               | Custom keybindings (see below)                   |
+| `customSlashCommandDirs` | `string[]`                             | Additional directories for custom slash commands |
+| `customSkillDirs`        | `string[]`                             | Additional directories for skills                |
 
 ### Keymaps
 
@@ -46,12 +46,12 @@ The default keymaps are chosen as not to conflict with Node `readline`s [builtin
 
 Each `Key` object has:
 
-| Field   | Type    | Default  |
-| ------- | ------- | -------- |
-| `name`  | string  | required |
-| `ctrl`  | boolean | `false`  |
-| `meta`  | boolean | `false`  |
-| `shift` | boolean | `false`  |
+| Field   | Type      | Default  |
+| ------- | --------- | -------- |
+| `name`  | `string`  | required |
+| `ctrl`  | `boolean` | `false`  |
+| `meta`  | `boolean` | `false`  |
+| `shift` | `boolean` | `false`  |
 
 You can configure individual keymaps while keeping defaults for others
 
@@ -82,11 +82,11 @@ Example `settings.json`:
 
 ## Environment Variables
 
-| Variable           | Description                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------------- |
-| `AGENT_JS_API_KEY` | API key for the configured provider (required)                                            |
-| `AGENT_JS_EDIT`    | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR`)     |
-| `AGENT_JS_HISTORY` | Editor command with `__FILE__` placeholder for viewing edit history (fallback: `$EDITOR`) |
+| Variable           | Description                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| `AGENT_JS_API_KEY` | API key for the configured provider (required)                                                     |
+| `AGENT_JS_EDIT`    | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)     |
+| `AGENT_JS_HISTORY` | Editor command with `__FILE__` placeholder for viewing edit history (fallback: `$EDITOR __FILE__`) |
 
 ## CLI Arguments
 
@@ -98,15 +98,15 @@ Example `settings.json`:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command     | Description                                                                  |
-| ----------- | ---------------------------------------------------------------------------- |
-| `/edit`     | Open `$AGENT_JS_EDIT` (with `__FILE__`) or `$EDITOR` for multi-line messages |
-| `/clear`    | Clear conversation context and reset message history                         |
-| `/history`  | Open `$AGENT_JS_HISTORY` (with `__FILE__`) or `$EDITOR` to view the history  |
-| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)                        |
-| `/skills`   | List available skills                                                        |
-| `/context`  | List available context files                                                 |
-| `/commands` | List available slash commands (builtin and custom)                           |
+| Command     | Description                                                         |
+| ----------- | ------------------------------------------------------------------- |
+| `/edit`     | Open `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line messages |
+| `/clear`    | Clear conversation context and reset message history                |
+| `/history`  | Open `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view the history  |
+| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)               |
+| `/skills`   | List available skills                                               |
+| `/context`  | List available context files                                        |
+| `/commands` | List available slash commands (builtin and custom)                  |
 
 ### Custom Slash Commands
 
@@ -219,6 +219,8 @@ Minimal runtime dependencies (8 total):
 - This project uses **pnpm v11** for package management, which helps [prevent supply chain attacks](https://pnpm.io/supply-chain-security)
 - All tests are written with the Node.js native test runner and mocks i.e. no Jest
 - TypeScript is executed directly via `node` (no build step), keeping the toolchain minimal
+
+## TODO (soon)
 
 ## TODO (later)
 
