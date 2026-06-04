@@ -427,7 +427,7 @@ hello
         `
 Available skills:
 - test-skill: A test skill
-  /skills/test-skill/SKILL.md
+  /skills/test-skill
 `,
       );
     });

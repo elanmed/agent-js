@@ -40,12 +40,12 @@ Content: # Agent Instructions
     });
 
     it("returns formatted content for multiple files", () => {
-      testFs._globResults.set("/test-cwd/**/AGENTS.md", [
-        "/test-cwd/AGENTS.md",
-        "/test-cwd/src/AGENTS.md",
-      ]);
+      testFs._dirs.add(getGlobalContextDir());
       testFs._files.set("/test-cwd/AGENTS.md", "Root content");
-      testFs._files.set("/test-cwd/src/AGENTS.md", "Src content");
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/context/AGENTS.md",
+        "Global content",
+      );
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
@@ -54,25 +54,25 @@ AGENTS.md context files:
 Path: /test-cwd/AGENTS.md
 Content: Root content
 
-Path: /test-cwd/src/AGENTS.md
-Content: Src content
+Path: /fake-home/.config/.agent-js/context/AGENTS.md
+Content: Global content
 `,
       );
     });
 
     it("skips files that fail to read", () => {
-      testFs._globResults.set("/test-cwd/**/AGENTS.md", [
-        "/test-cwd/AGENTS.md",
-        "/test-cwd/src/AGENTS.md",
-      ]);
-      testFs._files.set("/test-cwd/src/AGENTS.md", "Src content");
+      testFs._dirs.add(getGlobalContextDir());
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/context/AGENTS.md",
+        "Global content",
+      );
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
         `
 AGENTS.md context files:
-Path: /test-cwd/src/AGENTS.md
-Content: Src content
+Path: /fake-home/.config/.agent-js/context/AGENTS.md
+Content: Global content
 `,
       );
     });
@@ -98,19 +98,12 @@ Content: global content
       );
     });
 
-    it("combines global and globbed AGENTS.md files", () => {
+    it("combines cwd and global agents dir files", () => {
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set(
         "/fake-home/.config/.agent-js/context/AGENTS.md",
         "global content",
       );
-      testFs._globResults.set(
-        "/fake-home/.config/.agent-js/context/**/AGENTS.md",
-        ["/fake-home/.config/.agent-js/context/AGENTS.md"],
-      );
-      testFs._globResults.set("/test-cwd/**/AGENTS.md", [
-        "/test-cwd/AGENTS.md",
-      ]);
       testFs._files.set("/test-cwd/AGENTS.md", "local content");
       const result = getContextStr(getContextEntries());
       assert.equal(
@@ -397,6 +390,59 @@ would benefit from specialized instructions.
 
  Available skills:
 - deploy: Custom deploy
+`,
+      );
+    });
+
+    it("includes nested AGENTS.md files as context skills", () => {
+      testFs._globResults.set("/test-cwd/*/**/AGENTS.md", [
+        "/test-cwd/src/AGENTS.md",
+      ]);
+      testFs._files.set("/test-cwd/src/AGENTS.md", "nested content");
+      const result = getSkillsStr(getSkills());
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- __agent-js-context-for-/test-cwd/src: Context relevant for /test-cwd/src
+`,
+      );
+    });
+
+    it("nested AGENTS.md skills do not collide with regular skills", () => {
+      testFs._globResults.set(
+        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/.agent-js/skills/my-skill/SKILL.md"],
+      );
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
+        `---
+name: my-skill
+description: A test skill
+---
+# Body`,
+      );
+      testFs._globResults.set("/test-cwd/*/**/AGENTS.md", [
+        "/test-cwd/src/AGENTS.md",
+      ]);
+      testFs._files.set("/test-cwd/src/AGENTS.md", "nested content");
+      const result = getSkillsStr(getSkills());
+      assert.equal(
+        result,
+        `
+Skills:
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+ Available skills:
+- my-skill: A test skill
+- __agent-js-context-for-/test-cwd/src: Context relevant for /test-cwd/src
 `,
       );
     });

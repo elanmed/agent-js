@@ -16,6 +16,8 @@ export interface ContextEntry {
   content: string;
 }
 
+export const contextFileSkillNamePrefix = "__agent-js-context-for";
+
 export function getContextStr(contextEntries: ContextEntry[]) {
   if (contextEntries.length === 0) return "";
 
@@ -31,21 +33,13 @@ ${contextFilesList}`;
 export function getContextEntries() {
   const agentFileDirs: string[] = [processDeps.cwd(), getGlobalContextDir()];
 
-  const agentFilePaths: string[] = [];
-  for (const agentFileDir of agentFileDirs) {
-    const glob = join(agentFileDir, "**/AGENTS.md");
-    const globResult = tryCatch(() => fsDeps.globbySync(glob));
-    if (!globResult.ok) continue;
-    agentFilePaths.push(...globResult.value);
-  }
-
   const entries: ContextEntry[] = [];
 
-  for (const filePath of agentFilePaths) {
+  for (const agentFileDir of agentFileDirs) {
+    const filePath = join(agentFileDir, "AGENTS.md");
     const readResult = tryCatch(() => fsDeps.readFileSync(filePath).toString());
-    if (readResult.ok) {
-      entries.push({ filePath, content: readResult.value });
-    }
+    if (!readResult.ok) continue;
+    entries.push({ filePath, content: readResult.value });
   }
 
   return entries;
@@ -104,6 +98,26 @@ export function getSkills() {
 
     if (seenSkills.has(skill.name)) continue;
     seenSkills.add(skill.name);
+    skills.push(skill);
+  }
+
+  const agentFileGlob = join(processDeps.cwd(), "*/**/AGENTS.md");
+  const agentFileGlobResult = tryCatch(() => fsDeps.globbySync(agentFileGlob));
+  if (!agentFileGlobResult.ok) return skills;
+
+  for (const agentFilePath of agentFileGlobResult.value) {
+    const readResult = tryCatch(() =>
+      fsDeps.readFileSync(agentFilePath).toString(),
+    );
+    if (!readResult.ok) continue;
+    const dir = dirname(agentFilePath);
+
+    const skill: Skill = {
+      content: readResult.value,
+      description: `Context relevant for ${dir}`,
+      dir,
+      name: `${contextFileSkillNamePrefix}-${dir}`,
+    };
     skills.push(skill);
   }
 

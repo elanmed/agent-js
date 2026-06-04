@@ -28,6 +28,7 @@ import type { Key } from "./config.ts";
 import { appendToPromptHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
+import { contextFileSkillNamePrefix } from "./context.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -319,7 +320,7 @@ export async function resolveSlashCommand(rawInput: string) {
     return null;
   }
 
-  if (commandWithoutSlash.startsWith("model")) {
+  if (commandWithoutSlash.startsWith("model ")) {
     setModelCommand(rawInput);
     return null;
   }
@@ -472,9 +473,10 @@ export function setModelCommand(rawInput: string) {
 export function printSkillsCommand() {
   const skillsList = selectors
     .getSkills()
+    .filter((skill) => !skill.name.startsWith(contextFileSkillNamePrefix))
     .map(
       (skill) => `- ${skill.name}: ${skill.description}
-  ${join(skill.dir, "SKILL.md")}`,
+  ${skill.dir}`,
     )
     .join("\n");
 
@@ -484,14 +486,20 @@ export function printSkillsCommand() {
 }
 
 export function printContextFilesCommand() {
-  const contextFilesFormatted = selectors
+  const contextFiles = selectors
     .getContextEntries()
-    .map((context) => `- ${context.filePath}`)
-    .join("\n");
+    .map((context) => `- ${context.filePath}`);
+
+  const contextSkillFiles = selectors
+    .getSkills()
+    .filter((skill) => skill.name.startsWith(contextFileSkillNamePrefix))
+    .map((skill) => `- ${join(skill.dir, "AGENTS.md")} (as a skill)`);
+
+  const formatted = contextFiles.concat(contextSkillFiles).join("\n");
 
   printNewline();
   print.doing("Available context files:");
-  print(contextFilesFormatted);
+  print(formatted);
 }
 
 function getCommandsStr() {
