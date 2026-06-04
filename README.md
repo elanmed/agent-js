@@ -2,7 +2,7 @@
 
 A minimal agent implementation for working with LLMs (my own mini claude code)
 
-![demo](https://elanmed.dev/nvim-plugins/agent-js.png)
+![demo](./demo.png)
 
 ## Features
 
