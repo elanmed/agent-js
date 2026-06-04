@@ -35,12 +35,12 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Keymaps
 
-| Key         | Type  | Default                     | Description                                             |
-| ----------- | ----- | --------------------------- | ------------------------------------------------------- |
-| `edit`      | `Key` | `{ name: "g", ctrl: true }` | Open `$AGENT_JS_EDIT` or `$EDITOR` for multi-line input |
-| `editPaste` | `Key` | `{ name: "v", ctrl: true }` | Open editor with current line + clipboard pasted in     |
-| `history`   | `Key` | `{ name: "o", ctrl: true }` | Open `$AGENT_JS_HISTORY` or `$EDITOR` to view history   |
-| `clear`     | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                              |
+| Key         | Type  | Default                     | Description                                                      |
+| ----------- | ----- | --------------------------- | ---------------------------------------------------------------- |
+| `edit`      | `Key` | `{ name: "g", ctrl: true }` | Open `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line input |
+| `editPaste` | `Key` | `{ name: "v", ctrl: true }` | Open editor with current line + clipboard pasted in              |
+| `history`   | `Key` | `{ name: "o", ctrl: true }` | Open `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view history   |
+| `clear`     | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                       |
 
 The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
 
