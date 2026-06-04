@@ -5,6 +5,7 @@ import { dispatch, actions, selectors } from "./state.ts";
 import {
   resolveSlashCommand,
   resolveUserInput,
+  getModelCommand,
   setModelCommand,
   isSameKey,
   getAvailableSlashCommands,
@@ -252,7 +253,7 @@ hello
       assert.strictEqual(selectors.getModel(), "new-model");
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Model updated from old-model to new-model\n",
+        "Model updated from `old-model` to `new-model`\n",
       );
     });
 
@@ -270,7 +271,10 @@ hello
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model");
       assert.strictEqual(selectors.getModel(), "old-model");
-      assert.strictEqual(stripAnsi(selectors.getStdout()), "old-model\n");
+      assert.strictEqual(
+        stripAnsi(selectors.getStdout()),
+        "Usage: /model [model]?\n",
+      );
     });
 
     it("handles model name with slashes", () => {
@@ -279,7 +283,7 @@ hello
       assert.strictEqual(selectors.getModel(), "provider/new-model");
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Model updated from old to provider/new-model\n",
+        "Model updated from `old` to `provider/new-model`\n",
       );
     });
 
@@ -293,6 +297,18 @@ hello
       dispatch(actions.setModel("old"));
       setModelCommand("/model\tnew-model");
       assert.strictEqual(selectors.getModel(), "new-model");
+    });
+  });
+
+  describe("getModelCommand", () => {
+    beforeEach(() => {
+      dispatch(actions.resetStdout());
+    });
+
+    it("prints current model", () => {
+      dispatch(actions.setModel("gpt-4"));
+      getModelCommand();
+      assert.strictEqual(stripAnsi(selectors.getStdout()), "gpt-4\n");
     });
   });
 
@@ -685,8 +701,16 @@ Available commands:
       assert.strictEqual(selectors.getModel(), "new-model");
       assert.strictEqual(
         stripAnsi(selectors.getStdout()),
-        "Model updated from old to new-model\n",
+        "Model updated from `old` to `new-model`\n",
       );
+    });
+
+    it("handles /model without args", async () => {
+      dispatch(actions.setModel("gpt-4"));
+      dispatch(actions.resetStdout());
+      const result = await resolveSlashCommand("/model");
+      assert.strictEqual(result, null);
+      assert.strictEqual(stripAnsi(selectors.getStdout()), "gpt-4\n");
     });
 
     it("handles /skills command", async () => {

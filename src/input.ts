@@ -320,6 +320,11 @@ export async function resolveSlashCommand(rawInput: string) {
     return null;
   }
 
+  if (commandWithoutSlash === "model") {
+    getModelCommand();
+    return null;
+  }
+
   if (commandWithoutSlash.startsWith("model ")) {
     setModelCommand(rawInput);
     return null;
@@ -450,13 +455,13 @@ export function promptHistoryCommand() {
   tryCatch(() => fsDeps.writeFileSync(logPath, logContentResult.value));
 }
 
+export function getModelCommand() {
+  print.doing(selectors.getModel());
+  return;
+}
+
 export function setModelCommand(rawInput: string) {
   const parts = rawInput.trim().split(/\s+/);
-
-  if (parts.length === 1) {
-    print.doing(selectors.getModel());
-    return;
-  }
 
   if (parts.length !== 2) {
     print.error("Usage: /model [model]?");
@@ -467,7 +472,7 @@ export function setModelCommand(rawInput: string) {
 
   const prevModel = selectors.getModel();
   dispatch(actions.setModel(model));
-  print.doing(`Model updated from ${prevModel} to ${model}`);
+  print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
 }
 
 export function printSkillsCommand() {
