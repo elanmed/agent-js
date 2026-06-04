@@ -12,7 +12,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Tools**: 7 tools to execute bash, fetch from the web, and edit files
   - A `git diff` with `delta` is output whenever a tool changes a file
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
-- **Context**: Recursively includes `AGENTS.md` files, skills
+- **Context**: Root `AGENTS.md` files in context, nested ones progressively disclosed as skills
 - **Slash commands**: Change agent settings or execute reusable prompts
 - **Cost tracking**: Per-model token pricing
 - **Keymaps**: Customizable shortcuts for executing built-in slash commands
@@ -126,28 +126,23 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
 
 ## AGENTS.md Context
 
-`AGENTS.md` files provide project context to the agent, they are discovered from three sources:
+`AGENTS.md` files provide project context to the agent. The root `AGENTS.md` files are always included in the system prompt, while nested `AGENTS.md` files are progressively disclosed as skills.
 
 ### Directory Structure
 
 ```
 ./
-  AGENTS.md                        # nested in cwd — any depth
+  AGENTS.md                        # always in context
   src/
-    AGENTS.md
+    AGENTS.md                      # loaded as a skill on demand
 ~/.config/.agent-js/context/       # global context dir
-  rules/
-    AGENTS.md
-  conventions/
-    AGENTS.md
+  AGENTS.md                        # always in context
 ```
 
 ### Discovery
 
-- **CWD glob** — all `**/AGENTS.md` files under the current working directory
-- **Global context dir** — all `**/AGENTS.md` files under `~/.config/.agent-js/context/`
-
-Files from all sources are concatenated into the system prompt with their paths.
+- **Root files** — `./AGENTS.md` and `~/.config/.agent-js/context/AGENTS.md` are always included in the system prompt
+- **Nested files** — all `*/**/AGENTS.md` files under the current working directory are registered as skills. The agent can call `loadSkill` to progressively disclose their content when needed
 
 ## Skills
 
@@ -224,10 +219,6 @@ Minimal runtime dependencies (8 total):
 - This project uses **pnpm v11** for package management, which helps [prevent supply chain attacks](https://pnpm.io/supply-chain-security)
 - All tests are written with the Node.js native test runner and mocks i.e. no Jest
 - TypeScript is executed directly via `node` (no build step), keeping the toolchain minimal
-
-## TODO (soon)
-
-- [ ] Progressively disclose nested AGENTS.md files?
 
 ## TODO (later)
 
