@@ -37,7 +37,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 | Key       | Type  | Default                     | Description                                                                                     |
 | --------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `edit`    | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line input                                |
+| `edit`    | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                         |
 | `paste`   | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
 | `history` | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view history                                  |
 | `clear`   | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                      |
@@ -98,15 +98,16 @@ Example `settings.json`:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command     | Description                                                         |
-| ----------- | ------------------------------------------------------------------- |
-| `/edit`     | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line messages |
-| `/clear`    | Clear conversation context and reset message history                |
-| `/history`  | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view the history  |
-| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)               |
-| `/skills`   | List available skills                                               |
-| `/context`  | List available context files                                        |
-| `/commands` | List available slash commands (builtin and custom)                  |
+| Command     | Description                                           |
+| ----------- | ----------------------------------------------------- |
+| `/edit`     | Call the `edit` keymap                                |
+| `/clear`    | Call the `clear` keymap                               |
+| `/history`  | Call the `history` keymap                             |
+| `/paste`    | Call the `paste` keymap                               |
+| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`) |
+| `/skills`   | List available skills                                 |
+| `/context`  | List available context files                          |
+| `/commands` | List available slash commands (builtin and custom)    |
 
 ### Custom Slash Commands
 
