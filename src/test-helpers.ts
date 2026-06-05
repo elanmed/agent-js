@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import childProcess from "node:child_process";
 import { mock } from "node:test";
 import { fsDeps, processDeps } from "./deps.ts";
-import { dispatch, actions } from "./state.ts";
+import { actions } from "./state.ts";
 
 export interface FakeFsDeps {
   _files: Map<string, string>;
@@ -159,7 +159,7 @@ export function makeFakeRl(overrides: object = {}) {
 }
 
 export function setupTestContext() {
-  dispatch(actions.resetState());
+  actions.resetState();
   setupFakeDeps();
   mock.method(os, "homedir", () => "/fake-home");
   mock.method(os, "tmpdir", () => "/tmp");

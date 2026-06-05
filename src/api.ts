@@ -1,7 +1,7 @@
 import type { ModelMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { actions, dispatch, getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import {
   isAbortError,
   tryCatchAsync,
@@ -52,8 +52,8 @@ export async function resolveApiCall(userInput: string) {
     getState().app.skillsStr,
   ].join("\n");
 
-  dispatch(actions.setApiStartTime());
-  dispatch(actions.setApiStreamAbortController(new AbortController()));
+  actions.setApiStartTime();
+  actions.setApiStreamAbortController(new AbortController());
   startSpinner();
   const generateTextResult = await tryCatchAsync(
     aiDeps.generateText({
@@ -117,8 +117,8 @@ export async function resolveApiCall(userInput: string) {
     }),
   );
   stopSpinner();
-  dispatch(actions.setApiStreamAbortController(null));
-  dispatch(actions.setApiEndTime());
+  actions.setApiStreamAbortController(null);
+  actions.setApiEndTime();
 
   if (!generateTextResult.ok) {
     if (isAbortError(generateTextResult.error)) {
@@ -132,18 +132,16 @@ export async function resolveApiCall(userInput: string) {
 
   const { usage, text, response } = generateTextResult.value;
 
-  dispatch(
-    actions.appendToMessageUsages({
-      inputTokens: usage.inputTokens ?? 0,
-      outputTokens: usage.outputTokens ?? 0,
-      cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
-      cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
-    }),
-  );
+  actions.appendToMessageUsages({
+    inputTokens: usage.inputTokens ?? 0,
+    outputTokens: usage.outputTokens ?? 0,
+    cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
+    cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
+  });
 
-  dispatch(actions.appendToMessageParams(inputMessageParam));
+  actions.appendToMessageParams(inputMessageParam);
   for (const msg of response.messages) {
-    dispatch(actions.appendToMessageParams(msg));
+    actions.appendToMessageParams(msg);
   }
 
   return text;

@@ -7,7 +7,7 @@ import {
   getSkillsStr,
   getSkills,
 } from "./context.ts";
-import { actions, dispatch } from "./state.ts";
+import { actions } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
 import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
@@ -100,7 +100,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
 
 export function initState() {
   const args = parseCliArgs();
-  dispatch(actions.setDebugLog(args.debug));
+  actions.setDebugLog(args.debug);
 
   const globalConfig: Config = compute(() => {
     if (fsDeps.existsSync(getGlobalConfigPath())) {
@@ -150,68 +150,54 @@ export function initState() {
     );
   }
 
-  dispatch(actions.setModel(defaultedModel));
-  if (defaultedBaseURL) dispatch(actions.setBaseURL(defaultedBaseURL));
-  dispatch(actions.setProvider(defaultedProvider));
-  dispatch(
-    actions.setPricingPerModel(
-      localConfig.pricingPerModel ??
-        globalConfig.pricingPerModel ??
-        DEFAULT_CONFIG.pricingPerModel,
-    ),
+  actions.setModel(defaultedModel);
+  if (defaultedBaseURL) actions.setBaseURL(defaultedBaseURL);
+  actions.setProvider(defaultedProvider);
+  actions.setPricingPerModel(
+    localConfig.pricingPerModel ??
+      globalConfig.pricingPerModel ??
+      DEFAULT_CONFIG.pricingPerModel,
   );
 
-  dispatch(
-    actions.setCustomSlashCommandDirs(
-      localConfig.customSlashCommandDirs ??
-        globalConfig.customSlashCommandDirs ??
-        DEFAULT_CONFIG.customSlashCommandDirs,
-    ),
+  actions.setCustomSlashCommandDirs(
+    localConfig.customSlashCommandDirs ??
+      globalConfig.customSlashCommandDirs ??
+      DEFAULT_CONFIG.customSlashCommandDirs,
   );
-  dispatch(actions.setSlashCommands(getAvailableSlashCommands()));
-  dispatch(
-    actions.setCustomSkillDirs(
-      localConfig.customSkillDirs ??
-        globalConfig.customSkillDirs ??
-        DEFAULT_CONFIG.customSkillDirs,
-    ),
+  actions.setSlashCommands(getAvailableSlashCommands());
+  actions.setCustomSkillDirs(
+    localConfig.customSkillDirs ??
+      globalConfig.customSkillDirs ??
+      DEFAULT_CONFIG.customSkillDirs,
   );
-  dispatch(
-    actions.setKeymapEditPrompt(
-      localConfig.keymaps?.edit ??
-        globalConfig.keymaps?.edit ??
-        DEFAULT_CONFIG.keymaps.edit,
-    ),
+  actions.setKeymapEditPrompt(
+    localConfig.keymaps?.edit ??
+      globalConfig.keymaps?.edit ??
+      DEFAULT_CONFIG.keymaps.edit,
   );
-  dispatch(
-    actions.setKeymapEditPastePrompt(
-      localConfig.keymaps?.paste ??
-        globalConfig.keymaps?.paste ??
-        DEFAULT_CONFIG.keymaps.paste,
-    ),
+  actions.setKeymapEditPastePrompt(
+    localConfig.keymaps?.paste ??
+      globalConfig.keymaps?.paste ??
+      DEFAULT_CONFIG.keymaps.paste,
   );
-  dispatch(
-    actions.setKeymapPromptHistory(
-      localConfig.keymaps?.history ??
-        globalConfig.keymaps?.history ??
-        DEFAULT_CONFIG.keymaps.history,
-    ),
+  actions.setKeymapPromptHistory(
+    localConfig.keymaps?.history ??
+      globalConfig.keymaps?.history ??
+      DEFAULT_CONFIG.keymaps.history,
   );
-  dispatch(
-    actions.setKeymapClear(
-      localConfig.keymaps?.clear ??
-        globalConfig.keymaps?.clear ??
-        DEFAULT_CONFIG.keymaps.clear,
-    ),
+  actions.setKeymapClear(
+    localConfig.keymaps?.clear ??
+      globalConfig.keymaps?.clear ??
+      DEFAULT_CONFIG.keymaps.clear,
   );
 
   const contextEntries = getContextEntries();
-  dispatch(actions.setContextEntries(contextEntries));
-  dispatch(actions.setContextStr(getContextStr(contextEntries)));
+  actions.setContextEntries(contextEntries);
+  actions.setContextStr(getContextStr(contextEntries));
 
   const skills = getSkills();
-  dispatch(actions.setSkills(skills));
-  dispatch(actions.setSkillsStr(getSkillsStr(skills)));
+  actions.setSkills(skills);
+  actions.setSkillsStr(getSkillsStr(skills));
 }
 
 function parseConfigStr(configStr: string): Config {

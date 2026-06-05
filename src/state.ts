@@ -98,8 +98,6 @@ const logStateChange = (actionType: string, before: string, after: string) => {
   debugLog(`dispatch ${actionType}: before=${before}, after=${after}`);
 };
 
-export function dispatch(_cb: () => void) {}
-
 const appendToMessageParams = (message: ModelMessage) => {
   const before = state.app.messageParams;
   state = {

@@ -1,4 +1,4 @@
-import { actions, dispatch, getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import { format } from "prettier";
 import {
   tryCatch,
@@ -52,7 +52,7 @@ export function colorPrint(text: Uint8Array | string, color?: Color) {
   processDeps.stdout.write(out);
   if (wasSpinnerActive) startSpinner();
 
-  dispatch(actions.appendToStdout(out));
+  actions.appendToStdout(out);
 }
 
 export function printNewline() {
@@ -99,7 +99,7 @@ export function startSpinner() {
       `\r${String(SPINNER_FRAMES[spinnerIdx++ % SPINNER_FRAMES.length])}`,
     );
   }, 80);
-  dispatch(actions.setSpinnerTimeout(timeout));
+  actions.setSpinnerTimeout(timeout);
 }
 
 export function stopSpinner() {
@@ -107,7 +107,7 @@ export function stopSpinner() {
   if (timeout === null) return;
   clearInterval(timeout);
   processDeps.stdout.write("\r \r");
-  dispatch(actions.setSpinnerTimeout(null));
+  actions.setSpinnerTimeout(null);
 }
 
 async function checkBat(): Promise<boolean> {

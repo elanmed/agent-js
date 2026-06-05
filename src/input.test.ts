@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import readline from "node:readline/promises";
-import { dispatch, actions, getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import {
   resolveSlashCommand,
   resolveUserInput,
@@ -38,11 +38,7 @@ describe("input", () => {
 
     beforeEach(() => {
       spawned = [];
-      dispatch(
-        actions.setRl(
-          makeFakeRl({ line: "" }) as unknown as readline.Interface,
-        ),
-      );
+      actions.setRl(makeFakeRl({ line: "" }) as unknown as readline.Interface);
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned.push(cmd);
       });
@@ -78,7 +74,7 @@ describe("input", () => {
 
     it("returns normalized content and logs it", async () => {
       mock.method(Date, "now", () => 0);
-      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
+      actions.setPromptHistoryPath("/tmp/editor.log");
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/agent-js-test-uuid.txt", "  hello  ");
       });
@@ -113,10 +109,8 @@ hello
     });
 
     it("includes clipboard content when includeClipboardSuffix is true", async () => {
-      dispatch(
-        actions.setRl(
-          makeFakeRl({ line: "hello " }) as unknown as readline.Interface,
-        ),
+      actions.setRl(
+        makeFakeRl({ line: "hello " }) as unknown as readline.Interface,
       );
       mock.method(os, "platform", () => "linux");
       mockExec({ stdout: "world" });
@@ -132,12 +126,12 @@ hello
 
   describe("resolveUserInput", () => {
     beforeEach(() => {
-      dispatch(actions.resetStdout());
-      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
+      actions.resetStdout();
+      actions.setRl(makeFakeRl() as unknown as readline.Interface);
     });
 
     it("returns editor input value when set and clears it", async () => {
-      dispatch(actions.setEditorInputValue("editor content"));
+      actions.setEditorInputValue("editor content");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "editor content");
       assert.strictEqual(getState().app.editorInputValue, null);
@@ -148,7 +142,7 @@ hello
         Promise.resolve("  hello  "),
       );
       mock.method(Date, "now", () => 0);
-      dispatch(actions.setPromptHistoryPath("/tmp/test-history.log"));
+      actions.setPromptHistoryPath("/tmp/test-history.log");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
       assert.strictEqual(stripAnsi(getState().app.stdout), ">  hello  \n");
@@ -163,8 +157,8 @@ hello
     });
 
     it("resolves slash commands when input starts with /", async () => {
-      dispatch(actions.setModel("old"));
-      dispatch(actions.resetStdout());
+      actions.setModel("old");
+      actions.resetStdout();
       mock.method(getState().app.rl!, "question", () =>
         Promise.resolve("/model new-model"),
       );
@@ -186,7 +180,7 @@ hello
 
     it("returns editor value when aborted by editor", async () => {
       mock.method(getState().app.rl!, "question", () => {
-        dispatch(actions.setEditorInputValue("from editor"));
+        actions.setEditorInputValue("from editor");
         const err = new Error("This operation was aborted");
         err.name = "AbortError";
         return Promise.reject(err);
@@ -244,11 +238,11 @@ hello
 
   describe("setModelCommand", () => {
     beforeEach(() => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
     });
 
     it("sets model and prints blue confirmation when input is valid", () => {
-      dispatch(actions.setModel("old-model"));
+      actions.setModel("old-model");
       setModelCommand("/model new-model");
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(
@@ -258,7 +252,7 @@ hello
     });
 
     it("prints red error when input has too many parts", () => {
-      dispatch(actions.setModel("old-model"));
+      actions.setModel("old-model");
       setModelCommand("/model new-model extra");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
@@ -268,7 +262,7 @@ hello
     });
 
     it("prints red error when input has only the command", () => {
-      dispatch(actions.setModel("old-model"));
+      actions.setModel("old-model");
       setModelCommand("/model");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
@@ -278,7 +272,7 @@ hello
     });
 
     it("handles model name with slashes", () => {
-      dispatch(actions.setModel("old"));
+      actions.setModel("old");
       setModelCommand("/model provider/new-model");
       assert.strictEqual(getState().config.model, "provider/new-model");
       assert.strictEqual(
@@ -288,13 +282,13 @@ hello
     });
 
     it("handles input with multiple spaces", () => {
-      dispatch(actions.setModel("old"));
+      actions.setModel("old");
       setModelCommand("/model   new-model");
       assert.strictEqual(getState().config.model, "new-model");
     });
 
     it("handles input with tabs", () => {
-      dispatch(actions.setModel("old"));
+      actions.setModel("old");
       setModelCommand("/model\tnew-model");
       assert.strictEqual(getState().config.model, "new-model");
     });
@@ -302,11 +296,11 @@ hello
 
   describe("getModelCommand", () => {
     beforeEach(() => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
     });
 
     it("prints current model", () => {
-      dispatch(actions.setModel("gpt-4"));
+      actions.setModel("gpt-4");
       getModelCommand();
       assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
     });
@@ -314,24 +308,20 @@ hello
 
   describe("clearCommand", () => {
     beforeEach(() => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
     });
 
     it("resets message usages and params", () => {
-      dispatch(
-        actions.appendToMessageUsages({
-          inputTokens: 10,
-          outputTokens: 5,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-        }),
-      );
-      dispatch(
-        actions.appendToMessageParams({
-          role: "user",
-          content: "hello",
-        }),
-      );
+      actions.appendToMessageUsages({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      });
+      actions.appendToMessageParams({
+        role: "user",
+        content: "hello",
+      });
       clearCommand();
       assert.deepStrictEqual(getState().app.messageUsages, []);
       assert.deepStrictEqual(getState().app.messageParams, []);
@@ -348,8 +338,8 @@ hello
     });
 
     it("prints warning when log does not exist", () => {
-      dispatch(actions.setPromptHistoryPath("/tmp/nonexistent.log"));
-      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
+      actions.setPromptHistoryPath("/tmp/nonexistent.log");
+      actions.setRl(makeFakeRl() as unknown as readline.Interface);
       promptHistoryCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -363,7 +353,7 @@ hello
         spawned = cmd;
       });
       testProcessEnv._set("AGENT_JS_HISTORY", "nano __FILE__");
-      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
+      actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       promptHistoryCommand();
       assert.strictEqual(spawned, "nano /tmp/editor.log");
@@ -375,7 +365,7 @@ hello
         spawned = cmd;
       });
       testProcessEnv._set("EDITOR", "vim");
-      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
+      actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       promptHistoryCommand();
       assert.strictEqual(spawned, 'vim "/tmp/editor.log"');
@@ -386,16 +376,16 @@ hello
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
+      actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       promptHistoryCommand();
       assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
     });
 
     it("prints warning when log cannot be read", () => {
-      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
+      actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
+      actions.setRl(makeFakeRl() as unknown as readline.Interface);
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
@@ -407,7 +397,7 @@ hello
     });
 
     it("restores original log content after editing", () => {
-      dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
+      actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "original content");
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/editor.log", "modified by editor");
@@ -422,21 +412,19 @@ hello
 
   describe("printSkillsCommand", () => {
     beforeEach(() => {
-      dispatch(actions.resetState());
-      dispatch(actions.resetStdout());
+      actions.resetState();
+      actions.resetStdout();
     });
 
     it("prints available skills", () => {
-      dispatch(
-        actions.setSkills([
-          {
-            name: "test-skill",
-            description: "A test skill",
-            dir: "/skills/test-skill",
-            content: "skill content",
-          },
-        ]),
-      );
+      actions.setSkills([
+        {
+          name: "test-skill",
+          description: "A test skill",
+          dir: "/skills/test-skill",
+          content: "skill content",
+        },
+      ]);
       printSkillsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -451,16 +439,14 @@ Available skills:
 
   describe("printContextFilesCommand", () => {
     beforeEach(() => {
-      dispatch(actions.resetState());
-      dispatch(actions.resetStdout());
+      actions.resetState();
+      actions.resetStdout();
     });
 
     it("prints available context files", () => {
-      dispatch(
-        actions.setContextEntries([
-          { filePath: "/project/AGENTS.md", content: "context" },
-        ]),
-      );
+      actions.setContextEntries([
+        { filePath: "/project/AGENTS.md", content: "context" },
+      ]);
       printContextFilesCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -474,20 +460,18 @@ Available context files:
 
   describe("printCommandsCommand", () => {
     beforeEach(() => {
-      dispatch(actions.resetState());
-      dispatch(actions.resetStdout());
+      actions.resetState();
+      actions.resetStdout();
     });
 
     it("prints builtin and custom commands", () => {
-      dispatch(
-        actions.setSlashCommands([
-          {
-            name: "custom.md",
-            filePath: "/test/.agent-js/commands/custom.md",
-            content: "custom",
-          },
-        ]),
-      );
+      actions.setSlashCommands([
+        {
+          name: "custom.md",
+          filePath: "/test/.agent-js/commands/custom.md",
+          content: "custom",
+        },
+      ]);
       printCommandsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -580,7 +564,7 @@ Available commands:
     });
 
     it("includes custom slash command dirs", () => {
-      dispatch(actions.setCustomSlashCommandDirs(["/custom-commands"]));
+      actions.setCustomSlashCommandDirs(["/custom-commands"]);
       testFs._globResults.set("/custom-commands/**/*.md", [
         "/custom-commands/foo.md",
       ]);
@@ -669,11 +653,7 @@ Available commands:
 
   describe("resolveSlashCommand", () => {
     beforeEach(() => {
-      dispatch(
-        actions.setRl(
-          makeFakeRl({ line: "" }) as unknown as readline.Interface,
-        ),
-      );
+      actions.setRl(makeFakeRl({ line: "" }) as unknown as readline.Interface);
       mock.method(childProcess, "spawnSync", () => undefined);
     });
 
@@ -688,14 +668,14 @@ Available commands:
     });
 
     it("handles /history command", async () => {
-      dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
+      actions.setRl(makeFakeRl() as unknown as readline.Interface);
       const result = await resolveSlashCommand("/history");
       assert.strictEqual(result, null);
     });
 
     it("handles /model command", async () => {
-      dispatch(actions.setModel("old"));
-      dispatch(actions.resetStdout());
+      actions.setModel("old");
+      actions.resetStdout();
       const result = await resolveSlashCommand("/model new-model");
       assert.strictEqual(result, null);
       assert.strictEqual(getState().config.model, "new-model");
@@ -706,15 +686,15 @@ Available commands:
     });
 
     it("handles /model without args", async () => {
-      dispatch(actions.setModel("gpt-4"));
-      dispatch(actions.resetStdout());
+      actions.setModel("gpt-4");
+      actions.resetStdout();
       const result = await resolveSlashCommand("/model");
       assert.strictEqual(result, null);
       assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
     });
 
     it("handles /skills command", async () => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
       const result = await resolveSlashCommand("/skills");
       assert.strictEqual(result, null);
       assert.strictEqual(
@@ -727,7 +707,7 @@ Available skills:
     });
 
     it("handles /context command", async () => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
       const result = await resolveSlashCommand("/context");
       assert.strictEqual(result, null);
       assert.strictEqual(
@@ -740,7 +720,7 @@ Available context files:
     });
 
     it("handles /commands command", async () => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
       const result = await resolveSlashCommand("/commands");
       assert.strictEqual(result, null);
       assert.strictEqual(
@@ -760,30 +740,26 @@ Available commands:
     });
 
     it("handles custom slash command successfully", async () => {
-      dispatch(
-        actions.setSlashCommands([
-          {
-            name: "custom",
-            filePath: "/test-cwd/.agent-js/commands/custom.md",
-            content: "custom command content",
-          },
-        ]),
-      );
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test-cwd/.agent-js/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
       const result = await resolveSlashCommand("/custom");
       assert.strictEqual(result, "custom command content");
     });
 
     it("handles unknown slash command", async () => {
-      dispatch(
-        actions.setSlashCommands([
-          {
-            name: "known",
-            filePath: "/test-cwd/.agent-js/commands/known.md",
-            content: "known content",
-          },
-        ]),
-      );
-      dispatch(actions.resetStdout());
+      actions.setSlashCommands([
+        {
+          name: "known",
+          filePath: "/test-cwd/.agent-js/commands/known.md",
+          content: "known content",
+        },
+      ]);
+      actions.resetStdout();
       const result = await resolveSlashCommand("/unknown");
       assert.strictEqual(result, null);
       assert.strictEqual(

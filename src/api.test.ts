@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { dispatch, actions, getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import { resolveApiCall } from "./api.ts";
 import {
   setupTestContext,
@@ -28,11 +28,11 @@ function makeGenerateTextResult(overrides: Record<string, unknown> = {}) {
 describe("api", () => {
   beforeEach(() => {
     setupTestContext();
-    dispatch(actions.setProvider("anthropic"));
-    dispatch(actions.setModel("claude-sonnet-4-20250514"));
-    dispatch(actions.setBaseURL("https://api.anthropic.com"));
-    dispatch(actions.setContextStr(""));
-    dispatch(actions.setSkillsStr(""));
+    actions.setProvider("anthropic");
+    actions.setModel("claude-sonnet-4-20250514");
+    actions.setBaseURL("https://api.anthropic.com");
+    actions.setContextStr("");
+    actions.setSkillsStr("");
     mock.method(aiDeps, "generateText", () =>
       Promise.resolve(makeGenerateTextResult()),
     );
@@ -160,7 +160,7 @@ describe("api", () => {
     });
 
     it("prints diff and cleans up on tool call finish success", async () => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
       testFs._files.set("/test/file.txt", "modified content");
       mock.method(
         aiDeps,
@@ -240,8 +240,8 @@ describe("api", () => {
     });
 
     it("passes system content from context and skills", async () => {
-      dispatch(actions.setContextStr("CTX: project context"));
-      dispatch(actions.setSkillsStr("SKILLS: available skills"));
+      actions.setContextStr("CTX: project context");
+      actions.setSkillsStr("SKILLS: available skills");
       let capturedSystem: string | undefined;
       mock.method(aiDeps, "generateText", (opts: Record<string, unknown>) => {
         capturedSystem = opts["system"] as string;
@@ -257,15 +257,11 @@ SKILLS: available skills`,
     });
 
     it("includes previous messages in request", async () => {
-      dispatch(
-        actions.appendToMessageParams({ role: "user", content: "previous" }),
-      );
-      dispatch(
-        actions.appendToMessageParams({
-          role: "assistant",
-          content: "response",
-        }),
-      );
+      actions.appendToMessageParams({ role: "user", content: "previous" });
+      actions.appendToMessageParams({
+        role: "assistant",
+        content: "response",
+      });
       let capturedMessages: ModelMessage[] = [];
       mock.method(aiDeps, "generateText", (opts: Record<string, unknown>) => {
         capturedMessages = opts["messages"] as ModelMessage[];

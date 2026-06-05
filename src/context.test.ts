@@ -10,7 +10,7 @@ import {
   getSkillJSON,
   parseFrontMatter,
 } from "./context.ts";
-import { dispatch, actions } from "./state.ts";
+import { actions } from "./state.ts";
 
 describe("context", () => {
   beforeEach(() => {
@@ -328,7 +328,7 @@ would benefit from specialized instructions.
     });
 
     it("includes skills from custom skill dirs", () => {
-      dispatch(actions.setCustomSkillDirs(["/custom/skills"]));
+      actions.setCustomSkillDirs(["/custom/skills"]);
       testFs._globResults.set("/custom/skills/**/SKILL.md", [
         "/custom/skills/custom-skill/SKILL.md",
       ]);
@@ -356,7 +356,7 @@ would benefit from specialized instructions.
     });
 
     it("prioritizes custom skill dirs over local and global", () => {
-      dispatch(actions.setCustomSkillDirs(["/custom/skills"]));
+      actions.setCustomSkillDirs(["/custom/skills"]);
       testFs._globResults.set("/custom/skills/**/SKILL.md", [
         "/custom/skills/deploy/SKILL.md",
       ]);

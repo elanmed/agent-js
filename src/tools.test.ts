@@ -19,7 +19,7 @@ import {
   stripAnsi,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
-import { dispatch, actions, getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 
 describe("tools", () => {
   beforeEach(() => {
@@ -500,20 +500,18 @@ bottom`,
 
   describe("loadSkillTool", () => {
     beforeEach(() => {
-      dispatch(actions.resetState());
+      actions.resetState();
     });
 
     it("returns loaded skill content when skill exists in state", () => {
-      dispatch(
-        actions.setSkills([
-          {
-            name: "deploy",
-            description: "Deploy skill",
-            dir: "/skills/deploy",
-            content: "# Deploy instructions",
-          },
-        ]),
-      );
+      actions.setSkills([
+        {
+          name: "deploy",
+          description: "Deploy skill",
+          dir: "/skills/deploy",
+          content: "# Deploy instructions",
+        },
+      ]);
       const result = loadSkillTool({ name: "deploy" });
       assert.deepStrictEqual(result, {
         content: JSON.stringify(
@@ -530,22 +528,20 @@ bottom`,
     });
 
     it("finds the correct skill when multiple skills are stored", () => {
-      dispatch(
-        actions.setSkills([
-          {
-            name: "skill-a",
-            description: "Skill A",
-            dir: "/a",
-            content: "content a",
-          },
-          {
-            name: "skill-b",
-            description: "Skill B",
-            dir: "/b",
-            content: "content b",
-          },
-        ]),
-      );
+      actions.setSkills([
+        {
+          name: "skill-a",
+          description: "Skill A",
+          dir: "/a",
+          content: "content a",
+        },
+        {
+          name: "skill-b",
+          description: "Skill B",
+          dir: "/b",
+          content: "content b",
+        },
+      ]);
       const result = loadSkillTool({ name: "skill-b" });
       const parsed = JSON.parse(result.content) as Record<string, unknown>;
       assert.equal(parsed["name"], "skill-b");
@@ -623,7 +619,7 @@ bottom`,
 
   describe("printGitDiff", () => {
     beforeEach(() => {
-      dispatch(actions.resetStdout());
+      actions.resetStdout();
     });
 
     it("prints diff with lines style", async () => {

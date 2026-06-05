@@ -1,5 +1,5 @@
 import { basename, dirname, extname, join } from "node:path";
-import { actions, dispatch, getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import { normalizeLine, tryCatch } from "./utils.ts";
 import crypto from "node:crypto";
 import { fsDeps } from "./deps.ts";
@@ -63,7 +63,7 @@ export function initPromptHistory() {
     promptHistoryDir,
     `prompt-history-${uuid}-${Date.now().toString()}.log`,
   );
-  dispatch(actions.setPromptHistoryPath(promptHistorySessionPath));
+  actions.setPromptHistoryPath(promptHistorySessionPath);
   tryCatch(() => fsDeps.writeFileSync(promptHistorySessionPath, ""));
 }
 

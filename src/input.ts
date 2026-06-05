@@ -21,7 +21,7 @@ import {
   calculateSessionUsage,
 } from "./print.ts";
 import { basename, extname, join } from "node:path";
-import { actions, dispatch, getState, type SlashCommand } from "./state.ts";
+import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
 import type { Key } from "./config.ts";
@@ -46,7 +46,7 @@ export function initReadline() {
     output: mutedStdout,
     terminal: true,
   });
-  dispatch(actions.setRl(rl));
+  actions.setRl(rl);
 
   if (stdin.isTTY) {
     stdin.setRawMode(true);
@@ -112,7 +112,7 @@ async function getEditorInitialContent(opts: {
 }
 
 function abortRlQuestionForEditor(editorContent: string) {
-  dispatch(actions.setEditorInputValue(editorContent));
+  actions.setEditorInputValue(editorContent);
   const questionAbortController = getState().abortControllers.question;
   if (questionAbortController) {
     const rl = clearRlLine()!;
@@ -132,7 +132,7 @@ function abortRlQuestionForEditor(editorContent: string) {
     });
 
     rl.write(truncatedFirstLine);
-    dispatch(actions.appendToStdout(truncatedFirstLine));
+    actions.appendToStdout(truncatedFirstLine);
 
     questionAbortController.abort();
   }
@@ -155,7 +155,7 @@ export function initKeypress() {
         if (getState().abortControllers.question === null) return;
 
         rl.write("/clear\n");
-        dispatch(actions.appendToStdout("/clear\n"));
+        actions.appendToStdout("/clear\n");
         return;
       }
 
@@ -212,7 +212,7 @@ export async function resolveUserInput({
 
   if (getState().app.editorInputValue !== null) {
     const editorInputValue = getState().app.editorInputValue!;
-    dispatch(actions.setEditorInputValue(null));
+    actions.setEditorInputValue(null);
     return editorInputValue;
   }
 
@@ -220,21 +220,19 @@ export async function resolveUserInput({
     printNewline();
   }
   fencePrint("Input", { color: "yellow" });
-  dispatch(actions.resetStdout());
+  actions.resetStdout();
 
-  dispatch(actions.setQuestionAbortController(new AbortController()));
+  actions.setQuestionAbortController(new AbortController());
   const inputResult = await tryCatchAsync(
     rl.question("> ", {
       signal: getState().abortControllers.question!.signal,
     }),
   );
-  dispatch(actions.setQuestionAbortController(null));
+  actions.setQuestionAbortController(null);
 
   if (!inputResult.ok) {
     if (!isAbortError(inputResult.error)) {
-      dispatch(
-        actions.appendToStdout(`>[unable to read rl.question result]\n`),
-      );
+      actions.appendToStdout(`>[unable to read rl.question result]\n`);
       print.error(getMessageFromError(inputResult.error));
       return null;
     }
@@ -242,7 +240,7 @@ export async function resolveUserInput({
     const abortedByEditor = getState().app.editorInputValue !== null;
     if (abortedByEditor) {
       const editorInputValue = getState().app.editorInputValue!;
-      dispatch(actions.setEditorInputValue(null));
+      actions.setEditorInputValue(null);
       return editorInputValue;
     }
 
@@ -250,7 +248,7 @@ export async function resolveUserInput({
     return null;
   }
 
-  dispatch(actions.appendToStdout(`>${inputResult.value}\n`));
+  actions.appendToStdout(`>${inputResult.value}\n`);
   const rawInput = inputResult.value.trim();
 
   if (getState().app.editorInputValue === null && rawInput.at(0) === "/") {
@@ -265,13 +263,13 @@ async function resolveExitConfirmation() {
   const rl = getState().app.rl;
   assert(rl !== null);
 
-  dispatch(actions.setQuestionAbortController(new AbortController()));
+  actions.setQuestionAbortController(new AbortController());
   const exitResult = await tryCatchAsync(
     rl.question("y(es) or <C-c> to exit: ", {
       signal: getState().abortControllers.question!.signal,
     }),
   );
-  dispatch(actions.setQuestionAbortController(null));
+  actions.setQuestionAbortController(null);
 
   if (!exitResult.ok) {
     if (isAbortError(exitResult.error)) {
@@ -284,7 +282,7 @@ async function resolveExitConfirmation() {
   }
 
   if (/^y(es)?$/i.exec(exitResult.value)) {
-    dispatch(actions.appendToStdout(`>${exitResult.value}\n`));
+    actions.appendToStdout(`>${exitResult.value}\n`);
 
     rl.close();
     process.exit(0);
@@ -369,8 +367,8 @@ export async function resolveSlashCommand(rawInput: string) {
 
 export function clearCommand() {
   print.infoSubtle(`Context cleared (${calculateSessionUsage()})`);
-  dispatch(actions.resetMessageUsages());
-  dispatch(actions.resetMessageParams());
+  actions.resetMessageUsages();
+  actions.resetMessageParams();
 }
 
 export async function spawnAndReadEditorContent(opts?: {
@@ -473,7 +471,7 @@ export function setModelCommand(rawInput: string) {
   assert(model !== undefined);
 
   const prevModel = getState().config.model;
-  dispatch(actions.setModel(model));
+  actions.setModel(model);
   print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
 }
 

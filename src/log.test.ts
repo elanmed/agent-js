@@ -8,7 +8,7 @@ import {
   initPromptHistory,
   deleteExpiredPromptHistory,
 } from "./log.ts";
-import { dispatch, actions, getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 
@@ -23,19 +23,19 @@ describe("log", () => {
     });
 
     it("does nothing when debugLog is disabled", () => {
-      dispatch(actions.setDebugLog(false));
+      actions.setDebugLog(false);
       debugLog("test message");
       assert.equal(testFs._files.has("/test-cwd/.agent-js/debug.log"), false);
     });
 
     it("creates directory when log file does not exist", () => {
-      dispatch(actions.setDebugLog(true));
+      actions.setDebugLog(true);
       debugLog("test message");
       assert.equal(testFs._dirs.has("/test-cwd/.agent-js"), true);
     });
 
     it("appends content to log file with timestamp", () => {
-      dispatch(actions.setDebugLog(true));
+      actions.setDebugLog(true);
       debugLog("test message");
       assert.equal(
         testFs._files.get("/test-cwd/.agent-js/debug.log"),
@@ -44,7 +44,7 @@ describe("log", () => {
     });
 
     it("appends multiple messages", () => {
-      dispatch(actions.setDebugLog(true));
+      actions.setDebugLog(true);
       debugLog("message 1");
       debugLog("message 2");
       assert.equal(
@@ -62,13 +62,13 @@ describe("log", () => {
     });
 
     it("creates directory when log file does not exist", () => {
-      dispatch(actions.setPromptHistoryPath("/test/editor.log"));
+      actions.setPromptHistoryPath("/test/editor.log");
       appendToPromptHistory("test message");
       assert.equal(testFs._dirs.has("/test"), true);
     });
 
     it("appends content with timestamp and separator", () => {
-      dispatch(actions.setPromptHistoryPath("/test/editor.log"));
+      actions.setPromptHistoryPath("/test/editor.log");
       appendToPromptHistory("test content");
       assert.equal(
         testFs._files.get("/test/editor.log"),
@@ -81,7 +81,7 @@ test content
     });
 
     it("appends multiple messages with separators", () => {
-      dispatch(actions.setPromptHistoryPath("/test/editor.log"));
+      actions.setPromptHistoryPath("/test/editor.log");
       appendToPromptHistory("content 1");
       appendToPromptHistory("content 2");
       assert.equal(
