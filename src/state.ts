@@ -100,7 +100,7 @@ const logStateChange = (actionType: string, before: string, after: string) => {
 
 const appendToMessageParams = (message: ModelMessage) => {
   const before = state.app.messageParams;
-  state.app.messageParams = [...state.app.messageParams, message];
+  state.app.messageParams.push(message);
   logStateChange(
     "append-to-message-params",
     String(before.length),
@@ -110,7 +110,7 @@ const appendToMessageParams = (message: ModelMessage) => {
 
 const appendToMessageUsages = (message: TokenUsage) => {
   const before = state.app.messageUsages;
-  state.app.messageUsages = [...state.app.messageUsages, message];
+  state.app.messageUsages.push(message);
   logStateChange(
     "append-to-message-usages",
     String(before.length),
