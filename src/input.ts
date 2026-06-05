@@ -306,69 +306,65 @@ const builtinSlashCommands = [
 
 export async function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);
-  if (commandWithoutSlash === "edit") {
-    return await spawnAndReadEditorContent();
-  }
 
-  if (commandWithoutSlash === "paste") {
-    return await spawnAndReadEditorContent({
-      includeClipboardSuffix: true,
-    });
-  }
+  switch (commandWithoutSlash) {
+    case "edit": {
+      return await spawnAndReadEditorContent();
+    }
+    case "paste": {
+      return await spawnAndReadEditorContent({
+        includeClipboardSuffix: true,
+      });
+    }
+    case "clear": {
+      clearCommand();
+      return null;
+    }
+    case "history": {
+      promptHistoryCommand();
+      return null;
+    }
+    case "model": {
+      getModelCommand();
+      return null;
+    }
+    case "skills": {
+      printSkillsCommand();
+      return null;
+    }
+    case "context": {
+      printContextFilesCommand();
+      return null;
+    }
+    case "commands": {
+      printCommandsCommand();
+      return null;
+    }
+    case "keymaps": {
+      printKeymapsCommand();
+      return null;
+    }
+    default: {
+      if (commandWithoutSlash.startsWith("model ")) {
+        setModelCommand(rawInput);
+        return null;
+      }
 
-  if (commandWithoutSlash === "clear") {
-    clearCommand();
-    return null;
-  }
+      const slashCommands = selectors.getSlashCommands();
+      const matchedCommand = slashCommands.find(
+        (command) => command.name === commandWithoutSlash,
+      );
+      if (matchedCommand !== undefined) {
+        print.infoSubtle(`Executing slash command: ${rawInput}`);
+        return matchedCommand.content;
+      }
 
-  if (commandWithoutSlash === "history") {
-    promptHistoryCommand();
-    return null;
+      printNewline();
+      print.error(`Invalid command: ${rawInput}, valid commands:`);
+      print(getCommandsStr());
+      return null;
+    }
   }
-
-  if (commandWithoutSlash === "model") {
-    getModelCommand();
-    return null;
-  }
-
-  if (commandWithoutSlash.startsWith("model ")) {
-    setModelCommand(rawInput);
-    return null;
-  }
-
-  if (commandWithoutSlash === "skills") {
-    printSkillsCommand();
-    return null;
-  }
-
-  if (commandWithoutSlash === "context") {
-    printContextFilesCommand();
-    return null;
-  }
-
-  if (commandWithoutSlash === "commands") {
-    printCommandsCommand();
-    return null;
-  }
-
-  if (commandWithoutSlash === "keymaps") {
-    printKeymapsCommand();
-    return null;
-  }
-
-  const slashCommands = selectors.getSlashCommands();
-  const matchedCommand = slashCommands.find(
-    (command) => command.name === commandWithoutSlash,
-  );
-  if (matchedCommand !== undefined) {
-    print.infoSubtle(`Executing slash command: ${rawInput}`);
-    return matchedCommand.content;
-  }
-
-  printNewline();
-  print.error(`Invalid command: ${rawInput}, valid commands:`);
-  print(getCommandsStr());
-  return null;
 }
 
 export function clearCommand() {
