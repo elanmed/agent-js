@@ -63,6 +63,12 @@ export async function resolveApiCall(userInput: string) {
       abortSignal: selectors.getApiStreamAbortController()!.signal,
       experimental_onToolCallStart: ({ toolCall }) => {
         switch (toolCall.toolName as ToolName) {
+          case "create_file": {
+            const tempFileBefore = createTempFile();
+            fsDeps.writeFileSync(tempFileBefore, "");
+            toolCallIdToTempFile.set(toolCall.toolCallId, tempFileBefore);
+            break;
+          }
           case "insert_lines":
           case "str_replace": {
             const { path } = objectWithPathSchema.parse(toolCall.input);
@@ -74,6 +80,7 @@ export async function resolveApiCall(userInput: string) {
       },
       experimental_onToolCallFinish: async ({ toolCall, success }) => {
         switch (toolCall.toolName as ToolName) {
+          case "create_file":
           case "insert_lines":
           case "str_replace": {
             const tempFileBefore = toolCallIdToTempFile.get(
