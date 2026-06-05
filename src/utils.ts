@@ -43,7 +43,7 @@ export function normalizeLine(content: string): string {
   return content.trim().concat("\n");
 }
 
-export function createTempFile(args?: { initialContentPath?: string }) {
+export function getTempFileName(args?: { initialContentPath?: string }) {
   const tempFile = join(os.tmpdir(), `agent-js-${crypto.randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
   if (initialContentPath) {

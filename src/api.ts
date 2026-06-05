@@ -6,7 +6,7 @@ import {
   isAbortError,
   tryCatchAsync,
   getMessageFromError,
-  createTempFile,
+  getTempFileName,
 } from "./utils.ts";
 import { print, startSpinner, stopSpinner } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
@@ -64,7 +64,7 @@ export async function resolveApiCall(userInput: string) {
       experimental_onToolCallStart: ({ toolCall }) => {
         switch (toolCall.toolName as ToolName) {
           case "create_file": {
-            const tempFileBefore = createTempFile();
+            const tempFileBefore = getTempFileName();
             fsDeps.writeFileSync(tempFileBefore, "");
             toolCallIdToTempFile.set(toolCall.toolCallId, tempFileBefore);
             break;
@@ -72,7 +72,9 @@ export async function resolveApiCall(userInput: string) {
           case "insert_lines":
           case "str_replace": {
             const { path } = objectWithPathSchema.parse(toolCall.input);
-            const tempFileBefore = createTempFile({ initialContentPath: path });
+            const tempFileBefore = getTempFileName({
+              initialContentPath: path,
+            });
             toolCallIdToTempFile.set(toolCall.toolCallId, tempFileBefore);
             break;
           }
@@ -95,7 +97,7 @@ export async function resolveApiCall(userInput: string) {
             }
 
             const { path } = objectWithPathSchema.parse(toolCall.input);
-            const tempFileAfter = createTempFile({
+            const tempFileAfter = getTempFileName({
               initialContentPath: path,
             });
             await printGitDiff({

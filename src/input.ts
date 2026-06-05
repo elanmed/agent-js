@@ -9,7 +9,7 @@ import {
   tryCatchAsync,
   getMessageFromError,
   normalizeLine,
-  createTempFile,
+  getTempFileName,
   execPromise,
   isExisty,
   compute,
@@ -381,7 +381,7 @@ export async function spawnAndReadEditorContent(opts?: {
   const initialContent = await getEditorInitialContent({
     includeClipboardSuffix,
   });
-  const tempFile = createTempFile();
+  const tempFile = getTempFileName();
 
   const editCommand = compute(() => {
     if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {

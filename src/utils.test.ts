@@ -7,7 +7,7 @@ import {
   tryCatchAsync,
   normalizeLine,
   getMessageFromError,
-  createTempFile,
+  getTempFileName,
 } from "./utils.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
 
@@ -101,15 +101,15 @@ describe("utils", () => {
     });
   });
 
-  describe("createTempFile", () => {
+  describe("getTempFileName", () => {
     it("returns temp file path without initial content", () => {
-      const result = createTempFile();
+      const result = getTempFileName();
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
     });
 
     it("copies initial content when initialContentPath is provided", () => {
       testFs._files.set("/source/file.txt", "initial content");
-      const result = createTempFile({
+      const result = getTempFileName({
         initialContentPath: "/source/file.txt",
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
@@ -120,7 +120,7 @@ describe("utils", () => {
     });
 
     it("skips writing when read fails", () => {
-      const result = createTempFile({
+      const result = getTempFileName({
         initialContentPath: "/missing/file.txt",
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
@@ -132,7 +132,7 @@ describe("utils", () => {
       testFs.writeFileSync = () => {
         throw new Error("EIO");
       };
-      const result = createTempFile({
+      const result = getTempFileName({
         initialContentPath: "/source.txt",
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
