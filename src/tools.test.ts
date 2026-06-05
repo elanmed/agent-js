@@ -19,7 +19,7 @@ import {
   stripAnsi,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions, getState } from "./state.ts";
 
 describe("tools", () => {
   beforeEach(() => {
@@ -634,7 +634,7 @@ bottom`,
         path: "/test/file.txt",
       });
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 ━━ File change: /test/file.txt ━━
 +added line
@@ -650,7 +650,7 @@ bottom`,
         tempFileAfterPath: "/tmp/after",
         path: "/test/file.txt",
       });
-      assert.strictEqual(stripAnsi(selectors.getStdout()), "");
+      assert.strictEqual(stripAnsi(getState().app.stdout), "");
     });
 
     it("does not print when execGitDiff returns empty stdout", async () => {
@@ -660,7 +660,7 @@ bottom`,
         tempFileAfterPath: "/tmp/after",
         path: "/test/file.txt",
       });
-      assert.strictEqual(stripAnsi(selectors.getStdout()), "");
+      assert.strictEqual(stripAnsi(getState().app.stdout), "");
     });
   });
 });

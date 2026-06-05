@@ -8,7 +8,7 @@ import {
   initPromptHistory,
   deleteExpiredPromptHistory,
 } from "./log.ts";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions, getState } from "./state.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 
@@ -125,7 +125,7 @@ content 2
         true,
       );
       assert.equal(
-        selectors.getPromptHistoryPath(),
+        getState().app.promptHistoryPath,
         "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
       );
       assert.equal(
@@ -142,13 +142,13 @@ content 2
         throw new Error("Permission denied");
       });
       initPromptHistory();
-      assert.equal(selectors.getPromptHistoryPath(), "");
+      assert.equal(getState().app.promptHistoryPath, "");
     });
 
     it("generates correct log path with uuid and timestamp, stripping dashes", () => {
       initPromptHistory();
       assert.equal(
-        selectors.getPromptHistoryPath(),
+        getState().app.promptHistoryPath,
         "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
       );
       assert.equal(

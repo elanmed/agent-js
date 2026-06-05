@@ -21,7 +21,7 @@ import {
   calculateSessionUsage,
 } from "./print.ts";
 import { basename, extname, join } from "node:path";
-import { actions, dispatch, selectors, type SlashCommand } from "./state.ts";
+import { actions, dispatch, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
 import type { Key } from "./config.ts";
@@ -33,7 +33,7 @@ import { contextFileSkillNamePrefix } from "./context.ts";
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
   write(chunk: Buffer, _encoding: string, callback: () => void) {
-    if (selectors.getSpinnerTimeout() === null) {
+    if (getState().app.spinnerTimeout === null) {
       stdout.write(chunk);
     }
     callback();
@@ -65,11 +65,11 @@ export function initReadline() {
 async function getEditorInitialContent(opts: {
   includeClipboardSuffix: boolean;
 }) {
-  const rl = selectors.getRl();
+  const rl = getState().app.rl;
   assert(rl !== null);
 
   const prefilledEditorContent = compute(() => {
-    const editorInputValue = selectors.getEditorInputValue();
+    const editorInputValue = getState().app.editorInputValue;
     if (editorInputValue !== null) {
       return `${normalizeLine(editorInputValue)}\n`;
     }
@@ -113,7 +113,7 @@ async function getEditorInitialContent(opts: {
 
 function abortRlQuestionForEditor(editorContent: string) {
   dispatch(actions.setEditorInputValue(editorContent));
-  const questionAbortController = selectors.getQuestionAbortController();
+  const questionAbortController = getState().abortControllers.question;
   if (questionAbortController) {
     const rl = clearRlLine()!;
 
@@ -139,11 +139,11 @@ function abortRlQuestionForEditor(editorContent: string) {
 }
 
 export function initKeypress() {
-  const rl = selectors.getRl();
+  const rl = getState().app.rl;
   assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
     void (async () => {
-      if (isSameKey(key, selectors.getKeymapEditPrompt())) {
+      if (isSameKey(key, getState().config.keymapEditPrompt)) {
         const editorContent = await spawnAndReadEditorContent();
         if (editorContent !== null) {
           abortRlQuestionForEditor(editorContent);
@@ -151,15 +151,15 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, selectors.getKeymapClear())) {
-        if (selectors.getQuestionAbortController() === null) return;
+      if (isSameKey(key, getState().config.keymapClear)) {
+        if (getState().abortControllers.question === null) return;
 
         rl.write("/clear\n");
         dispatch(actions.appendToStdout("/clear\n"));
         return;
       }
 
-      if (isSameKey(key, selectors.getKeymapEditPastePrompt())) {
+      if (isSameKey(key, getState().config.keymapEditPastePrompt)) {
         const editorContent = await spawnAndReadEditorContent({
           includeClipboardSuffix: true,
         });
@@ -169,12 +169,12 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, selectors.getKeymapPromptHistory())) {
+      if (isSameKey(key, getState().config.keymapPromptHistory)) {
         promptHistoryCommand();
         return;
       }
 
-      if (selectors.getSpinnerTimeout() !== null) {
+      if (getState().app.spinnerTimeout !== null) {
         rl.write(null, { ctrl: true, name: "u" });
       }
     })();
@@ -182,16 +182,16 @@ export function initKeypress() {
 }
 
 export function initSigInt() {
-  const rl = selectors.getRl();
+  const rl = getState().app.rl;
   assert(rl !== null);
   rl.on("SIGINT", () => {
-    const apiStream = selectors.getApiStreamAbortController();
+    const apiStream = getState().abortControllers.apiStream;
     if (apiStream) {
       apiStream.abort();
       return;
     }
 
-    const question = selectors.getQuestionAbortController();
+    const question = getState().abortControllers.question;
     if (question) {
       if (rl.line.length > 0) {
         clearRlLine();
@@ -207,11 +207,11 @@ export async function resolveUserInput({
 }: {
   isFirstInput: boolean;
 }) {
-  const rl = selectors.getRl();
+  const rl = getState().app.rl;
   assert(rl !== null);
 
-  if (selectors.getEditorInputValue() !== null) {
-    const editorInputValue = selectors.getEditorInputValue()!;
+  if (getState().app.editorInputValue !== null) {
+    const editorInputValue = getState().app.editorInputValue!;
     dispatch(actions.setEditorInputValue(null));
     return editorInputValue;
   }
@@ -225,7 +225,7 @@ export async function resolveUserInput({
   dispatch(actions.setQuestionAbortController(new AbortController()));
   const inputResult = await tryCatchAsync(
     rl.question("> ", {
-      signal: selectors.getQuestionAbortController()!.signal,
+      signal: getState().abortControllers.question!.signal,
     }),
   );
   dispatch(actions.setQuestionAbortController(null));
@@ -239,9 +239,9 @@ export async function resolveUserInput({
       return null;
     }
 
-    const abortedByEditor = selectors.getEditorInputValue() !== null;
+    const abortedByEditor = getState().app.editorInputValue !== null;
     if (abortedByEditor) {
-      const editorInputValue = selectors.getEditorInputValue()!;
+      const editorInputValue = getState().app.editorInputValue!;
       dispatch(actions.setEditorInputValue(null));
       return editorInputValue;
     }
@@ -253,7 +253,7 @@ export async function resolveUserInput({
   dispatch(actions.appendToStdout(`>${inputResult.value}\n`));
   const rawInput = inputResult.value.trim();
 
-  if (selectors.getEditorInputValue() === null && rawInput.at(0) === "/") {
+  if (getState().app.editorInputValue === null && rawInput.at(0) === "/") {
     return await resolveSlashCommand(rawInput);
   }
 
@@ -262,13 +262,13 @@ export async function resolveUserInput({
 }
 
 async function resolveExitConfirmation() {
-  const rl = selectors.getRl();
+  const rl = getState().app.rl;
   assert(rl !== null);
 
   dispatch(actions.setQuestionAbortController(new AbortController()));
   const exitResult = await tryCatchAsync(
     rl.question("y(es) or <C-c> to exit: ", {
-      signal: selectors.getQuestionAbortController()!.signal,
+      signal: getState().abortControllers.question!.signal,
     }),
   );
   dispatch(actions.setQuestionAbortController(null));
@@ -350,7 +350,7 @@ export async function resolveSlashCommand(rawInput: string) {
         return null;
       }
 
-      const slashCommands = selectors.getSlashCommands();
+      const slashCommands = getState().app.slashCommands;
       const matchedCommand = slashCommands.find(
         (command) => command.name === commandWithoutSlash,
       );
@@ -425,7 +425,7 @@ export async function spawnAndReadEditorContent(opts?: {
 }
 
 export function promptHistoryCommand() {
-  const logPath = selectors.getPromptHistoryPath();
+  const logPath = getState().app.promptHistoryPath;
   const logContentResult = tryCatch(() =>
     fsDeps.readFileSync(logPath).toString(),
   );
@@ -458,7 +458,7 @@ export function promptHistoryCommand() {
 }
 
 export function getModelCommand() {
-  print.doing(selectors.getModel());
+  print.doing(getState().config.model);
   return;
 }
 
@@ -472,15 +472,16 @@ export function setModelCommand(rawInput: string) {
   const model = parts[1];
   assert(model !== undefined);
 
-  const prevModel = selectors.getModel();
+  const prevModel = getState().config.model;
   dispatch(actions.setModel(model));
   print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
 }
 
 export function printSkillsCommand() {
-  const skillsList = selectors
-    .getSkills()
-    .filter((skill) => !skill.name.startsWith(contextFileSkillNamePrefix))
+  const skillsList = getState()
+    .app.skills.filter(
+      (skill) => !skill.name.startsWith(contextFileSkillNamePrefix),
+    )
     .map(
       (skill) => `- ${skill.name}: ${skill.description}
   ${skill.dir}`,
@@ -493,13 +494,14 @@ export function printSkillsCommand() {
 }
 
 export function printContextFilesCommand() {
-  const contextFiles = selectors
-    .getContextEntries()
-    .map((context) => `- ${context.filePath}`);
+  const contextFiles = getState().app.contextEntries.map(
+    (context) => `- ${context.filePath}`,
+  );
 
-  const contextSkillFiles = selectors
-    .getSkills()
-    .filter((skill) => skill.name.startsWith(contextFileSkillNamePrefix))
+  const contextSkillFiles = getState()
+    .app.skills.filter((skill) =>
+      skill.name.startsWith(contextFileSkillNamePrefix),
+    )
     .map((skill) => `- ${join(skill.dir, "AGENTS.md")} (as a skill)`);
 
   const formatted = contextFiles.concat(contextSkillFiles).join("\n");
@@ -510,9 +512,9 @@ export function printContextFilesCommand() {
 }
 
 function getCommandsStr() {
-  const customCommandsFormatted = selectors
-    .getSlashCommands()
-    .map((command) => `- ${command.filePath}`);
+  const customCommandsFormatted = getState().app.slashCommands.map(
+    (command) => `- ${command.filePath}`,
+  );
 
   const builtinCommandsFormatted = builtinSlashCommands.map(
     (command) => `- /${command}`,
@@ -539,18 +541,18 @@ export function isSameKey(a: Key, b: Key) {
 export function printKeymapsCommand() {
   printNewline();
   print.doing("Keymaps:");
-  print(`- keymap-edit: ${JSON.stringify(selectors.getKeymapEditPrompt())}`);
+  print(`- keymap-edit: ${JSON.stringify(getState().config.keymapEditPrompt)}`);
   print(
-    `- keymap-history: ${JSON.stringify(selectors.getKeymapPromptHistory())}`,
+    `- keymap-history: ${JSON.stringify(getState().config.keymapPromptHistory)}`,
   );
   print(
-    `- keymap-edit-paste: ${JSON.stringify(selectors.getKeymapEditPastePrompt())}`,
+    `- keymap-edit-paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`,
   );
-  print(`- keymap-clear: ${JSON.stringify(selectors.getKeymapClear())}`);
+  print(`- keymap-clear: ${JSON.stringify(getState().config.keymapClear)}`);
 }
 
 export function clearRlLine(): readline.Interface | null {
-  const rl = selectors.getRl();
+  const rl = getState().app.rl;
   assert(rl !== null);
   rl.write(null, { ctrl: true, name: "e" });
   rl.write(null, { ctrl: true, name: "u" });
@@ -564,7 +566,7 @@ export function getAvailableSlashCommands() {
   const slashCommandFilePaths: string[] = [];
 
   const slashCommandDirs = [
-    ...selectors.getCustomSlashCommandDirs(),
+    ...getState().app.customSlashCommandDirs,
     getLocalSlashCommandDir(),
     getGlobalSlashCommandDir(),
   ];

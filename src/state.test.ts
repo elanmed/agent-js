@@ -1,8 +1,9 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
+import type readline from "node:readline/promises";
 import { MISSING } from "./utils.ts";
 import type { TokenUsage } from "./print.ts";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions, getState } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 
 describe("state", () => {
@@ -20,45 +21,45 @@ describe("state", () => {
     dispatch(actions.resetState());
     clearTimeout(timeout);
 
-    assert.deepStrictEqual(selectors.getMessageParams(), []);
-    assert.deepStrictEqual(selectors.getMessageUsages(), []);
-    assert.equal(selectors.getQuestionAbortController(), null);
-    assert.equal(selectors.getApiStreamAbortController(), null);
-    assert.equal(selectors.getSpinnerTimeout(), null);
-    assert.equal(selectors.getApiStartTime(), null);
-    assert.equal(selectors.getApiEndTime(), null);
-    assert.equal(selectors.getPromptHistoryPath(), "");
+    assert.deepStrictEqual(getState().app.messageParams, []);
+    assert.deepStrictEqual(getState().app.messageUsages, []);
+    assert.equal(getState().abortControllers.question, null);
+    assert.equal(getState().abortControllers.apiStream, null);
+    assert.equal(getState().app.spinnerTimeout, null);
+    assert.equal(getState().app.apiStartTime, null);
+    assert.equal(getState().app.apiEndTime, null);
+    assert.equal(getState().app.promptHistoryPath, "");
   });
 
   it("initial state", () => {
-    assert.deepStrictEqual(selectors.getMessageParams(), []);
-    assert.deepStrictEqual(selectors.getMessageUsages(), []);
-    assert.equal(selectors.getQuestionAbortController(), null);
-    assert.equal(selectors.getApiStreamAbortController(), null);
-    assert.equal(selectors.getApiStartTime(), null);
-    assert.equal(selectors.getApiEndTime(), null);
-    assert.equal(selectors.getPromptHistoryPath(), "");
+    assert.deepStrictEqual(getState().app.messageParams, []);
+    assert.deepStrictEqual(getState().app.messageUsages, []);
+    assert.equal(getState().abortControllers.question, null);
+    assert.equal(getState().abortControllers.apiStream, null);
+    assert.equal(getState().app.apiStartTime, null);
+    assert.equal(getState().app.apiEndTime, null);
+    assert.equal(getState().app.promptHistoryPath, "");
   });
 
   describe("append-to-message-params", () => {
     it("appends new message to the list", () => {
-      assert.deepStrictEqual(selectors.getMessageParams(), []);
+      assert.deepStrictEqual(getState().app.messageParams, []);
       dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
-      assert.equal(selectors.getMessageParams().length, 1);
-      assert.deepStrictEqual(selectors.getMessageParams()[0], {
+      assert.equal(getState().app.messageParams.length, 1);
+      assert.deepStrictEqual(getState().app.messageParams[0], {
         role: "user",
         content: "hi",
       });
     });
 
     it("appends multiple messages in order", () => {
-      assert.deepStrictEqual(selectors.getMessageParams(), []);
+      assert.deepStrictEqual(getState().app.messageParams, []);
       dispatch(actions.appendToMessageParams({ role: "user", content: "hi" }));
       dispatch(
         actions.appendToMessageParams({ role: "assistant", content: "hello" }),
       );
 
-      const params = selectors.getMessageParams();
+      const params = getState().app.messageParams;
       assert.equal(params.length, 2);
       assert.equal(params[0]!.role, "user");
       assert.equal(params[1]!.role, "assistant");
@@ -66,7 +67,7 @@ describe("state", () => {
   });
 
   it("append-to-message-usages", () => {
-    assert.deepStrictEqual(selectors.getMessageUsages(), []);
+    assert.deepStrictEqual(getState().app.messageUsages, []);
     const usage1: TokenUsage = {
       inputTokens: 10,
       outputTokens: 5,
@@ -83,25 +84,25 @@ describe("state", () => {
     dispatch(actions.appendToMessageUsages(usage1));
     dispatch(actions.appendToMessageUsages(usage2));
 
-    assert.deepStrictEqual(selectors.getMessageUsages(), [usage1, usage2]);
+    assert.deepStrictEqual(getState().app.messageUsages, [usage1, usage2]);
   });
 
   it("set-model", () => {
-    assert.equal(selectors.getModel(), MISSING);
+    assert.equal(getState().config.model, MISSING);
     dispatch(actions.setModel("claude-haiku-4-5"));
-    assert.equal(selectors.getModel(), "claude-haiku-4-5");
+    assert.equal(getState().config.model, "claude-haiku-4-5");
   });
 
   it("set-provider", () => {
-    assert.equal(selectors.getProvider(), "openai-compatible");
+    assert.equal(getState().config.provider, "openai-compatible");
     dispatch(actions.setProvider("anthropic"));
-    assert.equal(selectors.getProvider(), "anthropic");
+    assert.equal(getState().config.provider, "anthropic");
   });
 
   it("set-base-url", () => {
-    assert.equal(selectors.getBaseURL(), null);
+    assert.equal(getState().config.baseURL, null);
     dispatch(actions.setBaseURL("https://api.example.com/v1"));
-    assert.equal(selectors.getBaseURL(), "https://api.example.com/v1");
+    assert.equal(getState().config.baseURL, "https://api.example.com/v1");
   });
 
   it("set-pricing-per-model", () => {
@@ -113,12 +114,12 @@ describe("state", () => {
       cacheWritePerToken: 0,
     };
     dispatch(actions.setPricingPerModel(newPricing));
-    assert.deepStrictEqual(selectors.getPricingPerModel(), newPricing);
+    assert.deepStrictEqual(getState().config.pricingPerModel, newPricing);
   });
 
   it("set-keymap-edit-prompt", () => {
     assert.deepStrictEqual(
-      selectors.getKeymapEditPrompt(),
+      getState().config.keymapEditPrompt,
       DEFAULT_CONFIG.keymaps.edit,
     );
     dispatch(
@@ -129,7 +130,7 @@ describe("state", () => {
         shift: false,
       }),
     );
-    assert.deepStrictEqual(selectors.getKeymapEditPrompt(), {
+    assert.deepStrictEqual(getState().config.keymapEditPrompt, {
       name: "v",
       ctrl: false,
       meta: false,
@@ -139,7 +140,7 @@ describe("state", () => {
 
   it("set-keymap-prompt-history", () => {
     assert.deepStrictEqual(
-      selectors.getKeymapPromptHistory(),
+      getState().config.keymapPromptHistory,
       DEFAULT_CONFIG.keymaps.history,
     );
     dispatch(
@@ -150,7 +151,7 @@ describe("state", () => {
         shift: false,
       }),
     );
-    assert.deepStrictEqual(selectors.getKeymapPromptHistory(), {
+    assert.deepStrictEqual(getState().config.keymapPromptHistory, {
       name: "o",
       ctrl: false,
       meta: false,
@@ -160,7 +161,7 @@ describe("state", () => {
 
   it("set-keymap-clear", () => {
     assert.deepStrictEqual(
-      selectors.getKeymapClear(),
+      getState().config.keymapClear,
       DEFAULT_CONFIG.keymaps.clear,
     );
     dispatch(
@@ -171,7 +172,7 @@ describe("state", () => {
         shift: false,
       }),
     );
-    assert.deepStrictEqual(selectors.getKeymapClear(), {
+    assert.deepStrictEqual(getState().config.keymapClear, {
       name: "k",
       ctrl: false,
       meta: false,
@@ -180,62 +181,62 @@ describe("state", () => {
   });
 
   it("set-question-abort-controller", () => {
-    assert.equal(selectors.getQuestionAbortController(), null);
+    assert.equal(getState().abortControllers.question, null);
     const controller = new AbortController();
     dispatch(actions.setQuestionAbortController(controller));
-    assert.equal(selectors.getQuestionAbortController(), controller);
+    assert.equal(getState().abortControllers.question, controller);
   });
 
   it("set-api-stream-abort-controller", () => {
-    assert.equal(selectors.getApiStreamAbortController(), null);
+    assert.equal(getState().abortControllers.apiStream, null);
     const controller = new AbortController();
     dispatch(actions.setApiStreamAbortController(controller));
-    assert.equal(selectors.getApiStreamAbortController(), controller);
+    assert.equal(getState().abortControllers.apiStream, controller);
   });
 
   it("set-editor-input-value", () => {
-    assert.equal(selectors.getEditorInputValue(), null);
+    assert.equal(getState().app.editorInputValue, null);
     dispatch(actions.setEditorInputValue("test content"));
-    assert.equal(selectors.getEditorInputValue(), "test content");
+    assert.equal(getState().app.editorInputValue, "test content");
   });
 
   it("set-debug-log", () => {
-    assert.equal(selectors.getDebugLog(), false);
+    assert.equal(getState().app.debugLog, false);
     dispatch(actions.setDebugLog(true));
-    assert.equal(selectors.getDebugLog(), true);
+    assert.equal(getState().app.debugLog, true);
   });
 
   it("set-prompt-history-path", () => {
-    assert.equal(selectors.getPromptHistoryPath(), "");
+    assert.equal(getState().app.promptHistoryPath, "");
     dispatch(actions.setPromptHistoryPath("/tmp/editor.log"));
-    assert.equal(selectors.getPromptHistoryPath(), "/tmp/editor.log");
+    assert.equal(getState().app.promptHistoryPath, "/tmp/editor.log");
   });
 
   it("set-context-str", () => {
-    assert.equal(selectors.getContextStr(), "");
+    assert.equal(getState().app.contextStr, "");
     dispatch(actions.setContextStr("FILEPATH: context\nhello"));
     assert.equal(
-      selectors.getContextStr(),
+      getState().app.contextStr,
       `FILEPATH: context
 hello`,
     );
   });
 
   it("set-skills-str", () => {
-    assert.equal(selectors.getSkillsStr(), "");
+    assert.equal(getState().app.skillsStr, "");
     dispatch(actions.setSkillsStr("- skill: desc"));
-    assert.equal(selectors.getSkillsStr(), "- skill: desc");
+    assert.equal(getState().app.skillsStr, "- skill: desc");
   });
 
   describe("set-context-entries", () => {
     it("sets the context entries array", () => {
-      assert.deepStrictEqual(selectors.getContextEntries(), []);
+      assert.deepStrictEqual(getState().app.contextEntries, []);
       dispatch(
         actions.setContextEntries([
           { filePath: "/test/AGENTS.md", content: "# Instructions" },
         ]),
       );
-      assert.deepStrictEqual(selectors.getContextEntries(), [
+      assert.deepStrictEqual(getState().app.contextEntries, [
         { filePath: "/test/AGENTS.md", content: "# Instructions" },
       ]);
     });
@@ -247,14 +248,14 @@ hello`,
       dispatch(
         actions.setContextEntries([{ filePath: "/b/AGENTS.md", content: "B" }]),
       );
-      assert.equal(selectors.getContextEntries().length, 1);
-      assert.equal(selectors.getContextEntries()[0]!.filePath, "/b/AGENTS.md");
+      assert.equal(getState().app.contextEntries.length, 1);
+      assert.equal(getState().app.contextEntries[0]!.filePath, "/b/AGENTS.md");
     });
   });
 
   describe("set-skills", () => {
     it("sets the skills array", () => {
-      assert.deepStrictEqual(selectors.getSkills(), []);
+      assert.deepStrictEqual(getState().app.skills, []);
       dispatch(
         actions.setSkills([
           {
@@ -265,7 +266,7 @@ hello`,
           },
         ]),
       );
-      assert.deepStrictEqual(selectors.getSkills(), [
+      assert.deepStrictEqual(getState().app.skills, [
         {
           name: "deploy",
           description: "Deploy skill",
@@ -296,38 +297,38 @@ hello`,
           },
         ]),
       );
-      assert.equal(selectors.getSkills().length, 1);
-      assert.equal(selectors.getSkills()[0]!.name, "b");
+      assert.equal(getState().app.skills.length, 1);
+      assert.equal(getState().app.skills[0]!.name, "b");
     });
   });
 
   it("set-slash-commands", () => {
-    assert.deepStrictEqual(selectors.getSlashCommands(), []);
+    assert.deepStrictEqual(getState().app.slashCommands, []);
     dispatch(
       actions.setSlashCommands([
         { name: "test", filePath: "/test.md", content: "test content" },
         { name: "deploy", filePath: "/deploy.md", content: "deploy content" },
       ]),
     );
-    assert.deepStrictEqual(selectors.getSlashCommands(), [
+    assert.deepStrictEqual(getState().app.slashCommands, [
       { name: "test", filePath: "/test.md", content: "test content" },
       { name: "deploy", filePath: "/deploy.md", content: "deploy content" },
     ]);
   });
 
   it("set-custom-slash-command-dirs", () => {
-    assert.deepStrictEqual(selectors.getCustomSlashCommandDirs(), []);
+    assert.deepStrictEqual(getState().app.customSlashCommandDirs, []);
     dispatch(actions.setCustomSlashCommandDirs(["/my-commands", "/more"]));
-    assert.deepStrictEqual(selectors.getCustomSlashCommandDirs(), [
+    assert.deepStrictEqual(getState().app.customSlashCommandDirs, [
       "/my-commands",
       "/more",
     ]);
   });
 
   it("set-custom-skill-dirs", () => {
-    assert.deepStrictEqual(selectors.getCustomSkillDirs(), []);
+    assert.deepStrictEqual(getState().app.customSkillDirs, []);
     dispatch(actions.setCustomSkillDirs(["/my-skills", "/more"]));
-    assert.deepStrictEqual(selectors.getCustomSkillDirs(), [
+    assert.deepStrictEqual(getState().app.customSkillDirs, [
       "/my-skills",
       "/more",
     ]);
@@ -337,29 +338,29 @@ hello`,
     dispatch(actions.appendToStdout("line1\n"));
     dispatch(actions.appendToStdout("line2\n"));
     assert.equal(
-      selectors.getStdout(),
+      getState().app.stdout,
       `line1
 line2
 `,
     );
     dispatch(actions.resetStdout());
-    assert.equal(selectors.getStdout(), "");
+    assert.equal(getState().app.stdout, "");
   });
 
   describe("append-to-stdout", () => {
     it("appends single line", () => {
-      assert.equal(selectors.getStdout(), "");
+      assert.equal(getState().app.stdout, "");
       dispatch(actions.appendToStdout("line1\n"));
-      assert.equal(selectors.getStdout(), "line1\n");
+      assert.equal(getState().app.stdout, "line1\n");
     });
 
     it("appends multiple lines in order", () => {
-      assert.equal(selectors.getStdout(), "");
+      assert.equal(getState().app.stdout, "");
       dispatch(actions.appendToStdout("line1\n"));
       dispatch(actions.appendToStdout("line2\n"));
       dispatch(actions.appendToStdout("line3\n"));
       assert.equal(
-        selectors.getStdout(),
+        getState().app.stdout,
         `line1
 line2
 line3
@@ -369,36 +370,36 @@ line3
   });
 
   it("set-rl", () => {
-    assert.equal(selectors.getRl(), null);
+    assert.equal(getState().app.rl, null);
     const fakeRl = {
       close: () => undefined,
       question: () => Promise.resolve(""),
-    } as unknown as NonNullable<ReturnType<typeof selectors.getRl>>;
+    } as unknown as readline.Interface;
     dispatch(actions.setRl(fakeRl));
-    assert.equal(selectors.getRl(), fakeRl);
+    assert.equal(getState().app.rl, fakeRl);
   });
 
   it("set-api-start-time", () => {
     mock.method(Date, "now", () => 42_000);
-    assert.equal(selectors.getApiStartTime(), null);
+    assert.equal(getState().app.apiStartTime, null);
     dispatch(actions.setApiStartTime());
-    assert.strictEqual(selectors.getApiStartTime(), 42_000);
+    assert.strictEqual(getState().app.apiStartTime, 42_000);
   });
 
   it("set-api-end-time", () => {
     mock.method(Date, "now", () => 99_000);
-    assert.equal(selectors.getApiEndTime(), null);
+    assert.equal(getState().app.apiEndTime, null);
     dispatch(actions.setApiEndTime());
-    assert.strictEqual(selectors.getApiEndTime(), 99_000);
+    assert.strictEqual(getState().app.apiEndTime, 99_000);
   });
 
   it("set-spinner-timeout", () => {
-    assert.equal(selectors.getSpinnerTimeout(), null);
+    assert.equal(getState().app.spinnerTimeout, null);
     const timeout = setTimeout(() => undefined, 1000);
     dispatch(actions.setSpinnerTimeout(timeout));
-    assert.equal(selectors.getSpinnerTimeout(), timeout);
+    assert.equal(getState().app.spinnerTimeout, timeout);
     clearTimeout(timeout);
     dispatch(actions.setSpinnerTimeout(null));
-    assert.equal(selectors.getSpinnerTimeout(), null);
+    assert.equal(getState().app.spinnerTimeout, null);
   });
 });

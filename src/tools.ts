@@ -12,7 +12,7 @@ import {
   compute,
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
-import { selectors } from "./state.ts";
+import { getState } from "./state.ts";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import { fsDeps } from "./deps.ts";
@@ -427,7 +427,7 @@ export type LoadSkillTool = z.infer<typeof loadSkillToolSchema>;
 
 export function loadSkillTool({ name }: LoadSkillTool): ToolResult {
   toolPrint("load_skill", name);
-  const foundSkill = selectors.getSkills().find((skill) => skill.name === name);
+  const foundSkill = getState().app.skills.find((skill) => skill.name === name);
   if (!foundSkill) {
     return {
       isError: true,

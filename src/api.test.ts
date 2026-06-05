@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions, getState } from "./state.ts";
 import { resolveApiCall } from "./api.ts";
 import {
   setupTestContext,
@@ -82,7 +82,7 @@ describe("api", () => {
         ),
       );
       await resolveApiCall("hello");
-      const usages = selectors.getMessageUsages();
+      const usages = getState().app.messageUsages;
       assert.deepStrictEqual(usages, [
         {
           inputTokens: 42,
@@ -91,7 +91,7 @@ describe("api", () => {
           cacheWriteTokens: 1,
         },
       ]);
-      const params = selectors.getMessageParams();
+      const params = getState().app.messageParams;
       assert.strictEqual(params.length, 3);
       assert.deepStrictEqual(params[0], { role: "user", content: "hello" });
     });
@@ -193,7 +193,7 @@ describe("api", () => {
       mockExec({ stdout: "+added line" });
       await resolveApiCall("edit file");
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "\n━━ File change: /test/file.txt ━━\n+added line\n\n",
       );
       assert.strictEqual(

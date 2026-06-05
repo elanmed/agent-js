@@ -2,7 +2,7 @@ import { dirname, join } from "node:path";
 import { fsDeps, processDeps } from "./deps.ts";
 import { tryCatch } from "./utils.ts";
 import { print } from "./print.ts";
-import { selectors } from "./state.ts";
+import { getState } from "./state.ts";
 import {
   getGlobalContextDir,
   getGlobalSkillDir,
@@ -78,7 +78,7 @@ ${skillsFormatted}
 export function getSkills() {
   const seenSkills = new Set<string>();
   const skillGrandparentDirs = [
-    ...selectors.getCustomSkillDirs(),
+    ...getState().app.customSkillDirs,
     getLocalSkillDir(),
     getGlobalSkillDir(),
   ];

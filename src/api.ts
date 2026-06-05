@@ -1,7 +1,7 @@
 import type { ModelMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { actions, dispatch, selectors } from "./state.ts";
+import { actions, dispatch, getState } from "./state.ts";
 import {
   isAbortError,
   tryCatchAsync,
@@ -22,18 +22,20 @@ import { aiDeps, fsDeps, processDeps } from "./deps.ts";
 function getLanguageModel() {
   const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
 
-  if (selectors.getProvider() === "anthropic") {
-    return createAnthropic({ ...(apiKey && { apiKey }) })(selectors.getModel());
+  if (getState().config.provider === "anthropic") {
+    return createAnthropic({ ...(apiKey && { apiKey }) })(
+      getState().config.model,
+    );
   }
 
-  const baseURL = selectors.getBaseURL();
+  const baseURL = getState().config.baseURL;
   assert(baseURL !== null);
 
   return createOpenAICompatible({
     name: "openai-compatible",
     baseURL: baseURL,
     ...(apiKey && { apiKey }),
-  })(selectors.getModel());
+  })(getState().config.model);
 }
 
 export async function resolveApiCall(userInput: string) {
@@ -46,8 +48,8 @@ export async function resolveApiCall(userInput: string) {
 
   const systemContent = [
     BASE_SYSTEM_PROMPT,
-    selectors.getContextStr(),
-    selectors.getSkillsStr(),
+    getState().app.contextStr,
+    getState().app.skillsStr,
   ].join("\n");
 
   dispatch(actions.setApiStartTime());
@@ -57,10 +59,10 @@ export async function resolveApiCall(userInput: string) {
     aiDeps.generateText({
       model: getLanguageModel(),
       system: systemContent,
-      messages: [...selectors.getMessageParams(), inputMessageParam],
+      messages: [...getState().app.messageParams, inputMessageParam],
       tools: TOOLS,
       stopWhen: aiDeps.isLoopFinished(),
-      abortSignal: selectors.getApiStreamAbortController()!.signal,
+      abortSignal: getState().abortControllers.apiStream!.signal,
       experimental_onToolCallStart: ({ toolCall }) => {
         switch (toolCall.toolName as ToolName) {
           case "create_file": {

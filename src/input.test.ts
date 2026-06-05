@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import readline from "node:readline/promises";
-import { dispatch, actions, selectors } from "./state.ts";
+import { dispatch, actions, getState } from "./state.ts";
 import {
   resolveSlashCommand,
   resolveUserInput,
@@ -140,18 +140,18 @@ hello
       dispatch(actions.setEditorInputValue("editor content"));
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "editor content");
-      assert.strictEqual(selectors.getEditorInputValue(), null);
+      assert.strictEqual(getState().app.editorInputValue, null);
     });
 
     it("returns trimmed user input", async () => {
-      mock.method(selectors.getRl()!, "question", () =>
+      mock.method(getState().app.rl!, "question", () =>
         Promise.resolve("  hello  "),
       );
       mock.method(Date, "now", () => 0);
       dispatch(actions.setPromptHistoryPath("/tmp/test-history.log"));
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
-      assert.strictEqual(stripAnsi(selectors.getStdout()), ">  hello  \n");
+      assert.strictEqual(stripAnsi(getState().app.stdout), ">  hello  \n");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z
@@ -165,27 +165,27 @@ hello
     it("resolves slash commands when input starts with /", async () => {
       dispatch(actions.setModel("old"));
       dispatch(actions.resetStdout());
-      mock.method(selectors.getRl()!, "question", () =>
+      mock.method(getState().app.rl!, "question", () =>
         Promise.resolve("/model new-model"),
       );
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
-      assert.strictEqual(selectors.getModel(), "new-model");
+      assert.strictEqual(getState().config.model, "new-model");
     });
 
     it("returns null and prints error on non-abort error", async () => {
-      mock.method(selectors.getRl()!, "question", () =>
+      mock.method(getState().app.rl!, "question", () =>
         Promise.reject(new Error("read failed")),
       );
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
       assert.ok(
-        selectors.getStdout().includes(">[unable to read rl.question result]"),
+        getState().app.stdout.includes(">[unable to read rl.question result]"),
       );
     });
 
     it("returns editor value when aborted by editor", async () => {
-      mock.method(selectors.getRl()!, "question", () => {
+      mock.method(getState().app.rl!, "question", () => {
         dispatch(actions.setEditorInputValue("from editor"));
         const err = new Error("This operation was aborted");
         err.name = "AbortError";
@@ -193,14 +193,14 @@ hello
       });
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "from editor");
-      assert.strictEqual(selectors.getEditorInputValue(), null);
+      assert.strictEqual(getState().app.editorInputValue, null);
     });
 
     it("exits on abort during exit confirmation", async () => {
       mock.method(process, "exit", () => {
         throw new Error("process.exit called");
       });
-      const questionMock = mock.method(selectors.getRl()!, "question", () => {
+      const questionMock = mock.method(getState().app.rl!, "question", () => {
         const err = new Error("This operation was aborted");
         err.name = "AbortError";
         return Promise.reject(err);
@@ -215,7 +215,7 @@ hello
     it("returns null when user declines exit confirmation", async () => {
       const err = new Error("This operation was aborted");
       err.name = "AbortError";
-      const questionMock = mock.method(selectors.getRl()!, "question", () =>
+      const questionMock = mock.method(getState().app.rl!, "question", () =>
         Promise.resolve("n"),
       );
       questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
@@ -230,7 +230,7 @@ hello
       });
       const err = new Error("This operation was aborted");
       err.name = "AbortError";
-      const questionMock = mock.method(selectors.getRl()!, "question", () =>
+      const questionMock = mock.method(getState().app.rl!, "question", () =>
         Promise.resolve("yes"),
       );
       questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
@@ -250,9 +250,9 @@ hello
     it("sets model and prints blue confirmation when input is valid", () => {
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model new-model");
-      assert.strictEqual(selectors.getModel(), "new-model");
+      assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "Model updated from `old-model` to `new-model`\n",
       );
     });
@@ -260,9 +260,9 @@ hello
     it("prints red error when input has too many parts", () => {
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model new-model extra");
-      assert.strictEqual(selectors.getModel(), "old-model");
+      assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "Usage: /model [model]?\n",
       );
     });
@@ -270,9 +270,9 @@ hello
     it("prints red error when input has only the command", () => {
       dispatch(actions.setModel("old-model"));
       setModelCommand("/model");
-      assert.strictEqual(selectors.getModel(), "old-model");
+      assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "Usage: /model [model]?\n",
       );
     });
@@ -280,9 +280,9 @@ hello
     it("handles model name with slashes", () => {
       dispatch(actions.setModel("old"));
       setModelCommand("/model provider/new-model");
-      assert.strictEqual(selectors.getModel(), "provider/new-model");
+      assert.strictEqual(getState().config.model, "provider/new-model");
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "Model updated from `old` to `provider/new-model`\n",
       );
     });
@@ -290,13 +290,13 @@ hello
     it("handles input with multiple spaces", () => {
       dispatch(actions.setModel("old"));
       setModelCommand("/model   new-model");
-      assert.strictEqual(selectors.getModel(), "new-model");
+      assert.strictEqual(getState().config.model, "new-model");
     });
 
     it("handles input with tabs", () => {
       dispatch(actions.setModel("old"));
       setModelCommand("/model\tnew-model");
-      assert.strictEqual(selectors.getModel(), "new-model");
+      assert.strictEqual(getState().config.model, "new-model");
     });
   });
 
@@ -308,7 +308,7 @@ hello
     it("prints current model", () => {
       dispatch(actions.setModel("gpt-4"));
       getModelCommand();
-      assert.strictEqual(stripAnsi(selectors.getStdout()), "gpt-4\n");
+      assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
     });
   });
 
@@ -333,10 +333,10 @@ hello
         }),
       );
       clearCommand();
-      assert.deepStrictEqual(selectors.getMessageUsages(), []);
-      assert.deepStrictEqual(selectors.getMessageParams(), []);
+      assert.deepStrictEqual(getState().app.messageUsages, []);
+      assert.deepStrictEqual(getState().app.messageParams, []);
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "Context cleared (10 in, 5 out)\n",
       );
     });
@@ -352,7 +352,7 @@ hello
       dispatch(actions.setRl(makeFakeRl() as unknown as readline.Interface));
       promptHistoryCommand();
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "[Cannot read history]\n",
       );
     });
@@ -401,7 +401,7 @@ hello
       });
       promptHistoryCommand();
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "[Cannot read history]\n",
       );
     });
@@ -439,7 +439,7 @@ hello
       );
       printSkillsCommand();
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 Available skills:
 - test-skill: A test skill
@@ -463,7 +463,7 @@ Available skills:
       );
       printContextFilesCommand();
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 Available context files:
 - /project/AGENTS.md
@@ -490,7 +490,7 @@ Available context files:
       );
       printCommandsCommand();
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 Available commands:
 - /edit
@@ -698,9 +698,9 @@ Available commands:
       dispatch(actions.resetStdout());
       const result = await resolveSlashCommand("/model new-model");
       assert.strictEqual(result, null);
-      assert.strictEqual(selectors.getModel(), "new-model");
+      assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         "Model updated from `old` to `new-model`\n",
       );
     });
@@ -710,7 +710,7 @@ Available commands:
       dispatch(actions.resetStdout());
       const result = await resolveSlashCommand("/model");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(selectors.getStdout()), "gpt-4\n");
+      assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
     });
 
     it("handles /skills command", async () => {
@@ -718,7 +718,7 @@ Available commands:
       const result = await resolveSlashCommand("/skills");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 Available skills:
 
@@ -731,7 +731,7 @@ Available skills:
       const result = await resolveSlashCommand("/context");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 Available context files:
 
@@ -744,7 +744,7 @@ Available context files:
       const result = await resolveSlashCommand("/commands");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 Available commands:
 - /edit
@@ -787,7 +787,7 @@ Available commands:
       const result = await resolveSlashCommand("/unknown");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(selectors.getStdout()),
+        stripAnsi(getState().app.stdout),
         `
 Invalid command: /unknown, valid commands:
 - /edit

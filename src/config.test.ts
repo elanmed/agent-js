@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { selectors } from "./state.ts";
+import { getState } from "./state.ts";
 import { initState, DEFAULT_CONFIG } from "./config.ts";
 import {
   getGlobalConfigPath,
@@ -39,7 +39,7 @@ describe("config", () => {
 
       initState();
 
-      assert.equal(selectors.getModel(), "claude-haiku-4-5");
+      assert.equal(getState().config.model, "claude-haiku-4-5");
     });
 
     it("uses its provider over the global config, default config", () => {
@@ -60,7 +60,7 @@ describe("config", () => {
 
       initState();
 
-      assert.equal(selectors.getProvider(), "anthropic");
+      assert.equal(getState().config.provider, "anthropic");
     });
 
     it("uses its pricingPerModel over the global config, default config", () => {
@@ -91,7 +91,7 @@ describe("config", () => {
 
       initState();
 
-      assert.deepEqual(selectors.getPricingPerModel(), localPricing);
+      assert.deepEqual(getState().config.pricingPerModel, localPricing);
     });
 
     it("uses its keymaps over the global config, default config", () => {
@@ -122,25 +122,25 @@ describe("config", () => {
 
       initState();
 
-      assert.deepEqual(selectors.getKeymapEditPrompt(), {
+      assert.deepEqual(getState().config.keymapEditPrompt, {
         name: "e",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(selectors.getKeymapEditPastePrompt(), {
+      assert.deepEqual(getState().config.keymapEditPastePrompt, {
         name: "t",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(selectors.getKeymapPromptHistory(), {
+      assert.deepEqual(getState().config.keymapPromptHistory, {
         name: "l",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(selectors.getKeymapClear(), {
+      assert.deepEqual(getState().config.keymapClear, {
         name: "k",
         ctrl: true,
         meta: false,
@@ -166,7 +166,7 @@ describe("config", () => {
 
       initState();
 
-      assert.deepStrictEqual(selectors.getCustomSlashCommandDirs(), [
+      assert.deepStrictEqual(getState().app.customSlashCommandDirs, [
         "/local-dir",
       ]);
     });
@@ -189,7 +189,7 @@ describe("config", () => {
 
       initState();
 
-      assert.deepStrictEqual(selectors.getCustomSkillDirs(), ["/local-skills"]);
+      assert.deepStrictEqual(getState().app.customSkillDirs, ["/local-skills"]);
     });
 
     it("merges partial keymaps with defaults", () => {
@@ -205,22 +205,22 @@ describe("config", () => {
 
       initState();
 
-      assert.deepEqual(selectors.getKeymapEditPrompt(), {
+      assert.deepEqual(getState().config.keymapEditPrompt, {
         name: "v",
         ctrl: false,
         meta: false,
         shift: false,
       });
       assert.deepEqual(
-        selectors.getKeymapEditPastePrompt(),
+        getState().config.keymapEditPastePrompt,
         DEFAULT_CONFIG.keymaps.paste,
       );
       assert.deepEqual(
-        selectors.getKeymapPromptHistory(),
+        getState().config.keymapPromptHistory,
         DEFAULT_CONFIG.keymaps.history,
       );
       assert.deepEqual(
-        selectors.getKeymapClear(),
+        getState().config.keymapClear,
         DEFAULT_CONFIG.keymaps.clear,
       );
     });
@@ -238,7 +238,7 @@ describe("config", () => {
         );
 
         initState();
-        assert.equal(selectors.getModel(), "claude-haiku-4-5");
+        assert.equal(getState().config.model, "claude-haiku-4-5");
       });
 
       it("uses its provider over the default config", () => {
@@ -251,7 +251,7 @@ describe("config", () => {
         );
 
         initState();
-        assert.equal(selectors.getProvider(), "anthropic");
+        assert.equal(getState().config.provider, "anthropic");
       });
 
       it("uses its pricingPerModel over the default config", () => {
@@ -273,7 +273,7 @@ describe("config", () => {
         );
 
         initState();
-        assert.deepEqual(selectors.getPricingPerModel(), globalPricing);
+        assert.deepEqual(getState().config.pricingPerModel, globalPricing);
       });
 
       it("uses its keymaps over the default config", () => {
@@ -297,25 +297,25 @@ describe("config", () => {
 
         initState();
 
-        assert.deepEqual(selectors.getKeymapEditPrompt(), {
+        assert.deepEqual(getState().config.keymapEditPrompt, {
           name: "v",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(selectors.getKeymapEditPastePrompt(), {
+        assert.deepEqual(getState().config.keymapEditPastePrompt, {
           name: "p",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(selectors.getKeymapPromptHistory(), {
+        assert.deepEqual(getState().config.keymapPromptHistory, {
           name: "o",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(selectors.getKeymapClear(), {
+        assert.deepEqual(getState().config.keymapClear, {
           name: "j",
           ctrl: false,
           meta: false,
@@ -334,7 +334,7 @@ describe("config", () => {
 
         initState();
 
-        assert.deepStrictEqual(selectors.getCustomSkillDirs(), [
+        assert.deepStrictEqual(getState().app.customSkillDirs, [
           "/global-skills",
         ]);
       });
@@ -389,7 +389,7 @@ describe("config", () => {
     );
 
     initState();
-    assert.equal(selectors.getDebugLog(), true);
+    assert.equal(getState().app.debugLog, true);
   });
 
   it("sets contextStr from dep", () => {
@@ -411,7 +411,7 @@ describe("config", () => {
 
     initState();
     assert.equal(
-      selectors.getContextStr(),
+      getState().app.contextStr,
       `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/AGENTS.md\nContent: hello\n`,
     );
   });
@@ -425,6 +425,6 @@ describe("config", () => {
     );
 
     initState();
-    assert.equal(selectors.getSkillsStr(), "");
+    assert.equal(getState().app.skillsStr, "");
   });
 });

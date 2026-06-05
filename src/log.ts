@@ -1,12 +1,12 @@
 import { basename, dirname, extname, join } from "node:path";
-import { actions, dispatch, selectors } from "./state.ts";
+import { actions, dispatch, getState } from "./state.ts";
 import { normalizeLine, tryCatch } from "./utils.ts";
 import crypto from "node:crypto";
 import { fsDeps } from "./deps.ts";
 import { getDebugLogPath, getPromptHistoryDir } from "./paths.ts";
 
 export function debugLog(content: string) {
-  if (!selectors.getDebugLog()) return;
+  if (!getState().app.debugLog) return;
 
   const path = getDebugLogPath();
   if (!fsDeps.existsSync(path)) {
@@ -24,7 +24,7 @@ export function debugLog(content: string) {
 }
 
 export function appendToPromptHistory(content: string) {
-  const path = selectors.getPromptHistoryPath();
+  const path = getState().app.promptHistoryPath;
   if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
       fsDeps.mkdirSync(dirname(path), { recursive: true }),

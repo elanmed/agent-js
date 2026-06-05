@@ -1,4 +1,4 @@
-import { actions, dispatch, selectors } from "./state.ts";
+import { actions, dispatch, getState } from "./state.ts";
 import { format } from "prettier";
 import {
   tryCatch,
@@ -47,7 +47,7 @@ export function colorPrint(text: Uint8Array | string, color?: Color) {
     }
   });
 
-  const wasSpinnerActive = selectors.getSpinnerTimeout() !== null;
+  const wasSpinnerActive = getState().app.spinnerTimeout !== null;
   stopSpinner();
   processDeps.stdout.write(out);
   if (wasSpinnerActive) startSpinner();
@@ -56,7 +56,7 @@ export function colorPrint(text: Uint8Array | string, color?: Color) {
 }
 
 export function printNewline() {
-  if (selectors.getStdout().endsWith("\n\n")) return;
+  if (getState().app.stdout.endsWith("\n\n")) return;
   colorPrint("");
 }
 
@@ -103,7 +103,7 @@ export function startSpinner() {
 }
 
 export function stopSpinner() {
-  const timeout = selectors.getSpinnerTimeout();
+  const timeout = getState().app.spinnerTimeout;
   if (timeout === null) return;
   clearInterval(timeout);
   processDeps.stdout.write("\r \r");
@@ -172,9 +172,9 @@ export interface TokenUsage {
 }
 
 export function calculateSessionUsage(): string {
-  const model = selectors.getModel();
-  const usages = selectors.getMessageUsages();
-  const pricingPerModel = selectors.getPricingPerModel();
+  const model = getState().config.model;
+  const usages = getState().app.messageUsages;
+  const pricingPerModel = getState().config.pricingPerModel;
 
   const totalUsage = usages.reduce<{
     inputTokens: number;
@@ -221,9 +221,9 @@ export function calculateSessionUsage(): string {
 }
 
 export function calculateApiDuration() {
-  const startTime = selectors.getApiStartTime();
+  const startTime = getState().app.apiStartTime;
   assert(startTime !== null);
-  const endTime = selectors.getApiEndTime();
+  const endTime = getState().app.apiEndTime;
   assert(endTime !== null);
 
   const diff = endTime - startTime;
