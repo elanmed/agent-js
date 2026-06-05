@@ -15,7 +15,7 @@ export function parseCliArgs() {
 
   const parsedArgs: CliArgs = structuredClone(defaultCliArgs);
   while (args.length) {
-    const arg = args.pop()!;
+    const arg = args.shift()!;
 
     if (arg === "--debug") {
       parsedArgs.debug = true;
