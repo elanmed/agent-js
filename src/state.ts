@@ -100,13 +100,7 @@ const logStateChange = (actionType: string, before: string, after: string) => {
 
 const appendToMessageParams = (message: ModelMessage) => {
   const before = state.app.messageParams;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      messageParams: [...state.app.messageParams, message],
-    },
-  };
+  state.app.messageParams = [...state.app.messageParams, message];
   logStateChange(
     "append-to-message-params",
     String(before.length),
@@ -116,13 +110,7 @@ const appendToMessageParams = (message: ModelMessage) => {
 
 const appendToMessageUsages = (message: TokenUsage) => {
   const before = state.app.messageUsages;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      messageUsages: [...state.app.messageUsages, message],
-    },
-  };
+  state.app.messageUsages = [...state.app.messageUsages, message];
   logStateChange(
     "append-to-message-usages",
     String(before.length),
@@ -132,37 +120,25 @@ const appendToMessageUsages = (message: TokenUsage) => {
 
 const setModel = (model: string) => {
   const before = state.config.model;
-  state = {
-    ...state,
-    config: { ...state.config, model },
-  };
+  state.config.model = model;
   logStateChange("set-model", before, model);
 };
 
 const setProvider = (provider: Provider) => {
   const before = state.config.provider;
-  state = {
-    ...state,
-    config: { ...state.config, provider },
-  };
+  state.config.provider = provider;
   logStateChange("set-provider", before, provider);
 };
 
 const setBaseURL = (baseURL: string) => {
   const before = state.config.baseURL;
-  state = {
-    ...state,
-    config: { ...state.config, baseURL },
-  };
+  state.config.baseURL = baseURL;
   logStateChange("set-base-url", String(before), baseURL);
 };
 
 const setPricingPerModel = (pricing: Record<string, ModelPricing>) => {
   const before = state.config.pricingPerModel;
-  state = {
-    ...state,
-    config: { ...state.config, pricingPerModel: pricing },
-  };
+  state.config.pricingPerModel = pricing;
   logStateChange(
     "set-pricing-per-model",
     stringify(before),
@@ -172,10 +148,7 @@ const setPricingPerModel = (pricing: Record<string, ModelPricing>) => {
 
 const setKeymapEditPrompt = (keymap: Key) => {
   const before = state.config.keymapEditPrompt;
-  state = {
-    ...state,
-    config: { ...state.config, keymapEditPrompt: keymap },
-  };
+  state.config.keymapEditPrompt = keymap;
   logStateChange(
     "set-keymap-edit-prompt",
     stringify(before),
@@ -185,13 +158,7 @@ const setKeymapEditPrompt = (keymap: Key) => {
 
 const setKeymapEditPastePrompt = (keymap: Key) => {
   const before = state.config.keymapEditPastePrompt;
-  state = {
-    ...state,
-    config: {
-      ...state.config,
-      keymapEditPastePrompt: keymap,
-    },
-  };
+  state.config.keymapEditPastePrompt = keymap;
   logStateChange(
     "set-keymap-edit-paste-prompt",
     stringify(before),
@@ -201,13 +168,7 @@ const setKeymapEditPastePrompt = (keymap: Key) => {
 
 const setKeymapPromptHistory = (keymap: Key) => {
   const before = state.config.keymapPromptHistory;
-  state = {
-    ...state,
-    config: {
-      ...state.config,
-      keymapPromptHistory: keymap,
-    },
-  };
+  state.config.keymapPromptHistory = keymap;
   logStateChange(
     "set-keymap-prompt-history",
     stringify(before),
@@ -217,40 +178,25 @@ const setKeymapPromptHistory = (keymap: Key) => {
 
 const setKeymapClear = (keymap: Key) => {
   const before = state.config.keymapClear;
-  state = {
-    ...state,
-    config: { ...state.config, keymapClear: keymap },
-  };
+  state.config.keymapClear = keymap;
   logStateChange("set-keymap-clear", stringify(before), stringify(keymap));
 };
 
 const resetMessageUsages = () => {
   const before = state.app.messageUsages.length;
-  state = {
-    ...state,
-    app: { ...state.app, messageUsages: [] },
-  };
+  state.app.messageUsages = [];
   logStateChange("reset-message-usages", String(before), "0");
 };
 
 const resetMessageParams = () => {
   const before = state.app.messageParams.length;
-  state = {
-    ...state,
-    app: { ...state.app, messageParams: [] },
-  };
+  state.app.messageParams = [];
   logStateChange("reset-message-params", String(before), "0");
 };
 
 const setQuestionAbortController = (controller: AbortController | null) => {
   const before = state.abortControllers.question;
-  state = {
-    ...state,
-    abortControllers: {
-      ...state.abortControllers,
-      question: controller,
-    },
-  };
+  state.abortControllers.question = controller;
   logStateChange(
     "set-question-abort-controller",
     String(before),
@@ -260,13 +206,7 @@ const setQuestionAbortController = (controller: AbortController | null) => {
 
 const setApiStreamAbortController = (controller: AbortController | null) => {
   const before = state.abortControllers.apiStream;
-  state = {
-    ...state,
-    abortControllers: {
-      ...state.abortControllers,
-      apiStream: controller,
-    },
-  };
+  state.abortControllers.apiStream = controller;
   logStateChange(
     "set-api-stream-abort-controller",
     String(before),
@@ -276,70 +216,37 @@ const setApiStreamAbortController = (controller: AbortController | null) => {
 
 const setEditorInputValue = (value: string | null) => {
   const before = state.app.editorInputValue;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      editorInputValue: value,
-    },
-  };
+  state.app.editorInputValue = value;
   logStateChange("set-editor-input-value", String(before), String(value));
 };
 
 const setSlashCommands = (commands: SlashCommand[]) => {
   const before = state.app.slashCommands;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      slashCommands: commands,
-    },
-  };
+  state.app.slashCommands = commands;
   logStateChange("set-slash-commands", String(before), String(commands));
 };
 
 const setCustomSlashCommandDirs = (dirs: string[]) => {
   const before = state.app.customSlashCommandDirs;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      customSlashCommandDirs: dirs,
-    },
-  };
+  state.app.customSlashCommandDirs = dirs;
   logStateChange("set-custom-slash-command-dirs", String(before), String(dirs));
 };
 
 const setCustomSkillDirs = (dirs: string[]) => {
   const before = state.app.customSkillDirs;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      customSkillDirs: dirs,
-    },
-  };
+  state.app.customSkillDirs = dirs;
   logStateChange("set-custom-skill-dirs", String(before), String(dirs));
 };
 
 const resetStdout = () => {
   const before = state.app.stdout;
-  state = {
-    ...state,
-    app: { ...state.app, stdout: "" },
-  };
+  state.app.stdout = "";
   logStateChange("reset-stdout", before, "");
 };
 
 const appendToStdout = (line: string) => {
   const before = state.app.stdout;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      stdout: state.app.stdout + line,
-    },
-  };
+  state.app.stdout += line;
   logStateChange(
     "append-to-stdout",
     String(before.length),
@@ -348,27 +255,18 @@ const appendToStdout = (line: string) => {
 };
 
 const setDebugLog = (debugLog: boolean) => {
-  state = {
-    ...state,
-    app: { ...state.app, debugLog },
-  };
+  state.app.debugLog = debugLog;
 };
 
 const setPromptHistoryPath = (promptHistoryPath: string) => {
   const before = state.app.promptHistoryPath;
-  state = {
-    ...state,
-    app: { ...state.app, promptHistoryPath },
-  };
+  state.app.promptHistoryPath = promptHistoryPath;
   logStateChange("set-prompt-history-path", before, promptHistoryPath);
 };
 
 const setContextEntries = (contextEntries: ContextEntry[]) => {
   const before = state.app.contextEntries.length;
-  state = {
-    ...state,
-    app: { ...state.app, contextEntries },
-  };
+  state.app.contextEntries = contextEntries;
   logStateChange(
     "set-context-entries",
     String(before),
@@ -378,10 +276,7 @@ const setContextEntries = (contextEntries: ContextEntry[]) => {
 
 const setContextStr = (contextStr: string) => {
   const before = state.app.contextStr;
-  state = {
-    ...state,
-    app: { ...state.app, contextStr },
-  };
+  state.app.contextStr = contextStr;
   logStateChange(
     "set-context-str",
     String(before.length),
@@ -391,10 +286,7 @@ const setContextStr = (contextStr: string) => {
 
 const setSkillsStr = (skillsStr: string) => {
   const before = state.app.skillsStr;
-  state = {
-    ...state,
-    app: { ...state.app, skillsStr },
-  };
+  state.app.skillsStr = skillsStr;
   logStateChange(
     "set-skills-str",
     String(before.length),
@@ -404,51 +296,33 @@ const setSkillsStr = (skillsStr: string) => {
 
 const setSkills = (skills: Skill[]) => {
   const before = state.app.skills.length;
-  state = {
-    ...state,
-    app: {
-      ...state.app,
-      skills,
-    },
-  };
+  state.app.skills = skills;
   logStateChange("set-skills", String(before), String(state.app.skills.length));
 };
 
 const setRl = (rl: readline.Interface | null) => {
   const before = state.app.rl;
-  state = {
-    ...state,
-    app: { ...state.app, rl },
-  };
+  state.app.rl = rl;
   logStateChange("set-rl", String(before), String(rl));
 };
 
 const setSpinnerTimeout = (timeout: NodeJS.Timeout | null) => {
   const before = state.app.spinnerTimeout;
-  state = {
-    ...state,
-    app: { ...state.app, spinnerTimeout: timeout },
-  };
+  state.app.spinnerTimeout = timeout;
   logStateChange("set-spinner-timeout", String(before), String(timeout));
 };
 
 const setApiStartTime = () => {
   const before = state.app.apiStartTime;
   const now = Date.now();
-  state = {
-    ...state,
-    app: { ...state.app, apiStartTime: now },
-  };
+  state.app.apiStartTime = now;
   logStateChange("set-api-start-time", String(before), String(now));
 };
 
 const setApiEndTime = () => {
   const before = state.app.apiEndTime;
   const now = Date.now();
-  state = {
-    ...state,
-    app: { ...state.app, apiEndTime: now },
-  };
+  state.app.apiEndTime = now;
   logStateChange("set-api-end-time", String(before), String(now));
 };
 
