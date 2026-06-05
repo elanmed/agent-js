@@ -19,7 +19,7 @@ export interface SlashCommand {
 }
 
 interface State {
-  appState: {
+  app: {
     messageParams: ModelMessage[];
     messageUsages: TokenUsage[];
     editorInputValue: string | null;
@@ -38,7 +38,7 @@ interface State {
     apiStartTime: number | null;
     apiEndTime: number | null;
   };
-  configState: {
+  config: {
     pricingPerModel: Record<string, ModelPricing>;
     model: string;
     baseURL: string | null;
@@ -55,7 +55,7 @@ interface State {
 }
 
 const initialState: State = {
-  appState: {
+  app: {
     messageParams: [],
     messageUsages: [],
     editorInputValue: null,
@@ -74,7 +74,7 @@ const initialState: State = {
     apiStartTime: null,
     apiEndTime: null,
   },
-  configState: {
+  config: {
     model: MISSING,
     provider: DEFAULT_CONFIG.provider,
     baseURL: null,
@@ -225,88 +225,88 @@ const logStateChange = (actionType: string, before: string, after: string) => {
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "append-to-message-params": {
-      const before = state.appState.messageParams;
+      const before = state.app.messageParams;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
-          messageParams: [...state.appState.messageParams, action.payload],
+        app: {
+          ...state.app,
+          messageParams: [...state.app.messageParams, action.payload],
         },
       };
       logStateChange(
         action.type,
         String(before.length),
-        String(next.appState.messageParams.length),
+        String(next.app.messageParams.length),
       );
       return next;
     }
     case "append-to-message-usages": {
-      const before = state.appState.messageUsages;
+      const before = state.app.messageUsages;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
-          messageUsages: [...state.appState.messageUsages, action.payload],
+        app: {
+          ...state.app,
+          messageUsages: [...state.app.messageUsages, action.payload],
         },
       };
       logStateChange(
         action.type,
         String(before.length),
-        String(next.appState.messageUsages.length),
+        String(next.app.messageUsages.length),
       );
       return next;
     }
     case "set-model": {
-      const before = state.configState.model;
+      const before = state.config.model;
       const next = {
         ...state,
-        configState: { ...state.configState, model: action.payload },
+        config: { ...state.config, model: action.payload },
       };
       logStateChange(action.type, before, action.payload);
       return next;
     }
     case "set-provider": {
-      const before = state.configState.provider;
+      const before = state.config.provider;
       const next = {
         ...state,
-        configState: { ...state.configState, provider: action.payload },
+        config: { ...state.config, provider: action.payload },
       };
       logStateChange(action.type, before, action.payload);
       return next;
     }
     case "set-base-url": {
-      const before = state.configState.baseURL;
+      const before = state.config.baseURL;
       const next = {
         ...state,
-        configState: { ...state.configState, baseURL: action.payload },
+        config: { ...state.config, baseURL: action.payload },
       };
       logStateChange(action.type, String(before), action.payload);
       return next;
     }
     case "set-pricing-per-model": {
-      const before = state.configState.pricingPerModel;
+      const before = state.config.pricingPerModel;
       const next = {
         ...state,
-        configState: { ...state.configState, pricingPerModel: action.payload },
+        config: { ...state.config, pricingPerModel: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
     case "set-keymap-edit-prompt": {
-      const before = state.configState.keymapEditPrompt;
+      const before = state.config.keymapEditPrompt;
       const next = {
         ...state,
-        configState: { ...state.configState, keymapEditPrompt: action.payload },
+        config: { ...state.config, keymapEditPrompt: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
     case "set-keymap-edit-paste-prompt": {
-      const before = state.configState.keymapEditPastePrompt;
+      const before = state.config.keymapEditPastePrompt;
       const next = {
         ...state,
-        configState: {
-          ...state.configState,
+        config: {
+          ...state.config,
           keymapEditPastePrompt: action.payload,
         },
       };
@@ -314,11 +314,11 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-keymap-prompt-history": {
-      const before = state.configState.keymapPromptHistory;
+      const before = state.config.keymapPromptHistory;
       const next = {
         ...state,
-        configState: {
-          ...state.configState,
+        config: {
+          ...state.config,
           keymapPromptHistory: action.payload,
         },
       };
@@ -326,28 +326,28 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-keymap-clear": {
-      const before = state.configState.keymapClear;
+      const before = state.config.keymapClear;
       const next = {
         ...state,
-        configState: { ...state.configState, keymapClear: action.payload },
+        config: { ...state.config, keymapClear: action.payload },
       };
       logStateChange(action.type, stringify(before), stringify(action.payload));
       return next;
     }
     case "reset-message-usages": {
-      const before = state.appState.messageUsages.length;
+      const before = state.app.messageUsages.length;
       const next = {
         ...state,
-        appState: { ...state.appState, messageUsages: [] },
+        app: { ...state.app, messageUsages: [] },
       };
       logStateChange(action.type, String(before), "0");
       return next;
     }
     case "reset-message-params": {
-      const before = state.appState.messageParams.length;
+      const before = state.app.messageParams.length;
       const next = {
         ...state,
-        appState: { ...state.appState, messageParams: [] },
+        app: { ...state.app, messageParams: [] },
       };
       logStateChange(action.type, String(before), "0");
       return next;
@@ -377,11 +377,11 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-editor-input-value": {
-      const before = state.appState.editorInputValue;
+      const before = state.app.editorInputValue;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
+        app: {
+          ...state.app,
           editorInputValue: action.payload,
         },
       };
@@ -389,11 +389,11 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-slash-commands": {
-      const before = state.appState.slashCommands;
+      const before = state.app.slashCommands;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
+        app: {
+          ...state.app,
           slashCommands: action.payload,
         },
       };
@@ -401,11 +401,11 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-custom-slash-command-dirs": {
-      const before = state.appState.customSlashCommandDirs;
+      const before = state.app.customSlashCommandDirs;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
+        app: {
+          ...state.app,
           customSlashCommandDirs: action.payload,
         },
       };
@@ -413,11 +413,11 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-custom-skill-dirs": {
-      const before = state.appState.customSkillDirs;
+      const before = state.app.customSkillDirs;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
+        app: {
+          ...state.app,
           customSkillDirs: action.payload,
         },
       };
@@ -425,64 +425,64 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "reset-stdout": {
-      const before = state.appState.stdout;
+      const before = state.app.stdout;
       const next = {
         ...state,
-        appState: { ...state.appState, stdout: "" },
+        app: { ...state.app, stdout: "" },
       };
       logStateChange(action.type, before, "");
       return next;
     }
     case "append-to-stdout": {
-      const before = state.appState.stdout;
+      const before = state.app.stdout;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
-          stdout: state.appState.stdout + action.payload,
+        app: {
+          ...state.app,
+          stdout: state.app.stdout + action.payload,
         },
       };
       logStateChange(
         action.type,
         String(before.length),
-        String(next.appState.stdout.length),
+        String(next.app.stdout.length),
       );
       return next;
     }
     case "set-debug-log": {
       const next = {
         ...state,
-        appState: { ...state.appState, debugLog: action.payload },
+        app: { ...state.app, debugLog: action.payload },
       };
       return next;
     }
     case "set-prompt-history-path": {
-      const before = state.appState.promptHistoryPath;
+      const before = state.app.promptHistoryPath;
       const next = {
         ...state,
-        appState: { ...state.appState, promptHistoryPath: action.payload },
+        app: { ...state.app, promptHistoryPath: action.payload },
       };
       logStateChange(action.type, before, action.payload);
       return next;
     }
     case "set-context-entries": {
-      const before = state.appState.contextEntries.length;
+      const before = state.app.contextEntries.length;
       const next = {
         ...state,
-        appState: { ...state.appState, contextEntries: action.payload },
+        app: { ...state.app, contextEntries: action.payload },
       };
       logStateChange(
         action.type,
         String(before),
-        String(next.appState.contextEntries.length),
+        String(next.app.contextEntries.length),
       );
       return next;
     }
     case "set-context-str": {
-      const before = state.appState.contextStr;
+      const before = state.app.contextStr;
       const next = {
         ...state,
-        appState: { ...state.appState, contextStr: action.payload },
+        app: { ...state.app, contextStr: action.payload },
       };
       logStateChange(
         action.type,
@@ -492,10 +492,10 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-skills-str": {
-      const before = state.appState.skillsStr;
+      const before = state.app.skillsStr;
       const next = {
         ...state,
-        appState: { ...state.appState, skillsStr: action.payload },
+        app: { ...state.app, skillsStr: action.payload },
       };
       logStateChange(
         action.type,
@@ -505,55 +505,55 @@ const reducer = (state: State, action: Action): State => {
       return next;
     }
     case "set-skills": {
-      const before = state.appState.skills.length;
+      const before = state.app.skills.length;
       const next = {
         ...state,
-        appState: {
-          ...state.appState,
+        app: {
+          ...state.app,
           skills: action.payload,
         },
       };
       logStateChange(
         action.type,
         String(before),
-        String(next.appState.skills.length),
+        String(next.app.skills.length),
       );
       return next;
     }
     case "set-rl": {
-      const before = state.appState.rl;
+      const before = state.app.rl;
       const next = {
         ...state,
-        appState: { ...state.appState, rl: action.payload },
+        app: { ...state.app, rl: action.payload },
       };
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-spinner-timeout": {
-      const before = state.appState.spinnerTimeout;
+      const before = state.app.spinnerTimeout;
       const next = {
         ...state,
-        appState: { ...state.appState, spinnerTimeout: action.payload },
+        app: { ...state.app, spinnerTimeout: action.payload },
       };
       logStateChange(action.type, String(before), String(action.payload));
       return next;
     }
     case "set-api-start-time": {
-      const before = state.appState.apiStartTime;
+      const before = state.app.apiStartTime;
       const now = Date.now();
       const next = {
         ...state,
-        appState: { ...state.appState, apiStartTime: now },
+        app: { ...state.app, apiStartTime: now },
       };
       logStateChange(action.type, String(before), String(now));
       return next;
     }
     case "set-api-end-time": {
-      const before = state.appState.apiEndTime;
+      const before = state.app.apiEndTime;
       const now = Date.now();
       const next = {
         ...state,
-        appState: { ...state.appState, apiEndTime: now },
+        app: { ...state.app, apiEndTime: now },
       };
       logStateChange(action.type, String(before), String(now));
       return next;
@@ -737,33 +737,31 @@ export const actions = {
   resetState,
 };
 
-const getMessageParams = () => getState().appState.messageParams;
-const getMessageUsages = () => getState().appState.messageUsages;
-const getEditorInputValue = () => getState().appState.editorInputValue;
-const getSlashCommands = () => getState().appState.slashCommands;
-const getCustomSlashCommandDirs = () =>
-  getState().appState.customSlashCommandDirs;
-const getCustomSkillDirs = () => getState().appState.customSkillDirs;
-const getStdout = () => getState().appState.stdout;
-const getDebugLog = () => getState().appState.debugLog;
-const getPromptHistoryPath = () => getState().appState.promptHistoryPath;
-const getContextEntries = () => getState().appState.contextEntries;
-const getContextStr = () => getState().appState.contextStr;
-const getSkillsStr = () => getState().appState.skillsStr;
-const getSkills = () => getState().appState.skills;
-const getRl = () => getState().appState.rl;
-const getSpinnerTimeout = () => getState().appState.spinnerTimeout;
-const getApiStartTime = () => getState().appState.apiStartTime;
-const getApiEndTime = () => getState().appState.apiEndTime;
-const getModel = () => getState().configState.model;
-const getProvider = () => getState().configState.provider;
-const getBaseURL = () => getState().configState.baseURL;
-const getPricingPerModel = () => getState().configState.pricingPerModel;
-const getKeymapEditPrompt = () => getState().configState.keymapEditPrompt;
-const getKeymapEditPastePrompt = () =>
-  getState().configState.keymapEditPastePrompt;
-const getKeymapPromptHistory = () => getState().configState.keymapPromptHistory;
-const getKeymapClear = () => getState().configState.keymapClear;
+const getMessageParams = () => getState().app.messageParams;
+const getMessageUsages = () => getState().app.messageUsages;
+const getEditorInputValue = () => getState().app.editorInputValue;
+const getSlashCommands = () => getState().app.slashCommands;
+const getCustomSlashCommandDirs = () => getState().app.customSlashCommandDirs;
+const getCustomSkillDirs = () => getState().app.customSkillDirs;
+const getStdout = () => getState().app.stdout;
+const getDebugLog = () => getState().app.debugLog;
+const getPromptHistoryPath = () => getState().app.promptHistoryPath;
+const getContextEntries = () => getState().app.contextEntries;
+const getContextStr = () => getState().app.contextStr;
+const getSkillsStr = () => getState().app.skillsStr;
+const getSkills = () => getState().app.skills;
+const getRl = () => getState().app.rl;
+const getSpinnerTimeout = () => getState().app.spinnerTimeout;
+const getApiStartTime = () => getState().app.apiStartTime;
+const getApiEndTime = () => getState().app.apiEndTime;
+const getModel = () => getState().config.model;
+const getProvider = () => getState().config.provider;
+const getBaseURL = () => getState().config.baseURL;
+const getPricingPerModel = () => getState().config.pricingPerModel;
+const getKeymapEditPrompt = () => getState().config.keymapEditPrompt;
+const getKeymapEditPastePrompt = () => getState().config.keymapEditPastePrompt;
+const getKeymapPromptHistory = () => getState().config.keymapPromptHistory;
+const getKeymapClear = () => getState().config.keymapClear;
 const getQuestionAbortController = () => getState().abortControllers.question;
 const getApiStreamAbortController = () => getState().abortControllers.apiStream;
 
