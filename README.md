@@ -6,7 +6,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 
 ## Features
 
-- **Minimal**: 2,800 lines of source code, 3,500 lines of tests
+- **Minimal**: 2,800 lines of source code, 3,600 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 7 tools to execute bash, fetch from the web, and edit files
@@ -35,12 +35,12 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Keymaps
 
-| Key         | Type  | Default                     | Description                                                                                     |
-| ----------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `edit`      | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line input                                |
-| `editPaste` | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
-| `history`   | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view history                                  |
-| `clear`     | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                      |
+| Key       | Type  | Default                     | Description                                                                                     |
+| --------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `edit`    | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` for multi-line input                                |
+| `paste`   | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
+| `history` | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view history                                  |
+| `clear`   | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                      |
 
 The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
 

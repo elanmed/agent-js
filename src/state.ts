@@ -80,7 +80,7 @@ const initialState: State = {
     baseURL: null,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
     keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
-    keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.editPaste),
+    keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
     keymapPromptHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
   },

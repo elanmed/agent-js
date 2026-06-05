@@ -101,7 +101,7 @@ describe("config", () => {
           ...defaultConfig,
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
-            editPaste: { name: "p", ctrl: false, meta: false, shift: false },
+            paste: { name: "p", ctrl: false, meta: false, shift: false },
             history: { name: "o", ctrl: false, meta: false, shift: false },
             clear: { name: "j", ctrl: false, meta: false, shift: false },
           },
@@ -113,7 +113,7 @@ describe("config", () => {
           ...defaultConfig,
           keymaps: {
             edit: { name: "e", ctrl: true, meta: false, shift: false },
-            editPaste: { name: "t", ctrl: true, meta: false, shift: false },
+            paste: { name: "t", ctrl: true, meta: false, shift: false },
             history: { name: "l", ctrl: true, meta: false, shift: false },
             clear: { name: "k", ctrl: true, meta: false, shift: false },
           },
@@ -213,7 +213,7 @@ describe("config", () => {
       });
       assert.deepEqual(
         selectors.getKeymapEditPastePrompt(),
-        DEFAULT_CONFIG.keymaps.editPaste,
+        DEFAULT_CONFIG.keymaps.paste,
       );
       assert.deepEqual(
         selectors.getKeymapPromptHistory(),
@@ -283,7 +283,7 @@ describe("config", () => {
             ...defaultConfig,
             keymaps: {
               edit: { name: "v", ctrl: false, meta: false, shift: false },
-              editPaste: { name: "p", ctrl: false, meta: false, shift: false },
+              paste: { name: "p", ctrl: false, meta: false, shift: false },
               history: {
                 name: "o",
                 ctrl: false,
