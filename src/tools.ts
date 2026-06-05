@@ -9,7 +9,6 @@ import {
   tryCatch,
   tryCatchAsync,
   execPromise,
-  compute,
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { getState } from "./state.ts";
@@ -515,7 +514,7 @@ export async function execGitDiff(opts: {
   tempFileBeforePath: string;
   tempFileAfterPath: string;
 }): Promise<{ stdout: string; stderr: string }> {
-  const cmd = await compute(async () => {
+  const cmd = await (async () => {
     const linesGitDiffCmd = `git diff --no-index --color=always ${opts.tempFileBeforePath} ${opts.tempFileAfterPath}`;
 
     const isDeltaAvailable = await checkDelta();
@@ -524,7 +523,7 @@ export async function execGitDiff(opts: {
     }
 
     return linesGitDiffCmd;
-  });
+  })();
 
   return new Promise((resolve, reject) => {
     childProcess.exec(cmd, { cwd: os.tmpdir() }, (error, stdout, stderr) => {

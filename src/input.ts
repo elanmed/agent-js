@@ -12,7 +12,6 @@ import {
   getTempFileName,
   execPromise,
   isExisty,
-  compute,
 } from "./utils.ts";
 import {
   print,
@@ -68,26 +67,26 @@ async function getEditorInitialContent(opts: {
   const rl = getState().app.rl;
   assert(rl !== null);
 
-  const prefilledEditorContent = compute(() => {
+  const prefilledEditorContent = (() => {
     const editorInputValue = getState().app.editorInputValue;
     if (editorInputValue !== null) {
       return `${normalizeLine(editorInputValue)}\n`;
     }
 
     return "";
-  });
+  })();
 
-  const readlineContent = compute(() => {
+  const readlineContent = (() => {
     if (rl.line.length) {
       return rl.line;
     }
 
     return "";
-  });
+  })();
 
   let clipboardContent = "";
   if (opts.includeClipboardSuffix) {
-    const defaultPasteCmd = compute(() => {
+    const defaultPasteCmd = (() => {
       if (os.platform() === "darwin") {
         return "pbpaste";
       }
@@ -97,7 +96,7 @@ async function getEditorInitialContent(opts: {
       }
 
       return "";
-    });
+    })();
 
     const pasteCmd =
       processDeps.env.get("AGENT_JS_CLIPBOARD_PASTE") ?? defaultPasteCmd;
@@ -119,17 +118,17 @@ function abortRlQuestionForEditor(editorContent: string) {
 
     const newlineIdx = editorContent.indexOf("\n");
 
-    const firstLine = compute(() => {
+    const firstLine = (() => {
       if (newlineIdx === -1) return editorContent;
       return editorContent.substring(0, newlineIdx);
-    });
+    })();
 
-    const truncatedFirstLine = compute(() => {
+    const truncatedFirstLine = (() => {
       if (newlineIdx === -1) {
         return firstLine.substring(0, 50);
       }
       return firstLine.substring(0, 50).concat("…");
-    });
+    })();
 
     rl.write(truncatedFirstLine);
     actions.appendToStdout(truncatedFirstLine);
@@ -381,7 +380,7 @@ export async function spawnAndReadEditorContent(opts?: {
   });
   const tempFile = getTempFileName();
 
-  const editCommand = compute(() => {
+  const editCommand = (() => {
     if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
       return processDeps.env
         .get("AGENT_JS_EDIT")!
@@ -393,7 +392,7 @@ export async function spawnAndReadEditorContent(opts?: {
     }
 
     return `vi ${tempFile}`;
-  });
+  })();
 
   const writeResult = tryCatch(() =>
     fsDeps.writeFileSync(tempFile, initialContent),
@@ -433,7 +432,7 @@ export function promptHistoryCommand() {
     return;
   }
 
-  const editCommand = compute(() => {
+  const editCommand = (() => {
     if (isExisty(processDeps.env.get("AGENT_JS_HISTORY"))) {
       return processDeps.env
         .get("AGENT_JS_HISTORY")!
@@ -445,7 +444,7 @@ export function promptHistoryCommand() {
     }
 
     return `vi "${logPath}"`;
-  });
+  })();
 
   childProcess.spawnSync(editCommand, {
     shell: true,

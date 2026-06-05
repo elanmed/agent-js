@@ -6,7 +6,6 @@ import {
   normalizeLine,
   execPromise,
   type Result,
-  compute,
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
 import { processDeps } from "./deps.ts";
@@ -38,14 +37,14 @@ export const print = Object.assign(
 
 export function colorPrint(text: Uint8Array | string, color?: Color) {
   const reset = "\x1b[0m";
-  const out = compute(() => {
+  const out = (() => {
     if (color) {
       const colorCode = COLORS[color];
       return `${colorCode}${text.toString()}${reset}\n`;
     } else {
       return `${text.toString()}\n`;
     }
-  });
+  })();
 
   const wasSpinnerActive = getState().app.spinnerTimeout !== null;
   stopSpinner();
@@ -70,21 +69,21 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   const showSessionUsage = opts.showSessionUsage ?? false;
   const showApiDuration = opts.showApiDuration ?? false;
 
-  const sessionUsage = compute(() => {
+  const sessionUsage = (() => {
     if (showSessionUsage) {
       return ` (${calculateSessionUsage()})`;
     }
 
     return "";
-  });
+  })();
 
-  const apiDuration = compute(() => {
+  const apiDuration = (() => {
     if (showApiDuration) {
       return ` (${calculateApiDuration()})`;
     }
 
     return "";
-  });
+  })();
 
   const line = `━━ ${text}${sessionUsage}${apiDuration} ━━`;
   colorPrint(line, opts.color ?? "grey");
@@ -230,22 +229,22 @@ export function calculateApiDuration() {
   const prettyMs = `${String(diff % 1_000)}ms`;
 
   const sec = Math.floor((diff / 1_000) % 60);
-  const prettySec = compute(() => {
+  const prettySec = (() => {
     if (sec > 0) {
       return `${String(sec)}s `;
     }
 
     return "";
-  });
+  })();
 
   const min = Math.floor(diff / 60_000);
-  const prettyMin = compute(() => {
+  const prettyMin = (() => {
     if (min > 0) {
       return `${String(min)}m `;
     }
 
     return "";
-  });
+  })();
 
   return `${prettyMin}${prettySec}${prettyMs}`;
 }

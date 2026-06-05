@@ -83,7 +83,3 @@ export function stringify(val: unknown) {
 export function isExisty(val: unknown) {
   return val !== undefined && val !== null;
 }
-
-export function compute<T>(cb: () => T) {
-  return cb();
-}
