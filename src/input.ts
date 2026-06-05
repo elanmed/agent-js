@@ -310,6 +310,12 @@ export async function resolveSlashCommand(rawInput: string) {
     return await spawnAndReadEditorContent();
   }
 
+  if (commandWithoutSlash === "paste") {
+    return await spawnAndReadEditorContent({
+      includeClipboardSuffix: true,
+    });
+  }
+
   if (commandWithoutSlash === "clear") {
     clearCommand();
     return null;
