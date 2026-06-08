@@ -498,6 +498,12 @@ export function setModelCommand(rawInput: string) {
 }
 
 export function printSkillsCommand() {
+  if (getState().app.skills.length === 0) {
+    printNewline();
+    print.doing("No available skills");
+    return;
+  }
+
   const skillsList = getState()
     .app.skills.filter(
       (skill) => !skill.name.startsWith(contextFileSkillNamePrefix),
@@ -514,6 +520,12 @@ export function printSkillsCommand() {
 }
 
 export function printContextFilesCommand() {
+  if (getState().app.contextEntries.length === 0) {
+    printNewline();
+    print.doing("No available context files");
+    return;
+  }
+
   const contextFiles = getState().app.contextEntries.map(
     (context) => `- ${context.filePath}`,
   );
@@ -561,14 +573,10 @@ export function isSameKey(a: Key, b: Key) {
 export function printKeymapsCommand() {
   printNewline();
   print.doing("Keymaps:");
-  print(`- keymap-edit: ${JSON.stringify(getState().config.keymapEditPrompt)}`);
-  print(
-    `- keymap-history: ${JSON.stringify(getState().config.keymapPromptHistory)}`,
-  );
-  print(
-    `- keymap-edit-paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`,
-  );
-  print(`- keymap-clear: ${JSON.stringify(getState().config.keymapClear)}`);
+  print(`- edit: ${JSON.stringify(getState().config.keymapEditPrompt)}`);
+  print(`- history: ${JSON.stringify(getState().config.keymapPromptHistory)}`);
+  print(`- paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`);
+  print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
 }
 
 export function clearRlLine(): readline.Interface | null {

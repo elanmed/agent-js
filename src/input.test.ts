@@ -14,6 +14,7 @@ import {
   printSkillsCommand,
   printContextFilesCommand,
   printCommandsCommand,
+  printKeymapsCommand,
   spawnAndReadEditorContent,
 } from "./input.ts";
 import {
@@ -435,6 +436,42 @@ Available skills:
 `,
       );
     });
+
+    it("prints no available skills when skills list is empty", () => {
+      printSkillsCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+No available skills
+`,
+      );
+    });
+
+    it("filters out context file skills", () => {
+      actions.setSkills([
+        {
+          name: "__agent-js-context-for-/ctx",
+          description: "Context for /ctx",
+          dir: "/ctx",
+          content: "context content",
+        },
+        {
+          name: "real-skill",
+          description: "A real skill",
+          dir: "/skills/real",
+          content: "skill content",
+        },
+      ]);
+      printSkillsCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Available skills:
+- real-skill: A real skill
+  /skills/real
+`,
+      );
+    });
   });
 
   describe("printContextFilesCommand", () => {
@@ -453,6 +490,45 @@ Available skills:
         `
 Available context files:
 - /project/AGENTS.md
+`,
+      );
+    });
+
+    it("prints no available context files when entries list is empty", () => {
+      printContextFilesCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+No available context files
+`,
+      );
+    });
+
+    it("includes context file skills", () => {
+      actions.setContextEntries([
+        { filePath: "/project/AGENTS.md", content: "context" },
+      ]);
+      actions.setSkills([
+        {
+          name: "__agent-js-context-for-/other",
+          description: "Context for /other",
+          dir: "/other",
+          content: "other context",
+        },
+        {
+          name: "regular-skill",
+          description: "A regular skill",
+          dir: "/skills/regular",
+          content: "skill content",
+        },
+      ]);
+      printContextFilesCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Available context files:
+- /project/AGENTS.md
+- /other/AGENTS.md (as a skill)
 `,
       );
     });
@@ -486,6 +562,45 @@ Available commands:
 - /commands
 - /keymaps
 - /test/.agent-js/commands/custom.md
+`,
+      );
+    });
+  });
+
+  describe("printKeymapsCommand", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints default keymaps", () => {
+      printKeymapsCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Keymaps:
+- edit: {"name":"g","ctrl":true}
+- history: {"name":"o","ctrl":true}
+- paste: {"name":"v","ctrl":true}
+- clear: {"name":"x","ctrl":true}
+`,
+      );
+    });
+
+    it("prints custom keymaps", () => {
+      actions.setKeymapEditPrompt({ name: "e", ctrl: true, meta: true });
+      actions.setKeymapEditPastePrompt({ name: "p", ctrl: true, shift: true });
+      actions.setKeymapPromptHistory({ name: "h", ctrl: true });
+      actions.setKeymapClear({ name: "k", ctrl: true });
+      printKeymapsCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Keymaps:
+- edit: {"name":"e","ctrl":true,"meta":true}
+- history: {"name":"h","ctrl":true}
+- paste: {"name":"p","ctrl":true,"shift":true}
+- clear: {"name":"k","ctrl":true}
 `,
       );
     });
@@ -700,8 +815,7 @@ Available commands:
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Available skills:
-
+No available skills
 `,
       );
     });
@@ -713,8 +827,7 @@ Available skills:
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Available context files:
-
+No available context files
 `,
       );
     });
@@ -735,6 +848,22 @@ Available commands:
 - /context
 - /commands
 - /keymaps
+`,
+      );
+    });
+
+    it("handles /keymaps command", async () => {
+      actions.resetStdout();
+      const result = await resolveSlashCommand("/keymaps");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Keymaps:
+- edit: {"name":"g","ctrl":true}
+- history: {"name":"o","ctrl":true}
+- paste: {"name":"v","ctrl":true}
+- clear: {"name":"x","ctrl":true}
 `,
       );
     });
