@@ -7,7 +7,7 @@ if (args.length !== 1) {
   throw new Error("usage: --paste-cmd [cmd]");
 }
 
-const server = net.createServer((socket) => socket.end(execSync(args[1]!)));
+const server = net.createServer((socket) => socket.end(execSync(args[0]!)));
 
 server.listen(0, "0.0.0.0", () => {
   const address = server.address();
