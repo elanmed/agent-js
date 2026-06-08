@@ -31,11 +31,28 @@ import { contextFileSkillNamePrefix } from "./context.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
-  write(chunk: Buffer, _encoding: string, callback: () => void) {
+  write(
+    chunk: Buffer,
+    _encoding: BufferEncoding,
+    callback: (error?: Error | null) => void,
+  ) {
     if (getState().app.spinnerTimeout === null) {
       stdout.write(chunk);
     }
     callback();
+  },
+});
+
+Object.defineProperties(mutedStdout, {
+  columns: {
+    get: () => stdout.columns,
+    enumerable: true,
+    configurable: true,
+  },
+  rows: {
+    get: () => stdout.rows,
+    enumerable: true,
+    configurable: true,
   },
 });
 
@@ -49,6 +66,12 @@ export function initReadline() {
 
   if (stdin.isTTY) {
     stdin.setRawMode(true);
+  }
+
+  if (stdout.isTTY) {
+    stdout.on("resize", () => {
+      mutedStdout.emit("resize");
+    });
   }
 
   process.on("exit", () => {
