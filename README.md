@@ -39,7 +39,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 | --------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
 | `edit`    | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                         |
 | `paste`   | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
-| `history` | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view history                                  |
+| `history` | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view chat history                             |
 | `clear`   | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                      |
 
 The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
@@ -86,7 +86,7 @@ Example `settings.json`:
 | ------------------ | -------------------------------------------------------------------------------------------------- |
 | `AGENT_JS_API_KEY` | API key for the configured provider (required)                                                     |
 | `AGENT_JS_EDIT`    | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)     |
-| `AGENT_JS_HISTORY` | Editor command with `__FILE__` placeholder for viewing edit history (fallback: `$EDITOR __FILE__`) |
+| `AGENT_JS_HISTORY` | Editor command with `__FILE__` placeholder for viewing chat history (fallback: `$EDITOR __FILE__`) |
 
 ## CLI Arguments
 
