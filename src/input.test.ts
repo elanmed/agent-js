@@ -98,6 +98,17 @@ describe("input", () => {
       assert.strictEqual(spawned[0], "vi /tmp/agent-js-test-uuid.txt");
     });
 
+    it("returns null when editor content is unchanged", async () => {
+      actions.setRl(
+        makeFakeRl({ line: "hello" }) as unknown as readline.Interface,
+      );
+      mock.method(childProcess, "spawnSync", () => {
+        testFs._files.set("/tmp/agent-js-test-uuid.txt", "hello");
+      });
+      const result = await spawnAndReadEditorContent();
+      assert.strictEqual(result, null);
+    });
+
     it("includes clipboard content when includeClipboardSuffix is true", async () => {
       actions.setRl(
         makeFakeRl({ line: "hello " }) as unknown as readline.Interface,
@@ -105,12 +116,15 @@ describe("input", () => {
       mock.method(os, "platform", () => "linux");
       mockExec({ stdout: "world" });
       mock.method(childProcess, "spawnSync", () => {
-        testFs._files.set("/tmp/agent-js-test-uuid.txt", "hello world\n");
+        testFs._files.set(
+          "/tmp/agent-js-test-uuid.txt",
+          "  hello world modified  \n",
+        );
       });
       const result = await spawnAndReadEditorContent({
         includeClipboardSuffix: true,
       });
-      assert.strictEqual(result, "hello world\n");
+      assert.strictEqual(result, "hello world modified\n");
     });
   });
 

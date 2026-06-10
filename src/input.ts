@@ -439,6 +439,7 @@ export async function spawnAndReadEditorContent(opts?: {
   }
   tryCatch(() => fsDeps.unlinkSync(tempFile));
 
+  if (readResult.value === initialContent) return null;
   if (readResult.value === "") return null;
 
   return normalizeLine(readResult.value);
