@@ -50,21 +50,21 @@ export function resetDebugLog() {
 }
 
 export function initPromptHistory() {
-  const promptHistoryDir = getPromptHistoryDir();
-  if (!fsDeps.existsSync(promptHistoryDir)) {
+  const chatHistoryDir = getPromptHistoryDir();
+  if (!fsDeps.existsSync(chatHistoryDir)) {
     const mkDirResult = tryCatch(() =>
-      fsDeps.mkdirSync(promptHistoryDir, { recursive: true }),
+      fsDeps.mkdirSync(chatHistoryDir, { recursive: true }),
     );
     if (!mkDirResult.ok) return;
   }
 
   const uuid = crypto.randomUUID().replaceAll("-", "");
-  const promptHistorySessionPath = join(
-    promptHistoryDir,
+  const chatHistorySessionPath = join(
+    chatHistoryDir,
     `chat-history-${uuid}-${Date.now().toString()}.txt`,
   );
-  actions.setPromptHistoryPath(promptHistorySessionPath);
-  tryCatch(() => fsDeps.writeFileSync(promptHistorySessionPath, ""));
+  actions.setPromptHistoryPath(chatHistorySessionPath);
+  tryCatch(() => fsDeps.writeFileSync(chatHistorySessionPath, ""));
 }
 
 export function deleteExpiredPromptHistory() {
