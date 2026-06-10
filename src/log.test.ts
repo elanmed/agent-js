@@ -63,36 +63,33 @@ describe("log", () => {
 
     it("creates directory when log file does not exist", () => {
       actions.setPromptHistoryPath("/test/editor.log");
-      appendToChatHistory("test message");
+      appendToChatHistory("test message", "user");
       assert.equal(testFs._dirs.has("/test"), true);
     });
 
-    it("appends content with timestamp and separator", () => {
+    it("appends content with timestamp and role", () => {
       actions.setPromptHistoryPath("/test/editor.log");
-      appendToChatHistory("test content");
+      appendToChatHistory("test content", "user");
       assert.equal(
         testFs._files.get("/test/editor.log"),
-        `2023-11-14T22:13:20.000Z
--------------------------
+        `2023-11-14T22:13:20.000Z  [user]
 test content
 
 `,
       );
     });
 
-    it("appends multiple messages with separators", () => {
+    it("appends multiple messages with different roles", () => {
       actions.setPromptHistoryPath("/test/editor.log");
-      appendToChatHistory("content 1");
-      appendToChatHistory("content 2");
+      appendToChatHistory("hello", "user");
+      appendToChatHistory("response", "assistant");
       assert.equal(
         testFs._files.get("/test/editor.log"),
-        `2023-11-14T22:13:20.000Z
--------------------------
-content 1
+        `2023-11-14T22:13:20.000Z  [user]
+hello
 
-2023-11-14T22:13:20.000Z
--------------------------
-content 2
+2023-11-14T22:13:20.000Z  [assistant]
+response
 
 `,
       );

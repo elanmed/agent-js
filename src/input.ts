@@ -234,7 +234,7 @@ export async function resolveUserInput({
 
   if (getState().app.editorInputValue !== null) {
     const editorInputValue = getState().app.editorInputValue!;
-    appendToChatHistory(editorInputValue);
+    appendToChatHistory(editorInputValue, "user");
     actions.setEditorInputValue(null);
     return editorInputValue;
   }
@@ -263,7 +263,7 @@ export async function resolveUserInput({
     const abortedByEditor = getState().app.editorInputValue !== null;
     if (abortedByEditor) {
       const editorInputValue = getState().app.editorInputValue!;
-      appendToChatHistory(editorInputValue);
+      appendToChatHistory(editorInputValue, "user");
       actions.setEditorInputValue(null);
       return editorInputValue;
     }
@@ -273,7 +273,7 @@ export async function resolveUserInput({
   }
 
   actions.appendToStdout(`>${inputResult.value}\n`);
-  appendToChatHistory(inputResult.value);
+  appendToChatHistory(inputResult.value, "user");
   const rawInput = inputResult.value.trim();
 
   if (getState().app.editorInputValue === null && rawInput.at(0) === "/") {

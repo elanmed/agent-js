@@ -144,7 +144,7 @@ export async function resolveApiCall(userInput: string) {
   for (const msg of response.messages) {
     actions.appendToMessageParams(msg);
   }
-  appendToChatHistory(text);
+  appendToChatHistory(text, "assistant");
 
   return text;
 }

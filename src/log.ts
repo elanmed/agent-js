@@ -23,7 +23,10 @@ export function debugLog(content: string) {
   );
 }
 
-export function appendToChatHistory(content: string) {
+export function appendToChatHistory(
+  content: string,
+  role: "user" | "assistant",
+) {
   const path = getState().app.chatHistoryPath;
   if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
@@ -34,8 +37,7 @@ export function appendToChatHistory(content: string) {
   tryCatch(() =>
     fsDeps.appendFileSync(
       path,
-      `${new Date(Date.now()).toISOString()}
-${"-".repeat(25)}
+      `${new Date(Date.now()).toISOString()}  [${role}]
 ${normalizeLine(content)}
 `,
     ),
