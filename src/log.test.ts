@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   debugLog,
-  appendToPromptHistory,
+  appendToChatHistory,
   resetDebugLog,
   initPromptHistory,
   deleteExpiredPromptHistory,
@@ -56,20 +56,20 @@ describe("log", () => {
     });
   });
 
-  describe("appendToPromptHistory", () => {
+  describe("appendToChatHistory", () => {
     beforeEach(() => {
       mock.method(Date, "now", () => 1700000000000);
     });
 
     it("creates directory when log file does not exist", () => {
       actions.setPromptHistoryPath("/test/editor.log");
-      appendToPromptHistory("test message");
+      appendToChatHistory("test message");
       assert.equal(testFs._dirs.has("/test"), true);
     });
 
     it("appends content with timestamp and separator", () => {
       actions.setPromptHistoryPath("/test/editor.log");
-      appendToPromptHistory("test content");
+      appendToChatHistory("test content");
       assert.equal(
         testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z
@@ -82,8 +82,8 @@ test content
 
     it("appends multiple messages with separators", () => {
       actions.setPromptHistoryPath("/test/editor.log");
-      appendToPromptHistory("content 1");
-      appendToPromptHistory("content 2");
+      appendToChatHistory("content 1");
+      appendToChatHistory("content 2");
       assert.equal(
         testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z
@@ -126,11 +126,11 @@ content 2
       );
       assert.equal(
         getState().app.chatHistoryPath,
-        "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
+        "/fake-home/.config/.agent-js/history/chat-history-testuuid-1234567890000.txt",
       );
       assert.equal(
         testFs._files.get(
-          "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
+          "/fake-home/.config/.agent-js/history/chat-history-testuuid-1234567890000.txt",
         ),
         "",
       );
@@ -149,11 +149,11 @@ content 2
       initPromptHistory();
       assert.equal(
         getState().app.chatHistoryPath,
-        "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
+        "/fake-home/.config/.agent-js/history/chat-history-testuuid-1234567890000.txt",
       );
       assert.equal(
         testFs._files.get(
-          "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
+          "/fake-home/.config/.agent-js/history/chat-history-testuuid-1234567890000.txt",
         ),
         "",
       );
@@ -176,13 +176,13 @@ content 2
     it("deletes expired files older than 24 hours", () => {
       testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/history/prompt-history-uuid-999900000000.log",
+        "/fake-home/.config/.agent-js/history/chat-history-uuid-999900000000.txt",
         "old",
       );
       deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/history/prompt-history-uuid-999900000000.log",
+          "/fake-home/.config/.agent-js/history/chat-history-uuid-999900000000.txt",
         ),
         false,
       );
@@ -191,13 +191,13 @@ content 2
     it("keeps files newer than 24 hours", () => {
       testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/history/prompt-history-uuid-999990000000.log",
+        "/fake-home/.config/.agent-js/history/chat-history-uuid-999990000000.txt",
         "new",
       );
       deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/history/prompt-history-uuid-999990000000.log",
+          "/fake-home/.config/.agent-js/history/chat-history-uuid-999990000000.txt",
         ),
         true,
       );
@@ -238,16 +238,16 @@ content 2
       );
     });
 
-    it("skips non-prompt-history files with 4 parts", () => {
+    it("skips non-chat-history files with 4 parts", () => {
       testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/history/other-uuid-999997600000.log",
+        "/fake-home/.config/.agent-js/history/other-uuid-999997600000.txt",
         "",
       );
       deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/.agent-js/history/other-uuid-999997600000.log",
+          "/fake-home/.config/.agent-js/history/other-uuid-999997600000.txt",
         ),
         true,
       );

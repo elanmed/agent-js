@@ -73,23 +73,12 @@ describe("input", () => {
       assert.strictEqual(result, null);
     });
 
-    it("returns normalized content and logs it", async () => {
-      mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/editor.log");
+    it("returns normalized content", async () => {
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/agent-js-test-uuid.txt", "  hello  ");
       });
       const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, "hello\n");
-      assert.ok(testFs._files.has("/tmp/editor.log"));
-      assert.strictEqual(
-        testFs._files.get("/tmp/editor.log"),
-        `1970-01-01T00:00:00.000Z
--------------------------
-hello
-
-`,
-      );
     });
 
     it("uses AGENT_JS_EDIT env var with __FILE__ when available", async () => {
@@ -132,10 +121,20 @@ hello
     });
 
     it("returns editor input value when set and clears it", async () => {
+      mock.method(Date, "now", () => 0);
+      actions.setPromptHistoryPath("/tmp/test-history.log");
       actions.setEditorInputValue("editor content");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "editor content");
       assert.strictEqual(getState().app.editorInputValue, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z
+-------------------------
+editor content
+
+`,
+      );
     });
 
     it("returns trimmed user input", async () => {
@@ -158,6 +157,8 @@ hello
     });
 
     it("resolves slash commands when input starts with /", async () => {
+      mock.method(Date, "now", () => 0);
+      actions.setPromptHistoryPath("/tmp/test-history.log");
       actions.setModel("old");
       actions.resetStdout();
       mock.method(getState().app.rl!, "question", () =>
@@ -166,6 +167,14 @@ hello
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
       assert.strictEqual(getState().config.model, "new-model");
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z
+-------------------------
+/model new-model
+
+`,
+      );
     });
 
     it("returns null and prints error on non-abort error", async () => {
@@ -180,6 +189,8 @@ hello
     });
 
     it("returns editor value when aborted by editor", async () => {
+      mock.method(Date, "now", () => 0);
+      actions.setPromptHistoryPath("/tmp/test-history.log");
       mock.method(getState().app.rl!, "question", () => {
         actions.setEditorInputValue("from editor");
         const err = new Error("This operation was aborted");
@@ -189,6 +200,14 @@ hello
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "from editor");
       assert.strictEqual(getState().app.editorInputValue, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z
+-------------------------
+from editor
+
+`,
+      );
     });
 
     it("exits on abort during exit confirmation", async () => {
