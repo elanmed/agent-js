@@ -23,8 +23,8 @@ export function debugLog(content: string) {
   );
 }
 
-export function appendToPromptHistory(content: string) {
-  const path = getState().app.promptHistoryPath;
+export function appendToChatHistory(content: string) {
+  const path = getState().app.chatHistoryPath;
   if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
       fsDeps.mkdirSync(dirname(path), { recursive: true }),
@@ -61,18 +61,18 @@ export function initPromptHistory() {
   const uuid = crypto.randomUUID().replaceAll("-", "");
   const promptHistorySessionPath = join(
     promptHistoryDir,
-    `prompt-history-${uuid}-${Date.now().toString()}.log`,
+    `chat-history-${uuid}-${Date.now().toString()}.txt`,
   );
   actions.setPromptHistoryPath(promptHistorySessionPath);
   tryCatch(() => fsDeps.writeFileSync(promptHistorySessionPath, ""));
 }
 
 export function deleteExpiredPromptHistory() {
-  const promptHistoryPath = getPromptHistoryDir();
-  if (!fsDeps.existsSync(promptHistoryPath)) return;
+  const chatHistoryPath = getPromptHistoryDir();
+  if (!fsDeps.existsSync(chatHistoryPath)) return;
 
-  for (const name of fsDeps.readdirSync(promptHistoryPath)) {
-    const fullPath = join(promptHistoryPath, name);
+  for (const name of fsDeps.readdirSync(chatHistoryPath)) {
+    const fullPath = join(chatHistoryPath, name);
     const statResult = tryCatch(() => fsDeps.statSync(fullPath));
     if (!statResult.ok) continue;
     if (!statResult.value.isFile()) continue;
@@ -80,7 +80,7 @@ export function deleteExpiredPromptHistory() {
     const fileName = basename(name, extname(name));
     const parts = fileName.split("-");
     if (parts.length !== 4) continue;
-    if (parts[0] !== "prompt" || parts[1] !== "history") continue;
+    if (parts[0] !== "chat" || parts[1] !== "history") continue;
 
     const fileTimestampMs = Number(parts[3]);
     if (Number.isNaN(fileTimestampMs)) continue;

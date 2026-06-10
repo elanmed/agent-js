@@ -10,7 +10,7 @@ import {
   isSameKey,
   getAvailableSlashCommands,
   clearCommand,
-  promptHistoryCommand,
+  chatHistoryCommand,
   printSkillsCommand,
   printContextFilesCommand,
   printCommandsCommand,
@@ -333,7 +333,7 @@ hello
     });
   });
 
-  describe("promptHistoryCommand", () => {
+  describe("chatHistoryCommand", () => {
     beforeEach(() => {
       mock.method(childProcess, "spawnSync", () => undefined);
     });
@@ -341,7 +341,7 @@ hello
     it("prints warning when log does not exist", () => {
       actions.setPromptHistoryPath("/tmp/nonexistent.log");
       actions.setRl(makeFakeRl() as unknown as readline.Interface);
-      promptHistoryCommand();
+      chatHistoryCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         "[Cannot read history]\n",
@@ -356,7 +356,7 @@ hello
       testProcessEnv._set("AGENT_JS_HISTORY", "nano __FILE__");
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      promptHistoryCommand();
+      chatHistoryCommand();
       assert.strictEqual(spawned, "nano /tmp/editor.log");
     });
 
@@ -368,7 +368,7 @@ hello
       testProcessEnv._set("EDITOR", "vim");
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      promptHistoryCommand();
+      chatHistoryCommand();
       assert.strictEqual(spawned, 'vim "/tmp/editor.log"');
     });
 
@@ -379,7 +379,7 @@ hello
       });
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      promptHistoryCommand();
+      chatHistoryCommand();
       assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
     });
 
@@ -390,7 +390,7 @@ hello
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
-      promptHistoryCommand();
+      chatHistoryCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         "[Cannot read history]\n",
@@ -403,7 +403,7 @@ hello
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/editor.log", "modified by editor");
       });
-      promptHistoryCommand();
+      chatHistoryCommand();
       assert.strictEqual(
         testFs._files.get("/tmp/editor.log"),
         "original content",

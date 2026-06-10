@@ -134,7 +134,7 @@ describe("config", () => {
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymapPromptHistory, {
+      assert.deepEqual(getState().config.keymapChatHistory, {
         name: "l",
         ctrl: true,
         meta: false,
@@ -216,7 +216,7 @@ describe("config", () => {
         DEFAULT_CONFIG.keymaps.paste,
       );
       assert.deepEqual(
-        getState().config.keymapPromptHistory,
+        getState().config.keymapChatHistory,
         DEFAULT_CONFIG.keymaps.history,
       );
       assert.deepEqual(
@@ -309,7 +309,7 @@ describe("config", () => {
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymapPromptHistory, {
+        assert.deepEqual(getState().config.keymapChatHistory, {
           name: "o",
           ctrl: false,
           meta: false,

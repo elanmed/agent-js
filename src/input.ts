@@ -24,7 +24,7 @@ import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
 import type { Key } from "./config.ts";
-import { appendToPromptHistory } from "./log.ts";
+import { appendToChatHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
 import { contextFileSkillNamePrefix } from "./context.ts";
@@ -191,8 +191,8 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, getState().config.keymapPromptHistory)) {
-        promptHistoryCommand();
+      if (isSameKey(key, getState().config.keymapChatHistory)) {
+        chatHistoryCommand();
         return;
       }
 
@@ -234,6 +234,7 @@ export async function resolveUserInput({
 
   if (getState().app.editorInputValue !== null) {
     const editorInputValue = getState().app.editorInputValue!;
+    appendToChatHistory(editorInputValue);
     actions.setEditorInputValue(null);
     return editorInputValue;
   }
@@ -262,6 +263,7 @@ export async function resolveUserInput({
     const abortedByEditor = getState().app.editorInputValue !== null;
     if (abortedByEditor) {
       const editorInputValue = getState().app.editorInputValue!;
+      appendToChatHistory(editorInputValue);
       actions.setEditorInputValue(null);
       return editorInputValue;
     }
@@ -271,13 +273,13 @@ export async function resolveUserInput({
   }
 
   actions.appendToStdout(`>${inputResult.value}\n`);
+  appendToChatHistory(inputResult.value);
   const rawInput = inputResult.value.trim();
 
   if (getState().app.editorInputValue === null && rawInput.at(0) === "/") {
     return await resolveSlashCommand(rawInput);
   }
 
-  appendToPromptHistory(inputResult.value);
   return rawInput;
 }
 
@@ -341,7 +343,7 @@ export async function resolveSlashCommand(rawInput: string) {
       return null;
     }
     case "history": {
-      promptHistoryCommand();
+      chatHistoryCommand();
       return null;
     }
     case "model": {
@@ -439,13 +441,11 @@ export async function spawnAndReadEditorContent(opts?: {
 
   if (readResult.value === "") return null;
 
-  const content = normalizeLine(readResult.value);
-  appendToPromptHistory(content);
-  return content;
+  return normalizeLine(readResult.value);
 }
 
-export function promptHistoryCommand() {
-  const logPath = getState().app.promptHistoryPath;
+export function chatHistoryCommand() {
+  const logPath = getState().app.chatHistoryPath;
   const logContentResult = tryCatch(() =>
     fsDeps.readFileSync(logPath).toString(),
   );
@@ -574,7 +574,7 @@ export function printKeymapsCommand() {
   printNewline();
   print.doing("Keymaps:");
   print(`- edit: ${JSON.stringify(getState().config.keymapEditPrompt)}`);
-  print(`- history: ${JSON.stringify(getState().config.keymapPromptHistory)}`);
+  print(`- history: ${JSON.stringify(getState().config.keymapChatHistory)}`);
   print(`- paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`);
   print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
 }

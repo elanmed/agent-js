@@ -28,7 +28,7 @@ interface State {
     customSkillDirs: string[];
     stdout: string;
     debugLog: boolean;
-    promptHistoryPath: string;
+    chatHistoryPath: string;
     contextEntries: ContextEntry[];
     contextStr: string;
     skillsStr: string;
@@ -45,7 +45,7 @@ interface State {
     provider: Provider;
     keymapEditPrompt: Key;
     keymapEditPastePrompt: Key;
-    keymapPromptHistory: Key;
+    keymapChatHistory: Key;
     keymapClear: Key;
   };
   abortControllers: {
@@ -64,7 +64,7 @@ const initialState: State = {
     customSkillDirs: [],
     stdout: "",
     debugLog: false,
-    promptHistoryPath: "",
+    chatHistoryPath: "",
     contextEntries: [],
     contextStr: "",
     skillsStr: "",
@@ -81,7 +81,7 @@ const initialState: State = {
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
     keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
     keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
-    keymapPromptHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
+    keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
   },
   abortControllers: {
@@ -168,10 +168,10 @@ export const actions = {
   },
 
   setKeymapPromptHistory(keymap: Key) {
-    const before = state.config.keymapPromptHistory;
-    state.config.keymapPromptHistory = keymap;
+    const before = state.config.keymapChatHistory;
+    state.config.keymapChatHistory = keymap;
     logStateChange(
-      "set-keymap-prompt-history",
+      "set-keymap-chat-history",
       stringify(before),
       stringify(keymap),
     );
@@ -263,10 +263,10 @@ export const actions = {
     state.app.debugLog = debugLog;
   },
 
-  setPromptHistoryPath(promptHistoryPath: string) {
-    const before = state.app.promptHistoryPath;
-    state.app.promptHistoryPath = promptHistoryPath;
-    logStateChange("set-prompt-history-path", before, promptHistoryPath);
+  setPromptHistoryPath(chatHistoryPath: string) {
+    const before = state.app.chatHistoryPath;
+    state.app.chatHistoryPath = chatHistoryPath;
+    logStateChange("set-chat-history-path", before, chatHistoryPath);
   },
 
   setContextEntries(contextEntries: ContextEntry[]) {

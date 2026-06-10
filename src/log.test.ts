@@ -125,7 +125,7 @@ content 2
         true,
       );
       assert.equal(
-        getState().app.promptHistoryPath,
+        getState().app.chatHistoryPath,
         "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
       );
       assert.equal(
@@ -142,13 +142,13 @@ content 2
         throw new Error("Permission denied");
       });
       initPromptHistory();
-      assert.equal(getState().app.promptHistoryPath, "");
+      assert.equal(getState().app.chatHistoryPath, "");
     });
 
     it("generates correct log path with uuid and timestamp, stripping dashes", () => {
       initPromptHistory();
       assert.equal(
-        getState().app.promptHistoryPath,
+        getState().app.chatHistoryPath,
         "/fake-home/.config/.agent-js/history/prompt-history-testuuid-1234567890000.log",
       );
       assert.equal(

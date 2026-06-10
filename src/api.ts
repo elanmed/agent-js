@@ -18,6 +18,7 @@ import {
 } from "./tools.ts";
 import assert from "node:assert";
 import { aiDeps, fsDeps, processDeps } from "./deps.ts";
+import { appendToChatHistory } from "./log.ts";
 
 function getLanguageModel() {
   const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
@@ -143,6 +144,7 @@ export async function resolveApiCall(userInput: string) {
   for (const msg of response.messages) {
     actions.appendToMessageParams(msg);
   }
+  appendToChatHistory(text);
 
   return text;
 }

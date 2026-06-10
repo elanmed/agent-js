@@ -28,7 +28,7 @@ describe("state", () => {
     assert.equal(getState().app.spinnerTimeout, null);
     assert.equal(getState().app.apiStartTime, null);
     assert.equal(getState().app.apiEndTime, null);
-    assert.equal(getState().app.promptHistoryPath, "");
+    assert.equal(getState().app.chatHistoryPath, "");
   });
 
   it("initial state", () => {
@@ -38,7 +38,7 @@ describe("state", () => {
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.apiStartTime, null);
     assert.equal(getState().app.apiEndTime, null);
-    assert.equal(getState().app.promptHistoryPath, "");
+    assert.equal(getState().app.chatHistoryPath, "");
   });
 
   describe("append-to-message-params", () => {
@@ -136,7 +136,7 @@ describe("state", () => {
 
   it("set-keymap-prompt-history", () => {
     assert.deepStrictEqual(
-      getState().config.keymapPromptHistory,
+      getState().config.keymapChatHistory,
       DEFAULT_CONFIG.keymaps.history,
     );
     actions.setKeymapPromptHistory({
@@ -145,7 +145,7 @@ describe("state", () => {
       meta: false,
       shift: false,
     });
-    assert.deepStrictEqual(getState().config.keymapPromptHistory, {
+    assert.deepStrictEqual(getState().config.keymapChatHistory, {
       name: "o",
       ctrl: false,
       meta: false,
@@ -199,9 +199,9 @@ describe("state", () => {
   });
 
   it("set-prompt-history-path", () => {
-    assert.equal(getState().app.promptHistoryPath, "");
+    assert.equal(getState().app.chatHistoryPath, "");
     actions.setPromptHistoryPath("/tmp/editor.log");
-    assert.equal(getState().app.promptHistoryPath, "/tmp/editor.log");
+    assert.equal(getState().app.chatHistoryPath, "/tmp/editor.log");
   });
 
   it("set-context-str", () => {
