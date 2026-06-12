@@ -194,9 +194,7 @@ hello
       );
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
-      assert.ok(
-        getState().app.stdout.includes(">[unable to read rl.question result]"),
-      );
+      assert.strictEqual(stripAnsi(getState().app.stdout), "read failed\n");
     });
 
     it("returns editor value when aborted by editor", async () => {

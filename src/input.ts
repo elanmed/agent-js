@@ -255,7 +255,6 @@ export async function resolveUserInput({
 
   if (!inputResult.ok) {
     if (!isAbortError(inputResult.error)) {
-      actions.appendToStdout(`>[unable to read rl.question result]\n`);
       print.error(getMessageFromError(inputResult.error));
       return null;
     }
