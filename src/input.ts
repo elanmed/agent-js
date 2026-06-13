@@ -402,6 +402,7 @@ export async function spawnAndReadEditorContent(opts?: {
   const initialContent = await getEditorInitialContent({
     includeClipboardSuffix,
   });
+
   const tempFile = getTempFileName();
 
   const editCommand = (() => {
@@ -425,10 +426,15 @@ export async function spawnAndReadEditorContent(opts?: {
     print.error("Failed to write to temp file");
     return null;
   }
+
+  const statBefore = tryCatch(() => fsDeps.statSync(tempFile));
+
   childProcess.spawnSync(editCommand, {
     shell: true,
     stdio: "inherit",
   });
+
+  const statAfter = tryCatch(() => fsDeps.statSync(tempFile));
 
   const readResult = tryCatch(() => fsDeps.readFileSync(tempFile).toString());
   if (!readResult.ok) {
@@ -438,7 +444,13 @@ export async function spawnAndReadEditorContent(opts?: {
   }
   tryCatch(() => fsDeps.unlinkSync(tempFile));
 
-  if (readResult.value === initialContent) return null;
+  if (
+    statBefore.ok &&
+    statAfter.ok &&
+    statBefore.value.mtimeMs === statAfter.value.mtimeMs
+  ) {
+    return null;
+  }
   if (readResult.value === "") return null;
 
   return normalizeLine(readResult.value);

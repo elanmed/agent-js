@@ -39,7 +39,7 @@ describe("input", () => {
 
     beforeEach(() => {
       spawned = [];
-      actions.setRl(makeFakeRl({ line: "" }) as unknown as readline.Interface);
+      actions.setRl(makeFakeRl({ line: "" }));
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned.push(cmd);
       });
@@ -54,6 +54,9 @@ describe("input", () => {
     });
 
     it("returns null and cleans up when readFile fails", async () => {
+      mock.method(childProcess, "spawnSync", () => {
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "modified");
+      });
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
@@ -67,7 +70,7 @@ describe("input", () => {
 
     it("returns null when editor returns empty content", async () => {
       mock.method(childProcess, "spawnSync", () => {
-        testFs._files.set("/tmp/agent-js-test-uuid.txt", "");
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "");
       });
       const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, null);
@@ -75,7 +78,7 @@ describe("input", () => {
 
     it("returns normalized content", async () => {
       mock.method(childProcess, "spawnSync", () => {
-        testFs._files.set("/tmp/agent-js-test-uuid.txt", "  hello  ");
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "  hello  ");
       });
       const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, "hello\n");
@@ -98,25 +101,21 @@ describe("input", () => {
       assert.strictEqual(spawned[0], "vi /tmp/agent-js-test-uuid.txt");
     });
 
-    it("returns null when editor content is unchanged", async () => {
-      actions.setRl(
-        makeFakeRl({ line: "hello" }) as unknown as readline.Interface,
-      );
+    it("returns normalized content when editor saves unchanged content", async () => {
+      actions.setRl(makeFakeRl({ line: "hello" }));
       mock.method(childProcess, "spawnSync", () => {
-        testFs._files.set("/tmp/agent-js-test-uuid.txt", "hello");
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "hello");
       });
       const result = await spawnAndReadEditorContent();
-      assert.strictEqual(result, null);
+      assert.strictEqual(result, "hello\n");
     });
 
     it("includes clipboard content when includeClipboardSuffix is true", async () => {
-      actions.setRl(
-        makeFakeRl({ line: "hello " }) as unknown as readline.Interface,
-      );
+      actions.setRl(makeFakeRl({ line: "hello " }));
       mock.method(os, "platform", () => "linux");
       mockExec({ stdout: "world" });
       mock.method(childProcess, "spawnSync", () => {
-        testFs._files.set(
+        testFs.writeFileSync(
           "/tmp/agent-js-test-uuid.txt",
           "  hello world modified  \n",
         );
@@ -126,12 +125,35 @@ describe("input", () => {
       });
       assert.strictEqual(result, "hello world modified\n");
     });
+
+    it("returns content when includeClipboardSuffix is true and editor saves unchanged content", async () => {
+      actions.setRl(makeFakeRl({ line: "query" }));
+      mock.method(os, "platform", () => "linux");
+      mockExec({ stdout: "clip" });
+      mock.method(childProcess, "spawnSync", () => {
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "queryclip");
+      });
+      const result = await spawnAndReadEditorContent({
+        includeClipboardSuffix: true,
+      });
+      assert.strictEqual(result, "queryclip\n");
+    });
+
+    it("returns null when includeClipboardSuffix is true and editor is closed without saving", async () => {
+      actions.setRl(makeFakeRl({ line: "query" }));
+      mock.method(os, "platform", () => "linux");
+      mockExec({ stdout: "clip" });
+      const result = await spawnAndReadEditorContent({
+        includeClipboardSuffix: true,
+      });
+      assert.strictEqual(result, null);
+    });
   });
 
   describe("resolveUserInput", () => {
     beforeEach(() => {
       actions.resetStdout();
-      actions.setRl(makeFakeRl() as unknown as readline.Interface);
+      actions.setRl(makeFakeRl());
     });
 
     it("returns editor input value when set and clears it", async () => {
@@ -367,7 +389,7 @@ from editor
 
     it("prints warning when log does not exist", () => {
       actions.setPromptHistoryPath("/tmp/nonexistent.log");
-      actions.setRl(makeFakeRl() as unknown as readline.Interface);
+      actions.setRl(makeFakeRl());
       chatHistoryCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -413,7 +435,7 @@ from editor
     it("prints warning when log cannot be read", () => {
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      actions.setRl(makeFakeRl() as unknown as readline.Interface);
+      actions.setRl(makeFakeRl());
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
@@ -795,7 +817,7 @@ Keymaps:
 
   describe("resolveSlashCommand", () => {
     beforeEach(() => {
-      actions.setRl(makeFakeRl({ line: "" }) as unknown as readline.Interface);
+      actions.setRl(makeFakeRl({ line: "" }));
       mock.method(childProcess, "spawnSync", () => undefined);
     });
 
@@ -810,7 +832,7 @@ Keymaps:
     });
 
     it("handles /history command", async () => {
-      actions.setRl(makeFakeRl() as unknown as readline.Interface);
+      actions.setRl(makeFakeRl());
       const result = await resolveSlashCommand("/history");
       assert.strictEqual(result, null);
     });

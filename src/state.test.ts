@@ -5,6 +5,7 @@ import { MISSING } from "./utils.ts";
 import type { TokenUsage } from "./print.ts";
 import { actions, getState } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
+import { makeFakeRl } from "./test-helpers.ts";
 
 describe("state", () => {
   beforeEach(() => {
@@ -349,10 +350,7 @@ line3
 
   it("set-rl", () => {
     assert.equal(getState().app.rl, null);
-    const fakeRl = {
-      close: () => undefined,
-      question: () => Promise.resolve(""),
-    } as unknown as readline.Interface;
+    const fakeRl = makeFakeRl();
     actions.setRl(fakeRl);
     assert.equal(getState().app.rl, fakeRl);
   });

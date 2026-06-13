@@ -4,6 +4,7 @@ import childProcess from "node:child_process";
 import { mock } from "node:test";
 import { fsDeps, processDeps } from "./deps.ts";
 import { actions } from "./state.ts";
+import readline from "node:readline/promises";
 
 export interface FakeFsDeps {
   _files: Map<string, string>;
@@ -40,6 +41,9 @@ export function makeFakeFsDeps(
   const _files = new Map<string, string>();
   const _dirs = new Set<string>();
   const _globResults = new Map<string, string[]>();
+  const _mtimes = new Map<string, number>();
+
+  let _mtimeCounter = 0;
 
   return {
     _files,
@@ -52,6 +56,7 @@ export function makeFakeFsDeps(
     },
     writeFileSync: (path: string, content: string) => {
       _files.set(path, content);
+      _mtimes.set(path, ++_mtimeCounter);
     },
     existsSync: (path: string) => _files.has(path) || _dirs.has(path),
     readdirSync: (path: string) => {
@@ -70,19 +75,26 @@ export function makeFakeFsDeps(
       return [...result];
     },
     mkdirSync: (path: string) => _dirs.add(path),
-    unlinkSync: (path: string) => _files.delete(path),
+    unlinkSync: (path: string) => {
+      _files.delete(path);
+      _mtimes.delete(path);
+    },
     appendFileSync: (path: string, content: string) => {
       _files.set(path, (_files.get(path) ?? "") + content);
+      _mtimes.set(path, ++_mtimeCounter);
     },
     statSync: (path: string) => ({
       isFile: () => _files.has(path),
       isDirectory: () => _dirs.has(path),
+      mtimeMs: _mtimes.get(path) ?? 0,
     }),
     globbySync: (pattern: string) => _globResults.get(pattern) ?? [],
     _restore: () => {
       _files.clear();
       _dirs.clear();
       _globResults.clear();
+      _mtimes.clear();
+      _mtimeCounter = 0;
     },
     ...overrides,
   };
@@ -155,7 +167,7 @@ export function makeFakeRl(overrides: object = {}) {
     close: () => null,
     question: () => Promise.resolve(""),
     ...overrides,
-  };
+  } as unknown as readline.Interface;
 }
 
 export function setupTestContext() {
