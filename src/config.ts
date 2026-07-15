@@ -45,6 +45,7 @@ const ConfigSchema = z.object({
     .optional(),
   customSlashCommandDirs: z.array(z.string()).optional(),
   customSkillDirs: z.array(z.string()).optional(),
+  loadingStateFrames: z.array(z.string()).optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -70,6 +71,7 @@ interface DefaultConfig {
   };
   customSlashCommandDirs: string[];
   customSkillDirs: string[];
+  loadingStateFrames: string[];
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -96,6 +98,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   },
   customSlashCommandDirs: [],
   customSkillDirs: [],
+  loadingStateFrames: ["|", "/", "-", "\\"],
 };
 
 export function initState() {
@@ -189,6 +192,11 @@ export function initState() {
     localConfig.keymaps?.clear ??
       globalConfig.keymaps?.clear ??
       DEFAULT_CONFIG.keymaps.clear,
+  );
+  actions.setLoadingStateFrames(
+    localConfig.loadingStateFrames ??
+      globalConfig.loadingStateFrames ??
+      DEFAULT_CONFIG.loadingStateFrames,
   );
 
   const contextEntries = getContextEntries();

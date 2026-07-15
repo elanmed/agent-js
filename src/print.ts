@@ -89,13 +89,13 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   colorPrint(line, opts.color ?? "grey");
 }
 
-const SPINNER_FRAMES = ["|", "/", "-", "\\"];
-
 export function startSpinner() {
   let spinnerIdx = 0;
   const timeout = setInterval(() => {
+    const { loadingStateFrames } = getState().config;
+
     processDeps.stdout.write(
-      `\r${String(SPINNER_FRAMES[spinnerIdx++ % SPINNER_FRAMES.length])}`,
+      `\r${String(loadingStateFrames[spinnerIdx++ % loadingStateFrames.length])}`,
     );
   }, 80);
   actions.setSpinnerTimeout(timeout);

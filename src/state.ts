@@ -47,6 +47,7 @@ interface State {
     keymapEditPastePrompt: Key;
     keymapChatHistory: Key;
     keymapClear: Key;
+    loadingStateFrames: string[];
   };
   abortControllers: {
     question: AbortController | null;
@@ -83,6 +84,7 @@ const initialState: State = {
     keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
     keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
+    loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
   },
   abortControllers: {
     question: null,
@@ -338,5 +340,15 @@ export const actions = {
   resetState() {
     state = structuredClone(initialState);
     logStateChange("reset-state", "[truncating]", stringify(state));
+  },
+
+  setLoadingStateFrames(loadingStateFrames: string[]) {
+    const before = state.config.loadingStateFrames;
+    state.config.loadingStateFrames = loadingStateFrames;
+    logStateChange(
+      "set-loading-state-frames",
+      stringify(before),
+      stringify(loadingStateFrames),
+    );
   },
 };
