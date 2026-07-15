@@ -45,8 +45,17 @@ const ConfigSchema = z.object({
     .optional(),
   customSlashCommandDirs: z.array(z.string()).optional(),
   customSkillDirs: z.array(z.string()).optional(),
-  loadingStateFrames: z.array(z.string()).optional(),
   loadingStateFrameDuration: z.number().optional(),
+  loadingStateFrames: z
+    .array(z.string())
+    .optional()
+    .refine(
+      (frames) =>
+        !frames ||
+        frames.length === 0 ||
+        new Set(frames.map((f) => f.length)).size === 1,
+      { message: "All loadingStateFrames strings must be the same length" },
+    ),
   promptPrefix: z.string().optional(),
 });
 
