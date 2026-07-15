@@ -96,11 +96,17 @@ export function startLoadingState() {
   actions.setLoadingStateTimeout(timeout);
 }
 
-function clearLoadingState() {
+function pauseLoadingState() {
   const { loadingStateTimeout } = getState().app;
   if (loadingStateTimeout === null) return;
   clearInterval(loadingStateTimeout);
   actions.setLoadingStateTimeout(null);
+}
+
+function eraseLoadingState() {
+  processDeps.stdout.write(
+    `\r${" ".repeat(getState().config.loadingStateFrames.length)}\r`,
+  );
 }
 
 function writeLoadingStateFrame() {
@@ -113,11 +119,11 @@ function writeLoadingStateFrame() {
 
 export function stopLoadingState(): Promise<void> {
   if (getState().app.loadingStateTimeout === null) return Promise.resolve();
-  clearLoadingState();
+  pauseLoadingState();
 
   const { loadingStateFrames } = getState().config;
   if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 0) {
-    processDeps.stdout.write("\r \r");
+    eraseLoadingState();
     return Promise.resolve();
   }
 
@@ -129,8 +135,8 @@ export function stopLoadingState(): Promise<void> {
         getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
         0
       ) {
-        clearLoadingState();
-        processDeps.stdout.write("\r \r");
+        pauseLoadingState();
+        eraseLoadingState();
         resolve();
       }
     }, getState().config.loadingStateFrameDuration);
