@@ -60,7 +60,6 @@ const ConfigSchema = z.object({
     .refine(
       (frames) => {
         if (!frames) return true;
-        if (frames.length === 0) return true;
         return frames.length >= 2;
       },
       { message: "loadingStateFrames must be at least length 2" },

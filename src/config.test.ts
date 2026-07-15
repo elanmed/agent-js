@@ -473,6 +473,68 @@ describe("config", () => {
     });
   });
 
+  it("throws when loadingStateFrames have unequal lengths", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...defaultConfig,
+        loadingStateFrames: ["..", "...", ".."],
+      }),
+    );
+
+    await assert.rejects(
+      initState(),
+      /All loadingStateFrames strings must be the same length/,
+    );
+  });
+
+  it("throws when loadingStateFrames has fewer than 2 entries", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...defaultConfig,
+        loadingStateFrames: [".."],
+      }),
+    );
+
+    await assert.rejects(
+      initState(),
+      /loadingStateFrames must be at least length 2/,
+    );
+  });
+
+  it("throws when loadingStateFrames is empty", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...defaultConfig,
+        loadingStateFrames: [],
+      }),
+    );
+
+    await assert.rejects(
+      initState(),
+      /loadingStateFrames must be at least length 2/,
+    );
+  });
+
+  it("accepts loadingStateFrames with equal-length entries", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...defaultConfig,
+        loadingStateFrames: ["..", "..", ".."],
+      }),
+    );
+
+    await initState();
+    assert.deepStrictEqual(getState().config.loadingStateFrames, [
+      "..",
+      "..",
+      "..",
+    ]);
+  });
+
   it("throws on invalid JSON in global config", async () => {
     testFs._files.set(getGlobalConfigPath(), "not valid json");
 
