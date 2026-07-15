@@ -63,7 +63,7 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       await stopPromise;
 
-      assert.strictEqual(captured, "\ra\rb\rc\ra\r \r\rb\rc\r \r");
+      assert.strictEqual(captured, "\ra\rb\rc\ra\rb\rc\r \r");
     });
 
     it("uses default loadingStateFrames when none set", async () => {
@@ -89,7 +89,7 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       await stopPromise;
 
-      assert.strictEqual(captured, "\r|\r/\r \r\r-\r\\\r \r");
+      assert.strictEqual(captured, "\r|\r/\r-\r\\\r \r");
     });
   });
 

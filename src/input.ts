@@ -247,7 +247,7 @@ export async function resolveUserInput({
 
   actions.setQuestionAbortController(new AbortController());
   const inputResult = await tryCatchAsync(
-    rl.question("> ", {
+    rl.question(getState().config.promptPrefix, {
       signal: getState().abortControllers.question!.signal,
     }),
   );

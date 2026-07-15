@@ -218,6 +218,48 @@ describe("config", () => {
       ]);
     });
 
+    it("uses its loadingStateFrameDuration over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          loadingStateFrameDuration: 100,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          loadingStateFrameDuration: 200,
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.loadingStateFrameDuration, 200);
+    });
+
+    it("uses its promptPrefix over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          promptPrefix: "> ",
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          promptPrefix: "🤖 ",
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.promptPrefix, "🤖 ");
+    });
+
     it("merges partial keymaps with defaults", async () => {
       testFs._files.set(
         getLocalConfigPath(),
@@ -366,6 +408,34 @@ describe("config", () => {
           "⣻",
           "⢿",
         ]);
+      });
+
+      it("uses its loadingStateFrameDuration over the default config", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            ...defaultConfig,
+            loadingStateFrameDuration: 150,
+          }),
+        );
+
+        await initState();
+
+        assert.strictEqual(getState().config.loadingStateFrameDuration, 150);
+      });
+
+      it("uses its promptPrefix over the default config", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            ...defaultConfig,
+            promptPrefix: "❯ ",
+          }),
+        );
+
+        await initState();
+
+        assert.strictEqual(getState().config.promptPrefix, "❯ ");
       });
 
       it("uses its customSkillDirs over the default config", async () => {

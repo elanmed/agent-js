@@ -49,6 +49,8 @@ interface State {
     keymapChatHistory: Key;
     keymapClear: Key;
     loadingStateFrames: string[];
+    loadingStateFrameDuration: number;
+    promptPrefix: string;
   };
   abortControllers: {
     question: AbortController | null;
@@ -87,6 +89,8 @@ const initialState: State = {
     keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
     loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
+    loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
+    promptPrefix: DEFAULT_CONFIG.promptPrefix,
   },
   abortControllers: {
     question: null,
@@ -367,5 +371,21 @@ export const actions = {
       stringify(before),
       stringify(loadingStateFrames),
     );
+  },
+
+  setLoadingStateFrameDuration(loadingStateFrameDuration: number) {
+    const before = state.config.loadingStateFrameDuration;
+    state.config.loadingStateFrameDuration = loadingStateFrameDuration;
+    logStateChange(
+      "set-loading-state-frame-duration",
+      String(before),
+      String(loadingStateFrameDuration),
+    );
+  },
+
+  setPromptPrefix(promptPrefix: string) {
+    const before = state.config.promptPrefix;
+    state.config.promptPrefix = promptPrefix;
+    logStateChange("set-prompt-prefix", before, promptPrefix);
   },
 };

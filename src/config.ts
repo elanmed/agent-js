@@ -46,6 +46,8 @@ const ConfigSchema = z.object({
   customSlashCommandDirs: z.array(z.string()).optional(),
   customSkillDirs: z.array(z.string()).optional(),
   loadingStateFrames: z.array(z.string()).optional(),
+  loadingStateFrameDuration: z.number().optional(),
+  promptPrefix: z.string().optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -72,6 +74,8 @@ interface DefaultConfig {
   customSlashCommandDirs: string[];
   customSkillDirs: string[];
   loadingStateFrames: string[];
+  loadingStateFrameDuration: number;
+  promptPrefix: string;
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -99,6 +103,8 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   customSlashCommandDirs: [],
   customSkillDirs: [],
   loadingStateFrames: ["|", "/", "-", "\\"],
+  loadingStateFrameDuration: 80,
+  promptPrefix: "> ",
 };
 
 export async function initState() {
@@ -197,6 +203,16 @@ export async function initState() {
     localConfig.loadingStateFrames ??
       globalConfig.loadingStateFrames ??
       DEFAULT_CONFIG.loadingStateFrames,
+  );
+  actions.setLoadingStateFrameDuration(
+    localConfig.loadingStateFrameDuration ??
+      globalConfig.loadingStateFrameDuration ??
+      DEFAULT_CONFIG.loadingStateFrameDuration,
+  );
+  actions.setPromptPrefix(
+    localConfig.promptPrefix ??
+      globalConfig.promptPrefix ??
+      DEFAULT_CONFIG.promptPrefix,
   );
 
   const contextEntries = getContextEntries();

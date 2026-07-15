@@ -385,6 +385,18 @@ line3
     ]);
   });
 
+  it("set-loading-state-frame-duration", () => {
+    assert.equal(getState().config.loadingStateFrameDuration, 80);
+    actions.setLoadingStateFrameDuration(120);
+    assert.strictEqual(getState().config.loadingStateFrameDuration, 120);
+  });
+
+  it("set-prompt-prefix", () => {
+    assert.strictEqual(getState().config.promptPrefix, "> ");
+    actions.setPromptPrefix("🤖 ");
+    assert.strictEqual(getState().config.promptPrefix, "🤖 ");
+  });
+
   it("set-loading-state-timeout", () => {
     assert.equal(getState().app.loadingStateTimeout, null);
     const timeout = setTimeout(() => undefined, 1000);
