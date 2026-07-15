@@ -192,6 +192,32 @@ describe("config", () => {
       assert.deepStrictEqual(getState().app.customSkillDirs, ["/local-skills"]);
     });
 
+    it("uses its loadingStateFrames over the global config, default config", () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          loadingStateFrames: ["⣾", "⣽", "⣻", "⢿"],
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          loadingStateFrames: ["⠋", "⠙", "⠹", "⠸"],
+        }),
+      );
+
+      initState();
+
+      assert.deepStrictEqual(getState().config.loadingStateFrames, [
+        "⠋",
+        "⠙",
+        "⠹",
+        "⠸",
+      ]);
+    });
+
     it("merges partial keymaps with defaults", () => {
       testFs._files.set(
         getLocalConfigPath(),
@@ -321,6 +347,25 @@ describe("config", () => {
           meta: false,
           shift: false,
         });
+      });
+
+      it("uses its loadingStateFrames over the default config", () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            ...defaultConfig,
+            loadingStateFrames: ["⣾", "⣽", "⣻", "⢿"],
+          }),
+        );
+
+        initState();
+
+        assert.deepStrictEqual(getState().config.loadingStateFrames, [
+          "⣾",
+          "⣽",
+          "⣻",
+          "⢿",
+        ]);
       });
 
       it("uses its customSkillDirs over the default config", () => {

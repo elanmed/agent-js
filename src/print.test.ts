@@ -5,6 +5,8 @@ import {
   calculateSessionUsage,
   calculateApiDuration,
   executeBat,
+  startLoadingState,
+  stopLoadingState,
 } from "./print.ts";
 import { actions } from "./state.ts";
 import { processDeps } from "./deps.ts";
@@ -31,6 +33,57 @@ describe("print", () => {
       const invalid = null as unknown as string;
       const result = await formatMarkdown(invalid);
       assert.equal(result, invalid);
+    });
+  });
+
+  describe("startLoadingState", () => {
+    it("writes loadingStateFrames cyclically", () => {
+      actions.resetState();
+      const callbacks: (() => void)[] = [];
+      mock.method(globalThis, "setInterval", (cb: () => void) => {
+        callbacks.push(cb);
+        return {} as ReturnType<typeof setInterval>;
+      });
+      mock.method(globalThis, "clearInterval", () => {
+        callbacks.length = 0;
+      });
+      actions.setLoadingStateFrames(["a", "b", "c"]);
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      startLoadingState();
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+      stopLoadingState();
+
+      assert.strictEqual(captured, "\ra\rb\rc\ra\r \r");
+    });
+
+    it("uses default loadingStateFrames when none set", () => {
+      actions.resetState();
+      const callbacks: (() => void)[] = [];
+      mock.method(globalThis, "setInterval", (cb: () => void) => {
+        callbacks.push(cb);
+        return {} as ReturnType<typeof setInterval>;
+      });
+      mock.method(globalThis, "clearInterval", () => {
+        callbacks.length = 0;
+      });
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      startLoadingState();
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+      stopLoadingState();
+
+      assert.strictEqual(captured, "\r|\r/\r \r");
     });
   });
 

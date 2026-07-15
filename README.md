@@ -32,6 +32,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 | `keymaps`                | `object`                               | Custom keybindings (see below)                   |
 | `customSlashCommandDirs` | `string[]`                             | Additional directories for custom slash commands |
 | `customSkillDirs`        | `string[]`                             | Additional directories for skills                |
+| `loadingStateFrames`     | `string[]`                             | Custom spinner frames (default: `["\|", "/", "-", "\\"]`) |
 
 ### Keymaps
 
@@ -76,7 +77,8 @@ Example `settings.json`:
     }
   },
   "customSlashCommandDirs": ["/home/me/my-commands"],
-  "customSkillDirs": ["/home/me/my-skills"]
+  "customSkillDirs": ["/home/me/my-skills"],
+  "loadingStateFrames": ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 }
 ```
 

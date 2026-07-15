@@ -1,6 +1,5 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import type readline from "node:readline/promises";
 import { MISSING } from "./utils.ts";
 import type { TokenUsage } from "./print.ts";
 import { actions, getState } from "./state.ts";
@@ -17,7 +16,7 @@ describe("state", () => {
     actions.setQuestionAbortController(new AbortController());
     actions.setApiStreamAbortController(new AbortController());
     const timeout = setTimeout(() => undefined, 1000);
-    actions.setSpinnerTimeout(timeout);
+    actions.setLoadingStateTimeout(timeout);
     actions.setPromptHistoryPath("/tmp/test.log");
     actions.resetState();
     clearTimeout(timeout);
@@ -26,7 +25,8 @@ describe("state", () => {
     assert.deepStrictEqual(getState().app.messageUsages, []);
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
-    assert.equal(getState().app.spinnerTimeout, null);
+    assert.equal(getState().app.loadingStateTimeout, null);
+    assert.equal(getState().app.loadingStateFrameIdx, 0);
     assert.equal(getState().app.apiStartTime, null);
     assert.equal(getState().app.apiEndTime, null);
     assert.equal(getState().app.chatHistoryPath, "");
@@ -369,13 +369,29 @@ line3
     assert.strictEqual(getState().app.apiEndTime, 99_000);
   });
 
-  it("set-spinner-timeout", () => {
-    assert.equal(getState().app.spinnerTimeout, null);
+  it("set-loading-state-frames", () => {
+    assert.deepStrictEqual(getState().config.loadingStateFrames, [
+      "|",
+      "/",
+      "-",
+      "\\",
+    ]);
+    actions.setLoadingStateFrames(["⠋", "⠙", "⠹", "⠸"]);
+    assert.deepStrictEqual(getState().config.loadingStateFrames, [
+      "⠋",
+      "⠙",
+      "⠹",
+      "⠸",
+    ]);
+  });
+
+  it("set-loading-state-timeout", () => {
+    assert.equal(getState().app.loadingStateTimeout, null);
     const timeout = setTimeout(() => undefined, 1000);
-    actions.setSpinnerTimeout(timeout);
-    assert.equal(getState().app.spinnerTimeout, timeout);
+    actions.setLoadingStateTimeout(timeout);
+    assert.equal(getState().app.loadingStateTimeout, timeout);
     clearTimeout(timeout);
-    actions.setSpinnerTimeout(null);
-    assert.equal(getState().app.spinnerTimeout, null);
+    actions.setLoadingStateTimeout(null);
+    assert.equal(getState().app.loadingStateTimeout, null);
   });
 });

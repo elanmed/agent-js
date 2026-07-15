@@ -36,7 +36,7 @@ const mutedStdout = new Writable({
     _encoding: BufferEncoding,
     callback: (error?: Error | null) => void,
   ) {
-    if (getState().app.spinnerTimeout === null) {
+    if (getState().app.loadingStateTimeout === null) {
       stdout.write(chunk);
     }
     callback();
@@ -196,7 +196,7 @@ export function initKeypress() {
         return;
       }
 
-      if (getState().app.spinnerTimeout !== null) {
+      if (getState().app.loadingStateTimeout !== null) {
         rl.write(null, { ctrl: true, name: "u" });
       }
     })();

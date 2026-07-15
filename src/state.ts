@@ -34,7 +34,8 @@ interface State {
     skillsStr: string;
     skills: Skill[];
     rl: readline.Interface | null;
-    spinnerTimeout: NodeJS.Timeout | null;
+    loadingStateTimeout: NodeJS.Timeout | null;
+    loadingStateFrameIdx: number;
     apiStartTime: number | null;
     apiEndTime: number | null;
   };
@@ -71,7 +72,8 @@ const initialState: State = {
     skillsStr: "",
     skills: [],
     rl: null,
-    spinnerTimeout: null,
+    loadingStateTimeout: null,
+    loadingStateFrameIdx: 0,
     apiStartTime: null,
     apiEndTime: null,
   },
@@ -317,10 +319,14 @@ export const actions = {
     logStateChange("set-rl", String(before), String(rl));
   },
 
-  setSpinnerTimeout(timeout: NodeJS.Timeout | null) {
-    const before = state.app.spinnerTimeout;
-    state.app.spinnerTimeout = timeout;
-    logStateChange("set-spinner-timeout", String(before), String(timeout));
+  setLoadingStateTimeout(timeout: NodeJS.Timeout | null) {
+    const before = state.app.loadingStateTimeout;
+    state.app.loadingStateTimeout = timeout;
+    logStateChange(
+      "set-loading-state-timeout",
+      String(before),
+      String(timeout),
+    );
   },
 
   setApiStartTime() {

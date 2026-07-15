@@ -1,6 +1,5 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import readline from "node:readline/promises";
 import { actions, getState } from "./state.ts";
 import {
   resolveSlashCommand,

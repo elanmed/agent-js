@@ -8,7 +8,7 @@ import {
   getMessageFromError,
   getTempFileName,
 } from "./utils.ts";
-import { print, startSpinner, stopSpinner } from "./print.ts";
+import { print, startLoadingState, stopLoadingState } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import {
   objectWithPathSchema,
@@ -55,7 +55,7 @@ export async function resolveApiCall(userInput: string) {
 
   actions.setApiStartTime();
   actions.setApiStreamAbortController(new AbortController());
-  startSpinner();
+  startLoadingState();
   const generateTextResult = await tryCatchAsync(
     aiDeps.generateText({
       model: getLanguageModel(),
@@ -117,7 +117,7 @@ export async function resolveApiCall(userInput: string) {
       },
     }),
   );
-  stopSpinner();
+  stopLoadingState();
   actions.setApiStreamAbortController(null);
   actions.setApiEndTime();
 

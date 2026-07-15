@@ -46,10 +46,10 @@ export function colorPrint(text: Uint8Array | string, color?: Color) {
     }
   })();
 
-  const wasSpinnerActive = getState().app.spinnerTimeout !== null;
-  stopSpinner();
+  const wasSpinnerActive = getState().app.loadingStateTimeout !== null;
+  stopLoadingState();
   processDeps.stdout.write(out);
-  if (wasSpinnerActive) startSpinner();
+  if (wasSpinnerActive) startLoadingState();
 
   actions.appendToStdout(out);
 }
@@ -89,24 +89,26 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   colorPrint(line, opts.color ?? "grey");
 }
 
-export function startSpinner() {
-  let spinnerIdx = 0;
+export function startLoadingState() {
   const timeout = setInterval(() => {
     const { loadingStateFrames } = getState().config;
+    const idx = getState().app.loadingStateFrameIdx;
 
     processDeps.stdout.write(
-      `\r${String(loadingStateFrames[spinnerIdx++ % loadingStateFrames.length])}`,
+      `\r${String(loadingStateFrames[idx % loadingStateFrames.length])}`,
     );
+    getState().app.loadingStateFrameIdx = idx + 1;
   }, 80);
-  actions.setSpinnerTimeout(timeout);
+  actions.setLoadingStateTimeout(timeout);
 }
 
-export function stopSpinner() {
-  const timeout = getState().app.spinnerTimeout;
+export function stopLoadingState() {
+  const timeout = getState().app.loadingStateTimeout;
   if (timeout === null) return;
   clearInterval(timeout);
   processDeps.stdout.write("\r \r");
-  actions.setSpinnerTimeout(null);
+  actions.setLoadingStateTimeout(null);
+  getState().app.loadingStateFrameIdx = 0;
 }
 
 async function checkBat(): Promise<boolean> {
