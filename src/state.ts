@@ -348,6 +348,17 @@ export const actions = {
     logStateChange("reset-state", "[truncating]", stringify(state));
   },
 
+  incrementLoadingStateFrameIdx() {
+    const before = state.app.loadingStateFrameIdx;
+    state.app.loadingStateFrameIdx++;
+    const after = state.app.loadingStateFrameIdx;
+    logStateChange(
+      "set-loading-state-frame-idx",
+      String(before),
+      String(after),
+    );
+  },
+
   setLoadingStateFrames(loadingStateFrames: string[]) {
     const before = state.config.loadingStateFrames;
     state.config.loadingStateFrames = loadingStateFrames;
