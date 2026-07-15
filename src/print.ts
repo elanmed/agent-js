@@ -101,7 +101,6 @@ function clearLoadingState() {
   if (loadingStateTimeout === null) return;
   clearInterval(loadingStateTimeout);
   actions.setLoadingStateTimeout(null);
-  processDeps.stdout.write("\r \r");
 }
 
 function writeLoadingStateFrame() {
@@ -118,6 +117,7 @@ export function stopLoadingState(): Promise<void> {
 
   const { loadingStateFrames } = getState().config;
   if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 0) {
+    processDeps.stdout.write("\r \r");
     return Promise.resolve();
   }
 
@@ -130,6 +130,7 @@ export function stopLoadingState(): Promise<void> {
         0
       ) {
         clearLoadingState();
+        processDeps.stdout.write("\r \r");
         resolve();
       }
     }, 80);
