@@ -75,7 +75,7 @@ ${skillsFormatted}
 `;
 }
 
-export function getSkills() {
+export async function getSkills() {
   const seenSkills = new Set<string>();
   const skillGrandparentDirs = [
     ...getState().app.customSkillDirs,
@@ -93,7 +93,7 @@ export function getSkills() {
   }
 
   for (const skillPath of skillPaths) {
-    const skill = getSkillJSON(skillPath);
+    const skill = await getSkillJSON(skillPath);
     if (skill === null) continue;
 
     if (seenSkills.has(skill.name)) continue;
@@ -142,7 +142,7 @@ export function parseFrontMatter(content: string) {
   return { data: parseResult.value, body };
 }
 
-export function getSkillJSON(skillMdPath: string) {
+export async function getSkillJSON(skillMdPath: string) {
   const readResult = tryCatch(() =>
     fsDeps.readFileSync(skillMdPath).toString(),
   );
@@ -150,14 +150,14 @@ export function getSkillJSON(skillMdPath: string) {
 
   const parsed = parseFrontMatter(readResult.value);
   if (parsed === null) {
-    print.error(
+    await print.error(
       `Malformed skill at ${skillMdPath}! A skill's front matter must contain valid YAML between \`---\` and \`---\`.`,
     );
     return null;
   }
   const parseResult = skillMetadataSchema.safeParse(parsed.data);
   if (!parseResult.success) {
-    print.error(
+    await print.error(
       `Malformed skill at ${skillMdPath}! A skill's front matter must contain a \`name\` and \`description\` field.`,
     );
     return null;

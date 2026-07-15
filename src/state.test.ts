@@ -369,6 +369,12 @@ line3
     assert.strictEqual(getState().app.apiEndTime, 99_000);
   });
 
+  it("set-loading-state-frame-idx", () => {
+    assert.equal(getState().app.loadingStateFrameIdx, 0);
+    actions.setLoadingStateFrameIdx(3);
+    assert.equal(getState().app.loadingStateFrameIdx, 3);
+  });
+
   it("set-loading-state-frames", () => {
     assert.deepStrictEqual(getState().config.loadingStateFrames, [
       "|",

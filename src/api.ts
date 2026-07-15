@@ -117,17 +117,17 @@ export async function resolveApiCall(userInput: string) {
       },
     }),
   );
-  stopLoadingState();
+  await stopLoadingState();
   actions.setApiStreamAbortController(null);
   actions.setApiEndTime();
 
   if (!generateTextResult.ok) {
     if (isAbortError(generateTextResult.error)) {
-      print.error("Interrupted");
+      await print.error("Interrupted");
       return null;
     }
 
-    print.error(getMessageFromError(generateTextResult.error));
+    await print.error(getMessageFromError(generateTextResult.error));
     return null;
   }
 

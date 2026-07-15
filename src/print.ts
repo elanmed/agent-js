@@ -35,7 +35,7 @@ export const print = Object.assign(
   },
 );
 
-export function colorPrint(text: Uint8Array | string, color?: Color) {
+export async function colorPrint(text: Uint8Array | string, color?: Color) {
   const reset = "\x1b[0m";
   const out = (() => {
     if (color) {
@@ -54,9 +54,9 @@ export function colorPrint(text: Uint8Array | string, color?: Color) {
   actions.appendToStdout(out);
 }
 
-export function printNewline() {
+export async function printNewline() {
   if (getState().app.stdout.endsWith("\n\n")) return;
-  colorPrint("");
+  await colorPrint("");
 }
 
 interface FencePrintOpts {
@@ -65,7 +65,7 @@ interface FencePrintOpts {
   color?: Color;
 }
 
-export function fencePrint(text: string, opts: FencePrintOpts = {}) {
+export async function fencePrint(text: string, opts: FencePrintOpts = {}) {
   const showSessionUsage = opts.showSessionUsage ?? false;
   const showApiDuration = opts.showApiDuration ?? false;
 
@@ -86,7 +86,7 @@ export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   })();
 
   const line = `━━ ${text}${sessionUsage}${apiDuration} ━━`;
-  colorPrint(line, opts.color ?? "grey");
+  await colorPrint(line, opts.color ?? "grey");
 }
 
 export function startLoadingState() {
@@ -113,11 +113,11 @@ function writeLoadingStateFrame() {
 }
 
 export function stopLoadingState(): Promise<void> {
-  const timeout = getState().app.loadingStateTimeout;
-  if (timeout === null) return Promise.resolve();
+  if (getState().app.loadingStateTimeout === null) return Promise.resolve();
   clearLoadingState();
 
-  if (getState().app.loadingStateFrameIdx === 0) {
+  const { loadingStateFrames } = getState().config;
+  if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 0) {
     return Promise.resolve();
   }
 
@@ -125,7 +125,10 @@ export function stopLoadingState(): Promise<void> {
     const timeout = setInterval(() => {
       writeLoadingStateFrame();
 
-      if (getState().app.loadingStateFrameIdx === 0) {
+      if (
+        getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
+        0
+      ) {
         clearLoadingState();
         resolve();
       }
@@ -174,18 +177,20 @@ export async function executeBat(content: string) {
   const isBatAvailable = await checkBat();
 
   if (!isBatAvailable) {
-    print.error("`bat` is not available, falling back to plain text rendering");
-    print(content);
+    await print.error(
+      "`bat` is not available, falling back to plain text rendering",
+    );
+    await print(content);
     return;
   }
 
   const batResult = spawnBat(content);
   if (batResult.ok) {
-    print(batResult.value.stdout);
+    await print(batResult.value.stdout);
     return;
   }
 
-  print(content);
+  await print(content);
 }
 
 export interface TokenUsage {

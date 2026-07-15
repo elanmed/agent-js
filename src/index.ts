@@ -13,7 +13,7 @@ import { initLogs } from "./log.ts";
 
 async function main() {
   initLogs();
-  initState();
+  await initState();
 
   initReadline();
   initKeypress();
@@ -27,23 +27,26 @@ async function main() {
     if (userInput === null) continue;
 
     if (userInput === "") {
-      print.warning("Empty input");
+      await print.warning("Empty input");
       continue;
     }
 
     const text = await resolveApiCall(userInput);
     if (text === null) continue;
 
-    printNewline();
-    fencePrint("Output", { showSessionUsage: true, showApiDuration: true });
+    await printNewline();
+    await fencePrint("Output", {
+      showSessionUsage: true,
+      showApiDuration: true,
+    });
     await executeBat(text);
-    printNewline();
+    await printNewline();
   }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch((error: unknown) => {
-    print.error(getMessageFromError(error));
+  main().catch(async (error: unknown) => {
+    await print.error(getMessageFromError(error));
     process.exit(1);
   });
 }

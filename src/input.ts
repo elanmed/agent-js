@@ -192,7 +192,7 @@ export function initKeypress() {
       }
 
       if (isSameKey(key, getState().config.keymapChatHistory)) {
-        chatHistoryCommand();
+        await chatHistoryCommand();
         return;
       }
 
@@ -240,9 +240,9 @@ export async function resolveUserInput({
   }
 
   if (!isFirstInput) {
-    printNewline();
+    await printNewline();
   }
-  fencePrint("Input", { color: "yellow" });
+  await fencePrint("Input", { color: "yellow" });
   actions.resetStdout();
 
   actions.setQuestionAbortController(new AbortController());
@@ -255,7 +255,7 @@ export async function resolveUserInput({
 
   if (!inputResult.ok) {
     if (!isAbortError(inputResult.error)) {
-      print.error(getMessageFromError(inputResult.error));
+      await print.error(getMessageFromError(inputResult.error));
       return null;
     }
 
@@ -300,7 +300,7 @@ async function resolveExitConfirmation() {
       process.exit(0);
     }
 
-    print.error(getMessageFromError(exitResult.error));
+    await print.error(getMessageFromError(exitResult.error));
     return;
   }
 
@@ -338,36 +338,36 @@ export async function resolveSlashCommand(rawInput: string) {
       });
     }
     case "clear": {
-      clearCommand();
+      await clearCommand();
       return null;
     }
     case "history": {
-      chatHistoryCommand();
+      await chatHistoryCommand();
       return null;
     }
     case "model": {
-      getModelCommand();
+      await getModelCommand();
       return null;
     }
     case "skills": {
-      printSkillsCommand();
+      await printSkillsCommand();
       return null;
     }
     case "context": {
-      printContextFilesCommand();
+      await printContextFilesCommand();
       return null;
     }
     case "commands": {
-      printCommandsCommand();
+      await printCommandsCommand();
       return null;
     }
     case "keymaps": {
-      printKeymapsCommand();
+      await printKeymapsCommand();
       return null;
     }
     default: {
       if (commandWithoutSlash.startsWith("model ")) {
-        setModelCommand(rawInput);
+        await setModelCommand(rawInput);
         return null;
       }
 
@@ -376,20 +376,20 @@ export async function resolveSlashCommand(rawInput: string) {
         (command) => command.name === commandWithoutSlash,
       );
       if (matchedCommand !== undefined) {
-        print.infoSubtle(`Executing slash command: ${rawInput}`);
+        await print.infoSubtle(`Executing slash command: ${rawInput}`);
         return matchedCommand.content;
       }
 
-      printNewline();
-      print.error(`Invalid command: ${rawInput}, valid commands:`);
-      print(getCommandsStr());
+      await printNewline();
+      await print.error(`Invalid command: ${rawInput}, valid commands:`);
+      await print(getCommandsStr());
       return null;
     }
   }
 }
 
-export function clearCommand() {
-  print.infoSubtle(`Context cleared (${calculateSessionUsage()})`);
+export async function clearCommand() {
+  await print.infoSubtle(`Context cleared (${calculateSessionUsage()})`);
   actions.resetMessageUsages();
   actions.resetMessageParams();
 }
@@ -423,7 +423,7 @@ export async function spawnAndReadEditorContent(opts?: {
     fsDeps.writeFileSync(tempFile, initialContent),
   );
   if (!writeResult.ok) {
-    print.error("Failed to write to temp file");
+    await print.error("Failed to write to temp file");
     return null;
   }
 
@@ -438,7 +438,7 @@ export async function spawnAndReadEditorContent(opts?: {
 
   const readResult = tryCatch(() => fsDeps.readFileSync(tempFile).toString());
   if (!readResult.ok) {
-    print.error("Failed to read from temp file");
+    await print.error("Failed to read from temp file");
     tryCatch(() => fsDeps.unlinkSync(tempFile));
     return null;
   }
@@ -456,13 +456,13 @@ export async function spawnAndReadEditorContent(opts?: {
   return normalizeLine(readResult.value);
 }
 
-export function chatHistoryCommand() {
+export async function chatHistoryCommand() {
   const logPath = getState().app.chatHistoryPath;
   const logContentResult = tryCatch(() =>
     fsDeps.readFileSync(logPath).toString(),
   );
   if (!logContentResult.ok) {
-    print.warning("[Cannot read history]");
+    await print.warning("[Cannot read history]");
     clearRlLine()!.prompt();
     return;
   }
@@ -489,16 +489,16 @@ export function chatHistoryCommand() {
   tryCatch(() => fsDeps.writeFileSync(logPath, logContentResult.value));
 }
 
-export function getModelCommand() {
-  print.doing(getState().config.model);
+export async function getModelCommand() {
+  await print.doing(getState().config.model);
   return;
 }
 
-export function setModelCommand(rawInput: string) {
+export async function setModelCommand(rawInput: string) {
   const parts = rawInput.trim().split(/\s+/);
 
   if (parts.length !== 2) {
-    print.error("Usage: /model [model]?");
+    await print.error("Usage: /model [model]?");
     return;
   }
   const model = parts[1];
@@ -506,13 +506,13 @@ export function setModelCommand(rawInput: string) {
 
   const prevModel = getState().config.model;
   actions.setModel(model);
-  print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
+  await print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
 }
 
-export function printSkillsCommand() {
+export async function printSkillsCommand() {
   if (getState().app.skills.length === 0) {
-    printNewline();
-    print.doing("No available skills");
+    await printNewline();
+    await print.doing("No available skills");
     return;
   }
 
@@ -526,15 +526,15 @@ export function printSkillsCommand() {
     )
     .join("\n");
 
-  printNewline();
-  print.doing("Available skills:");
-  print(skillsList);
+  await printNewline();
+  await print.doing("Available skills:");
+  await print(skillsList);
 }
 
-export function printContextFilesCommand() {
+export async function printContextFilesCommand() {
   if (getState().app.contextEntries.length === 0) {
-    printNewline();
-    print.doing("No available context files");
+    await printNewline();
+    await print.doing("No available context files");
     return;
   }
 
@@ -550,9 +550,9 @@ export function printContextFilesCommand() {
 
   const formatted = contextFiles.concat(contextSkillFiles).join("\n");
 
-  printNewline();
-  print.doing("Available context files:");
-  print(formatted);
+  await printNewline();
+  await print.doing("Available context files:");
+  await print(formatted);
 }
 
 function getCommandsStr() {
@@ -567,10 +567,10 @@ function getCommandsStr() {
   return builtinCommandsFormatted.concat(customCommandsFormatted).join("\n");
 }
 
-export function printCommandsCommand() {
-  printNewline();
-  print.doing("Available commands:");
-  print(getCommandsStr());
+export async function printCommandsCommand() {
+  await printNewline();
+  await print.doing("Available commands:");
+  await print(getCommandsStr());
 }
 
 export function isSameKey(a: Key, b: Key) {
@@ -582,13 +582,17 @@ export function isSameKey(a: Key, b: Key) {
   );
 }
 
-export function printKeymapsCommand() {
-  printNewline();
-  print.doing("Keymaps:");
-  print(`- edit: ${JSON.stringify(getState().config.keymapEditPrompt)}`);
-  print(`- history: ${JSON.stringify(getState().config.keymapChatHistory)}`);
-  print(`- paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`);
-  print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
+export async function printKeymapsCommand() {
+  await printNewline();
+  await print.doing("Keymaps:");
+  await print(`- edit: ${JSON.stringify(getState().config.keymapEditPrompt)}`);
+  await print(
+    `- history: ${JSON.stringify(getState().config.keymapChatHistory)}`,
+  );
+  await print(
+    `- paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`,
+  );
+  await print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
 }
 
 export function clearRlLine(): readline.Interface | null {

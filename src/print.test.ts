@@ -37,7 +37,7 @@ describe("print", () => {
   });
 
   describe("startLoadingState", () => {
-    it("writes loadingStateFrames cyclically", () => {
+    it("writes loadingStateFrames cyclically", async () => {
       actions.resetState();
       const callbacks: (() => void)[] = [];
       mock.method(globalThis, "setInterval", (cb: () => void) => {
@@ -58,12 +58,15 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       callbacks.forEach((cb) => cb());
       callbacks.forEach((cb) => cb());
-      stopLoadingState();
+      const stopPromise = stopLoadingState();
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+      await stopPromise;
 
-      assert.strictEqual(captured, "\ra\rb\rc\ra\r \r");
+      assert.strictEqual(captured, "\ra\rb\rc\ra\r \r\rb\rc\r \r");
     });
 
-    it("uses default loadingStateFrames when none set", () => {
+    it("uses default loadingStateFrames when none set", async () => {
       actions.resetState();
       const callbacks: (() => void)[] = [];
       mock.method(globalThis, "setInterval", (cb: () => void) => {
@@ -81,9 +84,12 @@ describe("print", () => {
       startLoadingState();
       callbacks.forEach((cb) => cb());
       callbacks.forEach((cb) => cb());
-      stopLoadingState();
+      const stopPromise = stopLoadingState();
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+      await stopPromise;
 
-      assert.strictEqual(captured, "\r|\r/\r \r");
+      assert.strictEqual(captured, "\r|\r/\r \r\r-\r\\\r \r");
     });
   });
 

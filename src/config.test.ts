@@ -22,7 +22,7 @@ describe("config", () => {
   });
 
   describe("when local config exists", () => {
-    it("uses its model over the global config, default config", () => {
+    it("uses its model over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -37,12 +37,12 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.equal(getState().config.model, "claude-haiku-4-5");
     });
 
-    it("uses its provider over the global config, default config", () => {
+    it("uses its provider over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -58,12 +58,12 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.equal(getState().config.provider, "anthropic");
     });
 
-    it("uses its pricingPerModel over the global config, default config", () => {
+    it("uses its pricingPerModel over the global config, default config", async () => {
       const localPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
       localPricing["test-model"] = {
         inputPerToken: 999,
@@ -89,12 +89,12 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.deepEqual(getState().config.pricingPerModel, localPricing);
     });
 
-    it("uses its keymaps over the global config, default config", () => {
+    it("uses its keymaps over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -120,7 +120,7 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.deepEqual(getState().config.keymapEditPrompt, {
         name: "e",
@@ -148,7 +148,7 @@ describe("config", () => {
       });
     });
 
-    it("uses its customSlashCommandDirs over the global config, default config", () => {
+    it("uses its customSlashCommandDirs over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -164,14 +164,14 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.deepStrictEqual(getState().app.customSlashCommandDirs, [
         "/local-dir",
       ]);
     });
 
-    it("uses its customSkillDirs over the global config, default config", () => {
+    it("uses its customSkillDirs over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -187,12 +187,12 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.deepStrictEqual(getState().app.customSkillDirs, ["/local-skills"]);
     });
 
-    it("uses its loadingStateFrames over the global config, default config", () => {
+    it("uses its loadingStateFrames over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -208,7 +208,7 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.deepStrictEqual(getState().config.loadingStateFrames, [
         "⠋",
@@ -218,7 +218,7 @@ describe("config", () => {
       ]);
     });
 
-    it("merges partial keymaps with defaults", () => {
+    it("merges partial keymaps with defaults", async () => {
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
@@ -229,7 +229,7 @@ describe("config", () => {
         }),
       );
 
-      initState();
+      await initState();
 
       assert.deepEqual(getState().config.keymapEditPrompt, {
         name: "v",
@@ -254,7 +254,7 @@ describe("config", () => {
 
   describe("when local config does not exist", () => {
     describe("when the global config exists", () => {
-      it("uses its model over the default config", () => {
+      it("uses its model over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
@@ -263,11 +263,11 @@ describe("config", () => {
           }),
         );
 
-        initState();
+        await initState();
         assert.equal(getState().config.model, "claude-haiku-4-5");
       });
 
-      it("uses its provider over the default config", () => {
+      it("uses its provider over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
@@ -276,11 +276,11 @@ describe("config", () => {
           }),
         );
 
-        initState();
+        await initState();
         assert.equal(getState().config.provider, "anthropic");
       });
 
-      it("uses its pricingPerModel over the default config", () => {
+      it("uses its pricingPerModel over the default config", async () => {
         const globalPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
         globalPricing["test-model"] = {
           inputPerToken: 999,
@@ -298,11 +298,11 @@ describe("config", () => {
           }),
         );
 
-        initState();
+        await initState();
         assert.deepEqual(getState().config.pricingPerModel, globalPricing);
       });
 
-      it("uses its keymaps over the default config", () => {
+      it("uses its keymaps over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
@@ -321,7 +321,7 @@ describe("config", () => {
           }),
         );
 
-        initState();
+        await initState();
 
         assert.deepEqual(getState().config.keymapEditPrompt, {
           name: "v",
@@ -349,7 +349,7 @@ describe("config", () => {
         });
       });
 
-      it("uses its loadingStateFrames over the default config", () => {
+      it("uses its loadingStateFrames over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
@@ -358,7 +358,7 @@ describe("config", () => {
           }),
         );
 
-        initState();
+        await initState();
 
         assert.deepStrictEqual(getState().config.loadingStateFrames, [
           "⣾",
@@ -368,7 +368,7 @@ describe("config", () => {
         ]);
       });
 
-      it("uses its customSkillDirs over the default config", () => {
+      it("uses its customSkillDirs over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
@@ -377,7 +377,7 @@ describe("config", () => {
           }),
         );
 
-        initState();
+        await initState();
 
         assert.deepStrictEqual(getState().app.customSkillDirs, [
           "/global-skills",
@@ -386,41 +386,36 @@ describe("config", () => {
     });
 
     describe("when the global config does not exist", () => {
-      it("throws when model is not configured", () => {
-        assert.throws(() => {
-          initState();
-        }, /A `model` is required/);
+      it("throws when model is not configured", async () => {
+        await assert.rejects(initState(), /A `model` is required/);
       });
 
-      it("throws when baseURL is not configured for openai-compatible provider", () => {
+      it("throws when baseURL is not configured for openai-compatible provider", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({ model: "some-model" }),
         );
-        assert.throws(() => {
-          initState();
-        }, /A `baseURL` is required when `provider=openai-compatible`/);
+        await assert.rejects(
+          initState(),
+          /A `baseURL` is required when `provider=openai-compatible`/,
+        );
       });
     });
   });
 
-  it("throws on invalid JSON in global config", () => {
+  it("throws on invalid JSON in global config", async () => {
     testFs._files.set(getGlobalConfigPath(), "not valid json");
 
-    assert.throws(() => {
-      initState();
-    }, /Failed to parse config as JSON/);
+    await assert.rejects(initState(), /Failed to parse config as JSON/);
   });
 
-  it("throws on invalid JSON in local config", () => {
+  it("throws on invalid JSON in local config", async () => {
     testFs._files.set(getLocalConfigPath(), "not valid json");
 
-    assert.throws(() => {
-      initState();
-    }, /Failed to parse config as JSON/);
+    await assert.rejects(initState(), /Failed to parse config as JSON/);
   });
 
-  it("sets debug from args", () => {
+  it("sets debug from args", async () => {
     mock.method(parseCliArgsDeps, "getArgv", () => [
       "node",
       "script.js",
@@ -433,11 +428,11 @@ describe("config", () => {
       }),
     );
 
-    initState();
+    await initState();
     assert.equal(getState().app.debugLog, true);
   });
 
-  it("sets contextStr from dep", () => {
+  it("sets contextStr from dep", async () => {
     testFs._dirs.add(getGlobalContextDir());
     testFs._globResults.set(
       "/fake-home/.config/.agent-js/context/**/AGENTS.md",
@@ -454,14 +449,14 @@ describe("config", () => {
       }),
     );
 
-    initState();
+    await initState();
     assert.equal(
       getState().app.contextStr,
       `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/AGENTS.md\nContent: hello\n`,
     );
   });
 
-  it("sets skillsStr from dep", () => {
+  it("sets skillsStr from dep", async () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -469,7 +464,7 @@ describe("config", () => {
       }),
     );
 
-    initState();
+    await initState();
     assert.equal(getState().app.skillsStr, "");
   });
 });

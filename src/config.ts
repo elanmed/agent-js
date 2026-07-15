@@ -101,7 +101,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   loadingStateFrames: ["|", "/", "-", "\\"],
 };
 
-export function initState() {
+export async function initState() {
   const args = parseCliArgs();
   actions.setDebugLog(args.debug);
 
@@ -203,7 +203,7 @@ export function initState() {
   actions.setContextEntries(contextEntries);
   actions.setContextStr(getContextStr(contextEntries));
 
-  const skills = getSkills();
+  const skills = await getSkills();
   actions.setSkills(skills);
   actions.setSkillsStr(getSkillsStr(skills));
 }

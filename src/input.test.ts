@@ -290,9 +290,9 @@ from editor
       actions.resetStdout();
     });
 
-    it("sets model and prints blue confirmation when input is valid", () => {
+    it("sets model and prints blue confirmation when input is valid", async () => {
       actions.setModel("old-model");
-      setModelCommand("/model new-model");
+      await setModelCommand("/model new-model");
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -300,9 +300,9 @@ from editor
       );
     });
 
-    it("prints red error when input has too many parts", () => {
+    it("prints red error when input has too many parts", async () => {
       actions.setModel("old-model");
-      setModelCommand("/model new-model extra");
+      await setModelCommand("/model new-model extra");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -310,9 +310,9 @@ from editor
       );
     });
 
-    it("prints red error when input has only the command", () => {
+    it("prints red error when input has only the command", async () => {
       actions.setModel("old-model");
-      setModelCommand("/model");
+      await setModelCommand("/model");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -320,9 +320,9 @@ from editor
       );
     });
 
-    it("handles model name with slashes", () => {
+    it("handles model name with slashes", async () => {
       actions.setModel("old");
-      setModelCommand("/model provider/new-model");
+      await setModelCommand("/model provider/new-model");
       assert.strictEqual(getState().config.model, "provider/new-model");
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -330,15 +330,15 @@ from editor
       );
     });
 
-    it("handles input with multiple spaces", () => {
+    it("handles input with multiple spaces", async () => {
       actions.setModel("old");
-      setModelCommand("/model   new-model");
+      await setModelCommand("/model   new-model");
       assert.strictEqual(getState().config.model, "new-model");
     });
 
-    it("handles input with tabs", () => {
+    it("handles input with tabs", async () => {
       actions.setModel("old");
-      setModelCommand("/model\tnew-model");
+      await setModelCommand("/model\tnew-model");
       assert.strictEqual(getState().config.model, "new-model");
     });
   });
@@ -348,9 +348,9 @@ from editor
       actions.resetStdout();
     });
 
-    it("prints current model", () => {
+    it("prints current model", async () => {
       actions.setModel("gpt-4");
-      getModelCommand();
+      await getModelCommand();
       assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
     });
   });
@@ -360,7 +360,7 @@ from editor
       actions.resetStdout();
     });
 
-    it("resets message usages and params", () => {
+    it("resets message usages and params", async () => {
       actions.appendToMessageUsages({
         inputTokens: 10,
         outputTokens: 5,
@@ -371,7 +371,7 @@ from editor
         role: "user",
         content: "hello",
       });
-      clearCommand();
+      await clearCommand();
       assert.deepStrictEqual(getState().app.messageUsages, []);
       assert.deepStrictEqual(getState().app.messageParams, []);
       assert.strictEqual(
@@ -386,17 +386,17 @@ from editor
       mock.method(childProcess, "spawnSync", () => undefined);
     });
 
-    it("prints warning when log does not exist", () => {
+    it("prints warning when log does not exist", async () => {
       actions.setPromptHistoryPath("/tmp/nonexistent.log");
       actions.setRl(makeFakeRl());
-      chatHistoryCommand();
+      await chatHistoryCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         "[Cannot read history]\n",
       );
     });
 
-    it("uses AGENT_JS_HISTORY env var with __FILE__ when available", () => {
+    it("uses AGENT_JS_HISTORY env var with __FILE__ when available", async () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
@@ -404,11 +404,11 @@ from editor
       testProcessEnv._set("AGENT_JS_HISTORY", "nano __FILE__");
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      chatHistoryCommand();
+      await chatHistoryCommand();
       assert.strictEqual(spawned, "nano /tmp/editor.log");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_HISTORY is not set", () => {
+    it("falls back to EDITOR env var when AGENT_JS_HISTORY is not set", async () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
@@ -416,42 +416,42 @@ from editor
       testProcessEnv._set("EDITOR", "vim");
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      chatHistoryCommand();
+      await chatHistoryCommand();
       assert.strictEqual(spawned, 'vim "/tmp/editor.log"');
     });
 
-    it("falls back to vi when no editor env vars are set", () => {
+    it("falls back to vi when no editor env vars are set", async () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      chatHistoryCommand();
+      await chatHistoryCommand();
       assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
     });
 
-    it("prints warning when log cannot be read", () => {
+    it("prints warning when log cannot be read", async () => {
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       actions.setRl(makeFakeRl());
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
-      chatHistoryCommand();
+      await chatHistoryCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         "[Cannot read history]\n",
       );
     });
 
-    it("restores original log content after editing", () => {
+    it("restores original log content after editing", async () => {
       actions.setPromptHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "original content");
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/editor.log", "modified by editor");
       });
-      chatHistoryCommand();
+      await chatHistoryCommand();
       assert.strictEqual(
         testFs._files.get("/tmp/editor.log"),
         "original content",
@@ -465,7 +465,7 @@ from editor
       actions.resetStdout();
     });
 
-    it("prints available skills", () => {
+    it("prints available skills", async () => {
       actions.setSkills([
         {
           name: "test-skill",
@@ -474,7 +474,7 @@ from editor
           content: "skill content",
         },
       ]);
-      printSkillsCommand();
+      await printSkillsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -485,8 +485,8 @@ Available skills:
       );
     });
 
-    it("prints no available skills when skills list is empty", () => {
-      printSkillsCommand();
+    it("prints no available skills when skills list is empty", async () => {
+      await printSkillsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -495,7 +495,7 @@ No available skills
       );
     });
 
-    it("filters out context file skills", () => {
+    it("filters out context file skills", async () => {
       actions.setSkills([
         {
           name: "__agent-js-context-for-/ctx",
@@ -510,7 +510,7 @@ No available skills
           content: "skill content",
         },
       ]);
-      printSkillsCommand();
+      await printSkillsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -528,11 +528,11 @@ Available skills:
       actions.resetStdout();
     });
 
-    it("prints available context files", () => {
+    it("prints available context files", async () => {
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      printContextFilesCommand();
+      await printContextFilesCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -542,8 +542,8 @@ Available context files:
       );
     });
 
-    it("prints no available context files when entries list is empty", () => {
-      printContextFilesCommand();
+    it("prints no available context files when entries list is empty", async () => {
+      await printContextFilesCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -552,7 +552,7 @@ No available context files
       );
     });
 
-    it("includes context file skills", () => {
+    it("includes context file skills", async () => {
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
@@ -570,7 +570,7 @@ No available context files
           content: "skill content",
         },
       ]);
-      printContextFilesCommand();
+      await printContextFilesCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -588,7 +588,7 @@ Available context files:
       actions.resetStdout();
     });
 
-    it("prints builtin and custom commands", () => {
+    it("prints builtin and custom commands", async () => {
       actions.setSlashCommands([
         {
           name: "custom.md",
@@ -596,7 +596,7 @@ Available context files:
           content: "custom",
         },
       ]);
-      printCommandsCommand();
+      await printCommandsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -621,8 +621,8 @@ Available commands:
       actions.resetStdout();
     });
 
-    it("prints default keymaps", () => {
-      printKeymapsCommand();
+    it("prints default keymaps", async () => {
+      await printKeymapsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -635,12 +635,12 @@ Keymaps:
       );
     });
 
-    it("prints custom keymaps", () => {
+    it("prints custom keymaps", async () => {
       actions.setKeymapEditPrompt({ name: "e", ctrl: true, meta: true });
       actions.setKeymapEditPastePrompt({ name: "p", ctrl: true, shift: true });
       actions.setKeymapPromptHistory({ name: "h", ctrl: true });
       actions.setKeymapClear({ name: "k", ctrl: true });
-      printKeymapsCommand();
+      await printKeymapsCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
