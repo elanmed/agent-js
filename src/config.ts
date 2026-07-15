@@ -50,11 +50,20 @@ const ConfigSchema = z.object({
     .array(z.string())
     .optional()
     .refine(
-      (frames) =>
-        !frames ||
-        frames.length === 0 ||
-        new Set(frames.map((f) => f.length)).size === 1,
+      (frames) => {
+        if (!frames) return true;
+        if (frames.length === 0) return true;
+        return new Set(frames.map((f) => f.length)).size === 1;
+      },
       { message: "All loadingStateFrames strings must be the same length" },
+    )
+    .refine(
+      (frames) => {
+        if (!frames) return true;
+        if (frames.length === 0) return true;
+        return frames.length >= 2;
+      },
+      { message: "loadingStateFrames must be at least length 2" },
     ),
   promptPrefix: z.string().optional(),
 });

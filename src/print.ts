@@ -90,6 +90,8 @@ export async function fencePrint(text: string, opts: FencePrintOpts = {}) {
 }
 
 export function startLoadingState() {
+  writeLoadingStateFrame();
+
   const timeout = setInterval(() => {
     writeLoadingStateFrame();
   }, getState().config.loadingStateFrameDuration);
@@ -123,7 +125,7 @@ export function stopLoadingState(): Promise<void> {
   pauseLoadingState();
 
   const { loadingStateFrames } = getState().config;
-  if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 0) {
+  if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 1) {
     eraseLoadingState();
     return Promise.resolve();
   }
@@ -134,7 +136,7 @@ export function stopLoadingState(): Promise<void> {
 
       if (
         getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
-        0
+        1
       ) {
         pauseLoadingState();
         eraseLoadingState();
