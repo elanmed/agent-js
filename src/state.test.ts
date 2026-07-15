@@ -397,6 +397,14 @@ line3
     assert.strictEqual(getState().config.promptPrefix, "🤖 ");
   });
 
+  it("reset-loading-state-frame-idx", () => {
+    actions.incrementLoadingStateFrameIdx();
+    actions.incrementLoadingStateFrameIdx();
+    assert.strictEqual(getState().app.loadingStateFrameIdx, 2);
+    actions.resetLoadingStateFrameIdx();
+    assert.strictEqual(getState().app.loadingStateFrameIdx, 0);
+  });
+
   it("set-loading-state-timeout", () => {
     assert.equal(getState().app.loadingStateTimeout, null);
     const timeout = setTimeout(() => undefined, 1000);

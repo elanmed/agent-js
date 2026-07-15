@@ -363,6 +363,16 @@ export const actions = {
     );
   },
 
+  resetLoadingStateFrameIdx() {
+    const before = state.app.loadingStateFrameIdx;
+    state.app.loadingStateFrameIdx = 0;
+    logStateChange(
+      "set-loading-state-frame-idx",
+      String(before),
+      String(state.app.loadingStateFrameIdx),
+    );
+  },
+
   setLoadingStateFrames(loadingStateFrames: string[]) {
     const before = state.config.loadingStateFrames;
     state.config.loadingStateFrames = loadingStateFrames;

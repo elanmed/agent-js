@@ -105,8 +105,9 @@ function pauseLoadingState() {
 
 function eraseLoadingState() {
   processDeps.stdout.write(
-    `\r${" ".repeat(getState().config.loadingStateFrames.length)}\r`,
+    `\r${" ".repeat(getState().config.loadingStateFrames[0]?.length ?? 0)}\r`,
   );
+  actions.resetLoadingStateFrameIdx();
 }
 
 function writeLoadingStateFrame() {
