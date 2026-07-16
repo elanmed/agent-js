@@ -123,28 +123,30 @@ function writeLoadingStateFrame() {
 export function stopLoadingState(): Promise<void> {
   if (getState().app.loadingStateTimeout === null) return Promise.resolve();
   pauseLoadingState();
+  eraseLoadingState();
+  return Promise.resolve();
 
-  const { loadingStateFrames } = getState().config;
-  if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 1) {
-    eraseLoadingState();
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    const timeout = setInterval(() => {
-      writeLoadingStateFrame();
-
-      if (
-        getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
-        1
-      ) {
-        pauseLoadingState();
-        eraseLoadingState();
-        resolve();
-      }
-    }, getState().config.loadingStateFrameDuration);
-    actions.setLoadingStateTimeout(timeout);
-  });
+  // const { loadingStateFrames } = getState().config;
+  // if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 1) {
+  //   eraseLoadingState();
+  //   return Promise.resolve();
+  // }
+  //
+  // return new Promise((resolve) => {
+  //   const timeout = setInterval(() => {
+  //     writeLoadingStateFrame();
+  //
+  //     if (
+  //       getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
+  //       1
+  //     ) {
+  //       pauseLoadingState();
+  //       eraseLoadingState();
+  //       resolve();
+  //     }
+  //   }, getState().config.loadingStateFrameDuration);
+  //   actions.setLoadingStateTimeout(timeout);
+  // });
 }
 
 async function checkBat(): Promise<boolean> {
