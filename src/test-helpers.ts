@@ -198,3 +198,18 @@ export function mockExec(opts: {
     m.mock.mockImplementationOnce(impl);
   }
 }
+
+export function mockSetInterval() {
+  const callbacks: (() => void)[] = [];
+  mock.method(globalThis, "setInterval", (cb: () => void) => {
+    callbacks.push(cb);
+    return callbacks.length as unknown as ReturnType<typeof setInterval>;
+  });
+  return callbacks;
+}
+
+export function mockClearInterval(callbacks: (() => void)[]) {
+  mock.method(globalThis, "clearInterval", () => {
+    callbacks.length = 0;
+  });
+}

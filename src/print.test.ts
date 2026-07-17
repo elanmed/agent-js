@@ -13,7 +13,12 @@ import {
 import { actions, getState } from "./state.ts";
 import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
-import { stripAnsi, mockExec } from "./test-helpers.ts";
+import {
+  stripAnsi,
+  mockExec,
+  mockSetInterval,
+  mockClearInterval,
+} from "./test-helpers.ts";
 
 describe("print", () => {
   describe("formatMarkdown", () => {
@@ -41,14 +46,8 @@ describe("print", () => {
   describe("startLoadingState", () => {
     it("writes loadingStateFrames cyclically", async () => {
       actions.resetState();
-      const callbacks: (() => void)[] = [];
-      mock.method(globalThis, "setInterval", (cb: () => void) => {
-        callbacks.push(cb);
-        return {} as ReturnType<typeof setInterval>;
-      });
-      mock.method(globalThis, "clearInterval", () => {
-        callbacks.length = 0;
-      });
+      const callbacks = mockSetInterval();
+      mockClearInterval(callbacks);
       actions.setLoadingStateFrames(["a", "b", "c"]);
       let captured = "";
       mock.method(processDeps.stdout, "write", (out: string) => {
@@ -70,14 +69,8 @@ describe("print", () => {
 
     it("uses default loadingStateFrames when none set", async () => {
       actions.resetState();
-      const callbacks: (() => void)[] = [];
-      mock.method(globalThis, "setInterval", (cb: () => void) => {
-        callbacks.push(cb);
-        return {} as ReturnType<typeof setInterval>;
-      });
-      mock.method(globalThis, "clearInterval", () => {
-        callbacks.length = 0;
-      });
+      const callbacks = mockSetInterval();
+      mockClearInterval(callbacks);
       let captured = "";
       mock.method(processDeps.stdout, "write", (out: string) => {
         captured += out;
@@ -96,14 +89,8 @@ describe("print", () => {
 
     it("stopLoadingState gracefully handles multiple calls", async () => {
       actions.resetState();
-      const callbacks: (() => void)[] = [];
-      mock.method(globalThis, "setInterval", (cb: () => void) => {
-        callbacks.push(cb);
-        return {} as ReturnType<typeof setInterval>;
-      });
-      mock.method(globalThis, "clearInterval", () => {
-        callbacks.length = 0;
-      });
+      const callbacks = mockSetInterval();
+      mockClearInterval(callbacks);
       mock.method(processDeps.stdout, "write", () => undefined);
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
@@ -122,14 +109,8 @@ describe("print", () => {
 
     it("serializes concurrent colorPrint calls", async () => {
       actions.resetState();
-      const callbacks: (() => void)[] = [];
-      mock.method(globalThis, "setInterval", (cb: () => void) => {
-        callbacks.push(cb);
-        return callbacks.length as unknown as ReturnType<typeof setInterval>;
-      });
-      mock.method(globalThis, "clearInterval", () => {
-        callbacks.length = 0;
-      });
+      const callbacks = mockSetInterval();
+      mockClearInterval(callbacks);
       mock.method(processDeps.stdout, "write", () => undefined);
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
@@ -152,14 +133,8 @@ describe("print", () => {
 
     it("flushAndStopLoadingState drains queue then stops spinner", async () => {
       actions.resetState();
-      const callbacks: (() => void)[] = [];
-      mock.method(globalThis, "setInterval", (cb: () => void) => {
-        callbacks.push(cb);
-        return callbacks.length as unknown as ReturnType<typeof setInterval>;
-      });
-      mock.method(globalThis, "clearInterval", () => {
-        callbacks.length = 0;
-      });
+      const callbacks = mockSetInterval();
+      mockClearInterval(callbacks);
       mock.method(processDeps.stdout, "write", () => undefined);
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
