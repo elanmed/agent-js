@@ -12,6 +12,17 @@ import { processDeps } from "./deps.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert";
 
+let printQueue: Promise<void> = Promise.resolve();
+
+function enqueue(fn: () => Promise<void>): Promise<void> {
+  printQueue = printQueue.then(fn, fn);
+  return printQueue;
+}
+
+export function flushAndStopLoadingState(): Promise<void> {
+  return enqueue(() => stopLoadingState());
+}
+
 const COLORS = {
   red: "\x1b[31m",
   green: "\x1b[32m",
@@ -46,12 +57,13 @@ export async function colorPrint(text: Uint8Array | string, color?: Color) {
     }
   })();
 
-  const wasSpinnerActive = getState().app.loadingStateTimeout !== null;
-  await stopLoadingState();
-  processDeps.stdout.write(out);
-  if (wasSpinnerActive) startLoadingState();
-
-  actions.appendToStdout(out);
+  return enqueue(async () => {
+    const wasSpinnerActive = getState().app.loadingStateTimeout !== null;
+    await stopLoadingState();
+    processDeps.stdout.write(out);
+    if (wasSpinnerActive) startLoadingState();
+    actions.appendToStdout(out);
+  });
 }
 
 export async function printNewline() {
@@ -100,7 +112,7 @@ export function startLoadingState() {
 
 function pauseLoadingState() {
   const { loadingStateTimeout } = getState().app;
-  if (loadingStateTimeout === null) return;
+  assert(loadingStateTimeout !== null);
   clearInterval(loadingStateTimeout);
   actions.setLoadingStateTimeout(null);
 }
@@ -120,33 +132,38 @@ function writeLoadingStateFrame() {
   actions.incrementLoadingStateFrameIdx();
 }
 
-export function stopLoadingState(): Promise<void> {
-  if (getState().app.loadingStateTimeout === null) return Promise.resolve();
-  pauseLoadingState();
-  eraseLoadingState();
-  return Promise.resolve();
+let stoppingPromise: Promise<void> | null = null;
 
-  // const { loadingStateFrames } = getState().config;
-  // if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 1) {
-  //   eraseLoadingState();
-  //   return Promise.resolve();
-  // }
-  //
-  // return new Promise((resolve) => {
-  //   const timeout = setInterval(() => {
-  //     writeLoadingStateFrame();
-  //
-  //     if (
-  //       getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
-  //       1
-  //     ) {
-  //       pauseLoadingState();
-  //       eraseLoadingState();
-  //       resolve();
-  //     }
-  //   }, getState().config.loadingStateFrameDuration);
-  //   actions.setLoadingStateTimeout(timeout);
-  // });
+export function stopLoadingState(): Promise<void> {
+  if (stoppingPromise) return stoppingPromise;
+  if (getState().app.loadingStateTimeout === null) {
+    return Promise.resolve();
+  }
+  pauseLoadingState();
+
+  const { loadingStateFrames } = getState().config;
+  if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 1) {
+    eraseLoadingState();
+    return Promise.resolve();
+  }
+
+  stoppingPromise = new Promise((resolve) => {
+    const timeout = setInterval(() => {
+      writeLoadingStateFrame();
+
+      if (
+        getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
+        1
+      ) {
+        pauseLoadingState();
+        eraseLoadingState();
+        stoppingPromise = null;
+        resolve();
+      }
+    }, getState().config.loadingStateFrameDuration);
+    actions.setLoadingStateTimeout(timeout);
+  });
+  return stoppingPromise;
 }
 
 async function checkBat(): Promise<boolean> {

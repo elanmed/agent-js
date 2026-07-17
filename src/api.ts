@@ -8,7 +8,7 @@ import {
   getMessageFromError,
   getTempFileName,
 } from "./utils.ts";
-import { print, startLoadingState, stopLoadingState } from "./print.ts";
+import { print, startLoadingState, flushAndStopLoadingState } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import {
   objectWithPathSchema,
@@ -117,7 +117,7 @@ export async function resolveApiCall(userInput: string) {
       },
     }),
   );
-  await stopLoadingState();
+  await flushAndStopLoadingState();
   actions.setApiStreamAbortController(null);
   actions.setApiEndTime();
 
