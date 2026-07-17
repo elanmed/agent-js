@@ -7,8 +7,10 @@ import {
   executeBat,
   startLoadingState,
   stopLoadingState,
+  colorPrint,
+  flushAndStopLoadingState,
 } from "./print.ts";
-import { actions } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import { stripAnsi, mockExec } from "./test-helpers.ts";
@@ -63,7 +65,7 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       await stopPromise;
 
-      assert.strictEqual(captured, "\ra\rb\rc\ra\rb\rc\r \r");
+      assert.strictEqual(captured, "\ra\rb\rc\ra\rb\rc\ra\r \r");
     });
 
     it("uses default loadingStateFrames when none set", async () => {
@@ -89,7 +91,94 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       await stopPromise;
 
-      assert.strictEqual(captured, "\r|\r/\r-\r\\\r \r");
+      assert.strictEqual(captured, "\r|\r/\r-\r\\\r|\r \r");
+    });
+
+    it("stopLoadingState gracefully handles multiple calls", async () => {
+      actions.resetState();
+      const callbacks: (() => void)[] = [];
+      mock.method(globalThis, "setInterval", (cb: () => void) => {
+        callbacks.push(cb);
+        return {} as ReturnType<typeof setInterval>;
+      });
+      mock.method(globalThis, "clearInterval", () => {
+        callbacks.length = 0;
+      });
+      mock.method(processDeps.stdout, "write", () => undefined);
+      actions.setLoadingStateFrames(["a", "b", "c"]);
+
+      startLoadingState();
+      callbacks.forEach((cb) => cb());
+
+      const stop1 = stopLoadingState();
+      const stop2 = stopLoadingState();
+      assert.strictEqual(stop1, stop2);
+
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+      await stop1;
+      await stop2;
+    });
+
+    it("serializes concurrent colorPrint calls", async () => {
+      actions.resetState();
+      const callbacks: (() => void)[] = [];
+      mock.method(globalThis, "setInterval", (cb: () => void) => {
+        callbacks.push(cb);
+        return callbacks.length as unknown as ReturnType<typeof setInterval>;
+      });
+      mock.method(globalThis, "clearInterval", () => {
+        callbacks.length = 0;
+      });
+      mock.method(processDeps.stdout, "write", () => undefined);
+      actions.setLoadingStateFrames(["a", "b", "c"]);
+
+      startLoadingState();
+      callbacks.forEach((cb) => cb());
+
+      const p1 = colorPrint("X");
+      const p2 = colorPrint("Y");
+      const p3 = colorPrint("Z");
+
+      await new Promise((r) => setTimeout(r, 0));
+
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+
+      await Promise.all([p1, p2, p3]);
+
+      assert.strictEqual(getState().app.stdout, "X\nY\nZ\n");
+    });
+
+    it("flushAndStopLoadingState drains queue then stops spinner", async () => {
+      actions.resetState();
+      const callbacks: (() => void)[] = [];
+      mock.method(globalThis, "setInterval", (cb: () => void) => {
+        callbacks.push(cb);
+        return callbacks.length as unknown as ReturnType<typeof setInterval>;
+      });
+      mock.method(globalThis, "clearInterval", () => {
+        callbacks.length = 0;
+      });
+      mock.method(processDeps.stdout, "write", () => undefined);
+      actions.setLoadingStateFrames(["a", "b", "c"]);
+
+      startLoadingState();
+      callbacks.forEach((cb) => cb());
+
+      const printPromise = colorPrint("X");
+      const flushPromise = flushAndStopLoadingState();
+
+      await new Promise((r) => setTimeout(r, 0));
+
+      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb());
+
+      await Promise.all([printPromise, flushPromise]);
+
+      assert.strictEqual(getState().app.loadingStateTimeout, null);
+      assert.strictEqual(getState().app.loadingStateFrameIdx, 0);
+      assert.strictEqual(getState().app.stdout, "X\n");
     });
   });
 

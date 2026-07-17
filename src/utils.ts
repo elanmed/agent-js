@@ -83,3 +83,18 @@ export function stringify(val: unknown) {
 export function isExisty(val: unknown) {
   return val !== undefined && val !== null;
 }
+
+export function createQueue() {
+  let queue: Promise<void> = Promise.resolve();
+
+  function enqueue(fn: () => Promise<void>): Promise<void> {
+    queue = queue.then(fn, fn);
+    return queue;
+  }
+
+  function flush(): Promise<void> {
+    return queue;
+  }
+
+  return { enqueue, flush };
+}

@@ -5,6 +5,7 @@ import {
   tryCatchAsync,
   normalizeLine,
   execPromise,
+  createQueue,
   type Result,
 } from "./utils.ts";
 import { type ModelPricing } from "./config.ts";
@@ -12,15 +13,10 @@ import { processDeps } from "./deps.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert";
 
-let printQueue: Promise<void> = Promise.resolve();
-
-function enqueue(fn: () => Promise<void>): Promise<void> {
-  printQueue = printQueue.then(fn, fn);
-  return printQueue;
-}
+const printQueue = createQueue();
 
 export function flushAndStopLoadingState(): Promise<void> {
-  return enqueue(() => stopLoadingState());
+  return printQueue.enqueue(() => stopLoadingState());
 }
 
 const COLORS = {
@@ -57,7 +53,7 @@ export async function colorPrint(text: Uint8Array | string, color?: Color) {
     }
   })();
 
-  return enqueue(async () => {
+  return printQueue.enqueue(async () => {
     const wasSpinnerActive = getState().app.loadingStateTimeout !== null;
     await stopLoadingState();
     processDeps.stdout.write(out);

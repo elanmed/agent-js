@@ -8,6 +8,7 @@ import {
   normalizeLine,
   getMessageFromError,
   getTempFileName,
+  createQueue,
 } from "./utils.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
 
@@ -136,6 +137,72 @@ describe("utils", () => {
         initialContentPath: "/source.txt",
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+    });
+  });
+
+  describe("createQueue", () => {
+    it("runs enqueued tasks in order", async () => {
+      const queue = createQueue();
+      const results: number[] = [];
+
+      queue.enqueue(() => {
+        results.push(1);
+        return Promise.resolve();
+      });
+      queue.enqueue(() => {
+        results.push(2);
+        return Promise.resolve();
+      });
+      queue.enqueue(() => {
+        results.push(3);
+        return Promise.resolve();
+      });
+
+      await queue.flush();
+
+      assert.deepStrictEqual(results, [1, 2, 3]);
+    });
+
+    it("resolves flush immediately when queue is empty", async () => {
+      const queue = createQueue();
+      await queue.flush();
+    });
+
+    it("continues queue after a rejected task", async () => {
+      const queue = createQueue();
+      const results: number[] = [];
+
+      queue.enqueue(() => {
+        results.push(1);
+        return Promise.resolve();
+      });
+      queue.enqueue(() => Promise.reject(new Error("boom")));
+      queue.enqueue(() => {
+        results.push(3);
+        return Promise.resolve();
+      });
+
+      await queue.flush();
+
+      assert.deepStrictEqual(results, [1, 3]);
+    });
+
+    it("flush waits for all queued tasks to complete", async () => {
+      const queue = createQueue();
+      let done = false;
+
+      queue.enqueue(() => {
+        return new Promise<void>((r) => {
+          setTimeout(() => {
+            done = true;
+            r();
+          }, 10);
+        });
+      });
+
+      await queue.flush();
+
+      assert.strictEqual(done, true);
     });
   });
 });
