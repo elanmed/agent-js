@@ -18,5 +18,17 @@
       "cacheReadPerToken": 0.0145
     }
   },
-  "loadingStateFrames": ["⠁", "⠂", "⠄", "⠂"]
+  "loadingStateFrames": [
+    "⠋ ",
+    "⠙ ",
+    "⠹ ",
+    "⠸ ",
+    "⠼ ",
+    "⠴ ",
+    "⠦ ",
+    "⠧ ",
+    "⠇ ",
+    "⠏ "
+  ],
+  "promptPrefix": "􀀀   > "
 }
