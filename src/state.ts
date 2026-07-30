@@ -6,6 +6,7 @@ import {
   type Key,
   type ModelPricing,
   type Provider,
+  type UsageLimits,
 } from "./config.ts";
 import { MISSING, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
@@ -51,6 +52,7 @@ interface State {
     loadingStateFrames: string[];
     loadingStateFrameDuration: number;
     promptPrefix: string;
+    usageLimits: UsageLimits;
   };
   abortControllers: {
     question: AbortController | null;
@@ -91,6 +93,7 @@ const initialState: State = {
     loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
     loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
     promptPrefix: DEFAULT_CONFIG.promptPrefix,
+    usageLimits: DEFAULT_CONFIG.usageLimits,
   },
   abortControllers: {
     question: null,
@@ -397,5 +400,15 @@ export const actions = {
     const before = state.config.promptPrefix;
     state.config.promptPrefix = promptPrefix;
     logStateChange("set-prompt-prefix", before, promptPrefix);
+  },
+
+  setUsageLimits(usageLimits: UsageLimits) {
+    const before = state.config.usageLimits;
+    state.config.usageLimits = usageLimits;
+    logStateChange(
+      "set-usage-limits",
+      stringify(before),
+      stringify(usageLimits),
+    );
   },
 };

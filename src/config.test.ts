@@ -260,6 +260,83 @@ describe("config", () => {
       assert.strictEqual(getState().config.promptPrefix, "🤖 ");
     });
 
+    it("uses its usageLimits over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 10,
+            perDay: 100,
+            perWeek: 1000,
+          },
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 5,
+            perDay: 50,
+            perWeek: 500,
+          },
+        }),
+      );
+
+      await initState();
+
+      assert.deepStrictEqual(getState().config.usageLimits, {
+        perHour: 5,
+        perDay: 50,
+        perWeek: 500,
+      });
+    });
+
+    it("falls back to global usageLimits when local sets it to null", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 10,
+            perDay: 100,
+            perWeek: 1000,
+          },
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: null,
+        }),
+      );
+
+      await initState();
+
+      assert.deepStrictEqual(getState().config.usageLimits, {
+        perHour: 10,
+        perDay: 100,
+        perWeek: 1000,
+      });
+    });
+
+    it("throws when usageLimits is missing a required field", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 10,
+            perDay: 100,
+          },
+        }),
+      );
+
+      await assert.rejects(initState(), /expected number, received undefined/);
+    });
+
     it("merges partial keymaps with defaults", async () => {
       testFs._files.set(
         getLocalConfigPath(),
@@ -436,6 +513,41 @@ describe("config", () => {
         await initState();
 
         assert.strictEqual(getState().config.promptPrefix, "❯ ");
+      });
+
+      it("uses its usageLimits over the default config", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            ...defaultConfig,
+            usageLimits: {
+              perHour: 7,
+              perDay: 77,
+              perWeek: 777,
+            },
+          }),
+        );
+
+        await initState();
+
+        assert.deepStrictEqual(getState().config.usageLimits, {
+          perHour: 7,
+          perDay: 77,
+          perWeek: 777,
+        });
+      });
+
+      it("uses default usageLimits when global config omits it", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            ...defaultConfig,
+          }),
+        );
+
+        await initState();
+
+        assert.strictEqual(getState().config.usageLimits, null);
       });
 
       it("uses its customSkillDirs over the default config", async () => {

@@ -397,6 +397,16 @@ line3
     assert.strictEqual(getState().config.promptPrefix, "🤖 ");
   });
 
+  it("set-usage-limits", () => {
+    assert.strictEqual(getState().config.usageLimits, null);
+    actions.setUsageLimits({ perHour: 10, perDay: 100, perWeek: 1000 });
+    assert.deepStrictEqual(getState().config.usageLimits, {
+      perHour: 10,
+      perDay: 100,
+      perWeek: 1000,
+    });
+  });
+
   it("reset-loading-state-frame-idx", () => {
     actions.incrementLoadingStateFrameIdx();
     actions.incrementLoadingStateFrameIdx();
