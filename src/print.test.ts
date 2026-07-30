@@ -10,6 +10,7 @@ import {
   colorPrint,
   flushAndStopLoadingState,
   appendIncrementalUsage,
+  syncIncrementalUsage,
 } from "./print.ts";
 import { actions, getState } from "./state.ts";
 import { processDeps } from "./deps.ts";
@@ -20,7 +21,10 @@ import {
   mockExec,
   mockSetInterval,
   mockClearInterval,
+  setupFakeDeps,
+  testFs,
 } from "./test-helpers.ts";
+import { getUsageLogPath } from "./paths.ts";
 
 describe("print", () => {
   describe("formatMarkdown", () => {
@@ -641,6 +645,98 @@ describe("print", () => {
           date: 1000,
         },
       ]);
+    });
+  });
+
+  describe("syncIncrementalUsage", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+    });
+
+    it("creates the usage log directory and writes the usage entry", () => {
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 1000,
+      };
+
+      syncIncrementalUsage(usage);
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
+      assert.deepStrictEqual(
+        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
+        [usage],
+      );
+    });
+
+    it("appends to an existing usage log", () => {
+      const existing = {
+        inputTokens: 5,
+        outputTokens: 2,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 500,
+      };
+      testFs._files.set(getUsageLogPath(), JSON.stringify([existing]));
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 1000,
+      };
+
+      syncIncrementalUsage(usage);
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
+      assert.deepStrictEqual(
+        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
+        [existing, usage],
+      );
+    });
+
+    it("overwrites a malformed usage log with the new entry", () => {
+      testFs._files.set(getUsageLogPath(), "not-json");
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 1000,
+      };
+
+      syncIncrementalUsage(usage);
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
+      assert.deepStrictEqual(
+        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
+        [usage],
+      );
+    });
+
+    it("appends to state even when the write fails", () => {
+      mock.method(testFs, "writeFileSync", () => {
+        throw new Error("write failed");
+      });
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 1000,
+      };
+
+      syncIncrementalUsage(usage);
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
     });
   });
 });

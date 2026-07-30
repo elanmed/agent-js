@@ -13,7 +13,12 @@ import {
   execPromise,
   isExisty,
 } from "./utils.ts";
-import { print, printNewline, fencePrint, getPrettySessionUsage } from "./print.ts";
+import {
+  print,
+  printNewline,
+  fencePrint,
+  getPrettySessionUsage,
+} from "./print.ts";
 import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";

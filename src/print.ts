@@ -10,10 +10,12 @@ import {
   type Result,
 } from "./utils.ts";
 
-import { processDeps } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert";
 import type { LanguageModelUsage } from "ai";
+import { getUsageLogPath } from "./paths.ts";
+import { dirname } from "node:path";
 
 const printQueue = createQueue();
 
@@ -271,6 +273,7 @@ export function calculateApiDuration() {
 
 export function appendIncrementalUsage(usage: LanguageModelUsage) {
   const { model } = getState().config;
+  const now = Date.now();
 
   const defaultedUsage: IncrementalUsage = {
     inputTokens: usage.inputTokens ?? 0,
@@ -278,14 +281,14 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
     cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
     model,
-    date: Date.now(),
+    date: now,
   };
 
   const lastUsage = getState()
     .app.incrementalUsage.filter((entry) => entry.model === model)
     .at(-1);
   if (!lastUsage) {
-    actions.appendUsage(defaultedUsage);
+    syncIncrementalUsage(defaultedUsage);
     return;
   }
 
@@ -295,11 +298,36 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     cacheReadTokens: defaultedUsage.cacheReadTokens - lastUsage.cacheReadTokens,
     cacheWriteTokens:
       defaultedUsage.cacheWriteTokens - lastUsage.cacheWriteTokens,
-    date: Date.now(),
     model,
+    date: now,
   };
 
-  actions.appendUsage(incrementalUsage);
+  syncIncrementalUsage(incrementalUsage);
+}
+
+export function syncIncrementalUsage(usage: IncrementalUsage) {
+  const path = getUsageLogPath();
+  const dir = dirname(path);
+  if (!fsDeps.existsSync(dir)) {
+    tryCatch(() => fsDeps.mkdirSync(dir, { recursive: true }));
+  }
+
+  const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
+
+  const currUsage = (() => {
+    if (!readResult.ok) return [];
+
+    const parseResult = tryCatch(() =>
+      z.array(IncrementalUsageSchema).parse(JSON.parse(readResult.value)),
+    );
+    if (!parseResult.ok) return [];
+    return parseResult.value;
+  })();
+
+  currUsage.push(usage);
+  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(currUsage)));
+
+  actions.appendUsage(usage);
 }
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
@@ -357,15 +385,3 @@ export function getPrettySessionUsage() {
   const cost = getUsageMoneyForModel(tokenUsage, model);
   return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
-
-// export function syncIncrementalUsage(usage: TokenUsage) {
-//   const readResult = tryCatch(() =>
-//     fsDeps.readFileSync(getUsageLogPath()).toString(),
-//   );
-//   const currUsageResult = (() => {
-//     if (!readResult.ok) {
-//       return optionFrom({});
-//     }
-//     return tryCatch(() => TokenUsageSchema.parse(JSON.parse(readResult.value)))
-//   })();
-// }
