@@ -120,6 +120,7 @@ Slash commands are triggered with `/command` at the prompt.
 | `/skills`   | List available skills                                 |
 | `/context`  | List available context files                          |
 | `/commands` | List available slash commands (builtin and custom)    |
+| `/usage`    | Show current session usage                            |
 
 ### Custom Slash Commands
 

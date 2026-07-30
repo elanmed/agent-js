@@ -323,6 +323,7 @@ const builtinSlashCommands = [
   "context",
   "commands",
   "keymaps",
+  "usage",
 ];
 
 export async function resolveSlashCommand(rawInput: string) {
@@ -365,6 +366,10 @@ export async function resolveSlashCommand(rawInput: string) {
       await printKeymapsCommand();
       return null;
     }
+    case "usage": {
+      await usageCommand();
+      return null;
+    }
     default: {
       if (commandWithoutSlash.startsWith("model ")) {
         await setModelCommand(rawInput);
@@ -392,6 +397,10 @@ export async function clearCommand() {
   await print.infoSubtle(`Context cleared (${getPrettySessionUsage()})`);
   actions.resetIncrementalUsage();
   actions.resetMessageParams();
+}
+
+export async function usageCommand() {
+  await print.doing(getPrettySessionUsage());
 }
 
 export async function spawnAndReadEditorContent(opts?: {

@@ -613,6 +613,7 @@ Available commands:
 - /context
 - /commands
 - /keymaps
+- /usage
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -900,6 +901,7 @@ Available commands:
 - /context
 - /commands
 - /keymaps
+- /usage
 `,
       );
     });
@@ -918,6 +920,14 @@ Keymaps:
 - clear: {"name":"x","ctrl":true}
 `,
       );
+    });
+
+    it("handles /usage command", async () => {
+      actions.resetStdout();
+      actions.setModel("unknown-model");
+      const result = await resolveSlashCommand("/usage");
+      assert.strictEqual(result, null);
+      assert.strictEqual(stripAnsi(getState().app.stdout), "0 in, 0 out\n");
     });
 
     it("handles custom slash command successfully", async () => {
@@ -955,6 +965,7 @@ Invalid command: /unknown, valid commands:
 - /context
 - /commands
 - /keymaps
+- /usage
 - /test-cwd/.agent-js/commands/known.md
 `,
       );
