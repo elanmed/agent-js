@@ -321,12 +321,23 @@ export const actions = {
     );
   },
 
-  appendUsage(usage: IncrementalUsage) {
+  appendToUsages(usage: IncrementalUsage) {
     const before = state.app.incrementalUsage;
     state.app.incrementalUsage.push(usage);
 
     logStateChange(
-      "append-usage",
+      "append-to-usages",
+      String(before.length),
+      String(state.app.incrementalUsage.length),
+    );
+  },
+
+  setUsages(usages: IncrementalUsage[]) {
+    const before = state.app.incrementalUsage;
+    state.app.incrementalUsage = usages;
+
+    logStateChange(
+      "set-usages",
       String(before.length),
       String(state.app.incrementalUsage.length),
     );

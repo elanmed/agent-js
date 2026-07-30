@@ -288,7 +288,7 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     .app.incrementalUsage.filter((entry) => entry.model === model)
     .at(-1);
   if (!lastUsage) {
-    syncIncrementalUsage(defaultedUsage);
+    syncNewIncrementalUsage(defaultedUsage);
     return;
   }
 
@@ -302,10 +302,36 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     date: now,
   };
 
-  syncIncrementalUsage(incrementalUsage);
+  syncNewIncrementalUsage(incrementalUsage);
 }
 
-export function syncIncrementalUsage(usage: IncrementalUsage) {
+export function syncInitialIncrementalUsages() {
+  const { usageLimitMs } = getState().config;
+  if (usageLimitMs === null) return;
+
+  const now = Date.now();
+  const expiredTime = now - usageLimitMs;
+
+  const path = getUsageLogPath();
+  const dir = dirname(path);
+  if (!fsDeps.existsSync(dir)) return;
+
+  const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
+  if (!readResult.ok) return;
+
+  const parseResult = tryCatch(() =>
+    z.array(IncrementalUsageSchema).parse(JSON.parse(readResult.value)),
+  );
+  if (!parseResult.ok) return;
+
+  const filtered = parseResult.value.filter(
+    (usage) => usage.date >= expiredTime,
+  );
+  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
+  actions.setUsages(filtered);
+}
+
+export function syncNewIncrementalUsage(usage: IncrementalUsage) {
   const path = getUsageLogPath();
   const dir = dirname(path);
   if (!fsDeps.existsSync(dir)) {
@@ -327,7 +353,7 @@ export function syncIncrementalUsage(usage: IncrementalUsage) {
   currUsage.push(usage);
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(currUsage)));
 
-  actions.appendUsage(usage);
+  actions.appendToUsages(usage);
 }
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
@@ -382,6 +408,16 @@ export function getPrettySessionUsage() {
   if (!pricing) {
     return `${tokenUsage.inputTokens.toLocaleString()} in, ${tokenUsage.outputTokens.toLocaleString()} out`;
   }
+
+  const getPrettyMoney = (money: number) =>
+    money.toLocaleString("en-US", {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    });
+
   const cost = getUsageMoneyForModel(tokenUsage, model);
-  return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+  const { usageLimitDollar } = getState().config;
+
+  if (usageLimitDollar === null) return `$${getPrettyMoney(cost)}`;
+  return `$${getPrettyMoney(cost)} of $${String(usageLimitDollar)}`;
 }

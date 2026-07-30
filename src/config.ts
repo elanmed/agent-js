@@ -11,6 +11,7 @@ import { actions } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
 import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
+import { syncInitialIncrementalUsages } from "./print.ts";
 
 export type Provider = "anthropic" | "openai-compatible";
 
@@ -248,6 +249,8 @@ export async function initState() {
       globalConfig.usageLimitDollar ??
       DEFAULT_CONFIG.usageLimitDollar,
   );
+
+  syncInitialIncrementalUsages();
 
   const contextEntries = getContextEntries();
   actions.setContextEntries(contextEntries);

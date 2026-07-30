@@ -1,14 +1,16 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import { initState, DEFAULT_CONFIG } from "./config.ts";
 import {
   getGlobalConfigPath,
   getLocalConfigPath,
   getGlobalContextDir,
+  getUsageLogPath,
 } from "./paths.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
+import { dirname } from "node:path";
 
 const defaultConfig = {
   model: "claude-sonnet-4-6",
@@ -760,6 +762,40 @@ describe("config", () => {
 
     await initState();
     assert.deepStrictEqual(getState().app.incrementalUsage, []);
+  });
+
+  it("loads recent incremental usages from the usage log", async () => {
+    actions.setUsageLimitMs(3_600_000);
+    const recent = {
+      inputTokens: 10,
+      outputTokens: 5,
+      cacheReadTokens: 1,
+      cacheWriteTokens: 0,
+      model: "gpt-4",
+      date: 500_000,
+    };
+    const expired = {
+      inputTokens: 5,
+      outputTokens: 2,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      model: "gpt-4",
+      date: 300_000,
+    };
+    testFs._dirs.add(dirname(getUsageLogPath()));
+    testFs._files.set(getUsageLogPath(), JSON.stringify([recent, expired]));
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...defaultConfig,
+        usageLimitMs: 3_600_000,
+      }),
+    );
+    mock.method(Date, "now", () => 4_000_000);
+
+    await initState();
+
+    assert.deepStrictEqual(getState().app.incrementalUsage, [recent]);
   });
 
   it("sets sessionStartDate", async () => {

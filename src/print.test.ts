@@ -10,11 +10,13 @@ import {
   colorPrint,
   flushAndStopLoadingState,
   appendIncrementalUsage,
-  syncIncrementalUsage,
+  syncNewIncrementalUsage,
+  syncInitialIncrementalUsages,
 } from "./print.ts";
 import { actions, getState } from "./state.ts";
-import { processDeps } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
+import { dirname } from "node:path";
 import type { LanguageModelUsage } from "ai";
 import {
   stripAnsi,
@@ -224,7 +226,7 @@ describe("print", () => {
     it("known model with no usages returns $0.0000", () => {
       actions.setModel("claude-haiku-4-5");
       const result = getPrettySessionUsage();
-      assert.equal(result, "$0.0000");
+      assert.equal(result, "$0.000");
     });
 
     it("calculates prompt token costs correctly", () => {
@@ -240,7 +242,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$2.0000");
+      assert.equal(result, "$2.000");
     });
 
     it("calculates completion token costs correctly", () => {
@@ -255,7 +257,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$3.0000");
+      assert.equal(result, "$3.000");
     });
 
     it("calculates cache read token costs correctly", () => {
@@ -271,7 +273,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$0.2500");
+      assert.equal(result, "$0.250");
     });
 
     it("calculates cache write token costs correctly", () => {
@@ -287,7 +289,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$1.2500");
+      assert.equal(result, "$1.250");
     });
 
     it("calculates combined input, output, and cache costs correctly", () => {
@@ -304,7 +306,22 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$1.7000");
+      assert.equal(result, "$1.700");
+    });
+
+    it("shows cost against the dollar limit when configured", () => {
+      actions.setModel("claude-haiku-4-5");
+      actions.setUsageLimitDollar(10);
+      appendIncrementalUsage({
+        inputTokens: 500_000,
+        outputTokens: 200_000,
+        inputTokenDetails: {
+          cacheReadTokens: 300_000,
+          cacheWriteTokens: 100_000,
+        },
+      } as LanguageModelUsage);
+      const result = getPrettySessionUsage();
+      assert.equal(result, "$1.700 of $10");
     });
 
     it("accumulates all token types across multiple usages", () => {
@@ -333,7 +350,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$2.3750");
+      assert.equal(result, "$2.375");
     });
 
     it("formats cost with commas for large totals", () => {
@@ -349,7 +366,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$1,000.0000");
+      assert.equal(result, "$1,000.000");
     });
 
     it("formats cost with commas for very large totals across multiple usages", () => {
@@ -376,7 +393,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$5,000.0000");
+      assert.equal(result, "$5,000.000");
     });
   });
 
@@ -648,7 +665,7 @@ describe("print", () => {
     });
   });
 
-  describe("syncIncrementalUsage", () => {
+  describe("syncNewIncrementalUsage", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -664,7 +681,7 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncIncrementalUsage(usage);
+      syncNewIncrementalUsage(usage);
 
       assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
       assert.deepStrictEqual(
@@ -692,7 +709,7 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncIncrementalUsage(usage);
+      syncNewIncrementalUsage(usage);
 
       assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
       assert.deepStrictEqual(
@@ -712,7 +729,7 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncIncrementalUsage(usage);
+      syncNewIncrementalUsage(usage);
 
       assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
       assert.deepStrictEqual(
@@ -722,7 +739,7 @@ describe("print", () => {
     });
 
     it("appends to state even when the write fails", () => {
-      mock.method(testFs, "writeFileSync", () => {
+      mock.method(fsDeps, "writeFileSync", () => {
         throw new Error("write failed");
       });
       const usage = {
@@ -734,9 +751,73 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncIncrementalUsage(usage);
+      syncNewIncrementalUsage(usage);
 
       assert.deepStrictEqual(getState().app.incrementalUsage, [usage]);
+    });
+  });
+
+  describe("syncInitialIncrementalUsages", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+    });
+
+    it("does nothing when usageLimitMs is null", () => {
+      actions.setUsageLimitMs(null);
+
+      syncInitialIncrementalUsages();
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, []);
+    });
+
+    it("does nothing when the usage log directory does not exist", () => {
+      actions.setUsageLimitMs(3_600_000);
+
+      syncInitialIncrementalUsages();
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, []);
+    });
+
+    it("loads recent usages and filters out expired ones", () => {
+      actions.setUsageLimitMs(3_600_000);
+      const recent = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 500_000,
+      };
+      const expired = {
+        inputTokens: 5,
+        outputTokens: 2,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 300_000,
+      };
+      testFs._dirs.add(dirname(getUsageLogPath()));
+      testFs._files.set(getUsageLogPath(), JSON.stringify([recent, expired]));
+      mock.method(Date, "now", () => 4_000_000);
+
+      syncInitialIncrementalUsages();
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, [recent]);
+      assert.deepStrictEqual(
+        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
+        [recent],
+      );
+    });
+
+    it("does nothing when the usage log is malformed", () => {
+      actions.setUsageLimitMs(3_600_000);
+      testFs._dirs.add(dirname(getUsageLogPath()));
+      testFs._files.set(getUsageLogPath(), "not-json");
+
+      syncInitialIncrementalUsages();
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, []);
     });
   });
 });
