@@ -608,6 +608,7 @@ Available commands:
 - /edit
 - /history
 - /clear
+- /paste
 - /model
 - /skills
 - /context
@@ -830,6 +831,42 @@ Keymaps:
       assert.strictEqual(result, null);
     });
 
+    it("handles /edit command and logs editor content to chat history", async () => {
+      mock.method(Date, "now", () => 0);
+      actions.setPromptHistoryPath("/tmp/test-history.log");
+      mock.method(childProcess, "spawnSync", () => {
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "from editor");
+      });
+      const result = await resolveSlashCommand("/edit");
+      assert.strictEqual(result, "from editor\n");
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z  [user]
+from editor
+
+`,
+      );
+    });
+
+    it("handles /paste command and logs editor content to chat history", async () => {
+      mock.method(Date, "now", () => 0);
+      actions.setPromptHistoryPath("/tmp/test-history.log");
+      mock.method(os, "platform", () => "linux");
+      mockExec({ stdout: "clip" });
+      mock.method(childProcess, "spawnSync", () => {
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "pasted content");
+      });
+      const result = await resolveSlashCommand("/paste");
+      assert.strictEqual(result, "pasted content\n");
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z  [user]
+pasted content
+
+`,
+      );
+    });
+
     it("handles /clear command", async () => {
       const result = await resolveSlashCommand("/clear");
       assert.strictEqual(result, null);
@@ -896,6 +933,7 @@ Available commands:
 - /edit
 - /history
 - /clear
+- /paste
 - /model
 - /skills
 - /context
@@ -960,6 +998,7 @@ Invalid command: /unknown, valid commands:
 - /edit
 - /history
 - /clear
+- /paste
 - /model
 - /skills
 - /context

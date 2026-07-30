@@ -318,6 +318,7 @@ const builtinSlashCommands = [
   "edit",
   "history",
   "clear",
+  "paste",
   "model",
   "skills",
   "context",
@@ -331,12 +332,16 @@ export async function resolveSlashCommand(rawInput: string) {
 
   switch (commandWithoutSlash) {
     case "edit": {
-      return await spawnAndReadEditorContent();
+      const content = await spawnAndReadEditorContent();
+      if (content !== null) appendToChatHistory(content, "user");
+      return content;
     }
     case "paste": {
-      return await spawnAndReadEditorContent({
+      const content = await spawnAndReadEditorContent({
         includeClipboardSuffix: true,
       });
+      if (content !== null) appendToChatHistory(content, "user");
+      return content;
     }
     case "clear": {
       await clearCommand();
