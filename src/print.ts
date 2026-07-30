@@ -284,25 +284,7 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     date: now,
   };
 
-  const lastUsage = getState()
-    .app.incrementalUsage.filter((entry) => entry.model === model)
-    .at(-1);
-  if (!lastUsage) {
-    syncNewIncrementalUsage(defaultedUsage);
-    return;
-  }
-
-  const incrementalUsage: IncrementalUsage = {
-    inputTokens: defaultedUsage.inputTokens - lastUsage.inputTokens,
-    outputTokens: defaultedUsage.outputTokens - lastUsage.outputTokens,
-    cacheReadTokens: defaultedUsage.cacheReadTokens - lastUsage.cacheReadTokens,
-    cacheWriteTokens:
-      defaultedUsage.cacheWriteTokens - lastUsage.cacheWriteTokens,
-    model,
-    date: now,
-  };
-
-  syncNewIncrementalUsage(incrementalUsage);
+  syncNewIncrementalUsage(defaultedUsage);
 }
 
 export function syncInitialIncrementalUsages() {

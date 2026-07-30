@@ -328,10 +328,9 @@ describe("print", () => {
       // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
       // usage1: 200_000 input + 100_000 output + 400_000 cacheRead + 200_000 cacheWrite
       //   = $0.20 + $0.50 + $0.10 + $0.25 = $1.05
-      // usage2 cumulative: 500_000 input + 200_000 output + 500_000 cacheRead + 600_000 cacheWrite
-      // delta: 300_000 input + 100_000 output + 100_000 cacheRead + 400_000 cacheWrite
-      //   = $0.30 + $0.50 + $0.025 + $0.50 = $1.325
-      // total = $2.375
+      // usage2: 500_000 input + 200_000 output + 500_000 cacheRead + 600_000 cacheWrite
+      //   = $0.50 + $1.00 + $0.125 + $0.75 = $2.375
+      // total = $3.425
       actions.setModel("claude-haiku-4-5");
       appendIncrementalUsage({
         inputTokens: 200_000,
@@ -350,7 +349,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$2.375");
+      assert.equal(result, "$3.425");
     });
 
     it("formats cost with commas for large totals", () => {
@@ -372,9 +371,8 @@ describe("print", () => {
     it("formats cost with commas for very large totals across multiple usages", () => {
       // opus: input=$5/M, output=$25/M
       // usage1: 300_000_000 input + 40_000_000 output = $1,500 + $1,000 = $2,500
-      // usage2 cumulative: 400_000_000 input + 120_000_000 output
-      // delta: 100_000_000 input + 80_000_000 output = $500 + $2,000 = $2,500
-      // total = $5,000.0000
+      // usage2: 400_000_000 input + 120_000_000 output = $2,000 + $3,000 = $5,000
+      // total = $7,500.000
       actions.setModel("claude-opus-4-6");
       appendIncrementalUsage({
         inputTokens: 300_000_000,
@@ -393,7 +391,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$5,000.000");
+      assert.equal(result, "$7,500.000");
     });
   });
 
@@ -469,7 +467,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "125,000 in, 25,000 out");
+      assert.equal(result, "175,000 in, 35,000 out");
     });
   });
 
@@ -553,7 +551,7 @@ describe("print", () => {
       ]);
     });
 
-    it("appends the incremental delta on subsequent calls", () => {
+    it("appends the full usage on subsequent calls", () => {
       let now = 1000;
       mock.method(Date, "now", () => now);
 
@@ -586,10 +584,10 @@ describe("print", () => {
           date: 1000,
         },
         {
-          inputTokens: 50,
-          outputTokens: 30,
-          cacheReadTokens: 10,
-          cacheWriteTokens: 5,
+          inputTokens: 150,
+          outputTokens: 80,
+          cacheReadTokens: 20,
+          cacheWriteTokens: 10,
           model: "gpt-4",
           date: 2000,
         },

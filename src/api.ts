@@ -136,9 +136,9 @@ export async function resolveApiCall(userInput: string) {
     return null;
   }
 
-  const { usage, text, response } = generateTextResult.value;
+  const { totalUsage, text, response } = generateTextResult.value;
 
-  appendIncrementalUsage(usage);
+  appendIncrementalUsage(totalUsage);
 
   actions.appendToMessageParams(inputMessageParam);
   for (const msg of response.messages) {

@@ -15,7 +15,7 @@ import type { ModelMessage } from "ai";
 function makeGenerateTextResult(overrides: Record<string, unknown> = {}) {
   return {
     text: "response text",
-    usage: {
+    totalUsage: {
       inputTokens: 10,
       outputTokens: 5,
       inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
@@ -73,7 +73,7 @@ response text
       mock.method(aiDeps, "generateText", () =>
         Promise.resolve(
           makeGenerateTextResult({
-            usage: {
+            totalUsage: {
               inputTokens: 42,
               outputTokens: 7,
               inputTokenDetails: {
