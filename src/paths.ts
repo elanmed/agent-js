@@ -45,3 +45,7 @@ export function getDebugLogPath() {
 export function getPromptHistoryDir() {
   return join(getGlobalConfigDir(), "history");
 }
+
+export function getUsageLogPath() {
+  return join(getGlobalConfigDir(), "usage.json");
+}

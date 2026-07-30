@@ -8,7 +8,12 @@ import {
   getMessageFromError,
   getTempFileName,
 } from "./utils.ts";
-import { print, startLoadingState, flushAndStopLoadingState } from "./print.ts";
+import {
+  print,
+  startLoadingState,
+  flushAndStopLoadingState,
+  appendIncrementalUsage,
+} from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import {
   objectWithPathSchema,
@@ -139,6 +144,8 @@ export async function resolveApiCall(userInput: string) {
     cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
     cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
   });
+
+  appendIncrementalUsage(usage);
 
   actions.appendToMessageParams(inputMessageParam);
   for (const msg of response.messages) {

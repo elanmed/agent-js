@@ -9,10 +9,12 @@ import {
   stopLoadingState,
   colorPrint,
   flushAndStopLoadingState,
+  appendIncrementalUsage,
 } from "./print.ts";
 import { actions, getState } from "./state.ts";
 import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
+import type { LanguageModelUsage } from "ai";
 import {
   stripAnsi,
   mockExec,
@@ -468,6 +470,134 @@ test content
       });
       const result = calculateSessionUsage();
       assert.equal(result, "125,000 in, 25,000 out");
+    });
+  });
+
+  describe("appendIncrementalUsage", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.setModel("gpt-4");
+    });
+
+    it("appends the full usage on the first call", () => {
+      appendIncrementalUsage({
+        inputTokens: 100,
+        outputTokens: 50,
+        inputTokenDetails: {
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+        },
+      } as LanguageModelUsage);
+
+      assert.deepStrictEqual(getState().app.usagePerModel, {
+        "gpt-4": [
+          {
+            inputTokens: 100,
+            outputTokens: 50,
+            cacheReadTokens: 10,
+            cacheWriteTokens: 5,
+          },
+        ],
+      });
+    });
+
+    it("appends the incremental delta on subsequent calls", () => {
+      appendIncrementalUsage({
+        inputTokens: 100,
+        outputTokens: 50,
+        inputTokenDetails: {
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+        },
+      } as LanguageModelUsage);
+
+      appendIncrementalUsage({
+        inputTokens: 150,
+        outputTokens: 80,
+        inputTokenDetails: {
+          cacheReadTokens: 20,
+          cacheWriteTokens: 10,
+        },
+      } as LanguageModelUsage);
+
+      assert.deepStrictEqual(getState().app.usagePerModel, {
+        "gpt-4": [
+          {
+            inputTokens: 100,
+            outputTokens: 50,
+            cacheReadTokens: 10,
+            cacheWriteTokens: 5,
+          },
+          {
+            inputTokens: 50,
+            outputTokens: 30,
+            cacheReadTokens: 10,
+            cacheWriteTokens: 5,
+          },
+        ],
+      });
+    });
+
+    it("tracks different models separately", () => {
+      appendIncrementalUsage({
+        inputTokens: 100,
+        outputTokens: 50,
+        inputTokenDetails: {
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+        },
+      } as LanguageModelUsage);
+
+      actions.setModel("claude");
+      appendIncrementalUsage({
+        inputTokens: 30,
+        outputTokens: 15,
+        inputTokenDetails: {
+          cacheReadTokens: 3,
+          cacheWriteTokens: 1,
+        },
+      } as LanguageModelUsage);
+
+      assert.deepStrictEqual(getState().app.usagePerModel, {
+        "gpt-4": [
+          {
+            inputTokens: 100,
+            outputTokens: 50,
+            cacheReadTokens: 10,
+            cacheWriteTokens: 5,
+          },
+        ],
+        claude: [
+          {
+            inputTokens: 30,
+            outputTokens: 15,
+            cacheReadTokens: 3,
+            cacheWriteTokens: 1,
+          },
+        ],
+      });
+    });
+
+    it("defaults missing token detail values to 0", () => {
+      appendIncrementalUsage({
+        inputTokens: 100,
+        outputTokens: 50,
+        inputTokenDetails: {
+          cacheReadTokens: undefined,
+          cacheWriteTokens: undefined,
+        },
+      } as LanguageModelUsage);
+
+      assert.deepStrictEqual(getState().app.usagePerModel, {
+        "gpt-4": [
+          {
+            inputTokens: 100,
+            outputTokens: 50,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+          },
+        ],
+      });
     });
   });
 });

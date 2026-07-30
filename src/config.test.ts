@@ -810,4 +810,16 @@ describe("config", () => {
     await initState();
     assert.equal(getState().app.skillsStr, "");
   });
+
+  it("sets usagePerModel to an empty object", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...defaultConfig,
+      }),
+    );
+
+    await initState();
+    assert.deepStrictEqual(getState().app.usagePerModel, {});
+  });
 });

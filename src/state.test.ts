@@ -407,6 +407,102 @@ line3
     });
   });
 
+  describe("append-incremental-usage-for-model", () => {
+    it("appends usage for the current model", () => {
+      actions.setModel("gpt-4");
+      assert.deepStrictEqual(getState().app.usagePerModel, {});
+
+      actions.appendIncrementalUsageForModel({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 2,
+        cacheWriteTokens: 1,
+      });
+
+      assert.deepStrictEqual(getState().app.usagePerModel, {
+        "gpt-4": [
+          {
+            inputTokens: 10,
+            outputTokens: 5,
+            cacheReadTokens: 2,
+            cacheWriteTokens: 1,
+          },
+        ],
+      });
+    });
+
+    it("appends multiple usages for the current model in order", () => {
+      actions.setModel("gpt-4");
+
+      actions.appendIncrementalUsageForModel({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 2,
+        cacheWriteTokens: 1,
+      });
+      actions.appendIncrementalUsageForModel({
+        inputTokens: 20,
+        outputTokens: 8,
+        cacheReadTokens: 4,
+        cacheWriteTokens: 2,
+      });
+
+      assert.deepStrictEqual(getState().app.usagePerModel, {
+        "gpt-4": [
+          {
+            inputTokens: 10,
+            outputTokens: 5,
+            cacheReadTokens: 2,
+            cacheWriteTokens: 1,
+          },
+          {
+            inputTokens: 20,
+            outputTokens: 8,
+            cacheReadTokens: 4,
+            cacheWriteTokens: 2,
+          },
+        ],
+      });
+    });
+
+    it("keeps usages for different models separate", () => {
+      actions.setModel("gpt-4");
+      actions.appendIncrementalUsageForModel({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 2,
+        cacheWriteTokens: 1,
+      });
+
+      actions.setModel("claude");
+      actions.appendIncrementalUsageForModel({
+        inputTokens: 30,
+        outputTokens: 15,
+        cacheReadTokens: 6,
+        cacheWriteTokens: 3,
+      });
+
+      assert.deepStrictEqual(getState().app.usagePerModel, {
+        "gpt-4": [
+          {
+            inputTokens: 10,
+            outputTokens: 5,
+            cacheReadTokens: 2,
+            cacheWriteTokens: 1,
+          },
+        ],
+        claude: [
+          {
+            inputTokens: 30,
+            outputTokens: 15,
+            cacheReadTokens: 6,
+            cacheWriteTokens: 3,
+          },
+        ],
+      });
+    });
+  });
+
   it("reset-loading-state-frame-idx", () => {
     actions.incrementLoadingStateFrameIdx();
     actions.incrementLoadingStateFrameIdx();

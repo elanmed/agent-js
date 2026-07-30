@@ -39,6 +39,10 @@ export async function tryCatchAsync<T>(
   }
 }
 
+export function optionFrom<T>(val: T) {
+  return { ok: true, value: val };
+}
+
 export function normalizeLine(content: string): string {
   return content.trim().concat("\n");
 }

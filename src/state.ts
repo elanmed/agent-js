@@ -39,6 +39,7 @@ interface State {
     loadingStateFrameIdx: number;
     apiStartTime: number | null;
     apiEndTime: number | null;
+    usagePerModel: Record<string, TokenUsage[]>;
   };
   config: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -80,6 +81,7 @@ const initialState: State = {
     loadingStateFrameIdx: 0,
     apiStartTime: null,
     apiEndTime: null,
+    usagePerModel: {},
   },
   config: {
     model: MISSING,
@@ -317,6 +319,20 @@ export const actions = {
       "set-skills",
       String(before),
       String(state.app.skills.length),
+    );
+  },
+
+  appendIncrementalUsageForModel(usage: TokenUsage) {
+    const { model } = state.config;
+    state.app.usagePerModel[model] ??= [];
+    const before = state.app.usagePerModel[model];
+    state.app.usagePerModel[model].push(usage);
+
+    const after = state.app.usagePerModel[model];
+    logStateChange(
+      "append-incremental-usage-for-model",
+      String(before.length),
+      String(after.length),
     );
   },
 

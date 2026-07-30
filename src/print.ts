@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { actions, getState } from "./state.ts";
 import { format } from "prettier";
 import {
@@ -12,6 +13,7 @@ import { type ModelPricing } from "./config.ts";
 import { processDeps } from "./deps.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert";
+import type { LanguageModelUsage } from "ai";
 
 const printQueue = createQueue();
 
@@ -218,12 +220,13 @@ export async function executeBat(content: string) {
   await print(content);
 }
 
-export interface TokenUsage {
-  inputTokens: number;
-  outputTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
-}
+export const TokenUsageSchema = z.object({
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  cacheReadTokens: z.number(),
+  cacheWriteTokens: z.number(),
+});
+export type TokenUsage = z.infer<typeof TokenUsageSchema>;
 
 export function calculateSessionUsage(): string {
   const model = getState().config.model;
@@ -303,3 +306,53 @@ export function calculateApiDuration() {
 
   return `${prettyMin}${prettySec}${prettyMs}`;
 }
+
+export function appendIncrementalUsage(usage: LanguageModelUsage) {
+  const { model } = getState().config;
+  const usageForModel = getState().app.usagePerModel[model] ?? [];
+
+  const defaultedUsage: TokenUsage = {
+    inputTokens: usage.inputTokens ?? 0,
+    outputTokens: usage.outputTokens ?? 0,
+    cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
+    cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
+  };
+
+  const lastUsage = usageForModel.at(-1);
+  if (!lastUsage) {
+    actions.appendIncrementalUsageForModel(defaultedUsage);
+    return;
+  }
+
+  const incrementalUsage = {
+    inputTokens: defaultedUsage.inputTokens - lastUsage.inputTokens,
+    outputTokens: defaultedUsage.outputTokens - lastUsage.outputTokens,
+    cacheReadTokens: defaultedUsage.cacheReadTokens - lastUsage.cacheReadTokens,
+    cacheWriteTokens:
+      defaultedUsage.cacheWriteTokens - lastUsage.cacheWriteTokens,
+  };
+
+  actions.appendIncrementalUsageForModel(incrementalUsage);
+}
+
+// export function syncIncrementalUsage(usage: TokenUsage) {
+//   const readResult = tryCatch(() =>
+//     fsDeps.readFileSync(getUsageLogPath()).toString(),
+//   );
+//   const currUsageResult = (() => {
+//     if (!readResult.ok) {
+//       return optionFrom({});
+//     }
+//     return tryCatch(() => TokenUsageSchema.parse(JSON.parse(readResult.value)))
+//   })();
+// }
+
+// // TODO: handle compacting
+// // TODO: don't really need this fn
+// export function initUsageLimits() {
+//   if (!fsDeps.existsSync(getUsageLogPath())) {
+//     const writeResult = tryCatch(() => fsDeps.writeFileSync(getUsageLogPath()));
+//   }
+//   // per hour is shortest
+//   // if file does not exist, create it
+// }
