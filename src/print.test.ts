@@ -3,6 +3,7 @@ import assert from "node:assert";
 import {
   formatMarkdown,
   calculateSessionUsage,
+  calculateUsage,
   calculateApiDuration,
   executeBat,
   startLoadingState,
@@ -480,6 +481,8 @@ test content
     });
 
     it("appends the full usage on the first call", () => {
+      mock.method(Date, "now", () => 1000);
+
       appendIncrementalUsage({
         inputTokens: 100,
         outputTokens: 50,
@@ -489,19 +492,22 @@ test content
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.usagePerModel, {
-        "gpt-4": [
-          {
-            inputTokens: 100,
-            outputTokens: 50,
-            cacheReadTokens: 10,
-            cacheWriteTokens: 5,
-          },
-        ],
-      });
+      assert.deepStrictEqual(getState().app.incrementalUsage, [
+        {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+          model: "gpt-4",
+          date: 1000,
+        },
+      ]);
     });
 
     it("appends the incremental delta on subsequent calls", () => {
+      let now = 1000;
+      mock.method(Date, "now", () => now);
+
       appendIncrementalUsage({
         inputTokens: 100,
         outputTokens: 50,
@@ -511,6 +517,7 @@ test content
         },
       } as LanguageModelUsage);
 
+      now = 2000;
       appendIncrementalUsage({
         inputTokens: 150,
         outputTokens: 80,
@@ -520,25 +527,30 @@ test content
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.usagePerModel, {
-        "gpt-4": [
-          {
-            inputTokens: 100,
-            outputTokens: 50,
-            cacheReadTokens: 10,
-            cacheWriteTokens: 5,
-          },
-          {
-            inputTokens: 50,
-            outputTokens: 30,
-            cacheReadTokens: 10,
-            cacheWriteTokens: 5,
-          },
-        ],
-      });
+      assert.deepStrictEqual(getState().app.incrementalUsage, [
+        {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+          model: "gpt-4",
+          date: 1000,
+        },
+        {
+          inputTokens: 50,
+          outputTokens: 30,
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+          model: "gpt-4",
+          date: 2000,
+        },
+      ]);
     });
 
     it("tracks different models separately", () => {
+      let now = 1000;
+      mock.method(Date, "now", () => now);
+
       appendIncrementalUsage({
         inputTokens: 100,
         outputTokens: 50,
@@ -548,6 +560,7 @@ test content
         },
       } as LanguageModelUsage);
 
+      now = 2000;
       actions.setModel("claude");
       appendIncrementalUsage({
         inputTokens: 30,
@@ -558,27 +571,29 @@ test content
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.usagePerModel, {
-        "gpt-4": [
-          {
-            inputTokens: 100,
-            outputTokens: 50,
-            cacheReadTokens: 10,
-            cacheWriteTokens: 5,
-          },
-        ],
-        claude: [
-          {
-            inputTokens: 30,
-            outputTokens: 15,
-            cacheReadTokens: 3,
-            cacheWriteTokens: 1,
-          },
-        ],
-      });
+      assert.deepStrictEqual(getState().app.incrementalUsage, [
+        {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+          model: "gpt-4",
+          date: 1000,
+        },
+        {
+          inputTokens: 30,
+          outputTokens: 15,
+          cacheReadTokens: 3,
+          cacheWriteTokens: 1,
+          model: "claude",
+          date: 2000,
+        },
+      ]);
     });
 
     it("defaults missing token detail values to 0", () => {
+      mock.method(Date, "now", () => 1000);
+
       appendIncrementalUsage({
         inputTokens: 100,
         outputTokens: 50,
@@ -588,16 +603,102 @@ test content
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.usagePerModel, {
-        "gpt-4": [
-          {
-            inputTokens: 100,
-            outputTokens: 50,
-            cacheReadTokens: 0,
-            cacheWriteTokens: 0,
-          },
-        ],
+      assert.deepStrictEqual(getState().app.incrementalUsage, [
+        {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          model: "gpt-4",
+          date: 1000,
+        },
+      ]);
+    });
+  });
+
+  describe("calculateUsage", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1_000_000,
+          outputPerToken: 1_000_000,
+          cacheReadPerToken: 1_000_000,
+          cacheWritePerToken: 1_000_000,
+        },
       });
+    });
+
+    it("returns 0 when there is no incremental usage", () => {
+      assert.strictEqual(calculateUsage(), 0);
+    });
+
+    it("calculates cost for a single usage entry", () => {
+      actions.appendIncrementalUsage({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 2,
+        cacheWriteTokens: 1,
+        model: "gpt-4",
+        date: 1000,
+      });
+
+      assert.strictEqual(calculateUsage(), 18);
+    });
+
+    it("sums costs across multiple usage entries", () => {
+      actions.appendIncrementalUsage({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 2,
+        cacheWriteTokens: 1,
+        model: "gpt-4",
+        date: 1000,
+      });
+      actions.appendIncrementalUsage({
+        inputTokens: 5,
+        outputTokens: 3,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        model: "gpt-4",
+        date: 2000,
+      });
+
+      assert.strictEqual(calculateUsage(), 27);
+    });
+
+    it("ignores entries for models without pricing", () => {
+      actions.appendIncrementalUsage({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 2,
+        cacheWriteTokens: 1,
+        model: "unknown-model",
+        date: 1000,
+      });
+
+      assert.strictEqual(calculateUsage(), 0);
+    });
+
+    it("falls back to input and output pricing when cache pricing is missing", () => {
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1_000_000,
+          outputPerToken: 2_000_000,
+        },
+      });
+
+      actions.appendIncrementalUsage({
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 2,
+        cacheWriteTokens: 1,
+        model: "gpt-4",
+        date: 1000,
+      });
+
+      assert.strictEqual(calculateUsage(), 24);
     });
   });
 });

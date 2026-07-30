@@ -811,7 +811,7 @@ describe("config", () => {
     assert.equal(getState().app.skillsStr, "");
   });
 
-  it("sets usagePerModel to an empty object", async () => {
+  it("sets incrementalUsage to an empty array", async () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -820,6 +820,6 @@ describe("config", () => {
     );
 
     await initState();
-    assert.deepStrictEqual(getState().app.usagePerModel, {});
+    assert.deepStrictEqual(getState().app.incrementalUsage, []);
   });
 });

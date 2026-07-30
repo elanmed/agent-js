@@ -220,13 +220,24 @@ export async function executeBat(content: string) {
   await print(content);
 }
 
-export const TokenUsageSchema = z.object({
+export const IncrementalUsageSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   cacheReadTokens: z.number(),
   cacheWriteTokens: z.number(),
+  model: z.string(),
+  date: z.number(),
 });
-export type TokenUsage = z.infer<typeof TokenUsageSchema>;
+export type IncrementalUsage = z.infer<typeof IncrementalUsageSchema>;
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+}
+
+const DOLLARS_PER_MILLION = 1_000_000;
 
 export function calculateSessionUsage(): string {
   const model = getState().config.model;
@@ -258,7 +269,6 @@ export function calculateSessionUsage(): string {
     return `${totalUsage.inputTokens.toLocaleString()} in, ${totalUsage.outputTokens.toLocaleString()} out`;
   }
 
-  const DOLLARS_PER_MILLION = 1_000_000;
   const inputPerToken = pricing.inputPerToken;
   const outputPerToken = pricing.outputPerToken;
   const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
@@ -309,30 +319,59 @@ export function calculateApiDuration() {
 
 export function appendIncrementalUsage(usage: LanguageModelUsage) {
   const { model } = getState().config;
-  const usageForModel = getState().app.usagePerModel[model] ?? [];
 
-  const defaultedUsage: TokenUsage = {
+  const defaultedUsage: IncrementalUsage = {
     inputTokens: usage.inputTokens ?? 0,
     outputTokens: usage.outputTokens ?? 0,
     cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
     cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
+    model,
+    date: Date.now(),
   };
 
-  const lastUsage = usageForModel.at(-1);
+  const lastUsage = getState()
+    .app.incrementalUsage.filter((entry) => entry.model === model)
+    .at(-1);
   if (!lastUsage) {
-    actions.appendIncrementalUsageForModel(defaultedUsage);
+    actions.appendIncrementalUsage(defaultedUsage);
     return;
   }
 
-  const incrementalUsage = {
+  const incrementalUsage: IncrementalUsage = {
     inputTokens: defaultedUsage.inputTokens - lastUsage.inputTokens,
     outputTokens: defaultedUsage.outputTokens - lastUsage.outputTokens,
     cacheReadTokens: defaultedUsage.cacheReadTokens - lastUsage.cacheReadTokens,
     cacheWriteTokens:
       defaultedUsage.cacheWriteTokens - lastUsage.cacheWriteTokens,
+    date: Date.now(),
+    model,
   };
 
-  actions.appendIncrementalUsageForModel(incrementalUsage);
+  actions.appendIncrementalUsage(incrementalUsage);
+}
+
+export function calculateUsage() {
+  // TODO: filter out older than a given time period
+  return getState().app.incrementalUsage.reduce((accum, curr) => {
+    const { model } = curr;
+    const pricing = getState().config.pricingPerModel[model];
+    if (pricing === undefined) return accum;
+
+    const inputPerToken = pricing.inputPerToken;
+    const outputPerToken = pricing.outputPerToken;
+    const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
+    const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
+
+    const inputCost = (curr.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
+    const outputCost =
+      (curr.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
+    const cacheReadCost =
+      (curr.cacheReadTokens * cacheReadPerToken) / DOLLARS_PER_MILLION;
+    const cacheWriteCost =
+      (curr.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
+
+    return accum + inputCost + outputCost + cacheReadCost + cacheWriteCost;
+  }, 0);
 }
 
 // export function syncIncrementalUsage(usage: TokenUsage) {
@@ -345,14 +384,4 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
 //     }
 //     return tryCatch(() => TokenUsageSchema.parse(JSON.parse(readResult.value)))
 //   })();
-// }
-
-// // TODO: handle compacting
-// // TODO: don't really need this fn
-// export function initUsageLimits() {
-//   if (!fsDeps.existsSync(getUsageLogPath())) {
-//     const writeResult = tryCatch(() => fsDeps.writeFileSync(getUsageLogPath()));
-//   }
-//   // per hour is shortest
-//   // if file does not exist, create it
 // }

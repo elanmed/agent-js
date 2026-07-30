@@ -407,99 +407,67 @@ line3
     });
   });
 
-  describe("append-incremental-usage-for-model", () => {
-    it("appends usage for the current model", () => {
-      actions.setModel("gpt-4");
-      assert.deepStrictEqual(getState().app.usagePerModel, {});
+  describe("append-incremental-usage", () => {
+    it("appends usage to incrementalUsage", () => {
+      assert.deepStrictEqual(getState().app.incrementalUsage, []);
 
-      actions.appendIncrementalUsageForModel({
+      actions.appendIncrementalUsage({
         inputTokens: 10,
         outputTokens: 5,
         cacheReadTokens: 2,
         cacheWriteTokens: 1,
+        model: "gpt-4",
+        date: 1000,
       });
 
-      assert.deepStrictEqual(getState().app.usagePerModel, {
-        "gpt-4": [
-          {
-            inputTokens: 10,
-            outputTokens: 5,
-            cacheReadTokens: 2,
-            cacheWriteTokens: 1,
-          },
-        ],
-      });
+      assert.deepStrictEqual(getState().app.incrementalUsage, [
+        {
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 2,
+          cacheWriteTokens: 1,
+          model: "gpt-4",
+          date: 1000,
+        },
+      ]);
     });
 
-    it("appends multiple usages for the current model in order", () => {
-      actions.setModel("gpt-4");
-
-      actions.appendIncrementalUsageForModel({
+    it("appends multiple usages in order", () => {
+      actions.appendIncrementalUsage({
         inputTokens: 10,
         outputTokens: 5,
         cacheReadTokens: 2,
         cacheWriteTokens: 1,
+        model: "gpt-4",
+        date: 1000,
       });
-      actions.appendIncrementalUsageForModel({
+      actions.appendIncrementalUsage({
         inputTokens: 20,
         outputTokens: 8,
         cacheReadTokens: 4,
         cacheWriteTokens: 2,
+        model: "gpt-4",
+        date: 2000,
       });
 
-      assert.deepStrictEqual(getState().app.usagePerModel, {
-        "gpt-4": [
-          {
-            inputTokens: 10,
-            outputTokens: 5,
-            cacheReadTokens: 2,
-            cacheWriteTokens: 1,
-          },
-          {
-            inputTokens: 20,
-            outputTokens: 8,
-            cacheReadTokens: 4,
-            cacheWriteTokens: 2,
-          },
-        ],
-      });
-    });
-
-    it("keeps usages for different models separate", () => {
-      actions.setModel("gpt-4");
-      actions.appendIncrementalUsageForModel({
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-      });
-
-      actions.setModel("claude");
-      actions.appendIncrementalUsageForModel({
-        inputTokens: 30,
-        outputTokens: 15,
-        cacheReadTokens: 6,
-        cacheWriteTokens: 3,
-      });
-
-      assert.deepStrictEqual(getState().app.usagePerModel, {
-        "gpt-4": [
-          {
-            inputTokens: 10,
-            outputTokens: 5,
-            cacheReadTokens: 2,
-            cacheWriteTokens: 1,
-          },
-        ],
-        claude: [
-          {
-            inputTokens: 30,
-            outputTokens: 15,
-            cacheReadTokens: 6,
-            cacheWriteTokens: 3,
-          },
-        ],
-      });
+      assert.deepStrictEqual(getState().app.incrementalUsage, [
+        {
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 2,
+          cacheWriteTokens: 1,
+          model: "gpt-4",
+          date: 1000,
+        },
+        {
+          inputTokens: 20,
+          outputTokens: 8,
+          cacheReadTokens: 4,
+          cacheWriteTokens: 2,
+          model: "gpt-4",
+          date: 2000,
+        },
+      ]);
     });
   });
 
