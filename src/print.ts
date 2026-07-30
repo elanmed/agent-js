@@ -81,7 +81,7 @@ export async function fencePrint(text: string, opts: FencePrintOpts = {}) {
 
   const sessionUsage = (() => {
     if (showSessionUsage) {
-      return ` (${printSessionUsage()})`;
+      return ` (${getPrettySessionUsage()})`;
     }
 
     return "";
@@ -347,7 +347,7 @@ export function getUsageTokensForModel(model: string): TokenUsage {
     );
 }
 
-export function printSessionUsage() {
+export function getPrettySessionUsage() {
   const { model } = getState().config;
   const pricing = getState().config.pricingPerModel[model];
   const tokenUsage = getUsageTokensForModel(model);

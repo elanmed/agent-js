@@ -2,7 +2,7 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import {
   formatMarkdown,
-  printSessionUsage,
+  getPrettySessionUsage,
   calculateApiDuration,
   executeBat,
   startLoadingState,
@@ -192,7 +192,7 @@ describe("print", () => {
     });
   });
 
-  describe("printSessionUsage", () => {
+  describe("getPrettySessionUsage", () => {
     beforeEach(() => {
       actions.resetState();
       actions.setPricingPerModel({
@@ -219,7 +219,7 @@ describe("print", () => {
 
     it("known model with no usages returns $0.0000", () => {
       actions.setModel("claude-haiku-4-5");
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$0.0000");
     });
 
@@ -235,7 +235,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$2.0000");
     });
 
@@ -250,7 +250,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$3.0000");
     });
 
@@ -266,7 +266,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$0.2500");
     });
 
@@ -282,7 +282,7 @@ describe("print", () => {
           cacheWriteTokens: 1_000_000,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$1.2500");
     });
 
@@ -299,7 +299,7 @@ describe("print", () => {
           cacheWriteTokens: 100_000,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$1.7000");
     });
 
@@ -328,7 +328,7 @@ describe("print", () => {
           cacheWriteTokens: 600_000,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$2.3750");
     });
 
@@ -344,7 +344,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$1,000.0000");
     });
 
@@ -371,19 +371,19 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "$5,000.0000");
     });
   });
 
-  describe("printSessionUsage no pricing configured", () => {
+  describe("getPrettySessionUsage no pricing configured", () => {
     beforeEach(() => {
       actions.resetState();
     });
 
     it("returns token counts for no usages", () => {
       actions.setModel("unknown-model");
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "0 in, 0 out");
     });
 
@@ -397,7 +397,7 @@ describe("print", () => {
           cacheWriteTokens: 10,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "100 in, 50 out");
     });
 
@@ -411,7 +411,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "1,500 in, 2,500 out");
     });
 
@@ -425,7 +425,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "1,234,567 in, 9,876,543 out");
     });
 
@@ -447,7 +447,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = printSessionUsage();
+      const result = getPrettySessionUsage();
       assert.equal(result, "125,000 in, 25,000 out");
     });
   });
