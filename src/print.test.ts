@@ -262,10 +262,10 @@ describe("print", () => {
 
     it("calculates cache read token costs correctly", () => {
       // haiku: cacheRead=$0.25/M
-      // 1_000_000 cache read tokens = $0.25
+      // 1_000_000 input tokens, all cache reads = $0.25
       actions.setModel("claude-haiku-4-5");
       appendIncrementalUsage({
-        inputTokens: 0,
+        inputTokens: 1_000_000,
         outputTokens: 0,
         inputTokenDetails: {
           cacheReadTokens: 1_000_000,
@@ -278,10 +278,10 @@ describe("print", () => {
 
     it("calculates cache write token costs correctly", () => {
       // haiku: cacheWrite=$1.25/M
-      // 1_000_000 cache write tokens = $1.25
+      // 1_000_000 input tokens, all cache writes = $1.25
       actions.setModel("claude-haiku-4-5");
       appendIncrementalUsage({
-        inputTokens: 0,
+        inputTokens: 1_000_000,
         outputTokens: 0,
         inputTokenDetails: {
           cacheReadTokens: 0,
@@ -294,11 +294,11 @@ describe("print", () => {
 
     it("calculates combined input, output, and cache costs correctly", () => {
       // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
-      // 500_000 input + 200_000 output + 300_000 cacheRead + 100_000 cacheWrite
+      // 900_000 input (500_000 uncached + 300_000 cacheRead + 100_000 cacheWrite) + 200_000 output
       // = $0.50 + $1.00 + $0.075 + $0.125 = $1.70
       actions.setModel("claude-haiku-4-5");
       appendIncrementalUsage({
-        inputTokens: 500_000,
+        inputTokens: 900_000,
         outputTokens: 200_000,
         inputTokenDetails: {
           cacheReadTokens: 300_000,
@@ -313,7 +313,7 @@ describe("print", () => {
       actions.setModel("claude-haiku-4-5");
       actions.setUsageLimitDollar(10);
       appendIncrementalUsage({
-        inputTokens: 500_000,
+        inputTokens: 900_000,
         outputTokens: 200_000,
         inputTokenDetails: {
           cacheReadTokens: 300_000,
@@ -326,14 +326,14 @@ describe("print", () => {
 
     it("accumulates all token types across multiple usages", () => {
       // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
-      // usage1: 200_000 input + 100_000 output + 400_000 cacheRead + 200_000 cacheWrite
+      // usage1: 800_000 input (200_000 uncached + 400_000 cacheRead + 200_000 cacheWrite) + 100_000 output
       //   = $0.20 + $0.50 + $0.10 + $0.25 = $1.05
-      // usage2: 500_000 input + 200_000 output + 500_000 cacheRead + 600_000 cacheWrite
+      // usage2: 1_600_000 input (500_000 uncached + 500_000 cacheRead + 600_000 cacheWrite) + 200_000 output
       //   = $0.50 + $1.00 + $0.125 + $0.75 = $2.375
       // total = $3.425
       actions.setModel("claude-haiku-4-5");
       appendIncrementalUsage({
-        inputTokens: 200_000,
+        inputTokens: 800_000,
         outputTokens: 100_000,
         inputTokenDetails: {
           cacheReadTokens: 400_000,
@@ -341,7 +341,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       appendIncrementalUsage({
-        inputTokens: 500_000,
+        inputTokens: 1_600_000,
         outputTokens: 200_000,
         inputTokenDetails: {
           cacheReadTokens: 500_000,
@@ -350,6 +350,26 @@ describe("print", () => {
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
       assert.equal(result, "$3.425");
+    });
+
+    it("falls back to the input price when cache pricing is omitted", () => {
+      actions.setPricingPerModel({
+        "test-model": {
+          inputPerToken: 2,
+          outputPerToken: 10,
+        },
+      });
+      actions.setModel("test-model");
+      appendIncrementalUsage({
+        inputTokens: 2_000_000,
+        outputTokens: 0,
+        inputTokenDetails: {
+          cacheReadTokens: 1_000_000,
+          cacheWriteTokens: 500_000,
+        },
+      } as LanguageModelUsage);
+      const result = getPrettySessionUsage();
+      assert.equal(result, "$4.000");
     });
 
     it("formats cost with commas for large totals", () => {

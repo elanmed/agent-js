@@ -345,10 +345,13 @@ export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
   const inputPerToken = pricing.inputPerToken;
   const outputPerToken = pricing.outputPerToken;
   const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
-  const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
+  const cacheWritePerToken = pricing.cacheWritePerToken ?? inputPerToken;
 
-  const inputCost =
-    (usageTokens.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
+  const uncachedInputTokens =
+    usageTokens.inputTokens -
+    usageTokens.cacheReadTokens -
+    usageTokens.cacheWriteTokens;
+  const inputCost = (uncachedInputTokens * inputPerToken) / DOLLARS_PER_MILLION;
   const outputCost =
     (usageTokens.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
   const cacheReadCost =
