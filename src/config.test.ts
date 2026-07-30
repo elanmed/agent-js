@@ -376,6 +376,66 @@ describe("config", () => {
       );
     });
 
+    it("accepts usageLimits with valid ordering", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 10,
+            perDay: 100,
+            perWeek: 1000,
+          },
+        }),
+      );
+
+      await initState();
+
+      assert.deepStrictEqual(getState().config.usageLimits, {
+        perHour: 10,
+        perDay: 100,
+        perWeek: 1000,
+      });
+    });
+
+    it("throws when usageLimits has perHour >= perDay", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 100,
+            perDay: 100,
+            perWeek: 1000,
+          },
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /perHour must be less than perDay, which must be less than perWeek/,
+      );
+    });
+
+    it("throws when usageLimits has perDay >= perWeek", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 10,
+            perDay: 1000,
+            perWeek: 1000,
+          },
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /perHour must be less than perDay, which must be less than perWeek/,
+      );
+    });
+
     it("merges partial keymaps with defaults", async () => {
       testFs._files.set(
         getLocalConfigPath(),
