@@ -28,23 +28,7 @@ const ModelPricingSchema = z.object({
   cacheWritePerToken: z.number().optional(),
 });
 
-const UsageLimitsSchema = z
-  .object({
-    perHour: z.number(),
-    perDay: z.number(),
-    perWeek: z.number(),
-  })
-  .refine(
-    (limits) =>
-      limits.perHour < limits.perDay && limits.perDay < limits.perWeek,
-    {
-      message:
-        "perHour must be less than perDay, which must be less than perWeek",
-    },
-  );
-
 export type ModelPricing = z.infer<typeof ModelPricingSchema>;
-export type UsageLimits = z.infer<typeof UsageLimitsSchema> | null;
 
 const ConfigSchema = z.object({
   model: z.string().optional(),
@@ -81,7 +65,8 @@ const ConfigSchema = z.object({
       { message: "loadingStateFrames must be at least length 2" },
     ),
   promptPrefix: z.string().optional(),
-  usageLimits: UsageLimitsSchema.nullable().optional(),
+  usageLimitMs: z.number().nullable().optional(),
+  usageLimitDollar: z.number().nullable().optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -110,7 +95,8 @@ interface DefaultConfig {
   loadingStateFrames: string[];
   loadingStateFrameDuration: number;
   promptPrefix: string;
-  usageLimits: null;
+  usageLimitMs: null;
+  usageLimitDollar: null;
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -140,7 +126,8 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   loadingStateFrames: ["|", "/", "-", "\\"],
   loadingStateFrameDuration: 80,
   promptPrefix: "> ",
-  usageLimits: null,
+  usageLimitMs: null,
+  usageLimitDollar: null,
 };
 
 export async function initState() {
@@ -251,10 +238,15 @@ export async function initState() {
       DEFAULT_CONFIG.promptPrefix,
   );
 
-  actions.setUsageLimits(
-    localConfig.usageLimits ??
-      globalConfig.usageLimits ??
-      DEFAULT_CONFIG.usageLimits,
+  actions.setUsageLimitMs(
+    localConfig.usageLimitMs ??
+      globalConfig.usageLimitMs ??
+      DEFAULT_CONFIG.usageLimitMs,
+  );
+  actions.setUsageLimitDollar(
+    localConfig.usageLimitDollar ??
+      globalConfig.usageLimitDollar ??
+      DEFAULT_CONFIG.usageLimitDollar,
   );
 
   const contextEntries = getContextEntries();
@@ -264,6 +256,8 @@ export async function initState() {
   const skills = await getSkills();
   actions.setSkills(skills);
   actions.setSkillsStr(getSkillsStr(skills));
+
+  actions.setSessionStartDate();
 }
 
 function parseConfigStr(configStr: string): Config {

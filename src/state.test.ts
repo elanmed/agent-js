@@ -29,6 +29,7 @@ describe("state", () => {
     assert.equal(getState().app.loadingStateFrameIdx, 0);
     assert.equal(getState().app.apiStartTime, null);
     assert.equal(getState().app.apiEndTime, null);
+    assert.equal(getState().app.sessionStartDate, 0);
     assert.equal(getState().app.chatHistoryPath, "");
   });
 
@@ -40,6 +41,7 @@ describe("state", () => {
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.apiStartTime, null);
     assert.equal(getState().app.apiEndTime, null);
+    assert.equal(getState().app.sessionStartDate, 0);
     assert.equal(getState().app.chatHistoryPath, "");
   });
 
@@ -364,6 +366,13 @@ line3
     assert.strictEqual(getState().app.apiEndTime, 99_000);
   });
 
+  it("set-session-start-date", () => {
+    mock.method(Date, "now", () => 42_000);
+    assert.equal(getState().app.sessionStartDate, 0);
+    actions.setSessionStartDate();
+    assert.strictEqual(getState().app.sessionStartDate, 42_000);
+  });
+
   it("set-loading-state-frames", () => {
     assert.deepStrictEqual(getState().config.loadingStateFrames, [
       "|",
@@ -392,14 +401,16 @@ line3
     assert.strictEqual(getState().config.promptPrefix, "🤖 ");
   });
 
-  it("set-usage-limits", () => {
-    assert.strictEqual(getState().config.usageLimits, null);
-    actions.setUsageLimits({ perHour: 10, perDay: 100, perWeek: 1000 });
-    assert.deepStrictEqual(getState().config.usageLimits, {
-      perHour: 10,
-      perDay: 100,
-      perWeek: 1000,
-    });
+  it("set-usage-limit-ms", () => {
+    assert.strictEqual(getState().config.usageLimitMs, null);
+    actions.setUsageLimitMs(3_600_000);
+    assert.strictEqual(getState().config.usageLimitMs, 3_600_000);
+  });
+
+  it("set-usage-limit-dollar", () => {
+    assert.strictEqual(getState().config.usageLimitDollar, null);
+    actions.setUsageLimitDollar(5);
+    assert.strictEqual(getState().config.usageLimitDollar, 5);
   });
 
   describe("append-usage", () => {

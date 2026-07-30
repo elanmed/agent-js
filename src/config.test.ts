@@ -260,180 +260,112 @@ describe("config", () => {
       assert.strictEqual(getState().config.promptPrefix, "🤖 ");
     });
 
-    it("uses its usageLimits over the global config, default config", async () => {
+    it("uses its usageLimitMs over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: {
-            perHour: 10,
-            perDay: 100,
-            perWeek: 1000,
-          },
+          usageLimitMs: 3_600_000,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: {
-            perHour: 5,
-            perDay: 50,
-            perWeek: 500,
-          },
+          usageLimitMs: 1_800_000,
         }),
       );
 
       await initState();
 
-      assert.deepStrictEqual(getState().config.usageLimits, {
-        perHour: 5,
-        perDay: 50,
-        perWeek: 500,
-      });
+      assert.strictEqual(getState().config.usageLimitMs, 1_800_000);
+      assert.strictEqual(getState().config.usageLimitDollar, null);
     });
 
-    it("falls back to global usageLimits when local sets it to null", async () => {
+    it("falls back to global usageLimitMs when local omits it", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: {
-            perHour: 10,
-            perDay: 100,
-            perWeek: 1000,
-          },
+          usageLimitMs: 3_600_000,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: null,
         }),
       );
 
       await initState();
 
-      assert.deepStrictEqual(getState().config.usageLimits, {
-        perHour: 10,
-        perDay: 100,
-        perWeek: 1000,
-      });
+      assert.strictEqual(getState().config.usageLimitMs, 3_600_000);
     });
 
-    it("throws when usageLimits is missing perHour", async () => {
+    it("uses its usageLimitDollar over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: {
-            perDay: 100,
-            perWeek: 1000,
-          },
+          usageLimitDollar: 10,
         }),
       );
-
-      await assert.rejects(
-        initState(),
-        /Invalid input: expected number, received undefined/,
-      );
-    });
-
-    it("throws when usageLimits is missing perDay", async () => {
       testFs._files.set(
-        getGlobalConfigPath(),
+        getLocalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: {
-            perHour: 10,
-            perWeek: 1000,
-          },
-        }),
-      );
-
-      await assert.rejects(
-        initState(),
-        /Invalid input: expected number, received undefined/,
-      );
-    });
-
-    it("throws when usageLimits is missing perWeek", async () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          usageLimits: {
-            perHour: 10,
-            perDay: 100,
-          },
-        }),
-      );
-
-      await assert.rejects(
-        initState(),
-        /Invalid input: expected number, received undefined/,
-      );
-    });
-
-    it("accepts usageLimits with valid ordering", async () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          usageLimits: {
-            perHour: 10,
-            perDay: 100,
-            perWeek: 1000,
-          },
+          usageLimitDollar: 5,
         }),
       );
 
       await initState();
 
-      assert.deepStrictEqual(getState().config.usageLimits, {
-        perHour: 10,
-        perDay: 100,
-        perWeek: 1000,
-      });
+      assert.strictEqual(getState().config.usageLimitDollar, 5);
+      assert.strictEqual(getState().config.usageLimitMs, null);
     });
 
-    it("throws when usageLimits has perHour >= perDay", async () => {
+    it("falls back to global usageLimitDollar when local omits it", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: {
-            perHour: 100,
-            perDay: 100,
-            perWeek: 1000,
-          },
+          usageLimitDollar: 10,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
         }),
       );
 
-      await assert.rejects(
-        initState(),
-        /perHour must be less than perDay, which must be less than perWeek/,
-      );
+      await initState();
+
+      assert.strictEqual(getState().config.usageLimitDollar, 10);
     });
 
-    it("throws when usageLimits has perDay >= perWeek", async () => {
+    it("rejects non-number usageLimitMs", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimits: {
-            perHour: 10,
-            perDay: 1000,
-            perWeek: 1000,
-          },
+          usageLimitMs: "one hour",
         }),
       );
 
-      await assert.rejects(
-        initState(),
-        /perHour must be less than perDay, which must be less than perWeek/,
+      await assert.rejects(initState(), /Invalid input: expected number/);
+    });
+
+    it("rejects non-number usageLimitDollar", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDollar: "five",
+        }),
       );
+
+      await assert.rejects(initState(), /Invalid input: expected number/);
     });
 
     it("merges partial keymaps with defaults", async () => {
@@ -614,29 +546,35 @@ describe("config", () => {
         assert.strictEqual(getState().config.promptPrefix, "❯ ");
       });
 
-      it("uses its usageLimits over the default config", async () => {
+      it("uses its usageLimitMs over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
-            usageLimits: {
-              perHour: 7,
-              perDay: 77,
-              perWeek: 777,
-            },
+            usageLimitMs: 7_200_000,
           }),
         );
 
         await initState();
 
-        assert.deepStrictEqual(getState().config.usageLimits, {
-          perHour: 7,
-          perDay: 77,
-          perWeek: 777,
-        });
+        assert.strictEqual(getState().config.usageLimitMs, 7_200_000);
       });
 
-      it("uses default usageLimits when global config omits it", async () => {
+      it("uses its usageLimitDollar over the default config", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            ...defaultConfig,
+            usageLimitDollar: 20,
+          }),
+        );
+
+        await initState();
+
+        assert.strictEqual(getState().config.usageLimitDollar, 20);
+      });
+
+      it("uses default limits when global config omits them", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
@@ -646,7 +584,8 @@ describe("config", () => {
 
         await initState();
 
-        assert.strictEqual(getState().config.usageLimits, null);
+        assert.strictEqual(getState().config.usageLimitMs, null);
+        assert.strictEqual(getState().config.usageLimitDollar, null);
       });
 
       it("uses its customSkillDirs over the default config", async () => {
@@ -821,5 +760,18 @@ describe("config", () => {
 
     await initState();
     assert.deepStrictEqual(getState().app.incrementalUsage, []);
+  });
+
+  it("sets sessionStartDate", async () => {
+    mock.method(Date, "now", () => 1234);
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...defaultConfig,
+      }),
+    );
+
+    await initState();
+    assert.strictEqual(getState().app.sessionStartDate, 1234);
   });
 });

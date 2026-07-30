@@ -6,7 +6,6 @@ import {
   type Key,
   type ModelPricing,
   type Provider,
-  type UsageLimits,
 } from "./config.ts";
 import { MISSING, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
@@ -40,6 +39,7 @@ interface State {
     apiStartTime: number | null;
     apiEndTime: number | null;
     incrementalUsage: IncrementalUsage[];
+    sessionStartDate: number;
   };
   config: {
     pricingPerModel: Record<string, ModelPricing>;
@@ -53,7 +53,8 @@ interface State {
     loadingStateFrames: string[];
     loadingStateFrameDuration: number;
     promptPrefix: string;
-    usageLimits: UsageLimits;
+    usageLimitMs: number | null;
+    usageLimitDollar: number | null;
   };
   abortControllers: {
     question: AbortController | null;
@@ -82,6 +83,7 @@ const initialState: State = {
     apiStartTime: null,
     apiEndTime: null,
     incrementalUsage: [],
+    sessionStartDate: 0,
   },
   config: {
     model: MISSING,
@@ -95,7 +97,8 @@ const initialState: State = {
     loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
     loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
     promptPrefix: DEFAULT_CONFIG.promptPrefix,
-    usageLimits: DEFAULT_CONFIG.usageLimits,
+    usageLimitMs: DEFAULT_CONFIG.usageLimitMs,
+    usageLimitDollar: DEFAULT_CONFIG.usageLimitDollar,
   },
   abortControllers: {
     question: null,
@@ -359,6 +362,13 @@ export const actions = {
     logStateChange("set-api-end-time", String(before), String(now));
   },
 
+  setSessionStartDate() {
+    const before = state.app.sessionStartDate;
+    const now = Date.now();
+    state.app.sessionStartDate = now;
+    logStateChange("set-session-start-date", String(before), String(now));
+  },
+
   resetState() {
     state = structuredClone(initialState);
     logStateChange("reset-state", "[truncating]", stringify(state));
@@ -411,13 +421,23 @@ export const actions = {
     logStateChange("set-prompt-prefix", before, promptPrefix);
   },
 
-  setUsageLimits(usageLimits: UsageLimits) {
-    const before = state.config.usageLimits;
-    state.config.usageLimits = usageLimits;
+  setUsageLimitMs(usageLimitMs: number | null) {
+    const before = state.config.usageLimitMs;
+    state.config.usageLimitMs = usageLimitMs;
     logStateChange(
-      "set-usage-limits",
+      "set-usage-limit-ms",
       stringify(before),
-      stringify(usageLimits),
+      stringify(usageLimitMs),
+    );
+  },
+
+  setUsageLimitDollar(usageLimitDollar: number | null) {
+    const before = state.config.usageLimitDollar;
+    state.config.usageLimitDollar = usageLimitDollar;
+    logStateChange(
+      "set-usage-limit-dollar",
+      stringify(before),
+      stringify(usageLimitDollar),
     );
   },
 };
