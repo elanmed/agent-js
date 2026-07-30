@@ -22,13 +22,13 @@
     "cloc": "^2.6.0-cloc",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.0"
+    "typescript-eslint": "^8.56.0",
+    "@types/jsdom": "^28.0.1"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.68",
     "@ai-sdk/openai-compatible": "^2.0.41",
     "@mozilla/readability": "^0.6.0",
-    "@types/jsdom": "^28.0.1",
     "ai": "^6.0.156",
     "globby": "^16.2.0",
     "jsdom": "^29.0.2",
