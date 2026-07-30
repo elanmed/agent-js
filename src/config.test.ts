@@ -322,7 +322,43 @@ describe("config", () => {
       });
     });
 
-    it("throws when usageLimits is missing a required field", async () => {
+    it("throws when usageLimits is missing perHour", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perDay: 100,
+            perWeek: 1000,
+          },
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /Invalid input: expected number, received undefined/,
+      );
+    });
+
+    it("throws when usageLimits is missing perDay", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimits: {
+            perHour: 10,
+            perWeek: 1000,
+          },
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /Invalid input: expected number, received undefined/,
+      );
+    });
+
+    it("throws when usageLimits is missing perWeek", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -334,7 +370,10 @@ describe("config", () => {
         }),
       );
 
-      await assert.rejects(initState(), /expected number, received undefined/);
+      await assert.rejects(
+        initState(),
+        /Invalid input: expected number, received undefined/,
+      );
     });
 
     it("merges partial keymaps with defaults", async () => {
