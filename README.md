@@ -120,6 +120,7 @@ Slash commands are triggered with `/command` at the prompt.
 | `/skills`   | List available skills                                 |
 | `/context`  | List available context files                          |
 | `/commands` | List available slash commands (builtin and custom)    |
+| `/keymaps`  | List configured keybindings                           |
 | `/usage`    | Show current session usage                            |
 
 ### Custom Slash Commands
@@ -216,7 +217,7 @@ Available skills are listed in the system prompt, the LLM can use the `loadSkill
 
 ## Dependencies
 
-Minimal runtime dependencies (8 total):
+Minimal runtime dependencies (9 total):
 
 | Package                     | Purpose                                 |
 | --------------------------- | --------------------------------------- |
