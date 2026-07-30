@@ -22,7 +22,7 @@ describe("state", () => {
 
     assert.deepStrictEqual(getState().app.messageParams, []);
     assert.deepStrictEqual(getState().app.messageUsages, []);
-    assert.deepStrictEqual(getState().app.incrementalUsage, []);
+    assert.deepStrictEqual(getState().app.incrementalUsage, {});
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.loadingStateTimeout, null);
@@ -36,7 +36,7 @@ describe("state", () => {
   it("initial state", () => {
     assert.deepStrictEqual(getState().app.messageParams, []);
     assert.deepStrictEqual(getState().app.messageUsages, []);
-    assert.deepStrictEqual(getState().app.incrementalUsage, []);
+    assert.deepStrictEqual(getState().app.incrementalUsage, {});
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.apiStartTime, null);
@@ -69,18 +69,27 @@ describe("state", () => {
   });
 
   it("reset-incremental-usage", () => {
-    assert.deepStrictEqual(getState().app.incrementalUsage, []);
-    actions.appendToUsages({
+    assert.deepStrictEqual(getState().app.incrementalUsage, {});
+    actions.appendToUsages("gpt-4", {
       inputTokens: 10,
       outputTokens: 5,
       cacheReadTokens: 2,
       cacheWriteTokens: 1,
-      model: "gpt-4",
       date: 1000,
     });
-    assert.equal(getState().app.incrementalUsage.length, 1);
+    assert.deepStrictEqual(getState().app.incrementalUsage, {
+      "gpt-4": [
+        {
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 2,
+          cacheWriteTokens: 1,
+          date: 1000,
+        },
+      ],
+    });
     actions.resetIncrementalUsage();
-    assert.deepStrictEqual(getState().app.incrementalUsage, []);
+    assert.deepStrictEqual(getState().app.incrementalUsage, {});
   });
 
   it("set-model", () => {
@@ -415,92 +424,92 @@ line3
 
   describe("append-to-usages", () => {
     it("appends usage to incrementalUsage", () => {
-      assert.deepStrictEqual(getState().app.incrementalUsage, []);
+      assert.deepStrictEqual(getState().app.incrementalUsage, {});
 
-      actions.appendToUsages({
+      actions.appendToUsages("gpt-4", {
         inputTokens: 10,
         outputTokens: 5,
         cacheReadTokens: 2,
         cacheWriteTokens: 1,
-        model: "gpt-4",
         date: 1000,
       });
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, [
-        {
-          inputTokens: 10,
-          outputTokens: 5,
-          cacheReadTokens: 2,
-          cacheWriteTokens: 1,
-          model: "gpt-4",
-          date: 1000,
-        },
-      ]);
+      assert.deepStrictEqual(getState().app.incrementalUsage, {
+        "gpt-4": [
+          {
+            inputTokens: 10,
+            outputTokens: 5,
+            cacheReadTokens: 2,
+            cacheWriteTokens: 1,
+            date: 1000,
+          },
+        ],
+      });
     });
 
     it("appends multiple usages in order", () => {
-      actions.appendToUsages({
+      actions.appendToUsages("gpt-4", {
         inputTokens: 10,
         outputTokens: 5,
         cacheReadTokens: 2,
         cacheWriteTokens: 1,
-        model: "gpt-4",
         date: 1000,
       });
-      actions.appendToUsages({
+      actions.appendToUsages("gpt-4", {
         inputTokens: 20,
         outputTokens: 8,
         cacheReadTokens: 4,
         cacheWriteTokens: 2,
-        model: "gpt-4",
         date: 2000,
       });
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, [
+      assert.deepStrictEqual(getState().app.incrementalUsage, {
+        "gpt-4": [
+          {
+            inputTokens: 10,
+            outputTokens: 5,
+            cacheReadTokens: 2,
+            cacheWriteTokens: 1,
+            date: 1000,
+          },
+          {
+            inputTokens: 20,
+            outputTokens: 8,
+            cacheReadTokens: 4,
+            cacheWriteTokens: 2,
+            date: 2000,
+          },
+        ],
+      });
+    });
+  });
+
+  it("set-usages", () => {
+    assert.deepStrictEqual(getState().app.incrementalUsage, {});
+
+    actions.setUsages({
+      "gpt-4": [
         {
           inputTokens: 10,
           outputTokens: 5,
           cacheReadTokens: 2,
           cacheWriteTokens: 1,
-          model: "gpt-4",
           date: 1000,
         },
-        {
-          inputTokens: 20,
-          outputTokens: 8,
-          cacheReadTokens: 4,
-          cacheWriteTokens: 2,
-          model: "gpt-4",
-          date: 2000,
-        },
-      ]);
+      ],
     });
-  });
 
-  it("set-usages", () => {
-    assert.deepStrictEqual(getState().app.incrementalUsage, []);
-
-    actions.setUsages([
-      {
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        model: "gpt-4",
-        date: 1000,
-      },
-    ]);
-
-    assert.deepStrictEqual(getState().app.incrementalUsage, [
-      {
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        model: "gpt-4",
-        date: 1000,
-      },
-    ]);
+    assert.deepStrictEqual(getState().app.incrementalUsage, {
+      "gpt-4": [
+        {
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 2,
+          cacheWriteTokens: 1,
+          date: 1000,
+        },
+      ],
+    });
   });
 
   it("reset-loading-state-frame-idx", () => {

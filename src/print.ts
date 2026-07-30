@@ -227,10 +227,14 @@ export const IncrementalUsageSchema = z.object({
   outputTokens: z.number(),
   cacheReadTokens: z.number(),
   cacheWriteTokens: z.number(),
-  model: z.string(),
   date: z.number(),
 });
 export type IncrementalUsage = z.infer<typeof IncrementalUsageSchema>;
+
+const IncrementalUsageMapSchema = z.record(
+  z.string(),
+  z.array(IncrementalUsageSchema),
+);
 
 export interface TokenUsage {
   inputTokens: number;
@@ -280,11 +284,10 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     outputTokens: usage.outputTokens ?? 0,
     cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
     cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
-    model,
     date: now,
   };
 
-  syncNewIncrementalUsage(defaultedUsage);
+  syncNewIncrementalUsage(model, defaultedUsage);
 }
 
 export function syncInitialIncrementalUsages() {
@@ -299,21 +302,34 @@ export function syncInitialIncrementalUsages() {
   if (!fsDeps.existsSync(dir)) return;
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
-  if (!readResult.ok) return;
+  if (!readResult.ok) {
+    tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify({})));
+    return;
+  }
 
   const parseResult = tryCatch(() =>
-    z.array(IncrementalUsageSchema).parse(JSON.parse(readResult.value)),
+    IncrementalUsageMapSchema.parse(JSON.parse(readResult.value)),
   );
-  if (!parseResult.ok) return;
+  if (!parseResult.ok) {
+    tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify({})));
+    return;
+  }
+  const map = parseResult.value;
 
-  const filtered = parseResult.value.filter(
-    (usage) => usage.date >= expiredTime,
-  );
+  const filtered: Record<string, IncrementalUsage[]> = {};
+  for (const [model, usages] of Object.entries(map)) {
+    const kept = usages.filter((usage) => usage.date >= expiredTime);
+    if (kept.length > 0) filtered[model] = kept;
+  }
+
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
   actions.setUsages(filtered);
 }
 
-export function syncNewIncrementalUsage(usage: IncrementalUsage) {
+export function syncNewIncrementalUsage(
+  model: string,
+  usage: IncrementalUsage,
+) {
   const path = getUsageLogPath();
   const dir = dirname(path);
   if (!fsDeps.existsSync(dir)) {
@@ -321,21 +337,19 @@ export function syncNewIncrementalUsage(usage: IncrementalUsage) {
   }
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
-
   const currUsage = (() => {
-    if (!readResult.ok) return [];
-
+    if (!readResult.ok) return {};
     const parseResult = tryCatch(() =>
-      z.array(IncrementalUsageSchema).parse(JSON.parse(readResult.value)),
+      IncrementalUsageMapSchema.parse(JSON.parse(readResult.value)),
     );
-    if (!parseResult.ok) return [];
-    return parseResult.value;
+    if (parseResult.ok) return parseResult.value;
+    return {};
   })();
 
-  currUsage.push(usage);
+  (currUsage[model] ??= []).push(usage);
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(currUsage)));
 
-  actions.appendToUsages(usage);
+  actions.appendToUsages(model, usage);
 }
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
@@ -363,27 +377,25 @@ export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
 }
 
 export function getUsageTokensForModel(model: string): TokenUsage {
-  return getState()
-    .app.incrementalUsage.filter((usage) => usage.model === model)
-    .reduce<{
-      inputTokens: number;
-      outputTokens: number;
-      cacheReadTokens: number;
-      cacheWriteTokens: number;
-    }>(
-      (accum, curr) => ({
-        inputTokens: accum.inputTokens + curr.inputTokens,
-        outputTokens: accum.outputTokens + curr.outputTokens,
-        cacheReadTokens: accum.cacheReadTokens + curr.cacheReadTokens,
-        cacheWriteTokens: accum.cacheWriteTokens + curr.cacheWriteTokens,
-      }),
-      {
-        inputTokens: 0,
-        outputTokens: 0,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      },
-    );
+  return (getState().app.incrementalUsage[model] ?? []).reduce<{
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+  }>(
+    (accum, curr) => ({
+      inputTokens: accum.inputTokens + curr.inputTokens,
+      outputTokens: accum.outputTokens + curr.outputTokens,
+      cacheReadTokens: accum.cacheReadTokens + curr.cacheReadTokens,
+      cacheWriteTokens: accum.cacheWriteTokens + curr.cacheWriteTokens,
+    }),
+    {
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    },
+  );
 }
 
 export function getPrettySessionUsage() {

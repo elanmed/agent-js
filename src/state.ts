@@ -38,7 +38,7 @@ interface State {
     loadingStateFrameIdx: number;
     apiStartTime: number | null;
     apiEndTime: number | null;
-    incrementalUsage: IncrementalUsage[];
+    incrementalUsage: Record<string, IncrementalUsage[]>;
     sessionStartDate: number;
   };
   config: {
@@ -82,7 +82,7 @@ const initialState: State = {
     loadingStateFrameIdx: 0,
     apiStartTime: null,
     apiEndTime: null,
-    incrementalUsage: [],
+    incrementalUsage: {},
     sessionStartDate: 0,
   },
   config: {
@@ -196,9 +196,13 @@ export const actions = {
   },
 
   resetIncrementalUsage() {
-    const before = state.app.incrementalUsage.length;
-    state.app.incrementalUsage = [];
-    logStateChange("reset-incremental-usage", String(before), "0");
+    const before = state.app.incrementalUsage;
+    state.app.incrementalUsage = {};
+    logStateChange(
+      "reset-incremental-usage",
+      String(Object.keys(before).length),
+      "0",
+    );
   },
 
   resetMessageParams() {
@@ -321,25 +325,25 @@ export const actions = {
     );
   },
 
-  appendToUsages(usage: IncrementalUsage) {
+  appendToUsages(model: string, usage: IncrementalUsage) {
     const before = state.app.incrementalUsage;
-    state.app.incrementalUsage.push(usage);
+    (state.app.incrementalUsage[model] ??= []).push(usage);
 
     logStateChange(
       "append-to-usages",
-      String(before.length),
-      String(state.app.incrementalUsage.length),
+      String(Object.keys(before).length),
+      String(Object.keys(state.app.incrementalUsage).length),
     );
   },
 
-  setUsages(usages: IncrementalUsage[]) {
+  setUsages(usages: Record<string, IncrementalUsage[]>) {
     const before = state.app.incrementalUsage;
     state.app.incrementalUsage = usages;
 
     logStateChange(
       "set-usages",
-      String(before.length),
-      String(state.app.incrementalUsage.length),
+      String(Object.keys(before).length),
+      String(Object.keys(state.app.incrementalUsage).length),
     );
   },
 

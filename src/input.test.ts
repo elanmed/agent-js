@@ -376,7 +376,7 @@ from editor
         content: "hello",
       });
       await clearCommand();
-      assert.deepStrictEqual(getState().app.incrementalUsage, []);
+      assert.deepStrictEqual(getState().app.incrementalUsage, {});
       assert.deepStrictEqual(getState().app.messageParams, []);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),

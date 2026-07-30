@@ -752,7 +752,7 @@ describe("config", () => {
     assert.equal(getState().app.skillsStr, "");
   });
 
-  it("sets incrementalUsage to an empty array", async () => {
+  it("sets incrementalUsage to an empty object", async () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -761,7 +761,7 @@ describe("config", () => {
     );
 
     await initState();
-    assert.deepStrictEqual(getState().app.incrementalUsage, []);
+    assert.deepStrictEqual(getState().app.incrementalUsage, {});
   });
 
   it("loads recent incremental usages from the usage log", async () => {
@@ -771,7 +771,6 @@ describe("config", () => {
       outputTokens: 5,
       cacheReadTokens: 1,
       cacheWriteTokens: 0,
-      model: "gpt-4",
       date: 500_000,
     };
     const expired = {
@@ -779,11 +778,13 @@ describe("config", () => {
       outputTokens: 2,
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
-      model: "gpt-4",
       date: 300_000,
     };
     testFs._dirs.add(dirname(getUsageLogPath()));
-    testFs._files.set(getUsageLogPath(), JSON.stringify([recent, expired]));
+    testFs._files.set(
+      getUsageLogPath(),
+      JSON.stringify({ "gpt-4": [recent, expired] }),
+    );
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -795,7 +796,9 @@ describe("config", () => {
 
     await initState();
 
-    assert.deepStrictEqual(getState().app.incrementalUsage, [recent]);
+    assert.deepStrictEqual(getState().app.incrementalUsage, {
+      "gpt-4": [recent],
+    });
   });
 
   it("sets sessionStartDate", async () => {
