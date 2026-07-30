@@ -91,13 +91,15 @@ response text
         ),
       );
       await resolveApiCall("hello");
-      const usages = getState().app.messageUsages;
+      const usages = getState().app.incrementalUsage;
       assert.deepStrictEqual(usages, [
         {
           inputTokens: 42,
           outputTokens: 7,
           cacheReadTokens: 3,
           cacheWriteTokens: 1,
+          model: "claude-sonnet-4-20250514",
+          date: 0,
         },
       ]);
       const params = getState().app.messageParams;

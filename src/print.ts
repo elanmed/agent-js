@@ -9,7 +9,7 @@ import {
   createQueue,
   type Result,
 } from "./utils.ts";
-import { type ModelPricing } from "./config.ts";
+
 import { processDeps } from "./deps.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert";
@@ -81,7 +81,7 @@ export async function fencePrint(text: string, opts: FencePrintOpts = {}) {
 
   const sessionUsage = (() => {
     if (showSessionUsage) {
-      return ` (${calculateSessionUsage()})`;
+      return ` (${printSessionUsage()})`;
     }
 
     return "";
@@ -239,54 +239,6 @@ export interface TokenUsage {
 
 const DOLLARS_PER_MILLION = 1_000_000;
 
-export function calculateSessionUsage(): string {
-  const model = getState().config.model;
-  const usages = getState().app.messageUsages;
-  const pricingPerModel = getState().config.pricingPerModel;
-
-  const totalUsage = usages.reduce<{
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens: number;
-    cacheWriteTokens: number;
-  }>(
-    (accum, curr) => ({
-      inputTokens: accum.inputTokens + curr.inputTokens,
-      outputTokens: accum.outputTokens + curr.outputTokens,
-      cacheReadTokens: accum.cacheReadTokens + curr.cacheReadTokens,
-      cacheWriteTokens: accum.cacheWriteTokens + curr.cacheWriteTokens,
-    }),
-    {
-      inputTokens: 0,
-      outputTokens: 0,
-      cacheReadTokens: 0,
-      cacheWriteTokens: 0,
-    },
-  );
-
-  const pricing: ModelPricing | undefined = pricingPerModel[model];
-  if (!pricing) {
-    return `${totalUsage.inputTokens.toLocaleString()} in, ${totalUsage.outputTokens.toLocaleString()} out`;
-  }
-
-  const inputPerToken = pricing.inputPerToken;
-  const outputPerToken = pricing.outputPerToken;
-  const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
-  const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
-
-  const inputCost =
-    (totalUsage.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
-  const outputCost =
-    (totalUsage.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
-  const cacheReadCost =
-    (totalUsage.cacheReadTokens * cacheReadPerToken) / DOLLARS_PER_MILLION;
-  const cacheWriteCost =
-    (totalUsage.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
-
-  const cost = inputCost + outputCost + cacheReadCost + cacheWriteCost;
-  return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
-}
-
 export function calculateApiDuration() {
   const startTime = getState().app.apiStartTime;
   assert(startTime !== null);
@@ -333,7 +285,7 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     .app.incrementalUsage.filter((entry) => entry.model === model)
     .at(-1);
   if (!lastUsage) {
-    actions.appendIncrementalUsage(defaultedUsage);
+    actions.appendUsage(defaultedUsage);
     return;
   }
 
@@ -347,31 +299,63 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     model,
   };
 
-  actions.appendIncrementalUsage(incrementalUsage);
+  actions.appendUsage(incrementalUsage);
 }
 
-export function calculateUsage() {
-  // TODO: filter out older than a given time period
-  return getState().app.incrementalUsage.reduce((accum, curr) => {
-    const { model } = curr;
-    const pricing = getState().config.pricingPerModel[model];
-    if (pricing === undefined) return accum;
+export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
+  const pricing = getState().config.pricingPerModel[model];
+  if (!pricing) return 0;
 
-    const inputPerToken = pricing.inputPerToken;
-    const outputPerToken = pricing.outputPerToken;
-    const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
-    const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
+  const inputPerToken = pricing.inputPerToken;
+  const outputPerToken = pricing.outputPerToken;
+  const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
+  const cacheWritePerToken = pricing.cacheWritePerToken ?? outputPerToken;
 
-    const inputCost = (curr.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
-    const outputCost =
-      (curr.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
-    const cacheReadCost =
-      (curr.cacheReadTokens * cacheReadPerToken) / DOLLARS_PER_MILLION;
-    const cacheWriteCost =
-      (curr.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
+  const inputCost =
+    (usageTokens.inputTokens * inputPerToken) / DOLLARS_PER_MILLION;
+  const outputCost =
+    (usageTokens.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
+  const cacheReadCost =
+    (usageTokens.cacheReadTokens * cacheReadPerToken) / DOLLARS_PER_MILLION;
+  const cacheWriteCost =
+    (usageTokens.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
 
-    return accum + inputCost + outputCost + cacheReadCost + cacheWriteCost;
-  }, 0);
+  return inputCost + outputCost + cacheReadCost + cacheWriteCost;
+}
+
+export function getUsageTokensForModel(model: string): TokenUsage {
+  return getState()
+    .app.incrementalUsage.filter((usage) => usage.model === model)
+    .reduce<{
+      inputTokens: number;
+      outputTokens: number;
+      cacheReadTokens: number;
+      cacheWriteTokens: number;
+    }>(
+      (accum, curr) => ({
+        inputTokens: accum.inputTokens + curr.inputTokens,
+        outputTokens: accum.outputTokens + curr.outputTokens,
+        cacheReadTokens: accum.cacheReadTokens + curr.cacheReadTokens,
+        cacheWriteTokens: accum.cacheWriteTokens + curr.cacheWriteTokens,
+      }),
+      {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      },
+    );
+}
+
+export function printSessionUsage() {
+  const { model } = getState().config;
+  const pricing = getState().config.pricingPerModel[model];
+  const tokenUsage = getUsageTokensForModel(model);
+  if (!pricing) {
+    return `${tokenUsage.inputTokens.toLocaleString()} in, ${tokenUsage.outputTokens.toLocaleString()} out`;
+  }
+  const cost = getUsageMoneyForModel(tokenUsage, model);
+  return `$${cost.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
 
 // export function syncIncrementalUsage(usage: TokenUsage) {

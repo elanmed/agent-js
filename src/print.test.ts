@@ -2,8 +2,7 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import {
   formatMarkdown,
-  calculateSessionUsage,
-  calculateUsage,
+  printSessionUsage,
   calculateApiDuration,
   executeBat,
   startLoadingState,
@@ -193,7 +192,7 @@ describe("print", () => {
     });
   });
 
-  describe("calculateSessionUsage", () => {
+  describe("printSessionUsage", () => {
     beforeEach(() => {
       actions.resetState();
       actions.setPricingPerModel({
@@ -220,7 +219,7 @@ describe("print", () => {
 
     it("known model with no usages returns $0.0000", () => {
       actions.setModel("claude-haiku-4-5");
-      const result = calculateSessionUsage();
+      const result = printSessionUsage();
       assert.equal(result, "$0.0000");
     });
 
@@ -228,26 +227,30 @@ describe("print", () => {
       // haiku: input=$1/M, 2_000_000 prompt = $2.0000
       actions.setModel("claude-haiku-4-5");
 
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 2_000_000,
         outputTokens: 0,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$2.0000");
     });
 
     it("calculates completion token costs correctly", () => {
       // haiku: output=$5/M, 600_000 completion = $3.0000
       actions.setModel("claude-haiku-4-5");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 0,
         outputTokens: 600_000,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$3.0000");
     });
 
@@ -255,13 +258,15 @@ describe("print", () => {
       // haiku: cacheRead=$0.25/M
       // 1_000_000 cache read tokens = $0.25
       actions.setModel("claude-haiku-4-5");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 0,
         outputTokens: 0,
-        cacheReadTokens: 1_000_000,
-        cacheWriteTokens: 0,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 1_000_000,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$0.2500");
     });
 
@@ -269,13 +274,15 @@ describe("print", () => {
       // haiku: cacheWrite=$1.25/M
       // 1_000_000 cache write tokens = $1.25
       actions.setModel("claude-haiku-4-5");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 0,
         outputTokens: 0,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 1_000_000,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 1_000_000,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$1.2500");
     });
 
@@ -284,13 +291,15 @@ describe("print", () => {
       // 500_000 input + 200_000 output + 300_000 cacheRead + 100_000 cacheWrite
       // = $0.50 + $1.00 + $0.075 + $0.125 = $1.70
       actions.setModel("claude-haiku-4-5");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 500_000,
         outputTokens: 200_000,
-        cacheReadTokens: 300_000,
-        cacheWriteTokens: 100_000,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 300_000,
+          cacheWriteTokens: 100_000,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$1.7000");
     });
 
@@ -298,23 +307,28 @@ describe("print", () => {
       // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
       // usage1: 200_000 input + 100_000 output + 400_000 cacheRead + 200_000 cacheWrite
       //   = $0.20 + $0.50 + $0.10 + $0.25 = $1.05
-      // usage2: 300_000 input + 100_000 output + 100_000 cacheRead + 400_000 cacheWrite
+      // usage2 cumulative: 500_000 input + 200_000 output + 500_000 cacheRead + 600_000 cacheWrite
+      // delta: 300_000 input + 100_000 output + 100_000 cacheRead + 400_000 cacheWrite
       //   = $0.30 + $0.50 + $0.025 + $0.50 = $1.325
       // total = $2.375
       actions.setModel("claude-haiku-4-5");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 200_000,
         outputTokens: 100_000,
-        cacheReadTokens: 400_000,
-        cacheWriteTokens: 200_000,
-      });
-      actions.appendToMessageUsages({
-        inputTokens: 300_000,
-        outputTokens: 100_000,
-        cacheReadTokens: 100_000,
-        cacheWriteTokens: 400_000,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 400_000,
+          cacheWriteTokens: 200_000,
+        },
+      } as LanguageModelUsage);
+      appendIncrementalUsage({
+        inputTokens: 500_000,
+        outputTokens: 200_000,
+        inputTokenDetails: {
+          cacheReadTokens: 500_000,
+          cacheWriteTokens: 600_000,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$2.3750");
     });
 
@@ -322,155 +336,169 @@ describe("print", () => {
       // opus: input=$5/M
       // 200_000_000 input tokens = (200_000_000 * 5) / 1_000_000 = $1,000.0000
       actions.setModel("claude-opus-4-6");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 200_000_000,
         outputTokens: 0,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$1,000.0000");
     });
 
     it("formats cost with commas for very large totals across multiple usages", () => {
       // opus: input=$5/M, output=$25/M
       // usage1: 300_000_000 input + 40_000_000 output = $1,500 + $1,000 = $2,500
-      // usage2: 100_000_000 input + 80_000_000 output = $500 + $2,000 = $2,500
+      // usage2 cumulative: 400_000_000 input + 120_000_000 output
+      // delta: 100_000_000 input + 80_000_000 output = $500 + $2,000 = $2,500
       // total = $5,000.0000
       actions.setModel("claude-opus-4-6");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 300_000_000,
         outputTokens: 40_000_000,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      actions.appendToMessageUsages({
-        inputTokens: 100_000_000,
-        outputTokens: 80_000_000,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      appendIncrementalUsage({
+        inputTokens: 400_000_000,
+        outputTokens: 120_000_000,
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "$5,000.0000");
     });
   });
 
-  describe("calculateSessionUsage no pricing configured", () => {
+  describe("printSessionUsage no pricing configured", () => {
     beforeEach(() => {
       actions.resetState();
     });
 
     it("returns token counts for no usages", () => {
       actions.setModel("unknown-model");
-      const result = calculateSessionUsage();
+      const result = printSessionUsage();
       assert.equal(result, "0 in, 0 out");
     });
 
     it("returns token counts for usages with no pricing configured", () => {
       actions.setModel("unknown-model");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 100,
         outputTokens: 50,
-        cacheReadTokens: 25,
-        cacheWriteTokens: 10,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 25,
+          cacheWriteTokens: 10,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "100 in, 50 out");
     });
 
     it("formats token counts with commas for numbers above 999", () => {
       actions.setModel("unknown-model");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 1_500,
         outputTokens: 2_500,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "1,500 in, 2,500 out");
     });
 
     it("formats token counts with commas for very large numbers", () => {
       actions.setModel("unknown-model");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 1_234_567,
         outputTokens: 9_876_543,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "1,234,567 in, 9,876,543 out");
     });
 
     it("accumulates token counts across multiple usages and formats with commas", () => {
       actions.setModel("unknown-model");
-      actions.appendToMessageUsages({
+      appendIncrementalUsage({
         inputTokens: 50_000,
         outputTokens: 10_000,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-      actions.appendToMessageUsages({
-        inputTokens: 75_000,
-        outputTokens: 15_000,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
-
-      describe("executeBat", () => {
-        beforeEach(() => {
-          mock.restoreAll();
-          actions.resetState();
-          actions.setModel("test-model");
-        });
-
-        it("formats markdown and outputs the content through bat when available", async () => {
-          let captured = "";
-          mock.method(processDeps.stdout, "write", (out: string) => {
-            captured += out;
-          });
-
-          await executeBat("# Hello\n");
-
-          assert.strictEqual(stripAnsi(captured), "# Hello\n\n");
-        });
-
-        it("falls back to plain text when bat is not available", async () => {
-          mockExec({ stdout: "", error: new Error("not found") });
-
-          let captured = "";
-          mock.method(processDeps.stdout, "write", (out: string) => {
-            captured += out;
-          });
-
-          await executeBat("test content\n");
-
-          assert.strictEqual(
-            stripAnsi(captured),
-            `\`bat\` is not available, falling back to plain text rendering
-test content
-
-`,
-          );
-        });
-
-        it("falls back to plain text when bat spawn fails", async () => {
-          mock.method(childProcess, "spawnSync", () => {
-            throw new Error("spawn failed");
-          });
-
-          let captured = "";
-          mock.method(processDeps.stdout, "write", (out: string) => {
-            captured += out;
-          });
-
-          await executeBat("test content\n");
-
-          assert.strictEqual(stripAnsi(captured), "test content\n\n");
-        });
-      });
-      const result = calculateSessionUsage();
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      appendIncrementalUsage({
+        inputTokens: 125_000,
+        outputTokens: 25_000,
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
+      const result = printSessionUsage();
       assert.equal(result, "125,000 in, 25,000 out");
+    });
+  });
+
+  describe("executeBat", () => {
+    beforeEach(() => {
+      mock.restoreAll();
+      actions.resetState();
+      actions.setModel("test-model");
+    });
+
+    it("formats markdown and outputs the content through bat when available", async () => {
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      await executeBat("# Hello\n");
+
+      assert.strictEqual(stripAnsi(captured), "# Hello\n\n");
+    });
+
+    it("falls back to plain text when bat is not available", async () => {
+      mockExec({ stdout: "", error: new Error("not found") });
+
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      await executeBat("test content\n");
+
+      assert.strictEqual(
+        stripAnsi(captured),
+        `\`bat\` is not available, falling back to plain text rendering\ntest content\n\n`,
+      );
+    });
+
+    it("falls back to plain text when bat spawn fails", async () => {
+      mock.method(childProcess, "spawnSync", () => {
+        throw new Error("spawn failed");
+      });
+
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      await executeBat("test content\n");
+
+      assert.strictEqual(stripAnsi(captured), "test content\n\n");
     });
   });
 
@@ -613,92 +641,6 @@ test content
           date: 1000,
         },
       ]);
-    });
-  });
-
-  describe("calculateUsage", () => {
-    beforeEach(() => {
-      actions.resetState();
-      actions.setModel("gpt-4");
-      actions.setPricingPerModel({
-        "gpt-4": {
-          inputPerToken: 1_000_000,
-          outputPerToken: 1_000_000,
-          cacheReadPerToken: 1_000_000,
-          cacheWritePerToken: 1_000_000,
-        },
-      });
-    });
-
-    it("returns 0 when there is no incremental usage", () => {
-      assert.strictEqual(calculateUsage(), 0);
-    });
-
-    it("calculates cost for a single usage entry", () => {
-      actions.appendIncrementalUsage({
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        model: "gpt-4",
-        date: 1000,
-      });
-
-      assert.strictEqual(calculateUsage(), 18);
-    });
-
-    it("sums costs across multiple usage entries", () => {
-      actions.appendIncrementalUsage({
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        model: "gpt-4",
-        date: 1000,
-      });
-      actions.appendIncrementalUsage({
-        inputTokens: 5,
-        outputTokens: 3,
-        cacheReadTokens: 1,
-        cacheWriteTokens: 0,
-        model: "gpt-4",
-        date: 2000,
-      });
-
-      assert.strictEqual(calculateUsage(), 27);
-    });
-
-    it("ignores entries for models without pricing", () => {
-      actions.appendIncrementalUsage({
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        model: "unknown-model",
-        date: 1000,
-      });
-
-      assert.strictEqual(calculateUsage(), 0);
-    });
-
-    it("falls back to input and output pricing when cache pricing is missing", () => {
-      actions.setPricingPerModel({
-        "gpt-4": {
-          inputPerToken: 1_000_000,
-          outputPerToken: 2_000_000,
-        },
-      });
-
-      actions.appendIncrementalUsage({
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        model: "gpt-4",
-        date: 1000,
-      });
-
-      assert.strictEqual(calculateUsage(), 24);
     });
   });
 });

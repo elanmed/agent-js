@@ -1,7 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { MISSING } from "./utils.ts";
-import type { TokenUsage } from "./print.ts";
 import { actions, getState } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 import { makeFakeRl } from "./test-helpers.ts";
@@ -23,6 +22,7 @@ describe("state", () => {
 
     assert.deepStrictEqual(getState().app.messageParams, []);
     assert.deepStrictEqual(getState().app.messageUsages, []);
+    assert.deepStrictEqual(getState().app.incrementalUsage, []);
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.loadingStateTimeout, null);
@@ -35,6 +35,7 @@ describe("state", () => {
   it("initial state", () => {
     assert.deepStrictEqual(getState().app.messageParams, []);
     assert.deepStrictEqual(getState().app.messageUsages, []);
+    assert.deepStrictEqual(getState().app.incrementalUsage, []);
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.apiStartTime, null);
@@ -65,25 +66,19 @@ describe("state", () => {
     });
   });
 
-  it("append-to-message-usages", () => {
-    assert.deepStrictEqual(getState().app.messageUsages, []);
-    const usage1: TokenUsage = {
+  it("reset-incremental-usage", () => {
+    assert.deepStrictEqual(getState().app.incrementalUsage, []);
+    actions.appendUsage({
       inputTokens: 10,
       outputTokens: 5,
       cacheReadTokens: 2,
       cacheWriteTokens: 1,
-    };
-    const usage2: TokenUsage = {
-      inputTokens: 20,
-      outputTokens: 8,
-      cacheReadTokens: 4,
-      cacheWriteTokens: 2,
-    };
-
-    actions.appendToMessageUsages(usage1);
-    actions.appendToMessageUsages(usage2);
-
-    assert.deepStrictEqual(getState().app.messageUsages, [usage1, usage2]);
+      model: "gpt-4",
+      date: 1000,
+    });
+    assert.equal(getState().app.incrementalUsage.length, 1);
+    actions.resetIncrementalUsage();
+    assert.deepStrictEqual(getState().app.incrementalUsage, []);
   });
 
   it("set-model", () => {
@@ -407,11 +402,11 @@ line3
     });
   });
 
-  describe("append-incremental-usage", () => {
+  describe("append-usage", () => {
     it("appends usage to incrementalUsage", () => {
       assert.deepStrictEqual(getState().app.incrementalUsage, []);
 
-      actions.appendIncrementalUsage({
+      actions.appendUsage({
         inputTokens: 10,
         outputTokens: 5,
         cacheReadTokens: 2,
@@ -433,7 +428,7 @@ line3
     });
 
     it("appends multiple usages in order", () => {
-      actions.appendIncrementalUsage({
+      actions.appendUsage({
         inputTokens: 10,
         outputTokens: 5,
         cacheReadTokens: 2,
@@ -441,7 +436,7 @@ line3
         model: "gpt-4",
         date: 1000,
       });
-      actions.appendIncrementalUsage({
+      actions.appendUsage({
         inputTokens: 20,
         outputTokens: 8,
         cacheReadTokens: 4,

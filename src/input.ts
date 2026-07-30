@@ -13,12 +13,7 @@ import {
   execPromise,
   isExisty,
 } from "./utils.ts";
-import {
-  print,
-  printNewline,
-  fencePrint,
-  calculateSessionUsage,
-} from "./print.ts";
+import { print, printNewline, fencePrint, printSessionUsage } from "./print.ts";
 import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
@@ -389,8 +384,8 @@ export async function resolveSlashCommand(rawInput: string) {
 }
 
 export async function clearCommand() {
-  await print.infoSubtle(`Context cleared (${calculateSessionUsage()})`);
-  actions.resetMessageUsages();
+  await print.infoSubtle(`Context cleared (${printSessionUsage()})`);
+  actions.resetIncrementalUsage();
   actions.resetMessageParams();
 }
 

@@ -122,16 +122,6 @@ export const actions = {
     );
   },
 
-  appendToMessageUsages(message: TokenUsage) {
-    const before = state.app.messageUsages;
-    state.app.messageUsages.push(message);
-    logStateChange(
-      "append-to-message-usages",
-      String(before.length),
-      String(state.app.messageUsages.length),
-    );
-  },
-
   setModel(model: string) {
     const before = state.config.model;
     state.config.model = model;
@@ -200,6 +190,12 @@ export const actions = {
     const before = state.app.messageUsages.length;
     state.app.messageUsages = [];
     logStateChange("reset-message-usages", String(before), "0");
+  },
+
+  resetIncrementalUsage() {
+    const before = state.app.incrementalUsage.length;
+    state.app.incrementalUsage = [];
+    logStateChange("reset-incremental-usage", String(before), "0");
   },
 
   resetMessageParams() {
@@ -322,12 +318,12 @@ export const actions = {
     );
   },
 
-  appendIncrementalUsage(usage: IncrementalUsage) {
+  appendUsage(usage: IncrementalUsage) {
     const before = state.app.incrementalUsage;
     state.app.incrementalUsage.push(usage);
 
     logStateChange(
-      "append-incremental-usage-for-model",
+      "append-usage",
       String(before.length),
       String(state.app.incrementalUsage.length),
     );

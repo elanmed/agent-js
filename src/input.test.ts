@@ -16,6 +16,7 @@ import {
   printKeymapsCommand,
   spawnAndReadEditorContent,
 } from "./input.ts";
+import { appendIncrementalUsage } from "./print.ts";
 import {
   testFs,
   testProcessEnv,
@@ -27,6 +28,7 @@ import {
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
+import type { LanguageModelUsage } from "ai";
 
 describe("input", () => {
   beforeEach(() => {
@@ -360,19 +362,21 @@ from editor
       actions.resetStdout();
     });
 
-    it("resets message usages and params", async () => {
-      actions.appendToMessageUsages({
+    it("resets incremental usage and params", async () => {
+      appendIncrementalUsage({
         inputTokens: 10,
         outputTokens: 5,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-      });
+        inputTokenDetails: {
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      } as LanguageModelUsage);
       actions.appendToMessageParams({
         role: "user",
         content: "hello",
       });
       await clearCommand();
-      assert.deepStrictEqual(getState().app.messageUsages, []);
+      assert.deepStrictEqual(getState().app.incrementalUsage, []);
       assert.deepStrictEqual(getState().app.messageParams, []);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
