@@ -30,6 +30,11 @@ describe("utils", () => {
       assert.equal(getMessageFromError(42), "42");
       assert.equal(getMessageFromError(null), "null");
     });
+
+    it("returns a string for values JSON.stringify cannot serialize", () => {
+      assert.equal(getMessageFromError(undefined), "undefined");
+      assert.equal(getMessageFromError(Symbol("test")), "Symbol(test)");
+    });
   });
 
   describe("isAbortError", () => {

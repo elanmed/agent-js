@@ -16,7 +16,8 @@ export function getMessageFromError(error: unknown) {
   if (error instanceof Error) {
     return error.message;
   }
-  return JSON.stringify(error);
+  const json = JSON.stringify(error) as string | undefined;
+  return json ?? String(error);
 }
 
 export function tryCatch<T>(cb: () => T): Result<T> {
