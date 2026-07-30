@@ -321,6 +321,7 @@ const webFetchToolSchema = z.object({
 });
 export type WebFetchTool = z.infer<typeof webFetchToolSchema>;
 
+// TODO: remove try-catch blocks, check for abort errors
 export async function executeWebFetchHtmlTool(
   { href }: WebFetchTool,
   signal?: AbortSignal,
