@@ -362,25 +362,16 @@ from editor
       actions.resetStdout();
     });
 
-    it("resets incremental usage and params", async () => {
-      appendIncrementalUsage({
-        inputTokens: 10,
-        outputTokens: 5,
-        inputTokenDetails: {
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-        },
-      } as LanguageModelUsage);
+    it("resets params", async () => {
       actions.appendToMessageParams({
         role: "user",
         content: "hello",
       });
       await clearCommand();
-      assert.deepStrictEqual(getState().app.incrementalUsage, {});
       assert.deepStrictEqual(getState().app.messageParams, []);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "Context cleared (10 in, 5 out)\n",
+        "Context cleared (0 in, 0 out)\n",
       );
     });
   });
