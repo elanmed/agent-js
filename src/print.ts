@@ -292,7 +292,7 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
 
 export function syncInitialIncrementalUsages() {
   const { usageLimitMs } = getState().config;
-  if (usageLimitMs === null) return;
+  if (usageLimitMs === undefined) return;
 
   const now = Date.now();
   const expiredTime = now - usageLimitMs;
@@ -415,6 +415,6 @@ export function getPrettySessionUsage() {
   const cost = getUsageMoneyForModel(tokenUsage, model);
   const { usageLimitDollar } = getState().config;
 
-  if (usageLimitDollar === null) return `$${getPrettyMoney(cost)}`;
+  if (usageLimitDollar === undefined) return `$${getPrettyMoney(cost)}`;
   return `$${getPrettyMoney(cost)} of $${String(usageLimitDollar)}`;
 }

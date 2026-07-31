@@ -23,20 +23,20 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Config Options
 
-| Option                      | Type                                   | Description                                                |
-| --------------------------- | -------------------------------------- | ---------------------------------------------------------- |
-| `model`                     | `string`                               | Model name (required)                                      |
-| `provider`                  | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)                |
-| `baseURL`                   | `string`                               | API base URL (required for `openai-compatible`)            |
-| `pricingPerModel`           | `object`                               | Token pricing per model per million                        |
-| `keymaps`                   | `object`                               | Custom keybindings (see below)                             |
-| `customSlashCommandDirs`    | `string[]`                             | Additional directories for custom slash commands           |
-| `customSkillDirs`           | `string[]`                             | Additional directories for skills                          |
-| `loadingStateFrames`        | `string[]`                             | Custom spinner frames (default: `["\|", "/", "-", "\\"]`)  |
-| `loadingStateFrameDuration` | `number`                               | Spinner frame interval in ms (default: `80`)               |
-| `promptPrefix`              | `string`                               | Prompt prefix string (default: `"> "`)                     |
-| `usageLimitMs`              | `number \| null`                       | Time window in ms for tracking usage (default: `null`)     |
-| `usageLimitDollar`          | `number \| null`                       | Maximum dollar spend in the usage window (default: `null`) |
+| Option                      | Type                                   | Description                                                     |
+| --------------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| `model`                     | `string`                               | Model name (required)                                           |
+| `provider`                  | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)                     |
+| `baseURL`                   | `string`                               | API base URL (required for `openai-compatible`)                 |
+| `pricingPerModel`           | `object`                               | Token pricing per model per million                             |
+| `keymaps`                   | `object`                               | Custom keybindings (see below)                                  |
+| `customSlashCommandDirs`    | `string[]`                             | Additional directories for custom slash commands                |
+| `customSkillDirs`           | `string[]`                             | Additional directories for skills                               |
+| `loadingStateFrames`        | `string[]`                             | Custom spinner frames (default: `["\|", "/", "-", "\\"]`)       |
+| `loadingStateFrameDuration` | `number`                               | Spinner frame interval in ms (default: `80`)                    |
+| `promptPrefix`              | `string`                               | Prompt prefix string (default: `"> "`)                          |
+| `usageLimitMs`              | `number \| undefined`                  | Time window in ms for tracking usage (default: `undefined`)     |
+| `usageLimitDollar`          | `number \| undefined`                  | Maximum dollar spend in the usage window (default: `undefined`) |
 
 ### Usage Limits
 

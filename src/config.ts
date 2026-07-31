@@ -66,8 +66,8 @@ const ConfigSchema = z.object({
       { message: "loadingStateFrames must be at least length 2" },
     ),
   promptPrefix: z.string().optional(),
-  usageLimitMs: z.number().nullable().optional(),
-  usageLimitDollar: z.number().nullable().optional(),
+  usageLimitMs: z.number().optional(),
+  usageLimitDollar: z.number().optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -96,8 +96,8 @@ interface DefaultConfig {
   loadingStateFrames: string[];
   loadingStateFrameDuration: number;
   promptPrefix: string;
-  usageLimitMs: null;
-  usageLimitDollar: null;
+  usageLimitMs: undefined;
+  usageLimitDollar: undefined;
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -127,8 +127,8 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   loadingStateFrames: ["|", "/", "-", "\\"],
   loadingStateFrameDuration: 80,
   promptPrefix: "> ",
-  usageLimitMs: null,
-  usageLimitDollar: null,
+  usageLimitMs: undefined,
+  usageLimitDollar: undefined,
 };
 
 export async function initState() {
@@ -240,14 +240,10 @@ export async function initState() {
   );
 
   actions.setUsageLimitMs(
-    localConfig.usageLimitMs ??
-      globalConfig.usageLimitMs ??
-      DEFAULT_CONFIG.usageLimitMs,
+    localConfig.usageLimitMs ?? globalConfig.usageLimitMs,
   );
   actions.setUsageLimitDollar(
-    localConfig.usageLimitDollar ??
-      globalConfig.usageLimitDollar ??
-      DEFAULT_CONFIG.usageLimitDollar,
+    localConfig.usageLimitDollar ?? globalConfig.usageLimitDollar,
   );
 
   syncInitialIncrementalUsages();

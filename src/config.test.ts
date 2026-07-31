@@ -281,7 +281,7 @@ describe("config", () => {
       await initState();
 
       assert.strictEqual(getState().config.usageLimitMs, 1_800_000);
-      assert.strictEqual(getState().config.usageLimitDollar, null);
+      assert.strictEqual(getState().config.usageLimitDollar, undefined);
     });
 
     it("falls back to global usageLimitMs when local omits it", async () => {
@@ -323,7 +323,7 @@ describe("config", () => {
       await initState();
 
       assert.strictEqual(getState().config.usageLimitDollar, 5);
-      assert.strictEqual(getState().config.usageLimitMs, null);
+      assert.strictEqual(getState().config.usageLimitMs, undefined);
     });
 
     it("falls back to global usageLimitDollar when local omits it", async () => {
@@ -586,8 +586,8 @@ describe("config", () => {
 
         await initState();
 
-        assert.strictEqual(getState().config.usageLimitMs, null);
-        assert.strictEqual(getState().config.usageLimitDollar, null);
+        assert.strictEqual(getState().config.usageLimitMs, undefined);
+        assert.strictEqual(getState().config.usageLimitDollar, undefined);
       });
 
       it("uses its customSkillDirs over the default config", async () => {

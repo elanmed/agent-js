@@ -707,23 +707,36 @@ describe("print", () => {
       assert.deepStrictEqual(getState().app.incrementalUsage, {
         "gpt-4": [usage],
       });
-      assert.deepStrictEqual(
-        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
-        { "gpt-4": [usage] },
+      assert.strictEqual(
+        testFs._files.get(getUsageLogPath()),
+        `{
+  "gpt-4": [
+    {
+      "inputTokens": 10,
+      "outputTokens": 5,
+      "cacheReadTokens": 1,
+      "cacheWriteTokens": 0,
+      "date": 1000
+    }
+  ]
+}`,
       );
     });
 
     it("appends to an existing usage log", () => {
-      const existing = {
-        inputTokens: 5,
-        outputTokens: 2,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-        date: 500,
-      };
       testFs._files.set(
         getUsageLogPath(),
-        JSON.stringify({ "gpt-4": [existing] }),
+        `{
+  "gpt-4": [
+    {
+      "inputTokens": 5,
+      "outputTokens": 2,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0,
+      "date": 500
+    }
+  ]
+}`,
       );
       const usage = {
         inputTokens: 10,
@@ -738,9 +751,26 @@ describe("print", () => {
       assert.deepStrictEqual(getState().app.incrementalUsage, {
         "gpt-4": [usage],
       });
-      assert.deepStrictEqual(
-        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
-        { "gpt-4": [existing, usage] },
+      assert.strictEqual(
+        testFs._files.get(getUsageLogPath()),
+        `{
+  "gpt-4": [
+    {
+      "inputTokens": 5,
+      "outputTokens": 2,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0,
+      "date": 500
+    },
+    {
+      "inputTokens": 10,
+      "outputTokens": 5,
+      "cacheReadTokens": 1,
+      "cacheWriteTokens": 0,
+      "date": 1000
+    }
+  ]
+}`,
       );
     });
 
@@ -759,9 +789,19 @@ describe("print", () => {
       assert.deepStrictEqual(getState().app.incrementalUsage, {
         "gpt-4": [usage],
       });
-      assert.deepStrictEqual(
-        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
-        { "gpt-4": [usage] },
+      assert.strictEqual(
+        testFs._files.get(getUsageLogPath()),
+        `{
+  "gpt-4": [
+    {
+      "inputTokens": 10,
+      "outputTokens": 5,
+      "cacheReadTokens": 1,
+      "cacheWriteTokens": 0,
+      "date": 1000
+    }
+  ]
+}`,
       );
     });
 
@@ -791,8 +831,8 @@ describe("print", () => {
       actions.resetState();
     });
 
-    it("does nothing when usageLimitMs is null", () => {
-      actions.setUsageLimitMs(null);
+    it("does nothing when usageLimitMs is undefined", () => {
+      actions.setUsageLimitMs(undefined);
 
       syncInitialIncrementalUsages();
 
@@ -816,17 +856,27 @@ describe("print", () => {
         cacheWriteTokens: 0,
         date: 500_000,
       };
-      const expired = {
-        inputTokens: 5,
-        outputTokens: 2,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-        date: 300_000,
-      };
       testFs._dirs.add(dirname(getUsageLogPath()));
       testFs._files.set(
         getUsageLogPath(),
-        JSON.stringify({ "gpt-4": [recent, expired] }),
+        `{
+  "gpt-4": [
+    {
+      "inputTokens": 10,
+      "outputTokens": 5,
+      "cacheReadTokens": 1,
+      "cacheWriteTokens": 0,
+      "date": 500000
+    },
+    {
+      "inputTokens": 5,
+      "outputTokens": 2,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0,
+      "date": 300000
+    }
+  ]
+}`,
       );
       mock.method(Date, "now", () => 4_000_000);
 
@@ -835,9 +885,19 @@ describe("print", () => {
       assert.deepStrictEqual(getState().app.incrementalUsage, {
         "gpt-4": [recent],
       });
-      assert.deepStrictEqual(
-        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
-        { "gpt-4": [recent] },
+      assert.strictEqual(
+        testFs._files.get(getUsageLogPath()),
+        `{
+  "gpt-4": [
+    {
+      "inputTokens": 10,
+      "outputTokens": 5,
+      "cacheReadTokens": 1,
+      "cacheWriteTokens": 0,
+      "date": 500000
+    }
+  ]
+}`,
       );
     });
 
@@ -849,10 +909,7 @@ describe("print", () => {
       syncInitialIncrementalUsages();
 
       assert.deepStrictEqual(getState().app.incrementalUsage, {});
-      assert.deepStrictEqual(
-        JSON.parse(testFs._files.get(getUsageLogPath()) ?? ""),
-        {},
-      );
+      assert.strictEqual(testFs._files.get(getUsageLogPath()), `{}`);
     });
   });
 });

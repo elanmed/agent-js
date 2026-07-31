@@ -53,8 +53,8 @@ interface State {
     loadingStateFrames: string[];
     loadingStateFrameDuration: number;
     promptPrefix: string;
-    usageLimitMs: number | null;
-    usageLimitDollar: number | null;
+    usageLimitMs: number | undefined;
+    usageLimitDollar: number | undefined;
   };
   abortControllers: {
     question: AbortController | null;
@@ -436,7 +436,7 @@ export const actions = {
     logStateChange("set-prompt-prefix", before, promptPrefix);
   },
 
-  setUsageLimitMs(usageLimitMs: number | null) {
+  setUsageLimitMs(usageLimitMs: number | undefined) {
     const before = state.config.usageLimitMs;
     state.config.usageLimitMs = usageLimitMs;
     logStateChange(
@@ -446,7 +446,7 @@ export const actions = {
     );
   },
 
-  setUsageLimitDollar(usageLimitDollar: number | null) {
+  setUsageLimitDollar(usageLimitDollar: number | undefined) {
     const before = state.config.usageLimitDollar;
     state.config.usageLimitDollar = usageLimitDollar;
     logStateChange(

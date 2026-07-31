@@ -633,10 +633,22 @@ Available commands:
         stripAnsi(getState().app.stdout),
         `
 Keymaps:
-- edit: {"name":"g","ctrl":true}
-- history: {"name":"o","ctrl":true}
-- paste: {"name":"v","ctrl":true}
-- clear: {"name":"x","ctrl":true}
+- edit: {
+  "name": "g",
+  "ctrl": true
+}
+- history: {
+  "name": "o",
+  "ctrl": true
+}
+- paste: {
+  "name": "v",
+  "ctrl": true
+}
+- clear: {
+  "name": "x",
+  "ctrl": true
+}
 `,
       );
     });
@@ -651,10 +663,24 @@ Keymaps:
         stripAnsi(getState().app.stdout),
         `
 Keymaps:
-- edit: {"name":"e","ctrl":true,"meta":true}
-- history: {"name":"h","ctrl":true}
-- paste: {"name":"p","ctrl":true,"shift":true}
-- clear: {"name":"k","ctrl":true}
+- edit: {
+  "name": "e",
+  "ctrl": true,
+  "meta": true
+}
+- history: {
+  "name": "h",
+  "ctrl": true
+}
+- paste: {
+  "name": "p",
+  "ctrl": true,
+  "shift": true
+}
+- clear: {
+  "name": "k",
+  "ctrl": true
+}
 `,
       );
     });
@@ -952,10 +978,22 @@ Available commands:
         stripAnsi(getState().app.stdout),
         `
 Keymaps:
-- edit: {"name":"g","ctrl":true}
-- history: {"name":"o","ctrl":true}
-- paste: {"name":"v","ctrl":true}
-- clear: {"name":"x","ctrl":true}
+- edit: {
+  "name": "g",
+  "ctrl": true
+}
+- history: {
+  "name": "o",
+  "ctrl": true
+}
+- paste: {
+  "name": "v",
+  "ctrl": true
+}
+- clear: {
+  "name": "x",
+  "ctrl": true
+}
 `,
       );
     });
