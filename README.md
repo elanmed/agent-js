@@ -9,7 +9,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Minimal**: 2,800 lines of source code, 4,600 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
-- **Tools**: 7 tools to execute bash, fetch from the web, and edit files
+- **Tools**: 8 tools to execute bash, fetch from the web, and edit files
   - A `git diff` with `delta` is output whenever a tool changes a file
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
 - **AGENTS.md support**: The root file is included in context, nested files are internally represented as skills
