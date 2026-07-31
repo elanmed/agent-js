@@ -831,8 +831,8 @@ describe("print", () => {
       actions.resetState();
     });
 
-    it("does nothing when usageLimitMs is undefined", () => {
-      actions.setUsageLimitMs(undefined);
+    it("does nothing when usageLimitDuration is undefined", () => {
+      actions.setUsageLimitDuration(undefined);
 
       syncInitialIncrementalUsages();
 
@@ -840,69 +840,87 @@ describe("print", () => {
     });
 
     it("does nothing when the usage log directory does not exist", () => {
-      actions.setUsageLimitMs(3_600_000);
+      actions.setUsageLimitDuration("60m");
 
       syncInitialIncrementalUsages();
 
       assert.deepStrictEqual(getState().app.incrementalUsage, {});
     });
 
-    it("loads recent usages and filters out expired ones", () => {
-      actions.setUsageLimitMs(3_600_000);
-      const recent = {
+    it("filters usages according to each duration suffix", () => {
+      const now = 1_000_000_000;
+      const cases = [
+        ["100s", 100_000],
+        ["10m", 600_000],
+        ["2h", 7_200_000],
+        ["3d", 259_200_000],
+      ] as const;
+
+      for (const [duration, windowMs] of cases) {
+        actions.resetState();
+        actions.setUsageLimitDuration(duration);
+        const recent = {
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 1,
+          cacheWriteTokens: 0,
+          date: now - windowMs + 1,
+        };
+        const expired = {
+          inputTokens: 5,
+          outputTokens: 2,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          date: now - windowMs - 1,
+        };
+        testFs._dirs.add(dirname(getUsageLogPath()));
+        testFs._files.set(
+          getUsageLogPath(),
+          JSON.stringify({ "gpt-4": [recent, expired] }),
+        );
+        mock.method(Date, "now", () => now);
+
+        syncInitialIncrementalUsages();
+
+        assert.deepStrictEqual(getState().app.incrementalUsage, {
+          "gpt-4": [recent],
+        });
+        assert.strictEqual(
+          testFs._files.get(getUsageLogPath()),
+          JSON.stringify({ "gpt-4": [recent] }),
+        );
+      }
+    });
+
+    it("keeps usages exactly at the duration boundary", () => {
+      actions.setUsageLimitDuration("60m");
+      const boundary = {
         inputTokens: 10,
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 500_000,
+        date: 400_000,
       };
       testFs._dirs.add(dirname(getUsageLogPath()));
       testFs._files.set(
         getUsageLogPath(),
-        `{
-  "gpt-4": [
-    {
-      "inputTokens": 10,
-      "outputTokens": 5,
-      "cacheReadTokens": 1,
-      "cacheWriteTokens": 0,
-      "date": 500000
-    },
-    {
-      "inputTokens": 5,
-      "outputTokens": 2,
-      "cacheReadTokens": 0,
-      "cacheWriteTokens": 0,
-      "date": 300000
-    }
-  ]
-}`,
+        JSON.stringify({ "gpt-4": [boundary] }),
       );
       mock.method(Date, "now", () => 4_000_000);
 
       syncInitialIncrementalUsages();
 
       assert.deepStrictEqual(getState().app.incrementalUsage, {
-        "gpt-4": [recent],
+        "gpt-4": [boundary],
       });
       assert.strictEqual(
         testFs._files.get(getUsageLogPath()),
-        `{
-  "gpt-4": [
-    {
-      "inputTokens": 10,
-      "outputTokens": 5,
-      "cacheReadTokens": 1,
-      "cacheWriteTokens": 0,
-      "date": 500000
-    }
-  ]
-}`,
+        JSON.stringify({ "gpt-4": [boundary] }),
       );
     });
 
     it("overwrites a malformed usage log with an empty object", () => {
-      actions.setUsageLimitMs(3_600_000);
+      actions.setUsageLimitDuration("60m");
       testFs._dirs.add(dirname(getUsageLogPath()));
       testFs._files.set(getUsageLogPath(), "not-json");
 

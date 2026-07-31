@@ -66,7 +66,23 @@ const ConfigSchema = z.object({
       { message: "loadingStateFrames must be at least length 2" },
     ),
   promptPrefix: z.string().optional(),
-  usageLimitMs: z.number().optional(),
+  usageLimitDuration: z
+    .string()
+    .optional()
+    .refine(
+      (duration) => {
+        if (duration === undefined) return true;
+        if (duration.length < 2) return false;
+        const suffix = duration.slice(-1);
+        if (!["s", "m", "h", "d"].includes(suffix)) return false;
+        const prefix = duration.slice(0, -1);
+        if (Number.isNaN(Number(prefix))) return false;
+        return true;
+      },
+      {
+        message: "usageLimitDuration must be of the format '[number][s,m,h,d]'",
+      },
+    ),
   usageLimitDollar: z.number().optional(),
 });
 
@@ -96,7 +112,7 @@ interface DefaultConfig {
   loadingStateFrames: string[];
   loadingStateFrameDuration: number;
   promptPrefix: string;
-  usageLimitMs: undefined;
+  usageLimitDuration: undefined;
   usageLimitDollar: undefined;
 }
 
@@ -127,7 +143,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   loadingStateFrames: ["|", "/", "-", "\\"],
   loadingStateFrameDuration: 80,
   promptPrefix: "> ",
-  usageLimitMs: undefined,
+  usageLimitDuration: undefined,
   usageLimitDollar: undefined,
 };
 
@@ -163,6 +179,7 @@ export async function initState() {
     return {};
   })();
 
+  console.log({ localConfig, globalConfig });
   const defaultedModel =
     localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model;
   if (defaultedModel === MISSING) {
@@ -239,8 +256,8 @@ export async function initState() {
       DEFAULT_CONFIG.promptPrefix,
   );
 
-  actions.setUsageLimitMs(
-    localConfig.usageLimitMs ?? globalConfig.usageLimitMs,
+  actions.setUsageLimitDuration(
+    localConfig.usageLimitDuration ?? globalConfig.usageLimitDuration,
   );
   actions.setUsageLimitDollar(
     localConfig.usageLimitDollar ?? globalConfig.usageLimitDollar,

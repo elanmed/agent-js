@@ -262,34 +262,34 @@ describe("config", () => {
       assert.strictEqual(getState().config.promptPrefix, "🤖 ");
     });
 
-    it("uses its usageLimitMs over the global config, default config", async () => {
+    it("uses its usageLimitDuration over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimitMs: 3_600_000,
+          usageLimitDuration: "2h",
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimitMs: 1_800_000,
+          usageLimitDuration: "60m",
         }),
       );
 
       await initState();
 
-      assert.strictEqual(getState().config.usageLimitMs, 1_800_000);
+      assert.strictEqual(getState().config.usageLimitDuration, "60m");
       assert.strictEqual(getState().config.usageLimitDollar, undefined);
     });
 
-    it("falls back to global usageLimitMs when local omits it", async () => {
+    it("falls back to global usageLimitDuration when local omits it", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimitMs: 3_600_000,
+          usageLimitDuration: "2h",
         }),
       );
       testFs._files.set(
@@ -301,7 +301,7 @@ describe("config", () => {
 
       await initState();
 
-      assert.strictEqual(getState().config.usageLimitMs, 3_600_000);
+      assert.strictEqual(getState().config.usageLimitDuration, "2h");
     });
 
     it("uses its usageLimitDollar over the global config, default config", async () => {
@@ -323,7 +323,7 @@ describe("config", () => {
       await initState();
 
       assert.strictEqual(getState().config.usageLimitDollar, 5);
-      assert.strictEqual(getState().config.usageLimitMs, undefined);
+      assert.strictEqual(getState().config.usageLimitDuration, undefined);
     });
 
     it("falls back to global usageLimitDollar when local omits it", async () => {
@@ -346,16 +346,61 @@ describe("config", () => {
       assert.strictEqual(getState().config.usageLimitDollar, 10);
     });
 
-    it("rejects non-number usageLimitMs", async () => {
+    it("rejects non-string usageLimitDuration", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          usageLimitMs: "one hour",
+          usageLimitDuration: 3_600_000,
         }),
       );
 
-      await assert.rejects(initState(), /Invalid input: expected number/);
+      await assert.rejects(initState(), /Invalid input: expected string/);
+    });
+
+    it("rejects usageLimitDuration with an invalid suffix", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "10x",
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /usageLimitDuration must be of the format/,
+      );
+    });
+
+    it("rejects usageLimitDuration without a suffix", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "3600000",
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /usageLimitDuration must be of the format/,
+      );
+    });
+
+    it("rejects usageLimitDuration with a non-numeric prefix", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "abch",
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /usageLimitDuration must be of the format/,
+      );
     });
 
     it("rejects non-number usageLimitDollar", async () => {
@@ -548,18 +593,18 @@ describe("config", () => {
         assert.strictEqual(getState().config.promptPrefix, "❯ ");
       });
 
-      it("uses its usageLimitMs over the default config", async () => {
+      it("uses its usageLimitDuration over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
-            usageLimitMs: 7_200_000,
+            usageLimitDuration: "2h",
           }),
         );
 
         await initState();
 
-        assert.strictEqual(getState().config.usageLimitMs, 7_200_000);
+        assert.strictEqual(getState().config.usageLimitDuration, "2h");
       });
 
       it("uses its usageLimitDollar over the default config", async () => {
@@ -586,7 +631,7 @@ describe("config", () => {
 
         await initState();
 
-        assert.strictEqual(getState().config.usageLimitMs, undefined);
+        assert.strictEqual(getState().config.usageLimitDuration, undefined);
         assert.strictEqual(getState().config.usageLimitDollar, undefined);
       });
 
@@ -765,7 +810,7 @@ describe("config", () => {
   });
 
   it("loads recent incremental usages from the usage log", async () => {
-    actions.setUsageLimitMs(3_600_000);
+    actions.setUsageLimitDuration("60m");
     const recent = {
       inputTokens: 10,
       outputTokens: 5,
@@ -789,7 +834,7 @@ describe("config", () => {
       getGlobalConfigPath(),
       JSON.stringify({
         ...defaultConfig,
-        usageLimitMs: 3_600_000,
+        usageLimitDuration: "60m",
       }),
     );
     mock.method(Date, "now", () => 4_000_000);

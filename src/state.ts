@@ -53,7 +53,7 @@ interface State {
     loadingStateFrames: string[];
     loadingStateFrameDuration: number;
     promptPrefix: string;
-    usageLimitMs: number | undefined;
+    usageLimitDuration: string | undefined;
     usageLimitDollar: number | undefined;
   };
   abortControllers: {
@@ -97,7 +97,7 @@ const initialState: State = {
     loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
     loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
     promptPrefix: DEFAULT_CONFIG.promptPrefix,
-    usageLimitMs: DEFAULT_CONFIG.usageLimitMs,
+    usageLimitDuration: DEFAULT_CONFIG.usageLimitDuration,
     usageLimitDollar: DEFAULT_CONFIG.usageLimitDollar,
   },
   abortControllers: {
@@ -426,13 +426,13 @@ export const actions = {
     logStateChange("set-prompt-prefix", before, promptPrefix);
   },
 
-  setUsageLimitMs(usageLimitMs: number | undefined) {
-    const before = state.config.usageLimitMs;
-    state.config.usageLimitMs = usageLimitMs;
+  setUsageLimitDuration(usageLimitDuration: string | undefined) {
+    const before = state.config.usageLimitDuration;
+    state.config.usageLimitDuration = usageLimitDuration;
     logStateChange(
-      "set-usage-limit-ms",
+      "set-usage-limit-duration",
       stringify(before),
-      stringify(usageLimitMs),
+      stringify(usageLimitDuration),
     );
   },
 

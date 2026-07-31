@@ -291,11 +291,22 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
 }
 
 export function syncInitialIncrementalUsages() {
-  const { usageLimitMs } = getState().config;
-  if (usageLimitMs === undefined) return;
+  const { usageLimitDuration } = getState().config;
+  if (usageLimitDuration === undefined) return;
 
   const now = Date.now();
-  const expiredTime = now - usageLimitMs;
+  const msPerDuration = {
+    s: 1_000,
+    m: 1_000 * 60,
+    h: 1_000 * 60 * 60,
+    d: 1_000 * 60 * 60 * 24,
+  };
+  const durationSuffix = usageLimitDuration.slice(
+    -1,
+  ) as keyof typeof msPerDuration;
+  const durationPrefix = Number(usageLimitDuration.slice(0, -1));
+  const duration = durationPrefix * msPerDuration[durationSuffix];
+  const expiredTime = now - duration;
 
   const path = getUsageLogPath();
   const dir = dirname(path);

@@ -16,7 +16,6 @@ import {
   printKeymapsCommand,
   spawnAndReadEditorContent,
 } from "./input.ts";
-import { appendIncrementalUsage } from "./print.ts";
 import {
   testFs,
   testProcessEnv,
@@ -28,7 +27,6 @@ import {
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
-import type { LanguageModelUsage } from "ai";
 
 describe("input", () => {
   beforeEach(() => {

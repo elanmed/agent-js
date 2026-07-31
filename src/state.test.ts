@@ -386,12 +386,12 @@ line3
     assert.strictEqual(getState().config.promptPrefix, "🤖 ");
   });
 
-  it("set-usage-limit-ms", () => {
-    assert.strictEqual(getState().config.usageLimitMs, undefined);
-    actions.setUsageLimitMs(3_600_000);
-    assert.strictEqual(getState().config.usageLimitMs, 3_600_000);
-    actions.setUsageLimitMs(undefined);
-    assert.strictEqual(getState().config.usageLimitMs, undefined);
+  it("set-usage-limit-duration", () => {
+    assert.strictEqual(getState().config.usageLimitDuration, undefined);
+    actions.setUsageLimitDuration("60m");
+    assert.strictEqual(getState().config.usageLimitDuration, "60m");
+    actions.setUsageLimitDuration(undefined);
+    assert.strictEqual(getState().config.usageLimitDuration, undefined);
   });
 
   it("set-usage-limit-dollar", () => {
