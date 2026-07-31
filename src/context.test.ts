@@ -145,7 +145,7 @@ description: A test skill
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -184,7 +184,7 @@ description: Global deploy
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -254,7 +254,7 @@ description: Second
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -283,7 +283,7 @@ description: A test skill
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -318,7 +318,7 @@ description: Valid
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -346,7 +346,7 @@ description: From custom dir
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -385,7 +385,7 @@ description: Local deploy
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -405,7 +405,7 @@ would benefit from specialized instructions.
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -437,7 +437,7 @@ description: A test skill
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:
@@ -472,7 +472,7 @@ description: Works
         `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:

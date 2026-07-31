@@ -67,7 +67,7 @@ export function getSkillsStr(skills: Skill[]) {
   return `
 Skills:
 
-Use the \`loadSkill\` tool to load a skill when the user's request
+Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
  Available skills:

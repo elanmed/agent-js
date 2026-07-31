@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
+import { getEventListeners } from "node:events";
 import {
   executeBashTool,
   executeCreateFileTool,
@@ -11,6 +12,7 @@ import {
   loadSkillTool,
   printGitDiff,
   execGitDiff,
+  TOOLS,
 } from "./tools.ts";
 import {
   testFs,
@@ -364,6 +366,30 @@ bottom`,
     });
   });
 
+  function makeHangingFetch() {
+    let onFetchCalled: () => void = () => undefined;
+    const fetchCalledPromise = new Promise<void>((resolve) => {
+      onFetchCalled = resolve;
+    });
+    const fakeFetch = (_input: unknown, init?: { signal: AbortSignal }) => {
+      onFetchCalled();
+      return new Promise<Response>((_resolve, reject) => {
+        const abortError = new DOMException(
+          "This operation was aborted",
+          "AbortError",
+        );
+        if (init?.signal.aborted === true) {
+          reject(abortError);
+          return;
+        }
+        init?.signal.addEventListener("abort", () => {
+          reject(abortError);
+        });
+      });
+    };
+    return { fakeFetch, fetchCalledPromise };
+  }
+
   describe("executeWebFetchHtmlTool", () => {
     it("returns parsed article content on success", async () => {
       const html = `
@@ -425,6 +451,39 @@ bottom`,
         isError: true,
         content: "HTTP 500: Internal Server Error",
       });
+    });
+
+    it("returns isError when the request times out", async () => {
+      mock.timers.enable({ apis: ["setTimeout"] });
+      const { fakeFetch, fetchCalledPromise } = makeHangingFetch();
+      mock.method(globalThis, "fetch", fakeFetch);
+
+      const resultPromise = executeWebFetchHtmlTool({
+        href: "https://example.com/slow",
+      });
+      // await for fetch to have been called
+      await fetchCalledPromise;
+      mock.timers.tick(10_000);
+      const result = await resultPromise;
+      assert.deepStrictEqual(result, {
+        isError: true,
+        content: "Request to https://example.com/slow timed out after 10s",
+      });
+      mock.timers.reset();
+    });
+
+    it("rethrows when aborted by the caller and removes the abort listener", async () => {
+      const controller = new AbortController();
+      const { fakeFetch } = makeHangingFetch();
+      mock.method(globalThis, "fetch", fakeFetch);
+
+      const resultPromise = executeWebFetchHtmlTool(
+        { href: "https://example.com/slow" },
+        controller.signal,
+      );
+      controller.abort();
+      await assert.rejects(resultPromise, { name: "AbortError" });
+      assert.deepStrictEqual(getEventListeners(controller.signal, "abort"), []);
     });
   });
 
@@ -497,6 +556,43 @@ bottom`,
         isError: true,
         content: "Invalid JSON",
       });
+    });
+
+    it("returns isError when the request times out", async () => {
+      mock.timers.enable({ apis: ["setTimeout"] });
+      const { fakeFetch, fetchCalledPromise } = makeHangingFetch();
+      mock.method(globalThis, "fetch", fakeFetch);
+
+      try {
+        const resultPromise = executeWebFetchJsonTool({
+          href: "https://api.example.com/slow",
+        });
+        await fetchCalledPromise;
+        mock.timers.tick(10_000);
+        const result = await resultPromise;
+        assert.deepStrictEqual(result, {
+          isError: true,
+          content:
+            "Request to https://api.example.com/slow timed out after 10s",
+        });
+      } finally {
+        mock.timers.reset();
+      }
+    });
+  });
+
+  describe("TOOLS", () => {
+    it("registers tools under the names referenced by the system prompt", () => {
+      assert.deepStrictEqual(Object.keys(TOOLS), [
+        "bash",
+        "create_file",
+        "view_file",
+        "str_replace",
+        "insert_lines",
+        "web_fetch_html",
+        "web_fetch_json",
+        "load_skill",
+      ]);
     });
   });
 

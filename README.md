@@ -157,7 +157,7 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
 ### Discovery
 
 - **Root files** — `./AGENTS.md` and `~/.config/.agent-js/context/AGENTS.md` are always included in the system prompt
-- **Nested files** — all `*/**/AGENTS.md` files under the current working directory are registered as skills. The agent can call `loadSkill` to progressively disclose their content when needed
+- **Nested files** — all `*/**/AGENTS.md` files under the current working directory are registered as skills. The agent can call `load_skill` to progressively disclose their content when needed
 
 ## Skills
 
@@ -203,7 +203,7 @@ description: Does something useful
 Skill body with instructions the agent will use when this skill is loaded.
 ```
 
-Available skills are listed in the system prompt, the LLM can use the `loadSkill` tool to load a skill's full instructions.
+Available skills are listed in the system prompt, the LLM can use the `load_skill` tool to load a skill's full instructions.
 
 ## Tools
 
@@ -214,6 +214,7 @@ Available skills are listed in the system prompt, the LLM can use the `loadSkill
 - `insert_lines` — insert text at a line
 - `web_fetch_html` — fetch a URL and return extracted article content
 - `web_fetch_json` — fetch a JSON API endpoint and return parsed data
+- `load_skill` — load a skill to get specialized instructions
 
 ## Dependencies
 

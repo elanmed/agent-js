@@ -321,6 +321,57 @@ const webFetchToolSchema = z.object({
 });
 export type WebFetchTool = z.infer<typeof webFetchToolSchema>;
 
+const FETCH_TIMEOUT_MS = 10_000;
+
+function createFetchTimeout(signal?: AbortSignal) {
+  const controller = new AbortController();
+
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, FETCH_TIMEOUT_MS);
+
+  const onExternalAbort = () => {
+    controller.abort();
+  };
+
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener("abort", onExternalAbort, { once: true });
+    }
+  }
+
+  return {
+    controller,
+    isTimedOut: () => timedOut,
+    cleanup: () => {
+      clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", onExternalAbort);
+    },
+  };
+}
+
+function resolveFetchError(
+  error: unknown,
+  href: string,
+  isTimedOut: () => boolean,
+): ToolResult {
+  if (isTimedOut()) {
+    return {
+      isError: true,
+      content: `Request to ${href} timed out after ${String(FETCH_TIMEOUT_MS / 1_000)}s`,
+    };
+  }
+  if (isAbortError(error)) throw error;
+  return {
+    isError: true,
+    content: getMessageFromError(error),
+  };
+}
+
 export async function executeWebFetchHtmlTool(
   { href }: WebFetchTool,
   signal?: AbortSignal,
@@ -330,40 +381,25 @@ export async function executeWebFetchHtmlTool(
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "text/html");
 
-  const fetchController = new AbortController();
-  const timeoutId = setTimeout(() => {
-    fetchController.abort();
-  }, 10_000);
-
-  if (signal) {
-    signal.addEventListener("abort", () => fetchController.abort());
-  }
+  const { controller, isTimedOut, cleanup } = createFetchTimeout(signal);
 
   const fetchResult = await tryCatchAsync(
     fetch(href, {
       headers,
-      signal: fetchController.signal,
+      signal: controller.signal,
     }),
   );
 
   if (!fetchResult.ok) {
-    if (isAbortError(fetchResult.error)) {
-      clearTimeout(timeoutId);
-      throw fetchResult.error;
-    }
-
-    clearTimeout(timeoutId);
-    return {
-      isError: true,
-      content: getMessageFromError(fetchResult.error),
-    };
+    cleanup();
+    return resolveFetchError(fetchResult.error, href, isTimedOut);
   }
 
   const response = fetchResult.value;
   if (!response.ok) {
+    cleanup();
     const error = `HTTP ${String(response.status)}: ${response.statusText}`;
     await print.warning(error);
-    clearTimeout(timeoutId);
     return {
       isError: true,
       content: error,
@@ -372,11 +408,8 @@ export async function executeWebFetchHtmlTool(
 
   const textResult = await tryCatchAsync(response.text());
   if (!textResult.ok) {
-    clearTimeout(timeoutId);
-    return {
-      isError: true,
-      content: getMessageFromError(textResult.error),
-    };
+    cleanup();
+    return resolveFetchError(textResult.error, href, isTimedOut);
   }
   const htmlStr = textResult.value;
 
@@ -386,14 +419,14 @@ export async function executeWebFetchHtmlTool(
   if (article === null) {
     const error = `Failed to parse article from ${href}`;
     await print.warning(error);
-    clearTimeout(timeoutId);
+    cleanup();
     return {
       isError: true,
       content: error,
     };
   }
 
-  clearTimeout(timeoutId);
+  cleanup();
   return {
     content: stringify(article),
   };
@@ -408,40 +441,25 @@ export async function executeWebFetchJsonTool(
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "application/json");
 
-  const fetchController = new AbortController();
-  const timeoutId = setTimeout(() => {
-    fetchController.abort();
-  }, 10_000);
-
-  if (signal) {
-    signal.addEventListener("abort", () => fetchController.abort());
-  }
+  const { controller, isTimedOut, cleanup } = createFetchTimeout(signal);
 
   const fetchResult = await tryCatchAsync(
     fetch(href, {
       headers,
-      signal: fetchController.signal,
+      signal: controller.signal,
     }),
   );
 
   if (!fetchResult.ok) {
-    if (isAbortError(fetchResult.error)) {
-      clearTimeout(timeoutId);
-      throw fetchResult.error;
-    }
-
-    clearTimeout(timeoutId);
-    return {
-      isError: true,
-      content: getMessageFromError(fetchResult.error),
-    };
+    cleanup();
+    return resolveFetchError(fetchResult.error, href, isTimedOut);
   }
 
   const response = fetchResult.value;
   if (!response.ok) {
+    cleanup();
     const error = `HTTP ${String(response.status)}: ${response.statusText}`;
     await print.warning(error);
-    clearTimeout(timeoutId);
     return {
       isError: true,
       content: error,
@@ -450,20 +468,12 @@ export async function executeWebFetchJsonTool(
 
   const jsonResult = await tryCatchAsync(response.json());
   if (!jsonResult.ok) {
-    if (isAbortError(jsonResult.error)) {
-      clearTimeout(timeoutId);
-      throw jsonResult.error;
-    }
-
-    clearTimeout(timeoutId);
-    return {
-      isError: true,
-      content: getMessageFromError(jsonResult.error),
-    };
+    cleanup();
+    return resolveFetchError(jsonResult.error, href, isTimedOut);
   }
 
+  cleanup();
   const json = jsonResult.value as unknown;
-  clearTimeout(timeoutId);
   return {
     content: stringify(json),
   };
