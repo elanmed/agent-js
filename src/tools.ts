@@ -340,40 +340,62 @@ export async function executeWebFetchHtmlTool(
     signal.addEventListener("abort", () => fetchController.abort());
   }
 
-  try {
-    const response = await fetch(href, {
+  const fetchResult = await tryCatchAsync(
+    fetch(href, {
       headers,
       signal: fetchController.signal,
-    });
+    }),
+  );
 
-    if (!response.ok) {
-      const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      await print.warning(error);
-      throw new Error(error);
+  if (!fetchResult.ok) {
+    if (isAbortError(fetchResult.error)) {
+      throw fetchResult.error;
     }
 
-    const htmlStr = await response.text();
-    const doc = new JSDOM(htmlStr);
-    const reader = new Readability(doc.window.document);
-    const article = reader.parse();
-    if (article === null) {
-      const error = `Failed to parse article from ${href}`;
-      await print.warning(error);
-      throw new Error(error);
-    }
-
-    return {
-      content: stringify(article),
-    };
-  } catch (error: unknown) {
-    const msg = getMessageFromError(error);
+    clearTimeout(timeoutId);
     return {
       isError: true,
-      content: msg,
+      content: getMessageFromError(fetchResult.error),
     };
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  const response = fetchResult.value;
+  if (!response.ok) {
+    const error = `HTTP ${String(response.status)}: ${response.statusText}`;
+    await print.warning(error);
+    clearTimeout(timeoutId);
+    return {
+      isError: true,
+      content: getMessageFromError(error),
+    };
+  }
+
+  const textResult = await tryCatchAsync(response.text());
+  if (!textResult.ok) {
+    clearTimeout(timeoutId);
+    return {
+      isError: true,
+      content: getMessageFromError(textResult.error),
+    };
+  }
+  const htmlStr = textResult.value;
+
+  const doc = new JSDOM(htmlStr);
+  const reader = new Readability(doc.window.document);
+  const article = reader.parse();
+  if (article === null) {
+    const error = `Failed to parse article from ${href}`;
+    await print.warning(error);
+    clearTimeout(timeoutId);
+    return {
+      isError: true,
+      content: getMessageFromError(error),
+    };
+  }
+
+  return {
+    content: stringify(article),
+  };
 }
 
 export async function executeWebFetchJsonTool(
