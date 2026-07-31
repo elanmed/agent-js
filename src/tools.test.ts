@@ -394,7 +394,7 @@ bottom`,
 
     it("returns isError when fetch throws", async () => {
       const fakeFetch = () => {
-        throw new Error("network error");
+        return Promise.reject(new Error("network error"));
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
@@ -449,7 +449,7 @@ bottom`,
 
     it("returns isError when fetch throws", async () => {
       const fakeFetch = () => {
-        throw new Error("network error");
+        return Promise.reject(new Error("network error"));
       };
       mock.method(globalThis, "fetch", fakeFetch);
 
