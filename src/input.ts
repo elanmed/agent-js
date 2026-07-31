@@ -400,7 +400,6 @@ export async function resolveSlashCommand(rawInput: string) {
 
 export async function clearCommand() {
   await print.infoSubtle(`Context cleared (${getPrettySessionUsage()})`);
-  actions.resetIncrementalUsage();
   actions.resetMessageParams();
 }
 

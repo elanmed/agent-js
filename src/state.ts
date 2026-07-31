@@ -195,16 +195,6 @@ export const actions = {
     logStateChange("reset-message-usages", String(before), "0");
   },
 
-  resetIncrementalUsage() {
-    const before = state.app.incrementalUsage;
-    state.app.incrementalUsage = {};
-    logStateChange(
-      "reset-incremental-usage",
-      String(Object.keys(before).length),
-      "0",
-    );
-  },
-
   resetMessageParams() {
     const before = state.app.messageParams.length;
     state.app.messageParams = [];

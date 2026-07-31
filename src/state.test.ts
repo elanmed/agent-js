@@ -68,30 +68,6 @@ describe("state", () => {
     });
   });
 
-  it("reset-incremental-usage", () => {
-    assert.deepStrictEqual(getState().app.incrementalUsage, {});
-    actions.appendToUsages("gpt-4", {
-      inputTokens: 10,
-      outputTokens: 5,
-      cacheReadTokens: 2,
-      cacheWriteTokens: 1,
-      date: 1000,
-    });
-    assert.deepStrictEqual(getState().app.incrementalUsage, {
-      "gpt-4": [
-        {
-          inputTokens: 10,
-          outputTokens: 5,
-          cacheReadTokens: 2,
-          cacheWriteTokens: 1,
-          date: 1000,
-        },
-      ],
-    });
-    actions.resetIncrementalUsage();
-    assert.deepStrictEqual(getState().app.incrementalUsage, {});
-  });
-
   it("set-model", () => {
     assert.equal(getState().config.model, MISSING);
     actions.setModel("claude-haiku-4-5");
