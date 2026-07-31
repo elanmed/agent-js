@@ -321,7 +321,6 @@ const webFetchToolSchema = z.object({
 });
 export type WebFetchTool = z.infer<typeof webFetchToolSchema>;
 
-// TODO: remove try-catch blocks, check for abort errors
 export async function executeWebFetchHtmlTool(
   { href }: WebFetchTool,
   signal?: AbortSignal,
@@ -349,6 +348,7 @@ export async function executeWebFetchHtmlTool(
 
   if (!fetchResult.ok) {
     if (isAbortError(fetchResult.error)) {
+      clearTimeout(timeoutId);
       throw fetchResult.error;
     }
 
@@ -366,7 +366,7 @@ export async function executeWebFetchHtmlTool(
     clearTimeout(timeoutId);
     return {
       isError: true,
-      content: getMessageFromError(error),
+      content: error,
     };
   }
 
@@ -389,10 +389,11 @@ export async function executeWebFetchHtmlTool(
     clearTimeout(timeoutId);
     return {
       isError: true,
-      content: getMessageFromError(error),
+      content: error,
     };
   }
 
+  clearTimeout(timeoutId);
   return {
     content: stringify(article),
   };
@@ -416,31 +417,56 @@ export async function executeWebFetchJsonTool(
     signal.addEventListener("abort", () => fetchController.abort());
   }
 
-  try {
-    const response = await fetch(href, {
+  const fetchResult = await tryCatchAsync(
+    fetch(href, {
       headers,
       signal: fetchController.signal,
-    });
+    }),
+  );
 
-    if (!response.ok) {
-      const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-      await print.warning(error);
-      throw new Error(error);
+  if (!fetchResult.ok) {
+    if (isAbortError(fetchResult.error)) {
+      clearTimeout(timeoutId);
+      throw fetchResult.error;
     }
 
-    const json = (await response.json()) as unknown;
-    return {
-      content: stringify(json),
-    };
-  } catch (error: unknown) {
-    const msg = getMessageFromError(error);
+    clearTimeout(timeoutId);
     return {
       isError: true,
-      content: msg,
+      content: getMessageFromError(fetchResult.error),
     };
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  const response = fetchResult.value;
+  if (!response.ok) {
+    const error = `HTTP ${String(response.status)}: ${response.statusText}`;
+    await print.warning(error);
+    clearTimeout(timeoutId);
+    return {
+      isError: true,
+      content: error,
+    };
+  }
+
+  const jsonResult = await tryCatchAsync(response.json());
+  if (!jsonResult.ok) {
+    if (isAbortError(jsonResult.error)) {
+      clearTimeout(timeoutId);
+      throw jsonResult.error;
+    }
+
+    clearTimeout(timeoutId);
+    return {
+      isError: true,
+      content: getMessageFromError(jsonResult.error),
+    };
+  }
+
+  const json = jsonResult.value as unknown;
+  clearTimeout(timeoutId);
+  return {
+    content: stringify(json),
+  };
 }
 const loadSkillToolSchema = z.object({
   name: z.string(),
