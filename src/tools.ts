@@ -356,7 +356,7 @@ export async function executeWebFetchHtmlTool(
     const doc = new JSDOM(htmlStr);
     const reader = new Readability(doc.window.document);
     const article = reader.parse();
-    if (!article) {
+    if (article === null) {
       const error = `Failed to parse article from ${href}`;
       await print.warning(error);
       throw new Error(error);
@@ -430,7 +430,7 @@ export async function loadSkillTool({
 }: LoadSkillTool): Promise<ToolResult> {
   await toolPrint("load_skill", name);
   const foundSkill = getState().app.skills.find((skill) => skill.name === name);
-  if (!foundSkill) {
+  if (foundSkill === undefined) {
     return {
       isError: true,
       content: `Could not find a skill with name: ${name}`,

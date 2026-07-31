@@ -354,7 +354,7 @@ export function syncNewIncrementalUsage(
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
   const pricing = getState().config.pricingPerModel[model];
-  if (!pricing) return 0;
+  if (pricing === undefined) return 0;
 
   const inputPerToken = pricing.inputPerToken;
   const outputPerToken = pricing.outputPerToken;
@@ -402,7 +402,7 @@ export function getPrettySessionUsage() {
   const { model } = getState().config;
   const pricing = getState().config.pricingPerModel[model];
   const tokenUsage = getUsageTokensForModel(model);
-  if (!pricing) {
+  if (pricing === undefined) {
     return `${tokenUsage.inputTokens.toLocaleString()} in, ${tokenUsage.outputTokens.toLocaleString()} out`;
   }
 

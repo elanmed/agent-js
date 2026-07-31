@@ -29,6 +29,7 @@ pnpm run ci
 - Prefer `assert.deepStrictEqual` over multiple individual field assertions — check the whole object in one call
 - Never use `content: result.content` in deepStrictEqual assertions — it's a tautology. Inline the actual expected value
 - Never use `assert.ok(result.includes(...))` — assert on the whole string with `assert.equal` or `assert.strictEqual`
+- Only use `===` and `!==`; never use `==`, `!=`, or truthy/falsy coercions like `if (obj)` or `if (!obj)`. Use `!` only on boolean expressions
 - For string assertions with newlines: use template literals when the string contains any newline that is not a single trailing one. If it's just a single trailing newline, use `"...\n"` instead
 - For fs, import `fsDeps` directly from `deps.ts`. In tests, use `setupFakeDeps()` from `test-helpers.ts` to mock all fs methods, `processEnv`, and `processStdout` globally. Use `testFs._files` / `testFs._dirs` / `testFs._globResults` to set up fixture state. Import `testFs` and `setupFakeDeps` from `./test-helpers.ts`.
 - `processEnv.get` and `processStdout.write` are also in `deps.ts` and mocked by `setupFakeDeps()`. Use `testProcessEnv._set(key, value)` for env vars. Override `processStdout.write` with an additional `mock.method(processStdout, "write", ...)` if you need to capture output.
@@ -42,7 +43,7 @@ Production code:
 import { fsDeps } from "./deps.ts";
 
 export function readConfig() {
-  if (!fsDeps.existsSync("config.json")) return null;
+  if (fsDeps.existsSync("config.json") === false) return null;
   return JSON.parse(fsDeps.readFileSync("config.json").toString());
 }
 ```
