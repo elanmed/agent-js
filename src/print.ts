@@ -236,5 +236,7 @@ export function getPrettyApiDuration() {
 }
 
 export async function printSessionStartDate() {
-  await print.info(`Session: ${String(getState().app.sessionStartDate)}`);
+  await print.info(
+    `Session start date: ${String(getState().app.sessionStartDate)}`,
+  );
 }
