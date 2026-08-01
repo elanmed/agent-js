@@ -803,7 +803,13 @@ Keymaps:
 
     it("prints {} when no local config file exists", async () => {
       await localCommand();
-      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Local config from path: /test-cwd/.agent-js/settings.json
+{}
+`,
+      );
     });
 
     it("prints each key of the local config file", async () => {
@@ -814,7 +820,11 @@ Keymaps:
       await localCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        '- model: "gpt-4"\n- provider: "anthropic"\n',
+        `
+Local config from path: /test-cwd/.agent-js/settings.json
+- model: "gpt-4"
+- provider: "anthropic"
+`,
       );
     });
   });
@@ -827,7 +837,13 @@ Keymaps:
 
     it("prints {} when no global config file exists", async () => {
       await globalCommand();
-      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Global config from path: /fake-home/.config/.agent-js/settings.json
+{}
+`,
+      );
     });
 
     it("prints each key of the global config file", async () => {
@@ -838,7 +854,10 @@ Keymaps:
       await globalCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        '- model: "gpt-4"\n',
+        `
+Global config from path: /fake-home/.config/.agent-js/settings.json
+- model: "gpt-4"
+`,
       );
     });
   });
@@ -853,7 +872,9 @@ Keymaps:
       await configCommand();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        `- model: "__MISSING__"
+        `
+Applied config:
+- model: "__MISSING__"
 - provider: "openai-compatible"
 - baseURL: null
 - pricingPerModel: {}
@@ -1183,14 +1204,26 @@ Available commands:
       actions.resetStdout();
       const result = await resolveSlashCommand("/local");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Local config from path: /test-cwd/.agent-js/settings.json
+{}
+`,
+      );
     });
 
     it("handles /global command", async () => {
       actions.resetStdout();
       const result = await resolveSlashCommand("/global");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+Global config from path: /fake-home/.config/.agent-js/settings.json
+{}
+`,
+      );
     });
 
     it("handles /config command", async () => {
@@ -1199,7 +1232,9 @@ Available commands:
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        `- model: "__MISSING__"
+        `
+Applied config:
+- model: "__MISSING__"
 - provider: "openai-compatible"
 - baseURL: null
 - pricingPerModel: {}

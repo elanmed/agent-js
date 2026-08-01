@@ -6,7 +6,7 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 
 ## Features
 
-- **Minimal**: 2,900 lines of source code, 5,000 lines of tests
+- **Minimal**: 3,100 lines of source code, 5,800 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
@@ -124,6 +124,9 @@ Slash commands are triggered with `/command` at the prompt.
 | `/commands` | List available slash commands (builtin and custom)                         |
 | `/keymaps`  | List configured keybindings                                                |
 | `/usage`    | Show current session usage                                                 |
+| `/local`    | Show the local config file (`./.agent-js/settings.json`), or `{}`          |
+| `/global`   | Show the global config file (`~/.config/.agent-js/settings.json`), or `{}` |
+| `/config`   | Show the applied config (merged with defaults)                             |
 | `/resume`   | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
 
 ### Custom Slash Commands

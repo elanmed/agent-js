@@ -89,7 +89,6 @@ export const ConfigSchema = z.strictObject({
   usageLimitDollar: z.number().optional(),
 });
 
-type Config = z.infer<typeof ConfigSchema>;
 export type Key = z.infer<typeof KeySchema>;
 
 interface DefaultConfig {

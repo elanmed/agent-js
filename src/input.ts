@@ -25,7 +25,7 @@ import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
-import { ConfigSchema, readConfigFile, type Key } from "./config.ts";
+import { readConfigFile, type Key } from "./config.ts";
 import { appendToChatHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import {
