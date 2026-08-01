@@ -161,6 +161,7 @@ response
   describe("deleteExpiredPromptHistory", () => {
     beforeEach(() => {
       mock.method(Date, "now", () => 1000000000000);
+      actions.setSessionStartDate();
     });
 
     it("returns early when directory does not exist", () => {

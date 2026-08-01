@@ -200,6 +200,7 @@ describe("print", () => {
 
   describe("getPrettySessionUsage", () => {
     beforeEach(() => {
+      setupFakeDeps();
       actions.resetState();
       actions.setPricingPerModel({
         "claude-haiku-4-5": {
@@ -417,6 +418,7 @@ describe("print", () => {
 
   describe("getPrettySessionUsage no pricing configured", () => {
     beforeEach(() => {
+      setupFakeDeps();
       actions.resetState();
     });
 
@@ -543,6 +545,7 @@ describe("print", () => {
 
   describe("appendIncrementalUsage", () => {
     beforeEach(() => {
+      setupFakeDeps();
       actions.resetState();
       actions.setModel("gpt-4");
     });
@@ -749,7 +752,16 @@ describe("print", () => {
       syncNewIncrementalUsage("gpt-4", usage);
 
       assert.deepStrictEqual(getState().app.incrementalUsage, {
-        "gpt-4": [usage],
+        "gpt-4": [
+          {
+            inputTokens: 5,
+            outputTokens: 2,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 500,
+          },
+          usage,
+        ],
       });
       assert.strictEqual(
         testFs._files.get(getUsageLogPath()),

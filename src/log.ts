@@ -88,7 +88,7 @@ export function deleteExpiredPromptHistory() {
     if (Number.isNaN(fileTimestampMs)) continue;
 
     const oneDay = 1_000 * 60 * 60 * 24;
-    if (fileTimestampMs + oneDay < Date.now()) {
+    if (fileTimestampMs + oneDay < getState().app.sessionStartDate) {
       tryCatch(() => fsDeps.unlinkSync(fullPath));
     }
   }
