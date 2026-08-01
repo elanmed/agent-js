@@ -110,18 +110,19 @@ Example `settings.json`:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command     | Description                                           |
-| ----------- | ----------------------------------------------------- |
-| `/edit`     | Call the `edit` keymap                                |
-| `/clear`    | Call the `clear` keymap                               |
-| `/history`  | Call the `history` keymap                             |
-| `/paste`    | Call the `paste` keymap                               |
-| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`) |
-| `/skills`   | List available skills                                 |
-| `/context`  | List available context files                          |
-| `/commands` | List available slash commands (builtin and custom)    |
-| `/keymaps`  | List configured keybindings                           |
-| `/usage`    | Show current session usage                            |
+| Command     | Description                                                                |
+| ----------- | -------------------------------------------------------------------------- |
+| `/edit`     | Call the `edit` keymap                                                     |
+| `/clear`    | Call the `clear` keymap                                                    |
+| `/history`  | Call the `history` keymap                                                  |
+| `/paste`    | Call the `paste` keymap                                                    |
+| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)                      |
+| `/skills`   | List available skills                                                      |
+| `/context`  | List available context files                                               |
+| `/commands` | List available slash commands (builtin and custom)                         |
+| `/keymaps`  | List configured keybindings                                                |
+| `/usage`    | Show current session usage                                                 |
+| `/resume`   | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
 
 ### Custom Slash Commands
 
@@ -240,7 +241,6 @@ Minimal runtime dependencies (9 total):
 
 ## TODO (later)
 
-- [ ] Resume session
 - [ ] Support MCP servers
 - [ ] Look into tanstack ai when it supports openai compatible
   - [ ] Support code-mode

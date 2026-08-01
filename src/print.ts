@@ -428,3 +428,7 @@ export function getPrettySessionUsage() {
   if (usageLimitDollar === undefined) return `$${getPrettyMoney(cost)}`;
   return `$${getPrettyMoney(cost)} of $${String(usageLimitDollar)}`;
 }
+
+export async function printSessionStartDate() {
+  await print.info(`Session: ${String(getState().app.sessionStartDate)}`);
+}

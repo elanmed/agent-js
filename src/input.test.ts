@@ -15,6 +15,7 @@ import {
   printCommandsCommand,
   printKeymapsCommand,
   spawnAndReadEditorContent,
+  resumeCommand,
 } from "./input.ts";
 import {
   testFs,
@@ -283,6 +284,26 @@ from editor
       );
       assert.strictEqual(questionMock.mock.callCount(), 2);
     });
+
+    it("prints session start date when exiting", async () => {
+      mock.method(process, "exit", () => {
+        throw new Error("process.exit called");
+      });
+      mock.method(Date, "now", () => 42_000);
+      actions.setSessionStartDate();
+      actions.resetStdout();
+      const err = new Error("This operation was aborted");
+      err.name = "AbortError";
+      const questionMock = mock.method(getState().app.rl!, "question", () =>
+        Promise.resolve("yes"),
+      );
+      questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
+      await assert.rejects(
+        resolveUserInput({ isFirstInput: false }),
+        /process.exit called/,
+      );
+      assert.strictEqual(stripAnsi(getState().app.stdout), "Session: 42000\n");
+    });
   });
 
   describe("setModelCommand", () => {
@@ -370,6 +391,91 @@ from editor
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         "Context cleared (0 in, 0 out)\n",
+      );
+    });
+  });
+
+  describe("resumeCommand", () => {
+    beforeEach(() => {
+      actions.resetStdout();
+    });
+
+    it("prints usage error when no session start date is provided", async () => {
+      const result = await resumeCommand("/resume");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "Usage: /resume [session start date]\n",
+      );
+    });
+
+    it("prints usage error when too many parts are provided", async () => {
+      const result = await resumeCommand("/resume 123 456");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "Usage: /resume [session start date]\n",
+      );
+    });
+
+    it("prints usage error when session start date is not a number", async () => {
+      const result = await resumeCommand("/resume abc");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "Usage: /resume [session start date]\n",
+      );
+    });
+
+    it("returns null when history directory does not exist", async () => {
+      const result = await resumeCommand("/resume 1234567890000");
+      assert.strictEqual(result, null);
+      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+    });
+
+    it("returns transcript and resets message params when conversation is found", async () => {
+      actions.appendToMessageParams({ role: "user", content: "hello" });
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/history/chat-history-1234567890000.txt",
+        "transcript content",
+      );
+      const result = await resumeCommand("/resume 1234567890000");
+      assert.strictEqual(
+        result,
+        `Continue the conversation recorded in the transcript below. Response to this message with "Ready to continue chatting."
+Transcript:
+transcript content
+    `,
+      );
+      assert.deepStrictEqual(getState().app.messageParams, []);
+    });
+
+    it("prints error when no conversation is found", async () => {
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/history/chat-history-9999999999999.txt",
+        "transcript content",
+      );
+      const result = await resumeCommand("/resume 1234567890000");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "No conversation found with session start date: 1234567890000\n",
+      );
+    });
+
+    it("skips files that do not match the chat-history format", async () => {
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/history/other-1234567890000.txt",
+        "other",
+      );
+      const result = await resumeCommand("/resume 1234567890000");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "No conversation found with session start date: 1234567890000\n",
       );
     });
   });
@@ -604,6 +710,7 @@ Available commands:
 - /commands
 - /keymaps
 - /usage
+- /resume
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -955,6 +1062,7 @@ Available commands:
 - /commands
 - /keymaps
 - /usage
+- /resume
 `,
       );
     });
@@ -995,6 +1103,32 @@ Keymaps:
       assert.strictEqual(stripAnsi(getState().app.stdout), "0 in, 0 out\n");
     });
 
+    it("handles /resume without args", async () => {
+      actions.resetStdout();
+      const result = await resolveSlashCommand("/resume");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "Usage: /resume [session start date]?\n",
+      );
+    });
+
+    it("handles /resume with a session start date", async () => {
+      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._files.set(
+        "/fake-home/.config/.agent-js/history/chat-history-1234567890000.txt",
+        "transcript content",
+      );
+      const result = await resolveSlashCommand("/resume 1234567890000");
+      assert.strictEqual(
+        result,
+        `Continue the conversation recorded in the transcript below. Response to this message with "Ready to continue chatting."
+Transcript:
+transcript content
+    `,
+      );
+    });
+
     it("handles custom slash command successfully", async () => {
       actions.setSlashCommands([
         {
@@ -1032,6 +1166,7 @@ Invalid command: /unknown, valid commands:
 - /commands
 - /keymaps
 - /usage
+- /resume
 - /test-cwd/.agent-js/commands/known.md
 `,
       );

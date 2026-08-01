@@ -18,6 +18,7 @@ import {
   printNewline,
   fencePrint,
   getPrettySessionUsage,
+  printSessionStartDate,
 } from "./print.ts";
 import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
@@ -26,7 +27,11 @@ import os from "node:os";
 import type { Key } from "./config.ts";
 import { appendToChatHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
-import { getGlobalSlashCommandDir, getLocalSlashCommandDir } from "./paths.ts";
+import {
+  getGlobalSlashCommandDir,
+  getLocalSlashCommandDir,
+  getPromptHistoryDir,
+} from "./paths.ts";
 import { contextFileSkillNamePrefix } from "./context.ts";
 
 // https://stackoverflow.com/a/33500118
@@ -297,6 +302,7 @@ async function resolveExitConfirmation() {
   if (!exitResult.ok) {
     if (isAbortError(exitResult.error)) {
       rl.close();
+      await printSessionStartDate();
       process.exit(0);
     }
 
@@ -308,6 +314,7 @@ async function resolveExitConfirmation() {
     actions.appendToStdout(`>${exitResult.value}\n`);
 
     rl.close();
+    await printSessionStartDate();
     process.exit(0);
   }
 
@@ -325,6 +332,7 @@ const builtinSlashCommands = [
   "commands",
   "keymaps",
   "usage",
+  "resume",
 ];
 
 export async function resolveSlashCommand(rawInput: string) {
@@ -375,10 +383,20 @@ export async function resolveSlashCommand(rawInput: string) {
       await usageCommand();
       return null;
     }
+    case "resume": {
+      await print.error("Usage: /resume [session start date]");
+      return null;
+    }
     default: {
       if (commandWithoutSlash.startsWith("model ")) {
         await setModelCommand(rawInput);
         return null;
+      }
+
+      if (commandWithoutSlash.startsWith("resume ")) {
+        const content = await resumeCommand(rawInput);
+        if (content !== null) appendToChatHistory(content, "user");
+        return content;
       }
 
       const slashCommands = getState().app.slashCommands;
@@ -566,6 +584,55 @@ export async function printContextFilesCommand() {
   await printNewline();
   await print.doing("Available context files:");
   await print(formatted);
+}
+
+export async function resumeCommand(rawInput: string) {
+  const parts = rawInput.trim().split(/\s+/);
+
+  if (parts.length !== 2) {
+    await print.error("Usage: /resume [session start date]");
+    return null;
+  }
+  const sessionStartDate = parts[1];
+  assert(sessionStartDate !== undefined);
+
+  if (Number.isNaN(Number(sessionStartDate))) {
+    await print.error("Usage: /resume [session start date]");
+    return null;
+  }
+
+  const chatHistoryPath = getPromptHistoryDir();
+  if (!fsDeps.existsSync(chatHistoryPath)) return null;
+
+  for (const name of fsDeps.readdirSync(chatHistoryPath)) {
+    const fullPath = join(chatHistoryPath, name);
+    const statResult = tryCatch(() => fsDeps.statSync(fullPath));
+    if (!statResult.ok) continue;
+    if (!statResult.value.isFile()) continue;
+
+    const fileName = basename(name, extname(name));
+    const parts = fileName.split("-");
+    if (parts.length !== 3) continue;
+    if (parts[0] !== "chat" || parts[1] !== "history") continue;
+
+    const fileTimestampMs = Number(parts[2]);
+    if (Number.isNaN(fileTimestampMs)) continue;
+    if (fileTimestampMs !== Number(sessionStartDate)) continue;
+
+    const readResult = tryCatch(() => fsDeps.readFileSync(fullPath).toString());
+    if (!readResult.ok) continue;
+
+    actions.resetMessageParams();
+    return `Continue the conversation recorded in the transcript below. Response to this message with "Ready to continue chatting."
+Transcript:
+${readResult.value}
+    `;
+  }
+
+  await print.error(
+    `No conversation found with session start date: ${sessionStartDate}`,
+  );
+  return null;
 }
 
 function getCommandsStr() {

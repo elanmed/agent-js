@@ -12,6 +12,7 @@ import {
   appendIncrementalUsage,
   syncNewIncrementalUsage,
   syncInitialIncrementalUsages,
+  printSessionStartDate,
 } from "./print.ts";
 import { actions, getState } from "./state.ts";
 import { fsDeps, processDeps } from "./deps.ts";
@@ -940,6 +941,21 @@ describe("print", () => {
 
       assert.deepStrictEqual(getState().app.incrementalUsage, {});
       assert.strictEqual(testFs._files.get(getUsageLogPath()), `{}`);
+    });
+  });
+
+  describe("printSessionStartDate", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints the session start date", async () => {
+      mock.method(Date, "now", () => 42_000);
+      actions.setSessionStartDate();
+      await printSessionStartDate();
+      assert.strictEqual(stripAnsi(getState().app.stdout), "Session: 42000\n");
     });
   });
 });

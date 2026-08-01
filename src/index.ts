@@ -1,6 +1,12 @@
 import { fileURLToPath } from "node:url";
 import { getMessageFromError } from "./utils.ts";
-import { print, executeBat, fencePrint, printNewline } from "./print.ts";
+import {
+  print,
+  executeBat,
+  fencePrint,
+  printNewline,
+  printSessionStartDate,
+} from "./print.ts";
 import { initState } from "./config.ts";
 import {
   initKeypress,
@@ -47,6 +53,7 @@ async function main() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch(async (error: unknown) => {
     await print.error(getMessageFromError(error));
+    await printSessionStartDate();
     process.exit(1);
   });
 }

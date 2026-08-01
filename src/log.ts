@@ -1,7 +1,6 @@
 import { basename, dirname, extname, join } from "node:path";
 import { actions, getState } from "./state.ts";
 import { normalizeLine, tryCatch } from "./utils.ts";
-import crypto from "node:crypto";
 import { fsDeps } from "./deps.ts";
 import { getDebugLogPath, getPromptHistoryDir } from "./paths.ts";
 
@@ -60,10 +59,9 @@ export function initPromptHistory() {
     if (!mkDirResult.ok) return;
   }
 
-  const uuid = crypto.randomUUID().replaceAll("-", "");
   const chatHistorySessionPath = join(
     chatHistoryDir,
-    `chat-history-${uuid}-${getState().app.sessionStartDate.toString()}.txt`,
+    `chat-history-${getState().app.sessionStartDate.toString()}.txt`,
   );
   actions.setChatHistoryPath(chatHistorySessionPath);
   tryCatch(() => fsDeps.writeFileSync(chatHistorySessionPath, ""));
@@ -73,6 +71,7 @@ export function deleteExpiredPromptHistory() {
   const chatHistoryPath = getPromptHistoryDir();
   if (!fsDeps.existsSync(chatHistoryPath)) return;
 
+  // TODO: reuse this logic
   for (const name of fsDeps.readdirSync(chatHistoryPath)) {
     const fullPath = join(chatHistoryPath, name);
     const statResult = tryCatch(() => fsDeps.statSync(fullPath));
@@ -81,10 +80,10 @@ export function deleteExpiredPromptHistory() {
 
     const fileName = basename(name, extname(name));
     const parts = fileName.split("-");
-    if (parts.length !== 4) continue;
+    if (parts.length !== 3) continue;
     if (parts[0] !== "chat" || parts[1] !== "history") continue;
 
-    const fileTimestampMs = Number(parts[3]);
+    const fileTimestampMs = Number(parts[2]);
     if (Number.isNaN(fileTimestampMs)) continue;
 
     const oneDay = 1_000 * 60 * 60 * 24;
