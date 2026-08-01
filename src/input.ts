@@ -338,6 +338,7 @@ const builtinSlashCommands = [
 export async function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);
 
+  // TODO: separate slash commands with and without args
   switch (commandWithoutSlash) {
     case "edit": {
       const content = await spawnAndReadEditorContent();
