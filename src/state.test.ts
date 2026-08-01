@@ -14,7 +14,7 @@ describe("state", () => {
     actions.appendToMessageParams({ role: "user", content: "hi" }, 0);
     actions.setQuestionAbortController(new AbortController());
     actions.setApiStreamAbortController(new AbortController());
-    const timeout = setTimeout(() => undefined, 1000);
+    const timeout = setTimeout(() => undefined, 1_000);
     actions.setLoadingStateTimeout(timeout);
     actions.setChatHistoryPath("/tmp/test.log");
     actions.resetState();
@@ -121,9 +121,9 @@ describe("state", () => {
 
   it("set-context-window-per-model", () => {
     assert.deepStrictEqual(getState().config.contextWindowPerModel, {});
-    actions.setContextWindowPerModel({ "test-model": 200000 });
+    actions.setContextWindowPerModel({ "test-model": 200_000 });
     assert.deepStrictEqual(getState().config.contextWindowPerModel, {
-      "test-model": 200000,
+      "test-model": 200_000,
     });
   });
 
@@ -453,7 +453,7 @@ line3
           outputTokens: 5,
           cacheReadTokens: 2,
           cacheWriteTokens: 1,
-          date: 1000,
+          date: 1_000,
         },
       ],
     });
@@ -465,7 +465,7 @@ line3
           outputTokens: 5,
           cacheReadTokens: 2,
           cacheWriteTokens: 1,
-          date: 1000,
+          date: 1_000,
         },
       ],
     });
@@ -478,7 +478,7 @@ line3
       outputTokens: 5,
       cacheReadTokens: 2,
       cacheWriteTokens: 1,
-      date: 1000,
+      date: 1_000,
     };
     actions.appendToModelUsage(first);
 
@@ -488,7 +488,7 @@ line3
       outputTokens: 1,
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
-      date: 2000,
+      date: 2_000,
     };
     actions.appendToModelUsage(second);
 
@@ -508,7 +508,7 @@ line3
 
   it("set-loading-state-timeout", () => {
     assert.equal(getState().app.loadingStateTimeout, null);
-    const timeout = setTimeout(() => undefined, 1000);
+    const timeout = setTimeout(() => undefined, 1_000);
     actions.setLoadingStateTimeout(timeout);
     assert.equal(getState().app.loadingStateTimeout, timeout);
     clearTimeout(timeout);

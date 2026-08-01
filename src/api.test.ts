@@ -332,13 +332,13 @@ SKILLS: available skills`,
 
   describe("maybeCompactMessageParams", () => {
     beforeEach(() => {
-      actions.setContextWindowPerModel({ "claude-sonnet-4-20250514": 100000 });
+      actions.setContextWindowPerModel({ "claude-sonnet-4-20250514": 100_000 });
       actions.setCompactAtContextRatio(0.7);
       actions.setCompactTargetRatio(0.3);
     });
 
     it("returns early when below the compact threshold", async () => {
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 60000);
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 60_000);
       let called = false;
       mock.method(aiDeps, "generateText", () => {
         called = true;
@@ -347,14 +347,14 @@ SKILLS: available skills`,
       await maybeCompactMessageParams();
       assert.strictEqual(called, false);
       assert.deepStrictEqual(getState().app.messageParams, {
-        tokens: 60000,
+        tokens: 60_000,
         messages: [{ role: "user", content: "hi" }],
       });
     });
 
     it("compacts the conversation when above the threshold", async () => {
       actions.setCompactTargetRatio(0.25);
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 80000);
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
       let capturedMessages: ModelMessage[] = [];
       mock.method(aiDeps, "generateText", (opts: Record<string, unknown>) => {
         capturedMessages = opts["messages"] as ModelMessage[];
@@ -363,7 +363,7 @@ SKILLS: available skills`,
             text: "compacted summary",
             totalUsage: {
               inputTokens: 0,
-              outputTokens: 25000,
+              outputTokens: 25_000,
               inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
             },
           }),
@@ -374,23 +374,28 @@ SKILLS: available skills`,
       assert.strictEqual(
         capturedMessages[0]!.content,
         `Compact the following conversation into roughly 25000:
-[{"role":"user","content":"hi"}]
+[
+  {
+    "role": "user",
+    "content": "hi"
+  }
+]
 `,
       );
       assert.deepStrictEqual(getState().app.messageParams, {
-        tokens: 25000,
+        tokens: 25_000,
         messages: [{ role: "user", content: "compacted summary" }],
       });
     });
 
     it("keeps messages when generateText fails", async () => {
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 80000);
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
       mock.method(aiDeps, "generateText", () =>
         Promise.reject(new Error("network error")),
       );
       await maybeCompactMessageParams();
       assert.deepStrictEqual(getState().app.messageParams, {
-        tokens: 80000,
+        tokens: 80_000,
         messages: [{ role: "user", content: "hi" }],
       });
     });

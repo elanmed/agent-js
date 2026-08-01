@@ -19,7 +19,7 @@ describe("log", () => {
 
   describe("debugLog", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1700000000000);
+      mock.method(Date, "now", () => 1_700_000_000_000);
     });
 
     it("does nothing when debugLog is disabled", () => {
@@ -58,7 +58,7 @@ describe("log", () => {
 
   describe("appendToChatHistory", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1700000000000);
+      mock.method(Date, "now", () => 1_700_000_000_000);
     });
 
     it("creates directory when log file does not exist", () => {
@@ -112,7 +112,7 @@ response
 
   describe("initPromptHistory", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1234567890000);
+      mock.method(Date, "now", () => 1_234_567_890_000);
       actions.setSessionStartDate();
     });
 
@@ -160,7 +160,7 @@ response
 
   describe("deleteExpiredPromptHistory", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1000000000000);
+      mock.method(Date, "now", () => 1_000_000_000_000);
       actions.setSessionStartDate();
     });
 

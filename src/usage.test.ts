@@ -320,7 +320,7 @@ describe("usage", () => {
     });
 
     it("appends the full usage on the first call", () => {
-      mock.method(Date, "now", () => 1000);
+      mock.method(Date, "now", () => 1_000);
 
       appendModelUsage({
         inputTokens: 100,
@@ -338,14 +338,14 @@ describe("usage", () => {
             outputTokens: 50,
             cacheReadTokens: 10,
             cacheWriteTokens: 5,
-            date: 1000,
+            date: 1_000,
           },
         ],
       });
     });
 
     it("appends the full usage on subsequent calls", () => {
-      let now = 1000;
+      let now = 1_000;
       mock.method(Date, "now", () => now);
 
       appendModelUsage({
@@ -357,7 +357,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      now = 2000;
+      now = 2_000;
       appendModelUsage({
         inputTokens: 150,
         outputTokens: 80,
@@ -374,21 +374,21 @@ describe("usage", () => {
             outputTokens: 50,
             cacheReadTokens: 10,
             cacheWriteTokens: 5,
-            date: 1000,
+            date: 1_000,
           },
           {
             inputTokens: 150,
             outputTokens: 80,
             cacheReadTokens: 20,
             cacheWriteTokens: 10,
-            date: 2000,
+            date: 2_000,
           },
         ],
       });
     });
 
     it("tracks different models separately", () => {
-      let now = 1000;
+      let now = 1_000;
       mock.method(Date, "now", () => now);
 
       appendModelUsage({
@@ -400,7 +400,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      now = 2000;
+      now = 2_000;
       actions.setModel("claude");
       appendModelUsage({
         inputTokens: 30,
@@ -418,7 +418,7 @@ describe("usage", () => {
             outputTokens: 50,
             cacheReadTokens: 10,
             cacheWriteTokens: 5,
-            date: 1000,
+            date: 1_000,
           },
         ],
         claude: [
@@ -427,14 +427,14 @@ describe("usage", () => {
             outputTokens: 15,
             cacheReadTokens: 3,
             cacheWriteTokens: 1,
-            date: 2000,
+            date: 2_000,
           },
         ],
       });
     });
 
     it("defaults missing token detail values to 0", () => {
-      mock.method(Date, "now", () => 1000);
+      mock.method(Date, "now", () => 1_000);
 
       appendModelUsage({
         inputTokens: 100,
@@ -452,7 +452,7 @@ describe("usage", () => {
             outputTokens: 50,
             cacheReadTokens: 0,
             cacheWriteTokens: 0,
-            date: 1000,
+            date: 1_000,
           },
         ],
       });
@@ -482,7 +482,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1000,
+        date: 1_000,
       };
 
       syncNewModelUsage("gpt-4", usage);
@@ -526,7 +526,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1000,
+        date: 1_000,
       };
 
       syncNewModelUsage("gpt-4", usage);
@@ -573,7 +573,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1000,
+        date: 1_000,
       };
 
       syncNewModelUsage("gpt-4", usage);
@@ -606,7 +606,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1000,
+        date: 1_000,
       };
 
       syncNewModelUsage("gpt-4", usage);
@@ -625,7 +625,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1000,
+        date: 1_000,
       };
 
       syncNewModelUsage("gpt-4", usage);
@@ -643,7 +643,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1000,
+        date: 1_000,
       };
 
       syncNewModelUsage("gpt-4", usage);

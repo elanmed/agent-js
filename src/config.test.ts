@@ -105,21 +105,21 @@ describe("config", () => {
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          contextWindowPerModel: { "test-model": 100000 },
+          contextWindowPerModel: { "test-model": 100_000 },
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          contextWindowPerModel: { "test-model": 200000 },
+          contextWindowPerModel: { "test-model": 200_000 },
         }),
       );
 
       await initState();
 
       assert.deepEqual(getState().config.contextWindowPerModel, {
-        "test-model": 200000,
+        "test-model": 200_000,
       });
     });
 
@@ -1055,7 +1055,7 @@ describe("config", () => {
   });
 
   it("sets sessionStartDate", async () => {
-    mock.method(Date, "now", () => 1234);
+    mock.method(Date, "now", () => 1_234);
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -1064,6 +1064,6 @@ describe("config", () => {
     );
 
     await initState();
-    assert.strictEqual(getState().app.sessionStartDate, 1234);
+    assert.strictEqual(getState().app.sessionStartDate, 1_234);
   });
 });
