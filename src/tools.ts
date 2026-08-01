@@ -9,6 +9,7 @@ import {
   tryCatch,
   tryCatchAsync,
   execPromise,
+  truncate,
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { getState } from "./state.ts";
@@ -20,7 +21,7 @@ const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 async function toolPrint(label: string, detail: string) {
-  await print.doing(`${label}: ${detail}`);
+  await print.doing(`${label}: ${truncate(detail)}`);
 }
 
 export type ToolPrint = typeof toolPrint;

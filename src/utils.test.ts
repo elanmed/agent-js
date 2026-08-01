@@ -9,6 +9,7 @@ import {
   getMessageFromError,
   getTempFileName,
   createQueue,
+  truncate,
 } from "./utils.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
 
@@ -104,6 +105,28 @@ describe("utils", () => {
 
     it("handles already normalized string", () => {
       assert.equal(normalizeLine("already\n"), "already\n");
+    });
+  });
+
+  describe("truncate", () => {
+    it("returns empty string unchanged", () => {
+      assert.equal(truncate(""), "");
+    });
+
+    it("returns strings of 50 chars or fewer unchanged", () => {
+      assert.equal(truncate("a".repeat(50)), "a".repeat(50));
+    });
+
+    it("truncates longer strings to 50 chars with an ellipsis", () => {
+      assert.equal(truncate("a".repeat(60)), `${"a".repeat(50)}…`);
+    });
+
+    it("returns the first line with an ellipsis for multiline input", () => {
+      assert.equal(truncate("short\nsecond line"), "short…");
+    });
+
+    it("truncates a long first line to 50 chars with an ellipsis", () => {
+      assert.equal(truncate(`${"a".repeat(60)}\nrest`), `${"a".repeat(50)}…`);
     });
   });
 

@@ -99,3 +99,22 @@ export function createQueue() {
 
   return { enqueue, flush };
 }
+
+export function truncate(str: string) {
+  const newlineIdx = str.indexOf("\n");
+
+  const firstLine = (() => {
+    if (newlineIdx === -1) return str;
+    return str.substring(0, newlineIdx);
+  })();
+
+  if (newlineIdx !== -1) {
+    return firstLine.substring(0, 50).concat("…");
+  }
+
+  if (str.length <= 50) {
+    return firstLine;
+  }
+
+  return firstLine.substring(0, 50).concat("…");
+}

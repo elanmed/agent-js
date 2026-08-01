@@ -12,6 +12,7 @@ import {
   getTempFileName,
   execPromise,
   isExisty,
+  truncate,
 } from "./utils.ts";
 import {
   print,
@@ -144,20 +145,7 @@ function abortRlQuestionForEditor(editorContent: string) {
   if (questionAbortController) {
     const rl = clearRlLine()!;
 
-    const newlineIdx = editorContent.indexOf("\n");
-
-    const firstLine = (() => {
-      if (newlineIdx === -1) return editorContent;
-      return editorContent.substring(0, newlineIdx);
-    })();
-
-    const truncatedFirstLine = (() => {
-      if (newlineIdx === -1) {
-        return firstLine.substring(0, 50);
-      }
-      return firstLine.substring(0, 50).concat("…");
-    })();
-
+    const truncatedFirstLine = truncate(editorContent);
     rl.write(truncatedFirstLine);
     actions.appendToStdout(truncatedFirstLine);
 
