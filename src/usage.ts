@@ -48,8 +48,8 @@ export function usageLimitDisabled() {
   const pricing = pricingPerModel[model];
 
   return (
-    pricing === undefined &&
-    usageLimitDuration === undefined &&
+    pricing === undefined ||
+    usageLimitDuration === undefined ||
     usageLimitDollar === undefined
   );
 }

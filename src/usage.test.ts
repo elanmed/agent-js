@@ -635,6 +635,24 @@ describe("usage", () => {
       });
       assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
     });
+
+    it("appends to state without writing when the model has no pricing configured", () => {
+      actions.setPricingPerModel({});
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        date: 1000,
+      };
+
+      syncNewModelUsage("gpt-4", usage);
+
+      assert.deepStrictEqual(getState().app.modelUsage, {
+        "gpt-4": [usage],
+      });
+      assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
+    });
   });
 
   describe("syncInitialModelUsage", () => {
@@ -661,6 +679,31 @@ describe("usage", () => {
       syncInitialModelUsage();
 
       assert.deepStrictEqual(getState().app.modelUsage, {});
+    });
+
+    it("does nothing when the model has no pricing configured", () => {
+      actions.setPricingPerModel({});
+      actions.setUsageLimitDuration("60m");
+      testFs._dirs.add(dirname(getUsageLogPath()));
+      testFs._files.set(
+        getUsageLogPath(),
+        JSON.stringify({
+          "gpt-4": [
+            {
+              inputTokens: 10,
+              outputTokens: 5,
+              cacheReadTokens: 1,
+              cacheWriteTokens: 0,
+              date: 500,
+            },
+          ],
+        }),
+      );
+
+      syncInitialModelUsage();
+
+      assert.deepStrictEqual(getState().app.modelUsage, {});
+      assert.strictEqual(testFs._files.has(getUsageLogPath()), true);
     });
 
     it("does nothing when the usage log directory does not exist", () => {
