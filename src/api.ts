@@ -150,3 +150,50 @@ export async function resolveApiCall(userInput: string) {
 
   return text;
 }
+
+export async function maybeCompactMessageParams() {
+  const { model } = getState().config;
+  const contextWindow =
+    getState().config.contextWindowPerModel[model] ?? 200_000;
+
+  const currRatio = getState().app.messageParams.tokens / contextWindow;
+  if (currRatio <= getState().config.compactAtContextRatio) return;
+
+  const targetRatio = 0.3;
+  const targetTokens = targetRatio * contextWindow;
+
+  const compactMessageParam = `Compact the following conversation into roughly ${String(targetTokens)}:
+${JSON.stringify(getState().app.messageParams.messages)}
+`;
+
+  actions.setApiStreamAbortController(new AbortController());
+  startLoadingState();
+  const generateTextResult = await tryCatchAsync(
+    aiDeps.generateText({
+      model: getLanguageModel(),
+      messages: [{ content: compactMessageParam, role: "user" }],
+      stopWhen: aiDeps.isLoopFinished(),
+      abortSignal: getState().abortControllers.apiStream!.signal,
+    }),
+  );
+  await flushAndStopLoadingState();
+  actions.setApiStreamAbortController(null);
+
+  if (!generateTextResult.ok) {
+    if (isAbortError(generateTextResult.error)) {
+      await print.error("Interrupted compaction");
+      return;
+    }
+
+    await print.error(getMessageFromError(generateTextResult.error));
+    return;
+  }
+
+  const { totalUsage, text } = generateTextResult.value;
+
+  actions.resetMessageParams();
+  actions.appendToMessageParams(
+    { content: text, role: "user" },
+    totalUsage.outputTokens ?? 0,
+  );
+}

@@ -16,6 +16,7 @@ import {
 } from "./input.ts";
 import { resolveApiCall } from "./api.ts";
 import { initLogs } from "./log.ts";
+import { maybeCompactMessageParams } from "./usage.ts";
 
 async function main() {
   await initState();
@@ -28,6 +29,7 @@ async function main() {
   let isFirstInput = true;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   while (true) {
+    await maybeCompactMessageParams();
     const userInput = await resolveUserInput({ isFirstInput });
     isFirstInput = false;
     if (userInput === null) continue;
