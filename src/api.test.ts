@@ -103,9 +103,43 @@ response text
           },
         ],
       });
-      const params = getState().app.messageParams;
-      assert.strictEqual(params.length, 3);
-      assert.deepStrictEqual(params[0], { role: "user", content: "hello" });
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 49,
+        messages: [
+          { role: "user", content: "hello" },
+          { role: "assistant", content: "tool call" },
+          { role: "tool", content: "tool result" },
+        ],
+      });
+    });
+
+    it("attributes delta input tokens across multiple calls", async () => {
+      await resolveApiCall("first");
+      assert.strictEqual(getState().app.messageParams.tokens, 10);
+
+      mock.method(aiDeps, "generateText", () =>
+        Promise.resolve(
+          makeGenerateTextResult({
+            totalUsage: {
+              inputTokens: 14,
+              outputTokens: 3,
+              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
+            },
+            response: {
+              messages: [{ role: "assistant", content: "answer" }],
+            },
+          }),
+        ),
+      );
+      await resolveApiCall("second");
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 17,
+        messages: [
+          { role: "user", content: "first" },
+          { role: "user", content: "second" },
+          { role: "assistant", content: "answer" },
+        ],
+      });
     });
 
     it("creates temp file on tool call start for str_replace", async () => {
@@ -269,11 +303,11 @@ SKILLS: available skills`,
     });
 
     it("includes previous messages in request", async () => {
-      actions.appendToMessageParams({ role: "user", content: "previous" });
-      actions.appendToMessageParams({
-        role: "assistant",
-        content: "response",
-      });
+      actions.appendToMessageParams({ role: "user", content: "previous" }, 0);
+      actions.appendToMessageParams(
+        { role: "assistant", content: "response" },
+        0,
+      );
       let capturedMessages: ModelMessage[] = [];
       mock.method(aiDeps, "generateText", (opts: Record<string, unknown>) => {
         capturedMessages = opts["messages"] as ModelMessage[];

@@ -385,12 +385,12 @@ from editor
     });
 
     it("resets params", async () => {
-      actions.appendToMessageParams({
-        role: "user",
-        content: "hello",
-      });
+      actions.appendToMessageParams({ role: "user", content: "hello" }, 0);
       await clearCommand();
-      assert.deepStrictEqual(getState().app.messageParams, []);
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 0,
+        messages: [],
+      });
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         "Context cleared (0 in, 0 out)\n",
@@ -437,7 +437,7 @@ from editor
     });
 
     it("returns transcript and resets message params when conversation is found", async () => {
-      actions.appendToMessageParams({ role: "user", content: "hello" });
+      actions.appendToMessageParams({ role: "user", content: "hello" }, 0);
       testFs._dirs.add("/fake-home/.config/.agent-js/history");
       testFs._files.set(
         "/fake-home/.config/.agent-js/history/chat-history-1234567890000.txt",
@@ -451,7 +451,10 @@ Transcript:
 transcript content
     `,
       );
-      assert.deepStrictEqual(getState().app.messageParams, []);
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 0,
+        messages: [],
+      });
     });
 
     it("prints error when no conversation is found", async () => {

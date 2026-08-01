@@ -109,24 +109,31 @@ describe("utils", () => {
   });
 
   describe("truncate", () => {
+    const MAX_LEN = 50;
     it("returns empty string unchanged", () => {
-      assert.equal(truncate(""), "");
+      assert.equal(truncate("", MAX_LEN), "");
     });
 
-    it("returns strings of 50 chars or fewer unchanged", () => {
-      assert.equal(truncate("a".repeat(50)), "a".repeat(50));
+    it("returns strings within the max length unchanged", () => {
+      assert.equal(truncate("a".repeat(MAX_LEN), MAX_LEN), "a".repeat(MAX_LEN));
     });
 
-    it("truncates longer strings to 50 chars with an ellipsis", () => {
-      assert.equal(truncate("a".repeat(60)), `${"a".repeat(50)}…`);
+    it("truncates longer strings to the max length with an ellipsis", () => {
+      assert.equal(
+        truncate("a".repeat(MAX_LEN + 10), MAX_LEN),
+        `${"a".repeat(MAX_LEN)}…`,
+      );
     });
 
     it("returns the first line with an ellipsis for multiline input", () => {
-      assert.equal(truncate("short\nsecond line"), "short…");
+      assert.equal(truncate("short\nsecond line", MAX_LEN), "short…");
     });
 
-    it("truncates a long first line to 50 chars with an ellipsis", () => {
-      assert.equal(truncate(`${"a".repeat(60)}\nrest`), `${"a".repeat(50)}…`);
+    it("truncates a long first line to the max length with an ellipsis", () => {
+      assert.equal(
+        truncate(`${"a".repeat(MAX_LEN + 10)}\nrest`, MAX_LEN),
+        `${"a".repeat(MAX_LEN)}…`,
+      );
     });
   });
 

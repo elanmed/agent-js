@@ -61,7 +61,7 @@ export async function resolveApiCall(userInput: string) {
     aiDeps.generateText({
       model: getLanguageModel(),
       system: systemContent,
-      messages: [...getState().app.messageParams, inputMessageParam],
+      messages: [...getState().app.messageParams.messages, inputMessageParam],
       tools: TOOLS,
       stopWhen: aiDeps.isLoopFinished(),
       abortSignal: getState().abortControllers.apiStream!.signal,
@@ -136,9 +136,15 @@ export async function resolveApiCall(userInput: string) {
 
   appendModelUsage(totalUsage);
 
-  actions.appendToMessageParams(inputMessageParam);
-  for (const msg of response.messages) {
-    actions.appendToMessageParams(msg);
+  const allInputTokens = totalUsage.inputTokens ?? 0;
+  const tokensForInputMessageParam =
+    allInputTokens - getState().app.messageParams.tokens;
+
+  const outputTokens = totalUsage.outputTokens ?? 0;
+
+  actions.appendToMessageParams(inputMessageParam, tokensForInputMessageParam);
+  for (const [idx, msg] of response.messages.entries()) {
+    actions.appendToMessageParams(msg, idx === 0 ? outputTokens : 0);
   }
   appendToChatHistory(text, "assistant");
 

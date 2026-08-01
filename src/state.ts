@@ -20,7 +20,7 @@ export interface SlashCommand {
 
 interface State {
   app: {
-    messageParams: ModelMessage[];
+    messageParams: { tokens: number; messages: ModelMessage[] };
     editorInputValue: string | null;
     slashCommands: SlashCommand[];
     customSlashCommandDirs: string[];
@@ -63,7 +63,7 @@ interface State {
 
 const initialState: State = {
   app: {
-    messageParams: [],
+    messageParams: { tokens: 0, messages: [] },
     editorInputValue: null,
     slashCommands: [],
     customSlashCommandDirs: [],
@@ -113,13 +113,14 @@ const logStateChange = (actionType: string, before: string, after: string) => {
 };
 
 export const actions = {
-  appendToMessageParams(message: ModelMessage) {
-    const before = state.app.messageParams;
-    state.app.messageParams.push(message);
+  appendToMessageParams(message: ModelMessage, tokens: number) {
+    const before = state.app.messageParams.tokens;
+    state.app.messageParams.messages.push(message);
+    state.app.messageParams.tokens += tokens;
     logStateChange(
       "append-to-message-params",
-      String(before.length),
-      String(state.app.messageParams.length),
+      String(before),
+      String(state.app.messageParams.tokens),
     );
   },
 
@@ -188,8 +189,8 @@ export const actions = {
   },
 
   resetMessageParams() {
-    const before = state.app.messageParams.length;
-    state.app.messageParams = [];
+    const before = state.app.messageParams.tokens;
+    state.app.messageParams = { tokens: 0, messages: [] };
     logStateChange("reset-message-params", String(before), "0");
   },
 

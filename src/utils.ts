@@ -100,7 +100,7 @@ export function createQueue() {
   return { enqueue, flush };
 }
 
-export function truncate(str: string) {
+export function truncate(str: string, maxLen: number) {
   const newlineIdx = str.indexOf("\n");
 
   const firstLine = (() => {
@@ -109,12 +109,12 @@ export function truncate(str: string) {
   })();
 
   if (newlineIdx !== -1) {
-    return firstLine.substring(0, 50).concat("…");
+    return firstLine.substring(0, maxLen).concat("…");
   }
 
-  if (str.length <= 50) {
+  if (str.length <= maxLen) {
     return firstLine;
   }
 
-  return firstLine.substring(0, 50).concat("…");
+  return firstLine.substring(0, maxLen).concat("…");
 }
