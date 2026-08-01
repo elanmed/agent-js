@@ -29,6 +29,7 @@ export const processDeps = {
     get: (key: string) => process.env[key],
   },
   stdout: {
+    getColumns: () => process.stdout.columns,
     write: (out: string) => {
       process.stdout.write(out);
     },

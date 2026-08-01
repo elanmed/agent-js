@@ -145,7 +145,7 @@ function abortRlQuestionForEditor(editorContent: string) {
   if (questionAbortController) {
     const rl = clearRlLine()!;
 
-    const truncatedFirstLine = truncate(editorContent, 50);
+    const truncatedFirstLine = truncate(editorContent);
     rl.write(truncatedFirstLine);
     actions.appendToStdout(truncatedFirstLine);
 

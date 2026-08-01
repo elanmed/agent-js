@@ -2,7 +2,7 @@ import { join } from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
 import childProcess from "node:child_process";
-import { fsDeps } from "./deps.ts";
+import { fsDeps, processDeps } from "./deps.ts";
 
 export const MISSING = "__MISSING__";
 
@@ -100,7 +100,8 @@ export function createQueue() {
   return { enqueue, flush };
 }
 
-export function truncate(str: string, maxLen: number) {
+export function truncate(str: string) {
+  const maxLen = 0.9 * processDeps.stdout.getColumns();
   const newlineIdx = str.indexOf("\n");
 
   const firstLine = (() => {

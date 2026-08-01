@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 
 import {
@@ -12,6 +12,7 @@ import {
   truncate,
 } from "./utils.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
+import { processDeps } from "./deps.ts";
 
 describe("utils", () => {
   beforeEach(() => {
@@ -109,29 +110,35 @@ describe("utils", () => {
   });
 
   describe("truncate", () => {
-    const MAX_LEN = 50;
+    const COLUMNS = 100;
+    const MAX_LEN = 0.9 * COLUMNS;
+
+    beforeEach(() => {
+      mock.method(processDeps.stdout, "getColumns", () => COLUMNS);
+    });
+
     it("returns empty string unchanged", () => {
-      assert.equal(truncate("", MAX_LEN), "");
+      assert.equal(truncate(""), "");
     });
 
     it("returns strings within the max length unchanged", () => {
-      assert.equal(truncate("a".repeat(MAX_LEN), MAX_LEN), "a".repeat(MAX_LEN));
+      assert.equal(truncate("a".repeat(MAX_LEN)), "a".repeat(MAX_LEN));
     });
 
     it("truncates longer strings to the max length with an ellipsis", () => {
       assert.equal(
-        truncate("a".repeat(MAX_LEN + 10), MAX_LEN),
+        truncate("a".repeat(MAX_LEN + 10)),
         `${"a".repeat(MAX_LEN)}…`,
       );
     });
 
     it("returns the first line with an ellipsis for multiline input", () => {
-      assert.equal(truncate("short\nsecond line", MAX_LEN), "short…");
+      assert.equal(truncate("short\nsecond line"), "short…");
     });
 
     it("truncates a long first line to the max length with an ellipsis", () => {
       assert.equal(
-        truncate(`${"a".repeat(MAX_LEN + 10)}\nrest`, MAX_LEN),
+        truncate(`${"a".repeat(MAX_LEN + 10)}\nrest`),
         `${"a".repeat(MAX_LEN)}…`,
       );
     });
