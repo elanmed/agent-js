@@ -300,7 +300,10 @@ describe("print", () => {
       mock.method(Date, "now", () => 42_000);
       actions.setSessionStartDate();
       await printSessionStartDate();
-      assert.strictEqual(stripAnsi(getState().app.stdout), "Session: 42000\n");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "Session start date: 42000\n",
+      );
     });
   });
 });

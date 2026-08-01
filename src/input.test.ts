@@ -308,7 +308,9 @@ from editor
       );
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        ">yes\nSession: 42000\n",
+        `>yes
+Session start date: 42000
+`,
       );
     });
   });
