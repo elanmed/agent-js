@@ -29,6 +29,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 | `provider`                  | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)                     |
 | `baseURL`                   | `string`                               | API base URL (required for `openai-compatible`)                 |
 | `pricingPerModel`           | `object`                               | Token pricing per model per million                             |
+| `contextWindowPerModel`     | `object`                               | Context window size in tokens per model                         |
 | `keymaps`                   | `object`                               | Custom keybindings (see below)                                  |
 | `customSlashCommandDirs`    | `string[]`                             | Additional directories for custom slash commands                |
 | `customSkillDirs`           | `string[]`                             | Additional directories for skills                               |
@@ -85,6 +86,9 @@ Example `settings.json`:
       "cacheReadPerToken": 1.25,
       "cacheWritePerToken": 3.75
     }
+  },
+  "contextWindowPerModel": {
+    "claude-sonnet-4-6": 200000
   },
   "customSlashCommandDirs": ["/home/me/my-commands"],
   "customSkillDirs": ["/home/me/my-skills"],
