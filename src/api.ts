@@ -21,7 +21,7 @@ import assert from "node:assert";
 import { aiDeps, fsDeps, processDeps } from "./deps.ts";
 import { appendToChatHistory } from "./log.ts";
 
-function getLanguageModel() {
+export function getLanguageModel() {
   const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
 
   if (getState().config.provider === "anthropic") {
@@ -159,8 +159,7 @@ export async function maybeCompactMessageParams() {
   const currRatio = getState().app.messageParams.tokens / contextWindow;
   if (currRatio <= getState().config.compactAtContextRatio) return;
 
-  const targetRatio = 0.3;
-  const targetTokens = targetRatio * contextWindow;
+  const targetTokens = getState().config.compactTargetRatio * contextWindow;
 
   const compactMessageParam = `Compact the following conversation into roughly ${String(targetTokens)}:
 ${JSON.stringify(getState().app.messageParams.messages)}

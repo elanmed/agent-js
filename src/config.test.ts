@@ -144,6 +144,27 @@ describe("config", () => {
       assert.strictEqual(getState().config.compactAtContextRatio, 0.5);
     });
 
+    it("uses its compactTargetRatio over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactTargetRatio: 0.4,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactTargetRatio: 0.25,
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.compactTargetRatio, 0.25);
+    });
+
     it("uses its keymaps over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
@@ -545,6 +566,42 @@ describe("config", () => {
         JSON.stringify({
           ...defaultConfig,
           compactAtContextRatio: "half",
+        }),
+      );
+
+      await assert.rejects(initState(), /Invalid input: expected number/);
+    });
+
+    it("rejects compactTargetRatio above 1", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactTargetRatio: 1.5,
+        }),
+      );
+
+      await assert.rejects(initState(), /Too big: expected number to be <=1/);
+    });
+
+    it("rejects compactTargetRatio below 0", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactTargetRatio: -0.1,
+        }),
+      );
+
+      await assert.rejects(initState(), /Too small: expected number to be >=0/);
+    });
+
+    it("rejects non-number compactTargetRatio", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactTargetRatio: "half",
         }),
       );
 

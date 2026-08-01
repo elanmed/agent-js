@@ -16,7 +16,7 @@ import {
 } from "./input.ts";
 import { resolveApiCall } from "./api.ts";
 import { initLogs } from "./log.ts";
-import { maybeCompactMessageParams } from "./usage.ts";
+import { maybeCompactMessageParams } from "./api.ts";
 
 async function main() {
   await initState();

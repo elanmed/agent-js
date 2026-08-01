@@ -44,6 +44,7 @@ interface State {
     pricingPerModel: Record<string, ModelPricing>;
     contextWindowPerModel: Record<string, number>;
     compactAtContextRatio: number;
+    compactTargetRatio: number;
     model: string;
     baseURL: string | null;
     provider: Provider;
@@ -94,6 +95,7 @@ const initialState: State = {
       DEFAULT_CONFIG.contextWindowPerModel,
     ),
     compactAtContextRatio: DEFAULT_CONFIG.compactAtContextRatio,
+    compactTargetRatio: DEFAULT_CONFIG.compactTargetRatio,
     keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
     keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
     keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
@@ -172,9 +174,19 @@ export const actions = {
     const before = state.config.compactAtContextRatio;
     state.config.compactAtContextRatio = compactAtContextRatio;
     logStateChange(
-      "set-compact-at-context-percent",
+      "set-compact-at-context-ratio",
       String(before),
       String(compactAtContextRatio),
+    );
+  },
+
+  setCompactTargetRatio(compactTargetRatio: number) {
+    const before = state.config.compactTargetRatio;
+    state.config.compactTargetRatio = compactTargetRatio;
+    logStateChange(
+      "set-compact-target-ratio",
+      String(before),
+      String(compactTargetRatio),
     );
   },
 

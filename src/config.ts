@@ -38,6 +38,7 @@ const ConfigSchema = z.object({
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
   contextWindowPerModel: z.record(z.string(), z.number()).optional(),
   compactAtContextRatio: z.number().min(0).max(1).optional(),
+  compactTargetRatio: z.number().min(0).max(1).optional(),
   keymaps: z
     .object({
       edit: KeySchema.optional(),
@@ -105,6 +106,7 @@ interface DefaultConfig {
   >;
   contextWindowPerModel: Record<string, number>;
   compactAtContextRatio: number;
+  compactTargetRatio: number;
   keymaps: {
     edit: Key;
     paste: Key;
@@ -125,6 +127,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   pricingPerModel: {},
   contextWindowPerModel: {},
   compactAtContextRatio: 0.7,
+  compactTargetRatio: 0.3,
   model: MISSING,
   keymaps: {
     edit: {
@@ -222,6 +225,11 @@ export function initStateFromConfig() {
     localConfig.compactAtContextRatio ??
       globalConfig.compactAtContextRatio ??
       DEFAULT_CONFIG.compactAtContextRatio,
+  );
+  actions.setCompactTargetRatio(
+    localConfig.compactTargetRatio ??
+      globalConfig.compactTargetRatio ??
+      DEFAULT_CONFIG.compactTargetRatio,
   );
 
   actions.setCustomSlashCommandDirs(

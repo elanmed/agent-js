@@ -127,10 +127,16 @@ describe("state", () => {
     });
   });
 
-  it("set-compact-at-context-percent", () => {
+  it("set-compact-at-context-ratio", () => {
     assert.strictEqual(getState().config.compactAtContextRatio, 0.7);
     actions.setCompactAtContextRatio(0.5);
     assert.strictEqual(getState().config.compactAtContextRatio, 0.5);
+  });
+
+  it("set-compact-target-ratio", () => {
+    assert.strictEqual(getState().config.compactTargetRatio, 0.3);
+    actions.setCompactTargetRatio(0.25);
+    assert.strictEqual(getState().config.compactTargetRatio, 0.25);
   });
 
   it("set-keymap-edit-prompt", () => {
