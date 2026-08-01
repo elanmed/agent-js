@@ -302,7 +302,10 @@ from editor
         resolveUserInput({ isFirstInput: false }),
         /process.exit called/,
       );
-      assert.strictEqual(stripAnsi(getState().app.stdout), "Session: 42000\n");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        ">yes\nSession: 42000\n",
+      );
     });
   });
 
