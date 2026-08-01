@@ -25,11 +25,13 @@ import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
-import type { Key } from "./config.ts";
+import { ConfigSchema, readConfigFile, type Key } from "./config.ts";
 import { appendToChatHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import {
+  getGlobalConfigPath,
   getGlobalSlashCommandDir,
+  getLocalConfigPath,
   getLocalSlashCommandDir,
   getPromptHistoryDir,
 } from "./paths.ts";
@@ -321,6 +323,9 @@ const builtinSlashCommands = [
   "keymaps",
   "usage",
   "resume",
+  "local",
+  "global",
+  "config",
 ];
 
 export async function resolveSlashCommand(rawInput: string) {
@@ -372,8 +377,16 @@ export async function resolveSlashCommand(rawInput: string) {
       await usageCommand();
       return null;
     }
-    case "settings": {
-      await settingsCommand();
+    case "local": {
+      await localCommand();
+      return null;
+    }
+    case "global": {
+      await globalCommand();
+      return null;
+    }
+    case "config": {
+      await configCommand();
       return null;
     }
     case "resume": {
@@ -668,10 +681,30 @@ export async function printKeymapsCommand() {
   await print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
 }
 
-export async function settingsCommand() {
+function getPrettyConfig(config: object) {
+  const entries = Object.entries(config);
+  if (entries.length === 0) return "{}";
+  return entries
+    .map(([key, value]) => `- ${key}: ${JSON.stringify(value, null, 2)}`)
+    .join("\n");
+}
+
+export async function localCommand() {
   await printNewline();
-  await print.doing("Settings:");
-  await print.doing(JSON.stringify(getState().config, null, 2));
+  await print.doing(`Local config from path: ${getLocalConfigPath()}`);
+  await print(getPrettyConfig(readConfigFile(getLocalConfigPath())));
+}
+
+export async function globalCommand() {
+  await printNewline();
+  await print.doing(`Global config from path: ${getGlobalConfigPath()}`);
+  await print(getPrettyConfig(readConfigFile(getGlobalConfigPath())));
+}
+
+export async function configCommand() {
+  await printNewline();
+  await print.doing("Applied config:");
+  await print(getPrettyConfig(getState().config));
 }
 
 export function clearRlLine(): readline.Interface | null {

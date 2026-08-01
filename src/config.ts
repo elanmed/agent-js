@@ -31,7 +31,7 @@ const ModelPricingSchema = z.object({
 
 export type ModelPricing = z.infer<typeof ModelPricingSchema>;
 
-const ConfigSchema = z.strictObject({
+export const ConfigSchema = z.strictObject({
   model: z.string().optional(),
   baseURL: z.string().optional(),
   provider: z.enum(["anthropic", "openai-compatible"]).optional(),
@@ -156,37 +156,26 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   usageLimitDollar: undefined,
 };
 
+export function readConfigFile(path: string) {
+  if (!fsDeps.existsSync(path)) return {};
+
+  const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
+  if (!readResult.ok) return {};
+
+  const parseResult = tryCatch((): unknown => JSON.parse(readResult.value));
+  if (!parseResult.ok) {
+    throw new Error("Failed to parse config as JSON");
+  }
+
+  return ConfigSchema.parse(parseResult.value);
+}
+
 export function initStateFromConfig() {
   const args = parseCliArgs();
   actions.setDebugLog(args.debug);
 
-  const globalConfig: Config = (() => {
-    if (fsDeps.existsSync(getGlobalConfigPath())) {
-      const readResult = tryCatch(() =>
-        fsDeps.readFileSync(getGlobalConfigPath()).toString(),
-      );
-      if (readResult.ok) {
-        return parseConfigStr(readResult.value);
-      }
-      return {};
-    }
-
-    return {};
-  })();
-
-  const localConfig: Config = (() => {
-    if (fsDeps.existsSync(getLocalConfigPath())) {
-      const readResult = tryCatch(() =>
-        fsDeps.readFileSync(getLocalConfigPath()).toString(),
-      );
-      if (readResult.ok) {
-        return parseConfigStr(readResult.value);
-      }
-      return {};
-    }
-
-    return {};
-  })();
+  const globalConfig = readConfigFile(getGlobalConfigPath());
+  const localConfig = readConfigFile(getLocalConfigPath());
 
   const defaultedModel =
     localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model;
@@ -313,12 +302,4 @@ export async function initStateFromFs() {
 export async function initState() {
   initStateFromConfig();
   await initStateFromFs();
-}
-
-function parseConfigStr(configStr: string): Config {
-  const parseResult = tryCatch((): unknown => JSON.parse(configStr));
-  if (parseResult.ok) {
-    return ConfigSchema.parse(parseResult.value);
-  }
-  throw new Error("Failed to parse config as JSON");
 }

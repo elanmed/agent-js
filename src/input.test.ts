@@ -14,6 +14,9 @@ import {
   printContextFilesCommand,
   printCommandsCommand,
   printKeymapsCommand,
+  localCommand,
+  globalCommand,
+  configCommand,
   spawnAndReadEditorContent,
   resumeCommand,
 } from "./input.ts";
@@ -28,6 +31,7 @@ import {
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
+import { getLocalConfigPath, getGlobalConfigPath } from "./paths.ts";
 
 describe("input", () => {
   beforeEach(() => {
@@ -717,6 +721,9 @@ Available commands:
 - /keymaps
 - /usage
 - /resume
+- /local
+- /global
+- /config
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -783,6 +790,102 @@ Keymaps:
   "name": "k",
   "ctrl": true
 }
+`,
+      );
+    });
+  });
+
+  describe("localCommand", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints {} when no local config file exists", async () => {
+      await localCommand();
+      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+    });
+
+    it("prints each key of the local config file", async () => {
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
+      );
+      await localCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        '- model: "gpt-4"\n- provider: "anthropic"\n',
+      );
+    });
+  });
+
+  describe("globalCommand", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints {} when no global config file exists", async () => {
+      await globalCommand();
+      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+    });
+
+    it("prints each key of the global config file", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({ model: "gpt-4" }),
+      );
+      await globalCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        '- model: "gpt-4"\n',
+      );
+    });
+  });
+
+  describe("configCommand", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints each key of the current config", async () => {
+      await configCommand();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `- model: "__MISSING__"
+- provider: "openai-compatible"
+- baseURL: null
+- pricingPerModel: {}
+- contextWindowPerModel: {}
+- compactAtContextRatio: 0.7
+- compactTargetRatio: 0.3
+- keymapEditPrompt: {
+  "name": "g",
+  "ctrl": true
+}
+- keymapEditPastePrompt: {
+  "name": "v",
+  "ctrl": true
+}
+- keymapChatHistory: {
+  "name": "o",
+  "ctrl": true
+}
+- keymapClear: {
+  "name": "x",
+  "ctrl": true
+}
+- loadingStateFrames: [
+  "|",
+  "/",
+  "-",
+  "\\\\"
+]
+- loadingStateFrameDuration: 80
+- promptPrefix: "> "
+- usageLimitDuration: undefined
+- usageLimitDollar: undefined
 `,
       );
     });
@@ -1069,6 +1172,66 @@ Available commands:
 - /keymaps
 - /usage
 - /resume
+- /local
+- /global
+- /config
+`,
+      );
+    });
+
+    it("handles /local command", async () => {
+      actions.resetStdout();
+      const result = await resolveSlashCommand("/local");
+      assert.strictEqual(result, null);
+      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+    });
+
+    it("handles /global command", async () => {
+      actions.resetStdout();
+      const result = await resolveSlashCommand("/global");
+      assert.strictEqual(result, null);
+      assert.strictEqual(stripAnsi(getState().app.stdout), "{}\n");
+    });
+
+    it("handles /config command", async () => {
+      actions.resetStdout();
+      const result = await resolveSlashCommand("/config");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `- model: "__MISSING__"
+- provider: "openai-compatible"
+- baseURL: null
+- pricingPerModel: {}
+- contextWindowPerModel: {}
+- compactAtContextRatio: 0.7
+- compactTargetRatio: 0.3
+- keymapEditPrompt: {
+  "name": "g",
+  "ctrl": true
+}
+- keymapEditPastePrompt: {
+  "name": "v",
+  "ctrl": true
+}
+- keymapChatHistory: {
+  "name": "o",
+  "ctrl": true
+}
+- keymapClear: {
+  "name": "x",
+  "ctrl": true
+}
+- loadingStateFrames: [
+  "|",
+  "/",
+  "-",
+  "\\\\"
+]
+- loadingStateFrameDuration: 80
+- promptPrefix: "> "
+- usageLimitDuration: undefined
+- usageLimitDollar: undefined
 `,
       );
     });
@@ -1186,6 +1349,9 @@ Invalid command: /unknown, valid commands:
 - /keymaps
 - /usage
 - /resume
+- /local
+- /global
+- /config
 - /test-cwd/.agent-js/commands/known.md
 `,
       );
