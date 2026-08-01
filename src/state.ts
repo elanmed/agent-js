@@ -27,6 +27,7 @@ interface State {
     customSkillDirs: string[];
     stdout: string;
     debugLog: boolean;
+    debugLogPath: string;
     chatHistoryPath: string;
     contextEntries: ContextEntry[];
     contextStr: string;
@@ -73,6 +74,7 @@ const initialState: State = {
     customSkillDirs: [],
     stdout: "",
     debugLog: false,
+    debugLogPath: "",
     chatHistoryPath: "",
     contextEntries: [],
     contextStr: "",
@@ -298,6 +300,12 @@ export const actions = {
 
   setDebugLog(debugLog: boolean) {
     state.app.debugLog = debugLog;
+  },
+
+  setDebugLogPath(debugLogPath: string) {
+    const before = state.app.debugLogPath;
+    state.app.debugLogPath = debugLogPath;
+    logStateChange("set-debug-log-path", before, debugLogPath);
   },
 
   setChatHistoryPath(chatHistoryPath: string) {

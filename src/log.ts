@@ -1,13 +1,15 @@
 import { basename, dirname, extname, join } from "node:path";
+import crypto from "node:crypto";
 import { actions, getState } from "./state.ts";
 import { normalizeLine, tryCatch } from "./utils.ts";
 import { fsDeps } from "./deps.ts";
-import { getDebugLogPath, getPromptHistoryDir } from "./paths.ts";
+import { getGlobalConfigDir, getPromptHistoryDir } from "./paths.ts";
 
 export function debugLog(content: string) {
   if (!getState().app.debugLog) return;
 
-  const path = getDebugLogPath();
+  const path = getState().app.debugLogPath;
+  if (path.length === 0) return;
   if (!fsDeps.existsSync(path)) {
     const mkdirResult = tryCatch(() =>
       fsDeps.mkdirSync(dirname(path), { recursive: true }),
@@ -43,11 +45,18 @@ ${normalizeLine(content)}
   );
 }
 
-export function resetDebugLog() {
-  const path = getDebugLogPath();
-  if (fsDeps.existsSync(path)) {
-    tryCatch(() => fsDeps.writeFileSync(path, ""));
+export function initDebugLog() {
+  const debugLogDir = getGlobalConfigDir();
+  if (!fsDeps.existsSync(debugLogDir)) {
+    const mkDirResult = tryCatch(() =>
+      fsDeps.mkdirSync(debugLogDir, { recursive: true }),
+    );
+    if (!mkDirResult.ok) return;
   }
+
+  const debugLogPath = join(debugLogDir, `debug-${crypto.randomUUID()}.log`);
+  actions.setDebugLogPath(debugLogPath);
+  tryCatch(() => fsDeps.writeFileSync(debugLogPath, ""));
 }
 
 export function initPromptHistory() {
@@ -94,7 +103,7 @@ export function deleteExpiredPromptHistory() {
 }
 
 export function initLogs() {
-  resetDebugLog();
+  initDebugLog();
   deleteExpiredPromptHistory();
   initPromptHistory();
 }

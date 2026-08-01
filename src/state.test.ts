@@ -222,6 +222,15 @@ describe("state", () => {
     assert.equal(getState().app.debugLog, true);
   });
 
+  it("set-debug-log-path", () => {
+    assert.equal(getState().app.debugLogPath, "");
+    actions.setDebugLogPath("/fake-home/.config/.agent-js/debug-test-uuid.log");
+    assert.equal(
+      getState().app.debugLogPath,
+      "/fake-home/.config/.agent-js/debug-test-uuid.log",
+    );
+  });
+
   it("set-prompt-history-path", () => {
     assert.equal(getState().app.chatHistoryPath, "");
     actions.setChatHistoryPath("/tmp/editor.log");

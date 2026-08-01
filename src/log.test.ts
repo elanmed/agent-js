@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   debugLog,
   appendToChatHistory,
-  resetDebugLog,
+  initDebugLog,
   initPromptHistory,
   deleteExpiredPromptHistory,
 } from "./log.ts";
@@ -20,25 +20,38 @@ describe("log", () => {
   describe("debugLog", () => {
     beforeEach(() => {
       mock.method(Date, "now", () => 1_700_000_000_000);
+      actions.setDebugLogPath(
+        "/fake-home/.config/.agent-js/debug-test-uuid.log",
+      );
     });
 
     it("does nothing when debugLog is disabled", () => {
       actions.setDebugLog(false);
       debugLog("test message");
-      assert.equal(testFs._files.has("/test-cwd/.agent-js/debug.log"), false);
+      assert.equal(
+        testFs._files.has("/fake-home/.config/.agent-js/debug-test-uuid.log"),
+        false,
+      );
+    });
+
+    it("does nothing when no debug log path is set", () => {
+      actions.setDebugLog(true);
+      actions.setDebugLogPath("");
+      debugLog("test message");
+      assert.equal(testFs._files.has(""), false);
     });
 
     it("creates directory when log file does not exist", () => {
       actions.setDebugLog(true);
       debugLog("test message");
-      assert.equal(testFs._dirs.has("/test-cwd/.agent-js"), true);
+      assert.equal(testFs._dirs.has("/fake-home/.config/.agent-js"), true);
     });
 
     it("appends content to log file with timestamp", () => {
       actions.setDebugLog(true);
       debugLog("test message");
       assert.equal(
-        testFs._files.get("/test-cwd/.agent-js/debug.log"),
+        testFs._files.get("/fake-home/.config/.agent-js/debug-test-uuid.log"),
         "2023-11-14T22:13:20.000Z :: test message\n",
       );
     });
@@ -48,7 +61,7 @@ describe("log", () => {
       debugLog("message 1");
       debugLog("message 2");
       assert.equal(
-        testFs._files.get("/test-cwd/.agent-js/debug.log"),
+        testFs._files.get("/fake-home/.config/.agent-js/debug-test-uuid.log"),
         `2023-11-14T22:13:20.000Z :: message 1
 2023-11-14T22:13:20.000Z :: message 2
 `,
@@ -96,17 +109,27 @@ response
     });
   });
 
-  describe("resetDebugLog", () => {
-    it("does nothing when log file does not exist", () => {
-      resetDebugLog();
-      assert.equal(testFs._files.has("/test-cwd/.agent-js/debug.log"), false);
+  describe("initDebugLog", () => {
+    it("creates directory and sets path when directory does not exist", () => {
+      initDebugLog();
+      assert.equal(testFs._dirs.has("/fake-home/.config/.agent-js"), true);
+      assert.equal(
+        getState().app.debugLogPath,
+        "/fake-home/.config/.agent-js/debug-test-uuid.log",
+      );
+      assert.equal(
+        testFs._files.get("/fake-home/.config/.agent-js/debug-test-uuid.log"),
+        "",
+      );
     });
 
-    it("clears the log file when it exists", () => {
-      testFs._dirs.add("/test-cwd/.agent-js");
-      testFs._files.set("/test-cwd/.agent-js/debug.log", "existing content");
-      resetDebugLog();
-      assert.equal(testFs._files.get("/test-cwd/.agent-js/debug.log"), "");
+    it("leaves path empty when mkdir fails", () => {
+      mock.method(fsDeps, "existsSync", () => false);
+      mock.method(fsDeps, "mkdirSync", () => {
+        throw new Error("Permission denied");
+      });
+      initDebugLog();
+      assert.equal(getState().app.debugLogPath, "");
     });
   });
 

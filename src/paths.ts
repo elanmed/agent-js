@@ -38,10 +38,6 @@ export function getGlobalSlashCommandDir() {
   return join(getGlobalConfigDir(), "commands");
 }
 
-export function getDebugLogPath() {
-  return join(getLocalConfigDir(), "debug.log");
-}
-
 export function getPromptHistoryDir() {
   return join(getGlobalConfigDir(), "history");
 }
