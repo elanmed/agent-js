@@ -21,8 +21,7 @@ describe("state", () => {
     clearTimeout(timeout);
 
     assert.deepStrictEqual(getState().app.messageParams, []);
-    assert.deepStrictEqual(getState().app.messageUsages, []);
-    assert.deepStrictEqual(getState().app.incrementalUsage, {});
+    assert.deepStrictEqual(getState().app.modelUsage, {});
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.loadingStateTimeout, null);
@@ -35,8 +34,7 @@ describe("state", () => {
 
   it("initial state", () => {
     assert.deepStrictEqual(getState().app.messageParams, []);
-    assert.deepStrictEqual(getState().app.messageUsages, []);
-    assert.deepStrictEqual(getState().app.incrementalUsage, {});
+    assert.deepStrictEqual(getState().app.modelUsage, {});
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.apiStartTime, null);
@@ -402,10 +400,10 @@ line3
     assert.strictEqual(getState().config.usageLimitDollar, undefined);
   });
 
-  it("set-usages", () => {
-    assert.deepStrictEqual(getState().app.incrementalUsage, {});
+  it("set-modelUsage", () => {
+    assert.deepStrictEqual(getState().app.modelUsage, {});
 
-    actions.setUsages({
+    actions.setModelUsage({
       "gpt-4": [
         {
           inputTokens: 10,
@@ -417,7 +415,7 @@ line3
       ],
     });
 
-    assert.deepStrictEqual(getState().app.incrementalUsage, {
+    assert.deepStrictEqual(getState().app.modelUsage, {
       "gpt-4": [
         {
           inputTokens: 10,
@@ -430,7 +428,7 @@ line3
     });
   });
 
-  it("append-to-usages", () => {
+  it("append-to-modelUsage", () => {
     actions.setModel("gpt-4");
     const first = {
       inputTokens: 10,
@@ -439,7 +437,7 @@ line3
       cacheWriteTokens: 1,
       date: 1000,
     };
-    actions.appendToUsages(first);
+    actions.appendToModelUsage(first);
 
     actions.setModel("claude");
     const second = {
@@ -449,9 +447,9 @@ line3
       cacheWriteTokens: 0,
       date: 2000,
     };
-    actions.appendToUsages(second);
+    actions.appendToModelUsage(second);
 
-    assert.deepStrictEqual(getState().app.incrementalUsage, {
+    assert.deepStrictEqual(getState().app.modelUsage, {
       "gpt-4": [first],
       claude: [second],
     });

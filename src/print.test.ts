@@ -9,9 +9,9 @@ import {
   stopLoadingState,
   colorPrint,
   flushAndStopLoadingState,
-  appendIncrementalUsage,
-  syncNewIncrementalUsage,
-  syncInitialIncrementalUsages,
+  appendModelUsage,
+  syncNewModelUsage,
+  syncInitialModelUsage,
   printSessionStartDate,
 } from "./print.ts";
 import { actions, getState } from "./state.ts";
@@ -227,7 +227,7 @@ describe("print", () => {
       actions.setUsageLimitDollar(10);
     });
 
-    it("known model with no usages returns $0.0000", () => {
+    it("known model with no modelUsage returns $0.0000", () => {
       actions.setModel("claude-haiku-4-5");
       const result = getPrettySessionUsage();
       assert.equal(result, "$0.000 of $10");
@@ -237,7 +237,7 @@ describe("print", () => {
       // haiku: input=$1/M, 2_000_000 prompt = $2.0000
       actions.setModel("claude-haiku-4-5");
 
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 2_000_000,
         outputTokens: 0,
         inputTokenDetails: {
@@ -252,7 +252,7 @@ describe("print", () => {
     it("calculates completion token costs correctly", () => {
       // haiku: output=$5/M, 600_000 completion = $3.0000
       actions.setModel("claude-haiku-4-5");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 0,
         outputTokens: 600_000,
         inputTokenDetails: {
@@ -268,7 +268,7 @@ describe("print", () => {
       // haiku: cacheRead=$0.25/M
       // 1_000_000 input tokens, all cache reads = $0.25
       actions.setModel("claude-haiku-4-5");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 1_000_000,
         outputTokens: 0,
         inputTokenDetails: {
@@ -284,7 +284,7 @@ describe("print", () => {
       // haiku: cacheWrite=$1.25/M
       // 1_000_000 input tokens, all cache writes = $1.25
       actions.setModel("claude-haiku-4-5");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 1_000_000,
         outputTokens: 0,
         inputTokenDetails: {
@@ -301,7 +301,7 @@ describe("print", () => {
       // 900_000 input (500_000 uncached + 300_000 cacheRead + 100_000 cacheWrite) + 200_000 output
       // = $0.50 + $1.00 + $0.075 + $0.125 = $1.70
       actions.setModel("claude-haiku-4-5");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 900_000,
         outputTokens: 200_000,
         inputTokenDetails: {
@@ -317,7 +317,7 @@ describe("print", () => {
       actions.setModel("claude-haiku-4-5");
       actions.setUsageLimitDuration("60m");
       actions.setUsageLimitDollar(10);
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 900_000,
         outputTokens: 200_000,
         inputTokenDetails: {
@@ -329,7 +329,7 @@ describe("print", () => {
       assert.equal(result, "$1.700 of $10");
     });
 
-    it("accumulates all token types across multiple usages", () => {
+    it("accumulates all token types across multiple modelUsage", () => {
       // haiku: input=$1/M, output=$5/M, cacheRead=$0.25/M, cacheWrite=$1.25/M
       // usage1: 800_000 input (200_000 uncached + 400_000 cacheRead + 200_000 cacheWrite) + 100_000 output
       //   = $0.20 + $0.50 + $0.10 + $0.25 = $1.05
@@ -337,7 +337,7 @@ describe("print", () => {
       //   = $0.50 + $1.00 + $0.125 + $0.75 = $2.375
       // total = $3.425
       actions.setModel("claude-haiku-4-5");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 800_000,
         outputTokens: 100_000,
         inputTokenDetails: {
@@ -345,7 +345,7 @@ describe("print", () => {
           cacheWriteTokens: 200_000,
         },
       } as LanguageModelUsage);
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 1_600_000,
         outputTokens: 200_000,
         inputTokenDetails: {
@@ -365,7 +365,7 @@ describe("print", () => {
         },
       });
       actions.setModel("test-model");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 2_000_000,
         outputTokens: 0,
         inputTokenDetails: {
@@ -381,7 +381,7 @@ describe("print", () => {
       // opus: input=$5/M
       // 200_000_000 input tokens = (200_000_000 * 5) / 1_000_000 = $1,000.0000
       actions.setModel("claude-opus-4-6");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 200_000_000,
         outputTokens: 0,
         inputTokenDetails: {
@@ -393,13 +393,13 @@ describe("print", () => {
       assert.equal(result, "$1,000.000 of $10");
     });
 
-    it("formats cost with commas for very large totals across multiple usages", () => {
+    it("formats cost with commas for very large totals across multiple modelUsage", () => {
       // opus: input=$5/M, output=$25/M
       // usage1: 300_000_000 input + 40_000_000 output = $1,500 + $1,000 = $2,500
       // usage2: 400_000_000 input + 120_000_000 output = $2,000 + $3,000 = $5,000
       // total = $7,500.000
       actions.setModel("claude-opus-4-6");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 300_000_000,
         outputTokens: 40_000_000,
         inputTokenDetails: {
@@ -407,7 +407,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 400_000_000,
         outputTokens: 120_000_000,
         inputTokenDetails: {
@@ -426,15 +426,15 @@ describe("print", () => {
       actions.resetState();
     });
 
-    it("returns token counts for no usages", () => {
+    it("returns token counts for no modelUsage", () => {
       actions.setModel("unknown-model");
       const result = getPrettySessionUsage();
       assert.equal(result, "0 in, 0 out");
     });
 
-    it("returns token counts for usages with no pricing configured", () => {
+    it("returns token counts for modelUsage with no pricing configured", () => {
       actions.setModel("unknown-model");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 100,
         outputTokens: 50,
         inputTokenDetails: {
@@ -448,7 +448,7 @@ describe("print", () => {
 
     it("formats token counts with commas for numbers above 999", () => {
       actions.setModel("unknown-model");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 1_500,
         outputTokens: 2_500,
         inputTokenDetails: {
@@ -462,7 +462,7 @@ describe("print", () => {
 
     it("formats token counts with commas for very large numbers", () => {
       actions.setModel("unknown-model");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 1_234_567,
         outputTokens: 9_876_543,
         inputTokenDetails: {
@@ -474,9 +474,9 @@ describe("print", () => {
       assert.equal(result, "1,234,567 in, 9,876,543 out");
     });
 
-    it("accumulates token counts across multiple usages and formats with commas", () => {
+    it("accumulates token counts across multiple modelUsage and formats with commas", () => {
       actions.setModel("unknown-model");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 50_000,
         outputTokens: 10_000,
         inputTokenDetails: {
@@ -484,7 +484,7 @@ describe("print", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 125_000,
         outputTokens: 25_000,
         inputTokenDetails: {
@@ -547,7 +547,7 @@ describe("print", () => {
     });
   });
 
-  describe("appendIncrementalUsage", () => {
+  describe("appendModelUsage", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -557,7 +557,7 @@ describe("print", () => {
     it("appends the full usage on the first call", () => {
       mock.method(Date, "now", () => 1000);
 
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 100,
         outputTokens: 50,
         inputTokenDetails: {
@@ -566,7 +566,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -583,7 +583,7 @@ describe("print", () => {
       let now = 1000;
       mock.method(Date, "now", () => now);
 
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 100,
         outputTokens: 50,
         inputTokenDetails: {
@@ -593,7 +593,7 @@ describe("print", () => {
       } as LanguageModelUsage);
 
       now = 2000;
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 150,
         outputTokens: 80,
         inputTokenDetails: {
@@ -602,7 +602,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -626,7 +626,7 @@ describe("print", () => {
       let now = 1000;
       mock.method(Date, "now", () => now);
 
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 100,
         outputTokens: 50,
         inputTokenDetails: {
@@ -637,7 +637,7 @@ describe("print", () => {
 
       now = 2000;
       actions.setModel("claude");
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 30,
         outputTokens: 15,
         inputTokenDetails: {
@@ -646,7 +646,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -671,7 +671,7 @@ describe("print", () => {
     it("defaults missing token detail values to 0", () => {
       mock.method(Date, "now", () => 1000);
 
-      appendIncrementalUsage({
+      appendModelUsage({
         inputTokens: 100,
         outputTokens: 50,
         inputTokenDetails: {
@@ -680,7 +680,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -694,7 +694,7 @@ describe("print", () => {
     });
   });
 
-  describe("syncNewIncrementalUsage", () => {
+  describe("syncNewModelUsage", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -720,9 +720,9 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncNewIncrementalUsage("gpt-4", usage);
+      syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [usage],
       });
       assert.strictEqual(
@@ -764,9 +764,9 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncNewIncrementalUsage("gpt-4", usage);
+      syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [
           {
             inputTokens: 5,
@@ -811,9 +811,9 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncNewIncrementalUsage("gpt-4", usage);
+      syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [usage],
       });
       assert.strictEqual(
@@ -844,9 +844,9 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncNewIncrementalUsage("gpt-4", usage);
+      syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [usage],
       });
     });
@@ -863,16 +863,16 @@ describe("print", () => {
         date: 1000,
       };
 
-      syncNewIncrementalUsage("gpt-4", usage);
+      syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [usage],
       });
       assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
     });
   });
 
-  describe("syncInitialIncrementalUsages", () => {
+  describe("syncInitialModelUsage", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -893,20 +893,20 @@ describe("print", () => {
       actions.setUsageLimitDuration(undefined);
       actions.setUsageLimitDollar(undefined);
 
-      syncInitialIncrementalUsages();
+      syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {});
+      assert.deepStrictEqual(getState().app.modelUsage, {});
     });
 
     it("does nothing when the usage log directory does not exist", () => {
       actions.setUsageLimitDuration("60m");
 
-      syncInitialIncrementalUsages();
+      syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {});
+      assert.deepStrictEqual(getState().app.modelUsage, {});
     });
 
-    it("filters usages according to each duration suffix", () => {
+    it("filters modelUsage according to each duration suffix", () => {
       const now = 1_000_000_000;
       const cases = [
         ["100s", 100_000],
@@ -949,9 +949,9 @@ describe("print", () => {
         );
         mock.method(Date, "now", () => now);
 
-        syncInitialIncrementalUsages();
+        syncInitialModelUsage();
 
-        assert.deepStrictEqual(getState().app.incrementalUsage, {
+        assert.deepStrictEqual(getState().app.modelUsage, {
           "gpt-4": [recent],
         });
         assert.strictEqual(
@@ -961,7 +961,7 @@ describe("print", () => {
       }
     });
 
-    it("keeps usages exactly at the duration boundary", () => {
+    it("keeps modelUsage exactly at the duration boundary", () => {
       actions.setUsageLimitDuration("60m");
       const boundary = {
         inputTokens: 10,
@@ -977,9 +977,9 @@ describe("print", () => {
       );
       mock.method(Date, "now", () => 4_000_000);
 
-      syncInitialIncrementalUsages();
+      syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
+      assert.deepStrictEqual(getState().app.modelUsage, {
         "gpt-4": [boundary],
       });
       assert.strictEqual(
@@ -993,9 +993,9 @@ describe("print", () => {
       testFs._dirs.add(dirname(getUsageLogPath()));
       testFs._files.set(getUsageLogPath(), "not-json");
 
-      syncInitialIncrementalUsages();
+      syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.incrementalUsage, {});
+      assert.deepStrictEqual(getState().app.modelUsage, {});
       assert.strictEqual(testFs._files.get(getUsageLogPath()), `{}`);
     });
   });

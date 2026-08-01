@@ -11,7 +11,7 @@ import { actions } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
 import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
-import { syncInitialIncrementalUsages } from "./print.ts";
+import { syncInitialModelUsage } from "./print.ts";
 
 export type Provider = "anthropic" | "openai-compatible";
 
@@ -147,6 +147,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   usageLimitDollar: undefined,
 };
 
+// TODO: split into two
 export async function initState() {
   const args = parseCliArgs();
   actions.setDebugLog(args.debug);
@@ -271,7 +272,7 @@ export async function initState() {
   actions.setUsageLimitDuration(defaultedUsageLimitDuration);
   actions.setUsageLimitDollar(defaultedUsageLimitDollar);
 
-  syncInitialIncrementalUsages();
+  syncInitialModelUsage();
 
   const contextEntries = getContextEntries();
   actions.setContextEntries(contextEntries);

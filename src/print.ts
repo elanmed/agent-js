@@ -221,20 +221,18 @@ export async function executeBat(content: string) {
   await print(content);
 }
 
-export const IncrementalUsageSchema = z.object({
+export const ModelUsageSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   cacheReadTokens: z.number(),
   cacheWriteTokens: z.number(),
   date: z.number(),
 });
-export type IncrementalUsage = z.infer<typeof IncrementalUsageSchema>;
+export type ModelUsage = z.infer<typeof ModelUsageSchema>;
 
-const IncrementalUsageMapSchema = z.record(
-  z.string(),
-  z.array(IncrementalUsageSchema),
-);
+const ModelUsageMapSchema = z.record(z.string(), z.array(ModelUsageSchema));
 
+// TODO: move usage to somewhere else
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
@@ -274,11 +272,11 @@ export function calculateApiDuration() {
   return `${prettyMin}${prettySec}${prettyMs}`;
 }
 
-export function appendIncrementalUsage(usage: LanguageModelUsage) {
+export function appendModelUsage(usage: LanguageModelUsage) {
   const { model } = getState().config;
   const now = Date.now();
 
-  const defaultedUsage: IncrementalUsage = {
+  const defaultedUsage: ModelUsage = {
     inputTokens: usage.inputTokens ?? 0,
     outputTokens: usage.outputTokens ?? 0,
     cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
@@ -286,7 +284,7 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
     date: now,
   };
 
-  syncNewIncrementalUsage(model, defaultedUsage);
+  syncNewModelUsage(model, defaultedUsage);
 }
 
 export function usageLimitDisabled() {
@@ -301,7 +299,7 @@ export function usageLimitDisabled() {
   );
 }
 
-export function syncInitialIncrementalUsages() {
+export function syncInitialModelUsage() {
   if (usageLimitDisabled()) return;
 
   const { usageLimitDuration } = getState().config;
@@ -332,7 +330,7 @@ export function syncInitialIncrementalUsages() {
   }
 
   const parseResult = tryCatch(() =>
-    IncrementalUsageMapSchema.parse(JSON.parse(readResult.value)),
+    ModelUsageMapSchema.parse(JSON.parse(readResult.value)),
   );
   if (!parseResult.ok) {
     tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify({})));
@@ -340,22 +338,19 @@ export function syncInitialIncrementalUsages() {
   }
   const map = parseResult.value;
 
-  const filtered: Record<string, IncrementalUsage[]> = {};
-  for (const [model, usages] of Object.entries(map)) {
-    const kept = usages.filter((usage) => usage.date >= expiredTime);
+  const filtered: Record<string, ModelUsage[]> = {};
+  for (const [model, modelUsage] of Object.entries(map)) {
+    const kept = modelUsage.filter((usage) => usage.date >= expiredTime);
     if (kept.length > 0) filtered[model] = kept;
   }
 
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
-  actions.setUsages(filtered);
+  actions.setModelUsage(filtered);
 }
 
-export function syncNewIncrementalUsage(
-  model: string,
-  usage: IncrementalUsage,
-) {
+export function syncNewModelUsage(model: string, usage: ModelUsage) {
   if (usageLimitDisabled()) {
-    actions.appendToUsages(usage);
+    actions.appendToModelUsage(usage);
     return;
   }
 
@@ -366,19 +361,19 @@ export function syncNewIncrementalUsage(
   }
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
-  const loggedUsages = (() => {
+  const loggedModelUsage = (() => {
     if (!readResult.ok) return {};
     const parseResult = tryCatch(() =>
-      IncrementalUsageMapSchema.parse(JSON.parse(readResult.value)),
+      ModelUsageMapSchema.parse(JSON.parse(readResult.value)),
     );
     if (parseResult.ok) return parseResult.value;
     return {};
   })();
 
-  (loggedUsages[model] ??= []).push(usage);
-  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(loggedUsages)));
+  (loggedModelUsage[model] ??= []).push(usage);
+  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(loggedModelUsage)));
 
-  actions.setUsages(loggedUsages);
+  actions.setModelUsage(loggedModelUsage);
 }
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
@@ -406,7 +401,7 @@ export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
 }
 
 export function getUsageTokensForModel(model: string): TokenUsage {
-  return (getState().app.incrementalUsage[model] ?? []).reduce<{
+  return (getState().app.modelUsage[model] ?? []).reduce<{
     inputTokens: number;
     outputTokens: number;
     cacheReadTokens: number;

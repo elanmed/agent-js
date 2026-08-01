@@ -91,8 +91,8 @@ response text
         ),
       );
       await resolveApiCall("hello");
-      const usages = getState().app.incrementalUsage;
-      assert.deepStrictEqual(usages, {
+      const modelUsage = getState().app.modelUsage;
+      assert.deepStrictEqual(modelUsage, {
         "claude-sonnet-4-20250514": [
           {
             inputTokens: 42,

@@ -859,7 +859,7 @@ describe("config", () => {
     assert.equal(getState().app.skillsStr, "");
   });
 
-  it("sets incrementalUsage to an empty object", async () => {
+  it("sets modelUsage to an empty object", async () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -868,10 +868,10 @@ describe("config", () => {
     );
 
     await initState();
-    assert.deepStrictEqual(getState().app.incrementalUsage, {});
+    assert.deepStrictEqual(getState().app.modelUsage, {});
   });
 
-  it("loads recent incremental usages from the usage log", async () => {
+  it("loads recent model usages from the usage log", async () => {
     actions.setUsageLimitDuration("60m");
     const recent = {
       inputTokens: 10,
@@ -912,7 +912,7 @@ describe("config", () => {
 
     await initState();
 
-    assert.deepStrictEqual(getState().app.incrementalUsage, {
+    assert.deepStrictEqual(getState().app.modelUsage, {
       "gpt-4": [recent],
     });
   });

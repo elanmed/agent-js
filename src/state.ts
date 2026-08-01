@@ -9,7 +9,7 @@ import {
 } from "./config.ts";
 import { MISSING, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
-import type { IncrementalUsage, TokenUsage } from "./print.ts";
+import type { ModelUsage } from "./print.ts";
 import type { ContextEntry, Skill } from "./context.ts";
 
 export interface SlashCommand {
@@ -21,7 +21,6 @@ export interface SlashCommand {
 interface State {
   app: {
     messageParams: ModelMessage[];
-    messageUsages: TokenUsage[];
     editorInputValue: string | null;
     slashCommands: SlashCommand[];
     customSlashCommandDirs: string[];
@@ -38,7 +37,7 @@ interface State {
     loadingStateFrameIdx: number;
     apiStartTime: number | null;
     apiEndTime: number | null;
-    incrementalUsage: Record<string, IncrementalUsage[]>;
+    modelUsage: Record<string, ModelUsage[]>;
     sessionStartDate: number;
   };
   config: {
@@ -65,7 +64,6 @@ interface State {
 const initialState: State = {
   app: {
     messageParams: [],
-    messageUsages: [],
     editorInputValue: null,
     slashCommands: [],
     customSlashCommandDirs: [],
@@ -82,7 +80,7 @@ const initialState: State = {
     loadingStateFrameIdx: 0,
     apiStartTime: null,
     apiEndTime: null,
-    incrementalUsage: {},
+    modelUsage: {},
     sessionStartDate: 0,
   },
   config: {
@@ -187,12 +185,6 @@ export const actions = {
     const before = state.config.keymapClear;
     state.config.keymapClear = keymap;
     logStateChange("set-keymap-clear", stringify(before), stringify(keymap));
-  },
-
-  resetMessageUsages() {
-    const before = state.app.messageUsages.length;
-    state.app.messageUsages = [];
-    logStateChange("reset-message-usages", String(before), "0");
   },
 
   resetMessageParams() {
@@ -315,28 +307,28 @@ export const actions = {
     );
   },
 
-  setUsages(usages: Record<string, IncrementalUsage[]>) {
-    const before = state.app.incrementalUsage;
-    state.app.incrementalUsage = usages;
+  setModelUsage(modelUsage: Record<string, ModelUsage[]>) {
+    const before = state.app.modelUsage;
+    state.app.modelUsage = modelUsage;
 
     logStateChange(
-      "set-usages",
+      "set-modelUsage",
       String(Object.keys(before).length),
-      String(Object.keys(state.app.incrementalUsage).length),
+      String(Object.keys(state.app.modelUsage).length),
     );
   },
 
-  appendToUsages(usage: IncrementalUsage) {
+  appendToModelUsage(usage: ModelUsage) {
     const model = state.config.model;
-    state.app.incrementalUsage[model] ??= [];
+    state.app.modelUsage[model] ??= [];
 
-    const before = state.app.incrementalUsage[model];
-    state.app.incrementalUsage[model].push(usage);
+    const before = state.app.modelUsage[model];
+    state.app.modelUsage[model].push(usage);
 
     logStateChange(
-      "append-to-usages",
+      "append-to-modelUsage",
       String(before.length),
-      String(state.app.incrementalUsage[model].length),
+      String(state.app.modelUsage[model].length),
     );
   },
 

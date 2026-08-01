@@ -12,7 +12,7 @@ import {
   print,
   startLoadingState,
   flushAndStopLoadingState,
-  appendIncrementalUsage,
+  appendModelUsage,
 } from "./print.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import {
@@ -138,7 +138,7 @@ export async function resolveApiCall(userInput: string) {
 
   const { totalUsage, text, response } = generateTextResult.value;
 
-  appendIncrementalUsage(totalUsage);
+  appendModelUsage(totalUsage);
 
   actions.appendToMessageParams(inputMessageParam);
   for (const msg of response.messages) {
