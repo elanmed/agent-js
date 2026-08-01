@@ -17,9 +17,9 @@ import {
   print,
   printNewline,
   fencePrint,
-  getPrettySessionUsage,
   printSessionStartDate,
 } from "./print.ts";
+import { getPrettySessionUsage } from "./usage.ts";
 import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";

@@ -9,7 +9,7 @@ import {
 } from "./config.ts";
 import { MISSING, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
-import type { ModelUsage } from "./print.ts";
+import type { ModelUsage } from "./usage.ts";
 import type { ContextEntry, Skill } from "./context.ts";
 
 export interface SlashCommand {

@@ -8,12 +8,8 @@ import {
   getMessageFromError,
   getTempFileName,
 } from "./utils.ts";
-import {
-  print,
-  startLoadingState,
-  flushAndStopLoadingState,
-  appendModelUsage,
-} from "./print.ts";
+import { print, startLoadingState, flushAndStopLoadingState } from "./print.ts";
+import { appendModelUsage } from "./usage.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import {
   objectWithPathSchema,

@@ -11,7 +11,7 @@ import { actions } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
 import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
-import { syncInitialModelUsage } from "./print.ts";
+import { syncInitialModelUsage } from "./usage.ts";
 
 export type Provider = "anthropic" | "openai-compatible";
 

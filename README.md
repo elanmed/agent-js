@@ -40,7 +40,9 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Usage Limits
 
-When `usageLimitMs` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. Previous usages are loaded from `~/.config/.agent-js/usage.json` on startup and entries older than `usageLimitMs` are filtered out. The current spend is shown as `$<cost> of $<limit>` in the status line.
+When `usageLimitMs` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. Previous usages are loaded from `~/.config/.agent-js/usage.json` on startup and entries older than `usageLimitMs` are filtered out.
+
+The current spend is shown as `$<cost> of $<limit>` in the status line.
 
 ### Keymaps
 
