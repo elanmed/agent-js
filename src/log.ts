@@ -63,9 +63,9 @@ export function initPromptHistory() {
   const uuid = crypto.randomUUID().replaceAll("-", "");
   const chatHistorySessionPath = join(
     chatHistoryDir,
-    `chat-history-${uuid}-${Date.now().toString()}.txt`,
+    `chat-history-${uuid}-${getState().app.sessionStartDate.toString()}.txt`,
   );
-  actions.setPromptHistoryPath(chatHistorySessionPath);
+  actions.setChatHistoryPath(chatHistorySessionPath);
   tryCatch(() => fsDeps.writeFileSync(chatHistorySessionPath, ""));
 }
 

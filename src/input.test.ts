@@ -157,7 +157,7 @@ describe("input", () => {
 
     it("returns editor input value when set and clears it", async () => {
       mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/test-history.log");
+      actions.setChatHistoryPath("/tmp/test-history.log");
       actions.setEditorInputValue("editor content");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "editor content");
@@ -176,7 +176,7 @@ editor content
         Promise.resolve("  hello  "),
       );
       mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/test-history.log");
+      actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
       assert.strictEqual(stripAnsi(getState().app.stdout), ">  hello  \n");
@@ -191,7 +191,7 @@ hello
 
     it("resolves slash commands when input starts with /", async () => {
       mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/test-history.log");
+      actions.setChatHistoryPath("/tmp/test-history.log");
       actions.setModel("old");
       actions.resetStdout();
       mock.method(getState().app.rl!, "question", () =>
@@ -220,7 +220,7 @@ hello
 
     it("returns editor value when aborted by editor", async () => {
       mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/test-history.log");
+      actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(getState().app.rl!, "question", () => {
         actions.setEditorInputValue("from editor");
         const err = new Error("This operation was aborted");
@@ -380,7 +380,7 @@ from editor
     });
 
     it("prints warning when log does not exist", async () => {
-      actions.setPromptHistoryPath("/tmp/nonexistent.log");
+      actions.setChatHistoryPath("/tmp/nonexistent.log");
       actions.setRl(makeFakeRl());
       await chatHistoryCommand();
       assert.strictEqual(
@@ -395,7 +395,7 @@ from editor
         spawned = cmd;
       });
       testProcessEnv._set("AGENT_JS_HISTORY", "nano __FILE__");
-      actions.setPromptHistoryPath("/tmp/editor.log");
+      actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       await chatHistoryCommand();
       assert.strictEqual(spawned, "nano /tmp/editor.log");
@@ -407,7 +407,7 @@ from editor
         spawned = cmd;
       });
       testProcessEnv._set("EDITOR", "vim");
-      actions.setPromptHistoryPath("/tmp/editor.log");
+      actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       await chatHistoryCommand();
       assert.strictEqual(spawned, 'vim "/tmp/editor.log"');
@@ -418,14 +418,14 @@ from editor
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      actions.setPromptHistoryPath("/tmp/editor.log");
+      actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       await chatHistoryCommand();
       assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
     });
 
     it("prints warning when log cannot be read", async () => {
-      actions.setPromptHistoryPath("/tmp/editor.log");
+      actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       actions.setRl(makeFakeRl());
       mock.method(fsDeps, "readFileSync", () => {
@@ -439,7 +439,7 @@ from editor
     });
 
     it("restores original log content after editing", async () => {
-      actions.setPromptHistoryPath("/tmp/editor.log");
+      actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "original content");
       mock.method(childProcess, "spawnSync", () => {
         testFs._files.set("/tmp/editor.log", "modified by editor");
@@ -848,7 +848,7 @@ Keymaps:
 
     it("handles /edit command and logs editor content to chat history", async () => {
       mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/test-history.log");
+      actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(childProcess, "spawnSync", () => {
         testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "from editor");
       });
@@ -865,7 +865,7 @@ from editor
 
     it("handles /paste command and logs editor content to chat history", async () => {
       mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/test-history.log");
+      actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(os, "platform", () => "linux");
       mockExec({ stdout: "clip" });
       mock.method(childProcess, "spawnSync", () => {

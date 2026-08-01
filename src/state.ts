@@ -269,7 +269,7 @@ export const actions = {
     state.app.debugLog = debugLog;
   },
 
-  setPromptHistoryPath(chatHistoryPath: string) {
+  setChatHistoryPath(chatHistoryPath: string) {
     const before = state.app.chatHistoryPath;
     state.app.chatHistoryPath = chatHistoryPath;
     logStateChange("set-chat-history-path", before, chatHistoryPath);

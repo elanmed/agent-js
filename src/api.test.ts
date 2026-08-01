@@ -41,7 +41,7 @@ describe("api", () => {
   describe("resolveApiCall", () => {
     it("returns text on success", async () => {
       mock.method(Date, "now", () => 0);
-      actions.setPromptHistoryPath("/tmp/test-history.log");
+      actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveApiCall("hello");
       assert.strictEqual(result, "response text");
       assert.strictEqual(

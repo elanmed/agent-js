@@ -16,7 +16,7 @@ describe("state", () => {
     actions.setApiStreamAbortController(new AbortController());
     const timeout = setTimeout(() => undefined, 1000);
     actions.setLoadingStateTimeout(timeout);
-    actions.setPromptHistoryPath("/tmp/test.log");
+    actions.setChatHistoryPath("/tmp/test.log");
     actions.resetState();
     clearTimeout(timeout);
 
@@ -183,7 +183,7 @@ describe("state", () => {
 
   it("set-prompt-history-path", () => {
     assert.equal(getState().app.chatHistoryPath, "");
-    actions.setPromptHistoryPath("/tmp/editor.log");
+    actions.setChatHistoryPath("/tmp/editor.log");
     assert.equal(getState().app.chatHistoryPath, "/tmp/editor.log");
   });
 

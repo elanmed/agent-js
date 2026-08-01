@@ -62,13 +62,13 @@ describe("log", () => {
     });
 
     it("creates directory when log file does not exist", () => {
-      actions.setPromptHistoryPath("/test/editor.log");
+      actions.setChatHistoryPath("/test/editor.log");
       appendToChatHistory("test message", "user");
       assert.equal(testFs._dirs.has("/test"), true);
     });
 
     it("appends content with timestamp and role", () => {
-      actions.setPromptHistoryPath("/test/editor.log");
+      actions.setChatHistoryPath("/test/editor.log");
       appendToChatHistory("test content", "user");
       assert.equal(
         testFs._files.get("/test/editor.log"),
@@ -80,7 +80,7 @@ test content
     });
 
     it("appends multiple messages with different roles", () => {
-      actions.setPromptHistoryPath("/test/editor.log");
+      actions.setChatHistoryPath("/test/editor.log");
       appendToChatHistory("hello", "user");
       appendToChatHistory("response", "assistant");
       assert.equal(
@@ -113,6 +113,7 @@ response
   describe("initPromptHistory", () => {
     beforeEach(() => {
       mock.method(Date, "now", () => 1234567890000);
+      actions.setSessionStartDate();
     });
 
     it("creates directory and sets path when directory does not exist", () => {

@@ -12,8 +12,8 @@ import { resolveApiCall } from "./api.ts";
 import { initLogs } from "./log.ts";
 
 async function main() {
-  initLogs();
   await initState();
+  initLogs();
 
   initReadline();
   initKeypress();
