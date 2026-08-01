@@ -2,7 +2,9 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import {
   appendModelUsage,
-  getPrettySessionUsage,
+  getPrettyContextWindowUsage,
+  getPrettyTokenUsage,
+  getPrettyUsage,
   syncInitialModelUsage,
   syncNewModelUsage,
 } from "./usage.ts";
@@ -14,7 +16,7 @@ import { setupFakeDeps, testFs } from "./test-helpers.ts";
 import { getUsageLogPath } from "./paths.ts";
 
 describe("usage", () => {
-  describe("getPrettySessionUsage", () => {
+  describe("getPrettyTokenUsage", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -44,7 +46,7 @@ describe("usage", () => {
 
     it("known model with no modelUsage returns $0.0000", () => {
       actions.setModel("claude-haiku-4-5");
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$0.000 of $10");
     });
 
@@ -60,7 +62,7 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$2.000 of $10");
     });
 
@@ -75,7 +77,7 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$3.000 of $10");
     });
 
@@ -91,7 +93,7 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$0.250 of $10");
     });
 
@@ -107,7 +109,7 @@ describe("usage", () => {
           cacheWriteTokens: 1_000_000,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$1.250 of $10");
     });
 
@@ -124,7 +126,7 @@ describe("usage", () => {
           cacheWriteTokens: 100_000,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$1.700 of $10");
     });
 
@@ -140,7 +142,7 @@ describe("usage", () => {
           cacheWriteTokens: 100_000,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$1.700 of $10");
     });
 
@@ -168,7 +170,7 @@ describe("usage", () => {
           cacheWriteTokens: 600_000,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$3.425 of $10");
     });
 
@@ -188,7 +190,7 @@ describe("usage", () => {
           cacheWriteTokens: 500_000,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$4.000 of $10");
     });
 
@@ -204,7 +206,7 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$1,000.000 of $10");
     });
 
@@ -230,12 +232,12 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
+      const result = getPrettyTokenUsage();
       assert.equal(result, "$7,500.000 of $10");
     });
   });
 
-  describe("getPrettySessionUsage no pricing configured", () => {
+  describe("getPrettyTokenUsage no pricing configured", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -243,8 +245,8 @@ describe("usage", () => {
 
     it("returns token counts for no modelUsage", () => {
       actions.setModel("unknown-model");
-      const result = getPrettySessionUsage();
-      assert.equal(result, "0 in, 0 out");
+      const result = getPrettyTokenUsage();
+      assert.equal(result, "0 tokens total");
     });
 
     it("returns token counts for modelUsage with no pricing configured", () => {
@@ -257,8 +259,8 @@ describe("usage", () => {
           cacheWriteTokens: 10,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
-      assert.equal(result, "100 in, 50 out");
+      const result = getPrettyTokenUsage();
+      assert.equal(result, "150 tokens total");
     });
 
     it("formats token counts with commas for numbers above 999", () => {
@@ -271,8 +273,8 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
-      assert.equal(result, "1,500 in, 2,500 out");
+      const result = getPrettyTokenUsage();
+      assert.equal(result, "4,000 tokens total");
     });
 
     it("formats token counts with commas for very large numbers", () => {
@@ -285,8 +287,8 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
-      assert.equal(result, "1,234,567 in, 9,876,543 out");
+      const result = getPrettyTokenUsage();
+      assert.equal(result, "11,111,110 tokens total");
     });
 
     it("accumulates token counts across multiple modelUsage and formats with commas", () => {
@@ -307,8 +309,73 @@ describe("usage", () => {
           cacheWriteTokens: 0,
         },
       } as LanguageModelUsage);
-      const result = getPrettySessionUsage();
-      assert.equal(result, "175,000 in, 35,000 out");
+      const result = getPrettyTokenUsage();
+      assert.equal(result, "210,000 tokens total");
+    });
+  });
+
+  describe("getPrettyContextWindowUsage", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+    });
+
+    it("returns empty string when the model has no context window configured", () => {
+      actions.setModel("unknown-model");
+      const result = getPrettyContextWindowUsage();
+      assert.strictEqual(result, "");
+    });
+
+    it("returns 0% when no tokens are used", () => {
+      actions.setModel("test-model");
+      actions.setContextWindowPerModel({ "test-model": 10_000 });
+      const result = getPrettyContextWindowUsage();
+      assert.strictEqual(result, "0% of context window");
+    });
+
+    it("returns the percent of the context window used", () => {
+      actions.setModel("test-model");
+      actions.setContextWindowPerModel({ "test-model": 10_000 });
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+      const result = getPrettyContextWindowUsage();
+      assert.strictEqual(result, "50% of context window");
+    });
+
+    it("floors partial percents", () => {
+      actions.setModel("test-model");
+      actions.setContextWindowPerModel({ "test-model": 10_000 });
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 1_666);
+      const result = getPrettyContextWindowUsage();
+      assert.strictEqual(result, "16% of context window");
+    });
+
+    it("returns percents above 100", () => {
+      actions.setModel("test-model");
+      actions.setContextWindowPerModel({ "test-model": 10_000 });
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 15_000);
+      const result = getPrettyContextWindowUsage();
+      assert.strictEqual(result, "150% of context window");
+    });
+  });
+
+  describe("getPrettyUsage", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+    });
+
+    it("returns just token usage when the model has no context window configured", () => {
+      actions.setModel("unknown-model");
+      const result = getPrettyUsage();
+      assert.strictEqual(result, "0 tokens total");
+    });
+
+    it("includes context window usage when configured", () => {
+      actions.setModel("test-model");
+      actions.setContextWindowPerModel({ "test-model": 10_000 });
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+      const result = getPrettyUsage();
+      assert.strictEqual(result, "0 tokens total, 50% of context window");
     });
   });
 

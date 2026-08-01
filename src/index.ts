@@ -44,8 +44,7 @@ async function main() {
 
     await printNewline();
     await fencePrint("Output", {
-      showSessionUsage: true,
-      showApiDuration: true,
+      showSessionInfo: true,
     });
     await executeBat(text);
     await printNewline();

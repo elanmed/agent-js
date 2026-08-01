@@ -414,7 +414,9 @@ SKILLS: available skills`,
       });
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "Interrupted compaction\n",
+        `Compacting…
+Interrupted compaction
+`,
       );
     });
   });

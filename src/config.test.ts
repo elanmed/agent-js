@@ -425,6 +425,24 @@ describe("config", () => {
       assert.strictEqual(getState().config.usageLimitDuration, "2h");
     });
 
+    it("rejects config with an unknown key", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          contextPerModel: { "deepseek-v4-flash-free": 4000 },
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+        }),
+      );
+
+      await assert.rejects(initState(), /Unrecognized key/);
+    });
+
     it("rejects usageLimitDuration without usageLimitDollar", async () => {
       testFs._files.set(
         getGlobalConfigPath(),

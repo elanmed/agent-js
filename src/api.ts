@@ -158,6 +158,7 @@ export async function maybeCompactMessageParams() {
 
   const currRatio = getState().app.messageParams.tokens / contextWindow;
   if (currRatio <= getState().config.compactAtContextRatio) return;
+  await print.doing("Compacting…;");
 
   const targetTokens = getState().config.compactTargetRatio * contextWindow;
 

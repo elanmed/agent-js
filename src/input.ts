@@ -20,7 +20,7 @@ import {
   fencePrint,
   printSessionStartDate,
 } from "./print.ts";
-import { getPrettySessionUsage } from "./usage.ts";
+import { getPrettyTokenUsage, getPrettyUsage } from "./usage.ts";
 import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
@@ -372,6 +372,10 @@ export async function resolveSlashCommand(rawInput: string) {
       await usageCommand();
       return null;
     }
+    case "settings": {
+      await settingsCommand();
+      return null;
+    }
     case "resume": {
       await print.error("Usage: /resume [session start date]");
       return null;
@@ -406,12 +410,12 @@ export async function resolveSlashCommand(rawInput: string) {
 }
 
 export async function clearCommand() {
-  await print.infoSubtle(`Context cleared (${getPrettySessionUsage()})`);
+  await print.infoSubtle(`Context cleared (${getPrettyTokenUsage()})`);
   actions.resetMessageParams();
 }
 
 export async function usageCommand() {
-  await print.doing(getPrettySessionUsage());
+  await print.doing(getPrettyUsage());
 }
 
 export async function spawnAndReadEditorContent(opts?: {
@@ -662,6 +666,12 @@ export async function printKeymapsCommand() {
     `- paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`,
   );
   await print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
+}
+
+export async function settingsCommand() {
+  await printNewline();
+  await print.doing("Settings:");
+  await print.doing(JSON.stringify(getState().config, null, 2));
 }
 
 export function clearRlLine(): readline.Interface | null {

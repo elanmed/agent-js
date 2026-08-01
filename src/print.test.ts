@@ -2,11 +2,12 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import {
   formatMarkdown,
-  calculateApiDuration,
+  getPrettyApiDuration,
   executeBat,
   startLoadingState,
   stopLoadingState,
   colorPrint,
+  fencePrint,
   flushAndStopLoadingState,
   printSessionStartDate,
 } from "./print.ts";
@@ -158,7 +159,54 @@ describe("print", () => {
     });
   });
 
-  describe("calculateApiDuration", () => {
+  describe("fencePrint", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints the text in a fence without session info", async () => {
+      await fencePrint("Output");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "\u2501\u2501 Output \u2501\u2501\n",
+      );
+    });
+
+    it("prints duration and token usage when showSessionInfo is set", async () => {
+      mock.method(Date, "now", () => 1_000);
+      actions.setApiStartTime();
+      mock.method(Date, "now", () => 1_500);
+      actions.setApiEndTime();
+
+      await fencePrint("Output", { showSessionInfo: true });
+
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "\u2501\u2501 Output (500ms) (0 tokens total) \u2501\u2501\n",
+      );
+    });
+
+    it("includes context window usage when configured", async () => {
+      mock.method(Date, "now", () => 1_000);
+      actions.setApiStartTime();
+      mock.method(Date, "now", () => 1_500);
+      actions.setApiEndTime();
+      actions.setModel("test-model");
+      actions.setContextWindowPerModel({ "test-model": 10_000 });
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+
+      await fencePrint("Output", { showSessionInfo: true });
+
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "\u2501\u2501 Output (500ms) (0 tokens total, 50% of context window) \u2501\u2501\n",
+      );
+    });
+  });
+
+  describe("getPrettyApiDuration", () => {
     beforeEach(() => {
       actions.resetState();
     });
@@ -168,7 +216,7 @@ describe("print", () => {
       actions.setApiStartTime();
       mock.method(Date, "now", () => 1_500);
       actions.setApiEndTime();
-      const result = calculateApiDuration();
+      const result = getPrettyApiDuration();
       assert.strictEqual(result, "500ms");
     });
 
@@ -177,7 +225,7 @@ describe("print", () => {
       actions.setApiStartTime();
       mock.method(Date, "now", () => 6_500);
       actions.setApiEndTime();
-      const result = calculateApiDuration();
+      const result = getPrettyApiDuration();
       assert.strictEqual(result, "5s 500ms");
     });
 
@@ -186,7 +234,7 @@ describe("print", () => {
       actions.setApiStartTime();
       mock.method(Date, "now", () => 126_500);
       actions.setApiEndTime();
-      const result = calculateApiDuration();
+      const result = getPrettyApiDuration();
       assert.strictEqual(result, "2m 5s 500ms");
     });
   });

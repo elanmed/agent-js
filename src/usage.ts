@@ -177,12 +177,12 @@ export function getUsageTokensForModel(model: string): TokenUsage {
   );
 }
 
-export function getPrettySessionUsage() {
+export function getPrettyTokenUsage() {
   const { model } = getState().config;
   const pricing = getState().config.pricingPerModel[model];
   const tokenUsage = getUsageTokensForModel(model);
   if (pricing === undefined) {
-    return `${tokenUsage.inputTokens.toLocaleString()} in, ${tokenUsage.outputTokens.toLocaleString()} out`;
+    return `${(tokenUsage.inputTokens + tokenUsage.outputTokens).toLocaleString()} tokens total`;
   }
 
   const getPrettyMoney = (money: number) =>
@@ -194,6 +194,25 @@ export function getPrettySessionUsage() {
   const cost = getUsageMoneyForModel(tokenUsage, model);
   const { usageLimitDollar } = getState().config;
 
-  if (usageLimitDisabled()) return `$${getPrettyMoney(cost)}`;
+  if (usageLimitDisabled()) return `$${getPrettyMoney(cost)} total`;
   return `$${getPrettyMoney(cost)} of $${String(usageLimitDollar)}`;
+}
+
+export function getPrettyContextWindowUsage() {
+  const { model } = getState().config;
+  const contextWindow = getState().config.contextWindowPerModel[model];
+  if (contextWindow === undefined) return "";
+
+  const currRatio = getState().app.messageParams.tokens / contextWindow;
+  const currPercent = String(Math.floor(currRatio * 100));
+  return `${currPercent}% of context window`;
+}
+
+export function getPrettyUsage() {
+  const tokenUsage = getPrettyTokenUsage();
+  const contextWindowUsage = getPrettyContextWindowUsage();
+  if (contextWindowUsage.length > 0) {
+    return `${tokenUsage}, ${contextWindowUsage}`;
+  }
+  return tokenUsage;
 }

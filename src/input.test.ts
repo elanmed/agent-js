@@ -393,7 +393,7 @@ from editor
       });
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "Context cleared (0 in, 0 out)\n",
+        "Context cleared (0 tokens total)\n",
       );
     });
   });
@@ -1106,7 +1106,20 @@ Keymaps:
       actions.setModel("unknown-model");
       const result = await resolveSlashCommand("/usage");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "0 in, 0 out\n");
+      assert.strictEqual(stripAnsi(getState().app.stdout), "0 tokens total\n");
+    });
+
+    it("handles /usage command with context window usage", async () => {
+      actions.resetStdout();
+      actions.setModel("test-model");
+      actions.setContextWindowPerModel({ "test-model": 10_000 });
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+      const result = await resolveSlashCommand("/usage");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "0 tokens total, 50% of context window\n",
+      );
     });
 
     it("handles /resume without args", async () => {

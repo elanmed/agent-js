@@ -31,7 +31,7 @@ const ModelPricingSchema = z.object({
 
 export type ModelPricing = z.infer<typeof ModelPricingSchema>;
 
-const ConfigSchema = z.object({
+const ConfigSchema = z.strictObject({
   model: z.string().optional(),
   baseURL: z.string().optional(),
   provider: z.enum(["anthropic", "openai-compatible"]).optional(),
@@ -168,10 +168,10 @@ export function initStateFromConfig() {
       if (readResult.ok) {
         return parseConfigStr(readResult.value);
       }
-      return DEFAULT_CONFIG;
+      return {};
     }
 
-    return DEFAULT_CONFIG;
+    return {};
   })();
 
   const localConfig: Config = (() => {

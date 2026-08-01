@@ -11,7 +11,7 @@ import {
 import { processDeps } from "./deps.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert";
-import { getPrettySessionUsage } from "./usage.ts";
+import { getPrettyUsage } from "./usage.ts";
 
 const printQueue = createQueue();
 
@@ -68,32 +68,19 @@ export async function printNewline() {
 }
 
 interface FencePrintOpts {
-  showSessionUsage?: boolean;
-  showApiDuration?: boolean;
+  showSessionInfo?: boolean;
   color?: Color;
 }
 
 export async function fencePrint(text: string, opts: FencePrintOpts = {}) {
-  const showSessionUsage = opts.showSessionUsage ?? false;
-  const showApiDuration = opts.showApiDuration ?? false;
+  const showSessionInfo = opts.showSessionInfo ?? false;
 
-  const sessionUsage = (() => {
-    if (showSessionUsage) {
-      return ` (${getPrettySessionUsage()})`;
-    }
+  const line = (() => {
+    if (!showSessionInfo) return `━━ ${text} ━━`;
 
-    return "";
+    return `━━ ${text} (${getPrettyApiDuration()}) (${getPrettyUsage()}) ━━`;
   })();
 
-  const apiDuration = (() => {
-    if (showApiDuration) {
-      return ` (${calculateApiDuration()})`;
-    }
-
-    return "";
-  })();
-
-  const line = `━━ ${text}${sessionUsage}${apiDuration} ━━`;
   await colorPrint(line, opts.color ?? "grey");
 }
 
@@ -218,7 +205,7 @@ export async function executeBat(content: string) {
   await print(content);
 }
 
-export function calculateApiDuration() {
+export function getPrettyApiDuration() {
   const startTime = getState().app.apiStartTime;
   assert(startTime !== null);
   const endTime = getState().app.apiEndTime;
