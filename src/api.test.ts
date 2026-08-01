@@ -399,5 +399,23 @@ SKILLS: available skills`,
         messages: [{ role: "user", content: "hi" }],
       });
     });
+
+    it("keeps messages and prints Interrupted compaction on abort error", async () => {
+      actions.resetStdout();
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
+      const err = new Error("aborted");
+      err.name = "AbortError";
+      mock.method(aiDeps, "generateText", () => Promise.reject(err));
+      await maybeCompactMessageParams();
+      assert.strictEqual(getState().abortControllers.apiStream, null);
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 80_000,
+        messages: [{ role: "user", content: "hi" }],
+      });
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "Interrupted compaction\n",
+      );
+    });
   });
 });
