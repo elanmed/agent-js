@@ -147,8 +147,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   usageLimitDollar: undefined,
 };
 
-// TODO: split into two
-export async function initState() {
+export function initStateFromConfig() {
   const args = parseCliArgs();
   actions.setDebugLog(args.debug);
 
@@ -271,7 +270,9 @@ export async function initState() {
 
   actions.setUsageLimitDuration(defaultedUsageLimitDuration);
   actions.setUsageLimitDollar(defaultedUsageLimitDollar);
+}
 
+export async function initStateFromFs() {
   syncInitialModelUsage();
 
   const contextEntries = getContextEntries();
@@ -283,6 +284,11 @@ export async function initState() {
   actions.setSkillsStr(getSkillsStr(skills));
 
   actions.setSessionStartDate();
+}
+
+export async function initState() {
+  initStateFromConfig();
+  await initStateFromFs();
 }
 
 function parseConfigStr(configStr: string): Config {
