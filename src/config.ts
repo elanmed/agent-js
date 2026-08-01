@@ -179,7 +179,6 @@ export async function initState() {
     return {};
   })();
 
-  console.log({ localConfig, globalConfig });
   const defaultedModel =
     localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model;
   if (defaultedModel === MISSING) {
