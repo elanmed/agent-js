@@ -402,68 +402,6 @@ line3
     assert.strictEqual(getState().config.usageLimitDollar, undefined);
   });
 
-  describe("append-to-usages", () => {
-    it("appends usage to incrementalUsage", () => {
-      assert.deepStrictEqual(getState().app.incrementalUsage, {});
-
-      actions.appendToUsages("gpt-4", {
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        date: 1000,
-      });
-
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
-        "gpt-4": [
-          {
-            inputTokens: 10,
-            outputTokens: 5,
-            cacheReadTokens: 2,
-            cacheWriteTokens: 1,
-            date: 1000,
-          },
-        ],
-      });
-    });
-
-    it("appends multiple usages in order", () => {
-      actions.appendToUsages("gpt-4", {
-        inputTokens: 10,
-        outputTokens: 5,
-        cacheReadTokens: 2,
-        cacheWriteTokens: 1,
-        date: 1000,
-      });
-      actions.appendToUsages("gpt-4", {
-        inputTokens: 20,
-        outputTokens: 8,
-        cacheReadTokens: 4,
-        cacheWriteTokens: 2,
-        date: 2000,
-      });
-
-      assert.deepStrictEqual(getState().app.incrementalUsage, {
-        "gpt-4": [
-          {
-            inputTokens: 10,
-            outputTokens: 5,
-            cacheReadTokens: 2,
-            cacheWriteTokens: 1,
-            date: 1000,
-          },
-          {
-            inputTokens: 20,
-            outputTokens: 8,
-            cacheReadTokens: 4,
-            cacheWriteTokens: 2,
-            date: 2000,
-          },
-        ],
-      });
-    });
-  });
-
   it("set-usages", () => {
     assert.deepStrictEqual(getState().app.incrementalUsage, {});
 

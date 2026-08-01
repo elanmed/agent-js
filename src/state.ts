@@ -315,17 +315,6 @@ export const actions = {
     );
   },
 
-  appendToUsages(model: string, usage: IncrementalUsage) {
-    const before = state.app.incrementalUsage;
-    (state.app.incrementalUsage[model] ??= []).push(usage);
-
-    logStateChange(
-      "append-to-usages",
-      String(Object.keys(before).length),
-      String(Object.keys(state.app.incrementalUsage).length),
-    );
-  },
-
   setUsages(usages: Record<string, IncrementalUsage[]>) {
     const before = state.app.incrementalUsage;
     state.app.incrementalUsage = usages;

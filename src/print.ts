@@ -9,7 +9,6 @@ import {
   createQueue,
   type Result,
 } from "./utils.ts";
-
 import { fsDeps, processDeps } from "./deps.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert";
@@ -348,7 +347,7 @@ export function syncNewIncrementalUsage(
   }
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
-  const currUsage = (() => {
+  const loggedUsages = (() => {
     if (!readResult.ok) return {};
     const parseResult = tryCatch(() =>
       IncrementalUsageMapSchema.parse(JSON.parse(readResult.value)),
@@ -357,10 +356,10 @@ export function syncNewIncrementalUsage(
     return {};
   })();
 
-  (currUsage[model] ??= []).push(usage);
-  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(currUsage)));
+  (loggedUsages[model] ??= []).push(usage);
+  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(loggedUsages)));
 
-  actions.appendToUsages(model, usage);
+  actions.setUsages(loggedUsages);
 }
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
