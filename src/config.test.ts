@@ -100,6 +100,50 @@ describe("config", () => {
       assert.deepEqual(getState().config.pricingPerModel, localPricing);
     });
 
+    it("uses its contextWindowPerModel over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          contextWindowPerModel: { "test-model": 100000 },
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          contextWindowPerModel: { "test-model": 200000 },
+        }),
+      );
+
+      await initState();
+
+      assert.deepEqual(getState().config.contextWindowPerModel, {
+        "test-model": 200000,
+      });
+    });
+
+    it("uses its compactAtContextPercent over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactAtContextPercent: 0.8,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactAtContextPercent: 0.5,
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.compactAtContextPercent, 0.5);
+    });
+
     it("uses its keymaps over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
@@ -465,6 +509,42 @@ describe("config", () => {
         JSON.stringify({
           ...defaultConfig,
           usageLimitDollar: "five",
+        }),
+      );
+
+      await assert.rejects(initState(), /Invalid input: expected number/);
+    });
+
+    it("rejects compactAtContextPercent above 1", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactAtContextPercent: 1.5,
+        }),
+      );
+
+      await assert.rejects(initState(), /Too big: expected number to be <=1/);
+    });
+
+    it("rejects compactAtContextPercent below 0", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactAtContextPercent: -0.1,
+        }),
+      );
+
+      await assert.rejects(initState(), /Too small: expected number to be >=0/);
+    });
+
+    it("rejects non-number compactAtContextPercent", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          compactAtContextPercent: "half",
         }),
       );
 

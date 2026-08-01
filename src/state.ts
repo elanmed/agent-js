@@ -42,6 +42,8 @@ interface State {
   };
   config: {
     pricingPerModel: Record<string, ModelPricing>;
+    contextWindowPerModel: Record<string, number>;
+    compactAtContextPercent: number;
     model: string;
     baseURL: string | null;
     provider: Provider;
@@ -88,6 +90,10 @@ const initialState: State = {
     provider: DEFAULT_CONFIG.provider,
     baseURL: null,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
+    contextWindowPerModel: structuredClone(
+      DEFAULT_CONFIG.contextWindowPerModel,
+    ),
+    compactAtContextPercent: DEFAULT_CONFIG.compactAtContextPercent,
     keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
     keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
     keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
@@ -149,6 +155,26 @@ export const actions = {
       "set-pricing-per-model",
       stringify(before),
       stringify(pricing),
+    );
+  },
+
+  setContextWindowPerModel(contextWindowPerModel: Record<string, number>) {
+    const before = state.config.contextWindowPerModel;
+    state.config.contextWindowPerModel = contextWindowPerModel;
+    logStateChange(
+      "set-context-window-per-model",
+      stringify(before),
+      stringify(contextWindowPerModel),
+    );
+  },
+
+  setCompactAtContextPercent(compactAtContextPercent: number) {
+    const before = state.config.compactAtContextPercent;
+    state.config.compactAtContextPercent = compactAtContextPercent;
+    logStateChange(
+      "set-compact-at-context-percent",
+      String(before),
+      String(compactAtContextPercent),
     );
   },
 

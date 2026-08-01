@@ -119,6 +119,20 @@ describe("state", () => {
     assert.deepStrictEqual(getState().config.pricingPerModel, newPricing);
   });
 
+  it("set-context-window-per-model", () => {
+    assert.deepStrictEqual(getState().config.contextWindowPerModel, {});
+    actions.setContextWindowPerModel({ "test-model": 200000 });
+    assert.deepStrictEqual(getState().config.contextWindowPerModel, {
+      "test-model": 200000,
+    });
+  });
+
+  it("set-compact-at-context-percent", () => {
+    assert.strictEqual(getState().config.compactAtContextPercent, 0.7);
+    actions.setCompactAtContextPercent(0.5);
+    assert.strictEqual(getState().config.compactAtContextPercent, 0.5);
+  });
+
   it("set-keymap-edit-prompt", () => {
     assert.deepStrictEqual(
       getState().config.keymapEditPrompt,
