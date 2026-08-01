@@ -80,6 +80,8 @@ describe("config", () => {
           ...defaultConfig,
           model: "test-model",
           pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
+          usageLimitDuration: "60m",
+          usageLimitDollar: 10,
         }),
       );
       testFs._files.set(
@@ -88,6 +90,8 @@ describe("config", () => {
           ...defaultConfig,
           model: "test-model",
           pricingPerModel: localPricing,
+          usageLimitDuration: "60m",
+          usageLimitDollar: 10,
         }),
       );
 
@@ -268,6 +272,7 @@ describe("config", () => {
         JSON.stringify({
           ...defaultConfig,
           usageLimitDuration: "2h",
+          usageLimitDollar: 10,
         }),
       );
       testFs._files.set(
@@ -275,16 +280,87 @@ describe("config", () => {
         JSON.stringify({
           ...defaultConfig,
           usageLimitDuration: "60m",
+          usageLimitDollar: 20,
         }),
       );
 
       await initState();
 
       assert.strictEqual(getState().config.usageLimitDuration, "60m");
-      assert.strictEqual(getState().config.usageLimitDollar, undefined);
+      assert.strictEqual(getState().config.usageLimitDollar, 20);
     });
 
     it("falls back to global usageLimitDuration when local omits it", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "2h",
+          usageLimitDollar: 10,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDollar: 10,
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.usageLimitDuration, "2h");
+      assert.strictEqual(getState().config.usageLimitDollar, 10);
+    });
+
+    it("uses its usageLimitDollar over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "2h",
+          usageLimitDollar: 10,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "60m",
+          usageLimitDollar: 5,
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.usageLimitDollar, 5);
+      assert.strictEqual(getState().config.usageLimitDuration, "60m");
+    });
+
+    it("falls back to global usageLimitDollar when local omits it", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "2h",
+          usageLimitDollar: 10,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...defaultConfig,
+          usageLimitDuration: "2h",
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.usageLimitDollar, 10);
+      assert.strictEqual(getState().config.usageLimitDuration, "2h");
+    });
+
+    it("rejects usageLimitDuration without usageLimitDollar", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -299,34 +375,13 @@ describe("config", () => {
         }),
       );
 
-      await initState();
-
-      assert.strictEqual(getState().config.usageLimitDuration, "2h");
+      await assert.rejects(
+        initState(),
+        /Both `usageLimitDuration` and `usageLimitDollar` are required together/,
+      );
     });
 
-    it("uses its usageLimitDollar over the global config, default config", async () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          usageLimitDollar: 10,
-        }),
-      );
-      testFs._files.set(
-        getLocalConfigPath(),
-        JSON.stringify({
-          ...defaultConfig,
-          usageLimitDollar: 5,
-        }),
-      );
-
-      await initState();
-
-      assert.strictEqual(getState().config.usageLimitDollar, 5);
-      assert.strictEqual(getState().config.usageLimitDuration, undefined);
-    });
-
-    it("falls back to global usageLimitDollar when local omits it", async () => {
+    it("rejects usageLimitDollar without usageLimitDuration", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -341,9 +396,10 @@ describe("config", () => {
         }),
       );
 
-      await initState();
-
-      assert.strictEqual(getState().config.usageLimitDollar, 10);
+      await assert.rejects(
+        initState(),
+        /Both `usageLimitDuration` and `usageLimitDollar` are required together/,
+      );
     });
 
     it("rejects non-string usageLimitDuration", async () => {
@@ -492,6 +548,8 @@ describe("config", () => {
             ...defaultConfig,
             model: "test-model",
             pricingPerModel: globalPricing,
+            usageLimitDuration: "60m",
+            usageLimitDollar: 10,
           }),
         );
 
@@ -599,12 +657,14 @@ describe("config", () => {
           JSON.stringify({
             ...defaultConfig,
             usageLimitDuration: "2h",
+            usageLimitDollar: 10,
           }),
         );
 
         await initState();
 
         assert.strictEqual(getState().config.usageLimitDuration, "2h");
+        assert.strictEqual(getState().config.usageLimitDollar, 10);
       });
 
       it("uses its usageLimitDollar over the default config", async () => {
@@ -612,6 +672,7 @@ describe("config", () => {
           getGlobalConfigPath(),
           JSON.stringify({
             ...defaultConfig,
+            usageLimitDuration: "2h",
             usageLimitDollar: 20,
           }),
         );
@@ -619,6 +680,7 @@ describe("config", () => {
         await initState();
 
         assert.strictEqual(getState().config.usageLimitDollar, 20);
+        assert.strictEqual(getState().config.usageLimitDuration, "2h");
       });
 
       it("uses default limits when global config omits them", async () => {
@@ -835,6 +897,15 @@ describe("config", () => {
       JSON.stringify({
         ...defaultConfig,
         usageLimitDuration: "60m",
+        usageLimitDollar: 10,
+        pricingPerModel: {
+          "claude-sonnet-4-6": {
+            inputPerToken: 3,
+            outputPerToken: 15,
+            cacheReadPerToken: 0.75,
+            cacheWritePerToken: 3.75,
+          },
+        },
       }),
     );
     mock.method(Date, "now", () => 4_000_000);

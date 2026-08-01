@@ -223,12 +223,14 @@ describe("print", () => {
           cacheWritePerToken: 6.25,
         },
       });
+      actions.setUsageLimitDuration("60m");
+      actions.setUsageLimitDollar(10);
     });
 
     it("known model with no usages returns $0.0000", () => {
       actions.setModel("claude-haiku-4-5");
       const result = getPrettySessionUsage();
-      assert.equal(result, "$0.000");
+      assert.equal(result, "$0.000 of $10");
     });
 
     it("calculates prompt token costs correctly", () => {
@@ -244,7 +246,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$2.000");
+      assert.equal(result, "$2.000 of $10");
     });
 
     it("calculates completion token costs correctly", () => {
@@ -259,7 +261,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$3.000");
+      assert.equal(result, "$3.000 of $10");
     });
 
     it("calculates cache read token costs correctly", () => {
@@ -275,7 +277,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$0.250");
+      assert.equal(result, "$0.250 of $10");
     });
 
     it("calculates cache write token costs correctly", () => {
@@ -291,7 +293,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$1.250");
+      assert.equal(result, "$1.250 of $10");
     });
 
     it("calculates combined input, output, and cache costs correctly", () => {
@@ -308,11 +310,12 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$1.700");
+      assert.equal(result, "$1.700 of $10");
     });
 
     it("shows cost against the dollar limit when configured", () => {
       actions.setModel("claude-haiku-4-5");
+      actions.setUsageLimitDuration("60m");
       actions.setUsageLimitDollar(10);
       appendIncrementalUsage({
         inputTokens: 900_000,
@@ -351,7 +354,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$3.425");
+      assert.equal(result, "$3.425 of $10");
     });
 
     it("falls back to the input price when cache pricing is omitted", () => {
@@ -371,7 +374,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$4.000");
+      assert.equal(result, "$4.000 of $10");
     });
 
     it("formats cost with commas for large totals", () => {
@@ -387,7 +390,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$1,000.000");
+      assert.equal(result, "$1,000.000 of $10");
     });
 
     it("formats cost with commas for very large totals across multiple usages", () => {
@@ -413,7 +416,7 @@ describe("print", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettySessionUsage();
-      assert.equal(result, "$7,500.000");
+      assert.equal(result, "$7,500.000 of $10");
     });
   });
 
@@ -695,6 +698,17 @@ describe("print", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
+      actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+          cacheReadPerToken: 0.25,
+          cacheWritePerToken: 1.25,
+        },
+      });
+      actions.setUsageLimitDuration("60m");
+      actions.setUsageLimitDollar(10);
     });
 
     it("creates the usage log directory and writes the usage entry", () => {
@@ -836,16 +850,48 @@ describe("print", () => {
         "gpt-4": [usage],
       });
     });
+
+    it("appends to state without writing when the usage limit is disabled", () => {
+      actions.setPricingPerModel({});
+      actions.setUsageLimitDuration(undefined);
+      actions.setUsageLimitDollar(undefined);
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        date: 1000,
+      };
+
+      syncNewIncrementalUsage("gpt-4", usage);
+
+      assert.deepStrictEqual(getState().app.incrementalUsage, {
+        "gpt-4": [usage],
+      });
+      assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
+    });
   });
 
   describe("syncInitialIncrementalUsages", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
+      actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+          cacheReadPerToken: 0.25,
+          cacheWritePerToken: 1.25,
+        },
+      });
+      actions.setUsageLimitDollar(10);
     });
 
-    it("does nothing when usageLimitDuration is undefined", () => {
+    it("does nothing when all usage limit options are undefined", () => {
+      actions.setPricingPerModel({});
       actions.setUsageLimitDuration(undefined);
+      actions.setUsageLimitDollar(undefined);
 
       syncInitialIncrementalUsages();
 
@@ -871,7 +917,17 @@ describe("print", () => {
 
       for (const [duration, windowMs] of cases) {
         actions.resetState();
+        actions.setModel("gpt-4");
+        actions.setPricingPerModel({
+          "gpt-4": {
+            inputPerToken: 1,
+            outputPerToken: 5,
+            cacheReadPerToken: 0.25,
+            cacheWritePerToken: 1.25,
+          },
+        });
         actions.setUsageLimitDuration(duration);
+        actions.setUsageLimitDollar(10);
         const recent = {
           inputTokens: 10,
           outputTokens: 5,

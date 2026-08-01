@@ -289,9 +289,23 @@ export function appendIncrementalUsage(usage: LanguageModelUsage) {
   syncNewIncrementalUsage(model, defaultedUsage);
 }
 
+export function usageLimitDisabled() {
+  const { usageLimitDuration, usageLimitDollar, pricingPerModel, model } =
+    getState().config;
+  const pricing = pricingPerModel[model];
+
+  return (
+    pricing === undefined &&
+    usageLimitDuration === undefined &&
+    usageLimitDollar === undefined
+  );
+}
+
 export function syncInitialIncrementalUsages() {
+  if (usageLimitDisabled()) return;
+
   const { usageLimitDuration } = getState().config;
-  if (usageLimitDuration === undefined) return;
+  assert(usageLimitDuration !== undefined);
 
   const now = Date.now();
   const msPerDuration = {
@@ -340,6 +354,11 @@ export function syncNewIncrementalUsage(
   model: string,
   usage: IncrementalUsage,
 ) {
+  if (usageLimitDisabled()) {
+    actions.appendToUsages(usage);
+    return;
+  }
+
   const path = getUsageLogPath();
   const dir = dirname(path);
   if (!fsDeps.existsSync(dir)) {
@@ -425,7 +444,7 @@ export function getPrettySessionUsage() {
   const cost = getUsageMoneyForModel(tokenUsage, model);
   const { usageLimitDollar } = getState().config;
 
-  if (usageLimitDollar === undefined) return `$${getPrettyMoney(cost)}`;
+  if (usageLimitDisabled()) return `$${getPrettyMoney(cost)}`;
   return `$${getPrettyMoney(cost)} of $${String(usageLimitDollar)}`;
 }
 

@@ -255,12 +255,21 @@ export async function initState() {
       DEFAULT_CONFIG.promptPrefix,
   );
 
-  actions.setUsageLimitDuration(
-    localConfig.usageLimitDuration ?? globalConfig.usageLimitDuration,
-  );
-  actions.setUsageLimitDollar(
-    localConfig.usageLimitDollar ?? globalConfig.usageLimitDollar,
-  );
+  const defaultedUsageLimitDuration =
+    localConfig.usageLimitDuration ?? globalConfig.usageLimitDuration;
+  const defaultedUsageLimitDollar =
+    localConfig.usageLimitDollar ?? globalConfig.usageLimitDollar;
+  if (
+    (defaultedUsageLimitDuration === undefined) !==
+    (defaultedUsageLimitDollar === undefined)
+  ) {
+    throw new Error(
+      `Both \`usageLimitDuration\` and \`usageLimitDollar\` are required together in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
+    );
+  }
+
+  actions.setUsageLimitDuration(defaultedUsageLimitDuration);
+  actions.setUsageLimitDollar(defaultedUsageLimitDollar);
 
   syncInitialIncrementalUsages();
 

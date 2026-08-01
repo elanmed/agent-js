@@ -326,6 +326,20 @@ export const actions = {
     );
   },
 
+  appendToUsages(usage: IncrementalUsage) {
+    const model = state.config.model;
+    state.app.incrementalUsage[model] ??= [];
+
+    const before = state.app.incrementalUsage[model];
+    state.app.incrementalUsage[model].push(usage);
+
+    logStateChange(
+      "append-to-usages",
+      String(before.length),
+      String(state.app.incrementalUsage[model].length),
+    );
+  },
+
   setRl(rl: readline.Interface | null) {
     const before = state.app.rl;
     state.app.rl = rl;
