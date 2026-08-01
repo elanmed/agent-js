@@ -1109,7 +1109,7 @@ Keymaps:
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "Usage: /resume [session start date]?\n",
+        "Usage: /resume [session start date]\n",
       );
     });
 
