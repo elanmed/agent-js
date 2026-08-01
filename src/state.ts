@@ -43,7 +43,7 @@ interface State {
   config: {
     pricingPerModel: Record<string, ModelPricing>;
     contextWindowPerModel: Record<string, number>;
-    compactAtContextPercent: number;
+    compactAtContextRatio: number;
     model: string;
     baseURL: string | null;
     provider: Provider;
@@ -93,7 +93,7 @@ const initialState: State = {
     contextWindowPerModel: structuredClone(
       DEFAULT_CONFIG.contextWindowPerModel,
     ),
-    compactAtContextPercent: DEFAULT_CONFIG.compactAtContextPercent,
+    compactAtContextRatio: DEFAULT_CONFIG.compactAtContextRatio,
     keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
     keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
     keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
@@ -168,13 +168,13 @@ export const actions = {
     );
   },
 
-  setCompactAtContextPercent(compactAtContextPercent: number) {
-    const before = state.config.compactAtContextPercent;
-    state.config.compactAtContextPercent = compactAtContextPercent;
+  setCompactAtContextRatio(compactAtContextRatio: number) {
+    const before = state.config.compactAtContextRatio;
+    state.config.compactAtContextRatio = compactAtContextRatio;
     logStateChange(
       "set-compact-at-context-percent",
       String(before),
-      String(compactAtContextPercent),
+      String(compactAtContextRatio),
     );
   },
 

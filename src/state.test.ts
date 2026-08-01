@@ -128,9 +128,9 @@ describe("state", () => {
   });
 
   it("set-compact-at-context-percent", () => {
-    assert.strictEqual(getState().config.compactAtContextPercent, 0.7);
-    actions.setCompactAtContextPercent(0.5);
-    assert.strictEqual(getState().config.compactAtContextPercent, 0.5);
+    assert.strictEqual(getState().config.compactAtContextRatio, 0.7);
+    actions.setCompactAtContextRatio(0.5);
+    assert.strictEqual(getState().config.compactAtContextRatio, 0.5);
   });
 
   it("set-keymap-edit-prompt", () => {

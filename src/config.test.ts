@@ -123,25 +123,25 @@ describe("config", () => {
       });
     });
 
-    it("uses its compactAtContextPercent over the global config, default config", async () => {
+    it("uses its compactAtContextRatio over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          compactAtContextPercent: 0.8,
+          compactAtContextRatio: 0.8,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          compactAtContextPercent: 0.5,
+          compactAtContextRatio: 0.5,
         }),
       );
 
       await initState();
 
-      assert.strictEqual(getState().config.compactAtContextPercent, 0.5);
+      assert.strictEqual(getState().config.compactAtContextRatio, 0.5);
     });
 
     it("uses its keymaps over the global config, default config", async () => {
@@ -515,36 +515,36 @@ describe("config", () => {
       await assert.rejects(initState(), /Invalid input: expected number/);
     });
 
-    it("rejects compactAtContextPercent above 1", async () => {
+    it("rejects compactAtContextRatio above 1", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          compactAtContextPercent: 1.5,
+          compactAtContextRatio: 1.5,
         }),
       );
 
       await assert.rejects(initState(), /Too big: expected number to be <=1/);
     });
 
-    it("rejects compactAtContextPercent below 0", async () => {
+    it("rejects compactAtContextRatio below 0", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          compactAtContextPercent: -0.1,
+          compactAtContextRatio: -0.1,
         }),
       );
 
       await assert.rejects(initState(), /Too small: expected number to be >=0/);
     });
 
-    it("rejects non-number compactAtContextPercent", async () => {
+    it("rejects non-number compactAtContextRatio", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          compactAtContextPercent: "half",
+          compactAtContextRatio: "half",
         }),
       );
 

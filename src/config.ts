@@ -37,7 +37,7 @@ const ConfigSchema = z.object({
   provider: z.enum(["anthropic", "openai-compatible"]).optional(),
   pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
   contextWindowPerModel: z.record(z.string(), z.number()).optional(),
-  compactAtContextPercent: z.number().min(0).max(1).optional(),
+  compactAtContextRatio: z.number().min(0).max(1).optional(),
   keymaps: z
     .object({
       edit: KeySchema.optional(),
@@ -104,7 +104,7 @@ interface DefaultConfig {
     }
   >;
   contextWindowPerModel: Record<string, number>;
-  compactAtContextPercent: number;
+  compactAtContextRatio: number;
   keymaps: {
     edit: Key;
     paste: Key;
@@ -124,7 +124,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   provider: "openai-compatible",
   pricingPerModel: {},
   contextWindowPerModel: {},
-  compactAtContextPercent: 0.7,
+  compactAtContextRatio: 0.7,
   model: MISSING,
   keymaps: {
     edit: {
@@ -218,10 +218,10 @@ export function initStateFromConfig() {
       globalConfig.contextWindowPerModel ??
       DEFAULT_CONFIG.contextWindowPerModel,
   );
-  actions.setCompactAtContextPercent(
-    localConfig.compactAtContextPercent ??
-      globalConfig.compactAtContextPercent ??
-      DEFAULT_CONFIG.compactAtContextPercent,
+  actions.setCompactAtContextRatio(
+    localConfig.compactAtContextRatio ??
+      globalConfig.compactAtContextRatio ??
+      DEFAULT_CONFIG.compactAtContextRatio,
   );
 
   actions.setCustomSlashCommandDirs(
