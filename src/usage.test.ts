@@ -2,9 +2,14 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import {
   appendModelUsage,
+  filterExpiredModelUsage,
+  getExpiredTime,
   getPrettyContextWindowUsage,
   getPrettyTokenUsage,
   getPrettyUsage,
+  getUsageMoneyForModel,
+  isUsageLimitDisabled,
+  sumUsageTokens,
   syncInitialModelUsageForLimitWindow,
   syncNewModelUsageForLimitWindow,
 } from "./usage.ts";
@@ -287,7 +292,7 @@ describe("usage", () => {
     it("returns token counts for no modelUsage", () => {
       actions.setModel("unknown-model");
       const result = getPrettyTokenUsage();
-      assert.equal(result, "0 tokens total");
+      assert.equal(result, "0 tokens in session");
     });
 
     it("returns token counts for modelUsage with no pricing configured", () => {
@@ -301,7 +306,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "150 tokens total");
+      assert.equal(result, "150 tokens in session");
     });
 
     it("formats token counts with commas for numbers above 999", () => {
@@ -315,7 +320,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "4,000 tokens total");
+      assert.equal(result, "4,000 tokens in session");
     });
 
     it("formats token counts with commas for very large numbers", () => {
@@ -329,7 +334,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "11,111,110 tokens total");
+      assert.equal(result, "11,111,110 tokens in session");
     });
 
     it("accumulates token counts across multiple modelUsage and formats with commas", () => {
@@ -351,7 +356,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "210,000 tokens total");
+      assert.equal(result, "210,000 tokens in session");
     });
   });
 
@@ -408,7 +413,7 @@ describe("usage", () => {
     it("returns just token usage when the model has no context window configured", () => {
       actions.setModel("unknown-model");
       const result = getPrettyUsage();
-      assert.strictEqual(result, "0 tokens total");
+      assert.strictEqual(result, "0 tokens in session");
     });
 
     it("includes context window usage when configured", () => {
@@ -416,7 +421,7 @@ describe("usage", () => {
       actions.setContextWindowPerModel({ "test-model": 10_000 });
       actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
       const result = getPrettyUsage();
-      assert.strictEqual(result, "0 tokens total, 50% of context window");
+      assert.strictEqual(result, "0 tokens in session, 50% of context window");
     });
   });
 
@@ -1137,6 +1142,249 @@ describe("usage", () => {
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.get(getUsageLogPath()), `{}`);
+    });
+  });
+
+  describe("isUsageLimitDisabled", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+    });
+
+    it("returns true when the model has no pricing configured", () => {
+      actions.setModel("unknown-model");
+      assert.strictEqual(isUsageLimitDisabled(), true);
+    });
+
+    it("returns true when the usage limit duration is undefined", () => {
+      actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+        },
+      });
+      actions.setUsageLimitDollar(10);
+      assert.strictEqual(isUsageLimitDisabled(), true);
+    });
+
+    it("returns true when the usage limit dollar is undefined", () => {
+      actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+        },
+      });
+      actions.setUsageLimitDuration("60m");
+      assert.strictEqual(isUsageLimitDisabled(), true);
+    });
+
+    it("returns false when pricing, duration, and dollar are configured", () => {
+      actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+        },
+      });
+      actions.setUsageLimitDuration("60m");
+      actions.setUsageLimitDollar(10);
+      assert.strictEqual(isUsageLimitDisabled(), false);
+    });
+  });
+
+  describe("filterExpiredModelUsage", () => {
+    it("returns an empty object for an empty map", () => {
+      const result = filterExpiredModelUsage({}, 100);
+      assert.deepStrictEqual(result, {});
+    });
+
+    it("keeps entries at or after the expired time and drops older ones", () => {
+      const map = {
+        "gpt-4": [
+          {
+            inputTokens: 1,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 100,
+          },
+          {
+            inputTokens: 2,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 200,
+          },
+        ],
+      };
+      const result = filterExpiredModelUsage(map, 150);
+      assert.deepStrictEqual(result, {
+        "gpt-4": [map["gpt-4"][1]],
+      });
+    });
+
+    it("drops models whose entries are all expired", () => {
+      const map = {
+        "gpt-4": [
+          {
+            inputTokens: 1,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 100,
+          },
+        ],
+        claude: [
+          {
+            inputTokens: 2,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 200,
+          },
+        ],
+      };
+      const result = filterExpiredModelUsage(map, 150);
+      assert.deepStrictEqual(result, {
+        claude: [map.claude[0]],
+      });
+    });
+  });
+
+  describe("getExpiredTime", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+      mock.method(Date, "now", () => 1_000_000);
+    });
+
+    it("throws when the usage limit duration is undefined", () => {
+      actions.setUsageLimitDuration(undefined);
+      assert.throws(() => getExpiredTime(), /usageLimitDuration/);
+    });
+
+    it("computes the expired time for seconds", () => {
+      actions.setUsageLimitDuration("100s");
+      assert.strictEqual(getExpiredTime(), 1_000_000 - 100_000);
+    });
+
+    it("computes the expired time for minutes", () => {
+      actions.setUsageLimitDuration("10m");
+      assert.strictEqual(getExpiredTime(), 1_000_000 - 600_000);
+    });
+
+    it("computes the expired time for hours", () => {
+      actions.setUsageLimitDuration("2h");
+      assert.strictEqual(getExpiredTime(), 1_000_000 - 7_200_000);
+    });
+
+    it("computes the expired time for days", () => {
+      actions.setUsageLimitDuration("3d");
+      assert.strictEqual(getExpiredTime(), 1_000_000 - 259_200_000);
+    });
+  });
+
+  describe("getUsageMoneyForModel", () => {
+    beforeEach(() => {
+      setupFakeDeps();
+      actions.resetState();
+      actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+          cacheReadPerToken: 0.25,
+          cacheWritePerToken: 1.25,
+        },
+      });
+    });
+
+    it("throws when the model has no pricing configured", () => {
+      actions.setPricingPerModel({});
+      assert.throws(
+        () =>
+          getUsageMoneyForModel(
+            {
+              inputTokens: 1,
+              outputTokens: 0,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+            },
+            "gpt-4",
+          ),
+        /pricing/,
+      );
+    });
+
+    it("computes the total cost from all token types", () => {
+      const result = getUsageMoneyForModel(
+        {
+          inputTokens: 900_000,
+          outputTokens: 200_000,
+          cacheReadTokens: 300_000,
+          cacheWriteTokens: 100_000,
+        },
+        "gpt-4",
+      );
+      assert.strictEqual(result, 1.7);
+    });
+
+    it("falls back to the input price when cache pricing is omitted", () => {
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 2,
+          outputPerToken: 10,
+        },
+      });
+      const result = getUsageMoneyForModel(
+        {
+          inputTokens: 2_000_000,
+          outputTokens: 0,
+          cacheReadTokens: 1_000_000,
+          cacheWriteTokens: 500_000,
+        },
+        "gpt-4",
+      );
+      assert.strictEqual(result, 4);
+    });
+  });
+
+  describe("sumUsageTokens", () => {
+    it("returns all zeros for an empty array", () => {
+      const result = sumUsageTokens([]);
+      assert.deepStrictEqual(result, {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      });
+    });
+
+    it("sums all token types across multiple entries", () => {
+      const result = sumUsageTokens([
+        {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+          date: 1_000,
+        },
+        {
+          inputTokens: 150,
+          outputTokens: 80,
+          cacheReadTokens: 20,
+          cacheWriteTokens: 10,
+          date: 2_000,
+        },
+      ]);
+      assert.deepStrictEqual(result, {
+        inputTokens: 250,
+        outputTokens: 130,
+        cacheReadTokens: 30,
+        cacheWriteTokens: 15,
+      });
     });
   });
 });

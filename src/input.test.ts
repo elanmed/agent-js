@@ -399,7 +399,7 @@ Session start date: 42000
       });
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "Context cleared (0 tokens total)\n",
+        "Context cleared (0 tokens in session)\n",
       );
     });
   });
@@ -1306,7 +1306,10 @@ Keymaps:
       actions.setModel("unknown-model");
       const result = await resolveSlashCommand("/usage");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "0 tokens total\n");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "0 tokens in session\n",
+      );
     });
 
     it("handles /usage command with context window usage", async () => {
@@ -1318,7 +1321,7 @@ Keymaps:
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "0 tokens total, 50% of context window\n",
+        "0 tokens in session, 50% of context window\n",
       );
     });
 

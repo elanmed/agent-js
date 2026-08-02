@@ -184,7 +184,7 @@ describe("print", () => {
 
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "\u2501\u2501 Output (500ms) (0 tokens total) \u2501\u2501\n",
+        "\u2501\u2501 Output (500ms) (0 tokens in session) \u2501\u2501\n",
       );
     });
 
@@ -201,7 +201,7 @@ describe("print", () => {
 
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "\u2501\u2501 Output (500ms) (0 tokens total, 50% of context window) \u2501\u2501\n",
+        "\u2501\u2501 Output (500ms) (0 tokens in session, 50% of context window) \u2501\u2501\n",
       );
     });
   });

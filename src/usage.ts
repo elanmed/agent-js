@@ -203,7 +203,7 @@ export function getPrettyTokenUsage() {
   );
 
   if (pricing === undefined) {
-    return `${(tokenUsageForSession.inputTokens + tokenUsageForSession.outputTokens).toLocaleString()} tokens total`;
+    return `${(tokenUsageForSession.inputTokens + tokenUsageForSession.outputTokens).toLocaleString()} tokens in session`;
   }
 
   const tokenUsageForLimitWindow = sumUsageTokens(
