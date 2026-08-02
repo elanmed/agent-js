@@ -14,7 +14,9 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
 - **AGENTS.md support**: The root file is included in context, nested files are internally represented as skills
 - **Slash commands**: Change agent settings or execute reusable prompts
-- **Cost tracking**: Per-model token pricing
+- **Toekn usage tracking**: Track spending per model within a configurable time window
+- **Context compaction**: The conversation is automatically compacted when nearing the model's context window limit
+- **Session history**: Transcripts are persisted per session and past sessions can be resumed with `/resume`
 - **Keymaps**: Customizable shortcuts for executing built-in slash commands
 
 ## Configuration
