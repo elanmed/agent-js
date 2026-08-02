@@ -16,7 +16,7 @@ import {
   getGlobalConfigPath,
   getLocalConfigPath,
 } from "./paths.ts";
-import { syncInitialModelUsage } from "./usage.ts";
+import { syncInitialModelUsageForLimitWindow } from "./usage.ts";
 import { join } from "node:path";
 
 export type Provider = "anthropic" | "openai-compatible";
@@ -288,7 +288,7 @@ export function initStateFromConfig() {
 }
 
 export async function initStateFromFs() {
-  syncInitialModelUsage();
+  syncInitialModelUsageForLimitWindow();
 
   const contextEntries = getContextEntries();
   actions.setContextEntries(contextEntries);

@@ -483,33 +483,6 @@ line3
     });
   });
 
-  it("append-to-model-usage-for-limit-window", () => {
-    actions.setModel("gpt-4");
-    const first = {
-      inputTokens: 10,
-      outputTokens: 5,
-      cacheReadTokens: 2,
-      cacheWriteTokens: 1,
-      date: 1_000,
-    };
-    actions.appendToModelUsageForLimitWindow(first);
-
-    actions.setModel("claude");
-    const second = {
-      inputTokens: 3,
-      outputTokens: 1,
-      cacheReadTokens: 0,
-      cacheWriteTokens: 0,
-      date: 2_000,
-    };
-    actions.appendToModelUsageForLimitWindow(second);
-
-    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
-      "gpt-4": [first],
-      claude: [second],
-    });
-  });
-
   it("set-model-usage-for-session", () => {
     assert.deepStrictEqual(getState().app.modelUsageForSession, {});
 

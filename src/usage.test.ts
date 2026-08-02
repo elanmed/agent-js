@@ -5,8 +5,8 @@ import {
   getPrettyContextWindowUsage,
   getPrettyTokenUsage,
   getPrettyUsage,
-  syncInitialModelUsage,
-  syncNewModelUsage,
+  syncInitialModelUsageForLimitWindow,
+  syncNewModelUsageForLimitWindow,
 } from "./usage.ts";
 import { actions, getState } from "./state.ts";
 import { fsDeps } from "./deps.ts";
@@ -47,7 +47,7 @@ describe("usage", () => {
     it("known model with no modelUsage returns $0.0000", () => {
       actions.setModel("claude-haiku-4-5");
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$0.000 of $10");
+      assert.equal(result, "$0.000 in session, $0.000 of $10 limit");
     });
 
     it("calculates prompt token costs correctly", () => {
@@ -63,7 +63,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$2.000 of $10");
+      assert.equal(result, "$2.000 in session, $2.000 of $10 limit");
     });
 
     it("calculates completion token costs correctly", () => {
@@ -78,7 +78,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$3.000 of $10");
+      assert.equal(result, "$3.000 in session, $3.000 of $10 limit");
     });
 
     it("calculates cache read token costs correctly", () => {
@@ -94,7 +94,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$0.250 of $10");
+      assert.equal(result, "$0.250 in session, $0.250 of $10 limit");
     });
 
     it("calculates cache write token costs correctly", () => {
@@ -110,7 +110,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$1.250 of $10");
+      assert.equal(result, "$1.250 in session, $1.250 of $10 limit");
     });
 
     it("calculates combined input, output, and cache costs correctly", () => {
@@ -127,7 +127,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$1.700 of $10");
+      assert.equal(result, "$1.700 in session, $1.700 of $10 limit");
     });
 
     it("shows cost against the dollar limit when configured", () => {
@@ -143,7 +143,48 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$1.700 of $10");
+      assert.equal(result, "$1.700 in session, $1.700 of $10 limit");
+    });
+
+    it("shows session and limit window costs separately when they differ", () => {
+      actions.setModel("claude-haiku-4-5");
+      appendModelUsage({
+        inputTokens: 900_000,
+        outputTokens: 200_000,
+        inputTokenDetails: {
+          cacheReadTokens: 300_000,
+          cacheWriteTokens: 100_000,
+        },
+      } as LanguageModelUsage);
+      actions.setModelUsageForLimitWindow({
+        "claude-haiku-4-5": [
+          {
+            inputTokens: 100_000,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 1_000,
+          },
+        ],
+      });
+      const result = getPrettyTokenUsage();
+      assert.equal(result, "$1.700 in session, $0.100 of $10 limit");
+    });
+
+    it("shows only session cost when the usage limit is disabled", () => {
+      actions.setModel("claude-haiku-4-5");
+      actions.setUsageLimitDuration(undefined);
+      actions.setUsageLimitDollar(undefined);
+      appendModelUsage({
+        inputTokens: 900_000,
+        outputTokens: 200_000,
+        inputTokenDetails: {
+          cacheReadTokens: 300_000,
+          cacheWriteTokens: 100_000,
+        },
+      } as LanguageModelUsage);
+      const result = getPrettyTokenUsage();
+      assert.equal(result, "$1.700 in session");
     });
 
     it("accumulates all token types across multiple modelUsage", () => {
@@ -171,7 +212,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$3.425 of $10");
+      assert.equal(result, "$3.425 in session, $3.425 of $10 limit");
     });
 
     it("falls back to the input price when cache pricing is omitted", () => {
@@ -191,7 +232,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$4.000 of $10");
+      assert.equal(result, "$4.000 in session, $4.000 of $10 limit");
     });
 
     it("formats cost with commas for large totals", () => {
@@ -207,7 +248,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$1,000.000 of $10");
+      assert.equal(result, "$1,000.000 in session, $1,000.000 of $10 limit");
     });
 
     it("formats cost with commas for very large totals across multiple modelUsage", () => {
@@ -233,7 +274,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
       const result = getPrettyTokenUsage();
-      assert.equal(result, "$7,500.000 of $10");
+      assert.equal(result, "$7,500.000 in session, $7,500.000 of $10 limit");
     });
   });
 
@@ -384,6 +425,22 @@ describe("usage", () => {
       setupFakeDeps();
       actions.resetState();
       actions.setModel("gpt-4");
+      actions.setPricingPerModel({
+        "gpt-4": {
+          inputPerToken: 1,
+          outputPerToken: 5,
+          cacheReadPerToken: 0.25,
+          cacheWritePerToken: 1.25,
+        },
+        claude: {
+          inputPerToken: 1,
+          outputPerToken: 5,
+          cacheReadPerToken: 0.25,
+          cacheWritePerToken: 1.25,
+        },
+      });
+      actions.setUsageLimitDuration("60m");
+      actions.setUsageLimitDollar(10);
     });
 
     it("appends the full usage on the first call", () => {
@@ -398,7 +455,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+      const expectedUsage = {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -408,7 +465,15 @@ describe("usage", () => {
             date: 1_000,
           },
         ],
-      });
+      };
+      assert.deepStrictEqual(
+        getState().app.modelUsageForLimitWindow,
+        expectedUsage,
+      );
+      assert.deepStrictEqual(
+        getState().app.modelUsageForSession,
+        expectedUsage,
+      );
     });
 
     it("appends the full usage on subsequent calls", () => {
@@ -434,7 +499,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+      const expectedUsage = {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -451,7 +516,15 @@ describe("usage", () => {
             date: 2_000,
           },
         ],
-      });
+      };
+      assert.deepStrictEqual(
+        getState().app.modelUsageForLimitWindow,
+        expectedUsage,
+      );
+      assert.deepStrictEqual(
+        getState().app.modelUsageForSession,
+        expectedUsage,
+      );
     });
 
     it("tracks different models separately", () => {
@@ -478,7 +551,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+      const expectedUsage = {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -497,7 +570,15 @@ describe("usage", () => {
             date: 2_000,
           },
         ],
-      });
+      };
+      assert.deepStrictEqual(
+        getState().app.modelUsageForLimitWindow,
+        expectedUsage,
+      );
+      assert.deepStrictEqual(
+        getState().app.modelUsageForSession,
+        expectedUsage,
+      );
     });
 
     it("defaults missing token detail values to 0", () => {
@@ -512,7 +593,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+      const expectedUsage = {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -522,11 +603,49 @@ describe("usage", () => {
             date: 1_000,
           },
         ],
+      };
+      assert.deepStrictEqual(
+        getState().app.modelUsageForLimitWindow,
+        expectedUsage,
+      );
+      assert.deepStrictEqual(
+        getState().app.modelUsageForSession,
+        expectedUsage,
+      );
+    });
+
+    it("appends to session usage only when the usage limit is disabled", () => {
+      mock.method(Date, "now", () => 1_000);
+      actions.setPricingPerModel({});
+      actions.setUsageLimitDuration(undefined);
+      actions.setUsageLimitDollar(undefined);
+
+      appendModelUsage({
+        inputTokens: 100,
+        outputTokens: 50,
+        inputTokenDetails: {
+          cacheReadTokens: 10,
+          cacheWriteTokens: 5,
+        },
+      } as LanguageModelUsage);
+
+      assert.deepStrictEqual(getState().app.modelUsageForSession, {
+        "gpt-4": [
+          {
+            inputTokens: 100,
+            outputTokens: 50,
+            cacheReadTokens: 10,
+            cacheWriteTokens: 5,
+            date: 1_000,
+          },
+        ],
       });
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
+      assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
     });
   });
 
-  describe("syncNewModelUsage", () => {
+  describe("syncNewModelUsageForLimitWindow", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -552,11 +671,12 @@ describe("usage", () => {
         date: 1_000,
       };
 
-      syncNewModelUsage("gpt-4", usage);
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
       });
+      assert.deepStrictEqual(getState().app.modelUsageForSession, {});
       assert.strictEqual(
         testFs._files.get(getUsageLogPath()),
         `{
@@ -596,7 +716,7 @@ describe("usage", () => {
         date: 1_000,
       };
 
-      syncNewModelUsage("gpt-4", usage);
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [
@@ -643,7 +763,7 @@ describe("usage", () => {
         date: 1_000,
       };
 
-      syncNewModelUsage("gpt-4", usage);
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
@@ -676,14 +796,14 @@ describe("usage", () => {
         date: 1_000,
       };
 
-      syncNewModelUsage("gpt-4", usage);
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
       });
     });
 
-    it("appends to state without writing when the usage limit is disabled", () => {
+    it("does nothing when the usage limit is disabled", () => {
       actions.setPricingPerModel({});
       actions.setUsageLimitDuration(undefined);
       actions.setUsageLimitDollar(undefined);
@@ -695,15 +815,13 @@ describe("usage", () => {
         date: 1_000,
       };
 
-      syncNewModelUsage("gpt-4", usage);
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
-        "gpt-4": [usage],
-      });
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
     });
 
-    it("appends to state without writing when the model has no pricing configured", () => {
+    it("does nothing when the model has no pricing configured", () => {
       actions.setPricingPerModel({});
       const usage = {
         inputTokens: 10,
@@ -713,16 +831,14 @@ describe("usage", () => {
         date: 1_000,
       };
 
-      syncNewModelUsage("gpt-4", usage);
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
-        "gpt-4": [usage],
-      });
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
     });
   });
 
-  describe("syncInitialModelUsage", () => {
+  describe("syncInitialModelUsageForLimitWindow", () => {
     beforeEach(() => {
       setupFakeDeps();
       actions.resetState();
@@ -743,7 +859,7 @@ describe("usage", () => {
       actions.setUsageLimitDuration(undefined);
       actions.setUsageLimitDollar(undefined);
 
-      syncInitialModelUsage();
+      syncInitialModelUsageForLimitWindow();
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
     });
@@ -767,7 +883,7 @@ describe("usage", () => {
         }),
       );
 
-      syncInitialModelUsage();
+      syncInitialModelUsageForLimitWindow();
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.has(getUsageLogPath()), true);
@@ -776,7 +892,7 @@ describe("usage", () => {
     it("does nothing when the usage log directory does not exist", () => {
       actions.setUsageLimitDuration("60m");
 
-      syncInitialModelUsage();
+      syncInitialModelUsageForLimitWindow();
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
     });
@@ -824,7 +940,7 @@ describe("usage", () => {
         );
         mock.method(Date, "now", () => now);
 
-        syncInitialModelUsage();
+        syncInitialModelUsageForLimitWindow();
 
         assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
           "gpt-4": [recent],
@@ -852,7 +968,7 @@ describe("usage", () => {
       );
       mock.method(Date, "now", () => 4_000_000);
 
-      syncInitialModelUsage();
+      syncInitialModelUsageForLimitWindow();
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [boundary],
@@ -868,7 +984,7 @@ describe("usage", () => {
       testFs._dirs.add(dirname(getUsageLogPath()));
       testFs._files.set(getUsageLogPath(), "not-json");
 
-      syncInitialModelUsage();
+      syncInitialModelUsageForLimitWindow();
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.get(getUsageLogPath()), `{}`);

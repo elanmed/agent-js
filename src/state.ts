@@ -369,20 +369,6 @@ export const actions = {
     );
   },
 
-  appendToModelUsageForLimitWindow(usage: ModelUsage) {
-    const model = state.config.model;
-    state.app.modelUsageForLimitWindow[model] ??= [];
-
-    const before = state.app.modelUsageForLimitWindow[model];
-    state.app.modelUsageForLimitWindow[model].push(usage);
-
-    logStateChange(
-      "append-to-model-usage-for-limit-window",
-      String(before.length),
-      String(state.app.modelUsageForLimitWindow[model].length),
-    );
-  },
-
   setModelUsageForSession(modelUsageForSession: Record<string, ModelUsage[]>) {
     const before = state.app.modelUsageForSession;
     state.app.modelUsageForSession = modelUsageForSession;

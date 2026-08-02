@@ -91,8 +91,7 @@ response text
         ),
       );
       await resolveApiCall("hello");
-      const modelUsage = getState().app.modelUsageForLimitWindow;
-      assert.deepStrictEqual(modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForSession, {
         "claude-sonnet-4-20250514": [
           {
             inputTokens: 42,
@@ -103,6 +102,7 @@ response text
           },
         ],
       });
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 49,
         messages: [

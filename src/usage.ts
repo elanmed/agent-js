@@ -39,10 +39,11 @@ export function appendModelUsage(usage: LanguageModelUsage) {
     date: now,
   };
 
-  syncNewModelUsage(model, defaultedUsage);
+  syncNewModelUsageForLimitWindow(model, defaultedUsage);
+  actions.appendToModelUsageForSession(defaultedUsage);
 }
 
-export function usageLimitDisabled() {
+export function isUsageLimitDisabled() {
   const { usageLimitDuration, usageLimitDollar, pricingPerModel, model } =
     getState().config;
   const pricing = pricingPerModel[model];
@@ -54,8 +55,8 @@ export function usageLimitDisabled() {
   );
 }
 
-export function syncInitialModelUsage() {
-  if (usageLimitDisabled()) return;
+export function syncInitialModelUsageForLimitWindow() {
+  if (isUsageLimitDisabled()) return;
 
   const { usageLimitDuration } = getState().config;
   assert(usageLimitDuration !== undefined);
@@ -103,11 +104,11 @@ export function syncInitialModelUsage() {
   actions.setModelUsageForLimitWindow(filtered);
 }
 
-export function syncNewModelUsage(model: string, usage: ModelUsage) {
-  if (usageLimitDisabled()) {
-    actions.appendToModelUsageForLimitWindow(usage);
-    return;
-  }
+export function syncNewModelUsageForLimitWindow(
+  model: string,
+  usage: ModelUsage,
+) {
+  if (isUsageLimitDisabled()) return;
 
   const path = getUsageLogPath();
   const dir = dirname(path);
@@ -133,7 +134,7 @@ export function syncNewModelUsage(model: string, usage: ModelUsage) {
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
   const pricing = getState().config.pricingPerModel[model];
-  if (pricing === undefined) return 0;
+  assert(pricing !== undefined);
 
   const inputPerToken = pricing.inputPerToken;
   const outputPerToken = pricing.outputPerToken;
@@ -155,8 +156,8 @@ export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
   return inputCost + outputCost + cacheReadCost + cacheWriteCost;
 }
 
-export function getUsageTokensForModel(model: string): TokenUsage {
-  return (getState().app.modelUsageForLimitWindow[model] ?? []).reduce<{
+export function sumUsageTokens(modelUsage: ModelUsage[]): TokenUsage {
+  return modelUsage.reduce<{
     inputTokens: number;
     outputTokens: number;
     cacheReadTokens: number;
@@ -180,10 +181,17 @@ export function getUsageTokensForModel(model: string): TokenUsage {
 export function getPrettyTokenUsage() {
   const { model } = getState().config;
   const pricing = getState().config.pricingPerModel[model];
-  const tokenUsage = getUsageTokensForModel(model);
+  const tokenUsageForSession = sumUsageTokens(
+    getState().app.modelUsageForSession[model] ?? [],
+  );
+
   if (pricing === undefined) {
-    return `${(tokenUsage.inputTokens + tokenUsage.outputTokens).toLocaleString()} tokens total`;
+    return `${(tokenUsageForSession.inputTokens + tokenUsageForSession.outputTokens).toLocaleString()} tokens total`;
   }
+
+  const tokenUsageForLimitWindow = sumUsageTokens(
+    getState().app.modelUsageForLimitWindow[model] ?? [],
+  );
 
   const getPrettyMoney = (money: number) =>
     money.toLocaleString("en-US", {
@@ -191,11 +199,17 @@ export function getPrettyTokenUsage() {
       maximumFractionDigits: 3,
     });
 
-  const cost = getUsageMoneyForModel(tokenUsage, model);
+  const costForSession = getUsageMoneyForModel(tokenUsageForSession, model);
   const { usageLimitDollar } = getState().config;
 
-  if (usageLimitDisabled()) return `$${getPrettyMoney(cost)} total`;
-  return `$${getPrettyMoney(cost)} of $${String(usageLimitDollar)}`;
+  if (isUsageLimitDisabled())
+    return `$${getPrettyMoney(costForSession)} in session`;
+
+  const costForLimitWindow = getUsageMoneyForModel(
+    tokenUsageForLimitWindow,
+    model,
+  );
+  return `$${getPrettyMoney(costForSession)} in session, $${getPrettyMoney(costForLimitWindow)} of $${String(usageLimitDollar)} limit`;
 }
 
 export function getPrettyContextWindowUsage() {

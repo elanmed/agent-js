@@ -425,6 +425,7 @@ export async function resolveSlashCommand(rawInput: string) {
 export async function clearCommand() {
   await print.infoSubtle(`Context cleared (${getPrettyTokenUsage()})`);
   actions.resetMessageParams();
+  actions.setModelUsageForSession({});
 }
 
 export async function usageCommand() {
