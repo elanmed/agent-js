@@ -660,6 +660,7 @@ describe("usage", () => {
       });
       actions.setUsageLimitDuration("60m");
       actions.setUsageLimitDollar(10);
+      mock.method(Date, "now", () => 4_000_000);
     });
 
     it("creates the usage log directory and writes the usage entry", () => {
@@ -668,7 +669,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1_000,
+        date: 500_000,
       };
 
       syncNewModelUsageForLimitWindow("gpt-4", usage);
@@ -686,7 +687,7 @@ describe("usage", () => {
       "outputTokens": 5,
       "cacheReadTokens": 1,
       "cacheWriteTokens": 0,
-      "date": 1000
+      "date": 500000
     }
   ]
 }`,
@@ -703,7 +704,7 @@ describe("usage", () => {
       "outputTokens": 2,
       "cacheReadTokens": 0,
       "cacheWriteTokens": 0,
-      "date": 500
+      "date": 500000
     }
   ]
 }`,
@@ -713,7 +714,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1_000,
+        date: 1_000_000,
       };
 
       syncNewModelUsageForLimitWindow("gpt-4", usage);
@@ -725,7 +726,7 @@ describe("usage", () => {
             outputTokens: 2,
             cacheReadTokens: 0,
             cacheWriteTokens: 0,
-            date: 500,
+            date: 500_000,
           },
           usage,
         ],
@@ -739,14 +740,14 @@ describe("usage", () => {
       "outputTokens": 2,
       "cacheReadTokens": 0,
       "cacheWriteTokens": 0,
-      "date": 500
+      "date": 500000
     },
     {
       "inputTokens": 10,
       "outputTokens": 5,
       "cacheReadTokens": 1,
       "cacheWriteTokens": 0,
-      "date": 1000
+      "date": 1000000
     }
   ]
 }`,
@@ -760,7 +761,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1_000,
+        date: 500_000,
       };
 
       syncNewModelUsageForLimitWindow("gpt-4", usage);
@@ -777,7 +778,7 @@ describe("usage", () => {
       "outputTokens": 5,
       "cacheReadTokens": 1,
       "cacheWriteTokens": 0,
-      "date": 1000
+      "date": 500000
     }
   ]
 }`,
@@ -793,7 +794,7 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1_000,
+        date: 500_000,
       };
 
       syncNewModelUsageForLimitWindow("gpt-4", usage);
@@ -828,13 +829,161 @@ describe("usage", () => {
         outputTokens: 5,
         cacheReadTokens: 1,
         cacheWriteTokens: 0,
-        date: 1_000,
+        date: 500_000,
       };
 
       syncNewModelUsageForLimitWindow("gpt-4", usage);
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
+    });
+
+    it("filters expired entries from the log and state", () => {
+      testFs._files.set(
+        getUsageLogPath(),
+        JSON.stringify({
+          "gpt-4": [
+            {
+              inputTokens: 5,
+              outputTokens: 2,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              date: 500_000,
+            },
+            {
+              inputTokens: 7,
+              outputTokens: 3,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              date: 300_000,
+            },
+          ],
+        }),
+      );
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        date: 1_000_000,
+      };
+
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
+
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+        "gpt-4": [
+          {
+            inputTokens: 5,
+            outputTokens: 2,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 500_000,
+          },
+          usage,
+        ],
+      });
+      assert.strictEqual(
+        testFs._files.get(getUsageLogPath()),
+        JSON.stringify({
+          "gpt-4": [
+            {
+              inputTokens: 5,
+              outputTokens: 2,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              date: 500_000,
+            },
+            usage,
+          ],
+        }),
+      );
+    });
+
+    it("keeps usage exactly at the duration boundary", () => {
+      testFs._files.set(
+        getUsageLogPath(),
+        JSON.stringify({
+          "gpt-4": [
+            {
+              inputTokens: 5,
+              outputTokens: 2,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              date: 400_000,
+            },
+          ],
+        }),
+      );
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        date: 1_000_000,
+      };
+
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
+
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+        "gpt-4": [
+          {
+            inputTokens: 5,
+            outputTokens: 2,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 400_000,
+          },
+          usage,
+        ],
+      });
+    });
+
+    it("drops models whose entries are all expired", () => {
+      testFs._files.set(
+        getUsageLogPath(),
+        JSON.stringify({
+          "gpt-4": [
+            {
+              inputTokens: 5,
+              outputTokens: 2,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              date: 500_000,
+            },
+          ],
+          claude: [
+            {
+              inputTokens: 5,
+              outputTokens: 2,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              date: 100_000,
+            },
+          ],
+        }),
+      );
+      const usage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheReadTokens: 1,
+        cacheWriteTokens: 0,
+        date: 1_000_000,
+      };
+
+      syncNewModelUsageForLimitWindow("gpt-4", usage);
+
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+        "gpt-4": [
+          {
+            inputTokens: 5,
+            outputTokens: 2,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 500_000,
+          },
+          usage,
+        ],
+      });
     });
   });
 

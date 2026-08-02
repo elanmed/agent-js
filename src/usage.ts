@@ -55,9 +55,19 @@ export function isUsageLimitDisabled() {
   );
 }
 
-export function syncInitialModelUsageForLimitWindow() {
-  if (isUsageLimitDisabled()) return;
+export function filterExpiredModelUsage(
+  map: Record<string, ModelUsage[]>,
+  expiredTime: number,
+) {
+  const filtered: Record<string, ModelUsage[]> = {};
+  for (const [model, modelUsage] of Object.entries(map)) {
+    const kept = modelUsage.filter((usage) => usage.date >= expiredTime);
+    if (kept.length > 0) filtered[model] = kept;
+  }
+  return filtered;
+}
 
+export function getExpiredTime() {
   const { usageLimitDuration } = getState().config;
   assert(usageLimitDuration !== undefined);
 
@@ -74,6 +84,15 @@ export function syncInitialModelUsageForLimitWindow() {
   const durationPrefix = Number(usageLimitDuration.slice(0, -1));
   const duration = durationPrefix * msPerDuration[durationSuffix];
   const expiredTime = now - duration;
+  return expiredTime;
+}
+
+export function syncInitialModelUsageForLimitWindow() {
+  if (isUsageLimitDisabled()) return;
+
+  const { usageLimitDuration } = getState().config;
+  assert(usageLimitDuration !== undefined);
+  const expiredTime = getExpiredTime();
 
   const path = getUsageLogPath();
   const dir = dirname(path);
@@ -92,13 +111,7 @@ export function syncInitialModelUsageForLimitWindow() {
     tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify({})));
     return;
   }
-  const map = parseResult.value;
-
-  const filtered: Record<string, ModelUsage[]> = {};
-  for (const [model, modelUsage] of Object.entries(map)) {
-    const kept = modelUsage.filter((usage) => usage.date >= expiredTime);
-    if (kept.length > 0) filtered[model] = kept;
-  }
+  const filtered = filterExpiredModelUsage(parseResult.value, expiredTime);
 
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
   actions.setModelUsageForLimitWindow(filtered);
@@ -109,6 +122,8 @@ export function syncNewModelUsageForLimitWindow(
   usage: ModelUsage,
 ) {
   if (isUsageLimitDisabled()) return;
+
+  const expiredTime = getExpiredTime();
 
   const path = getUsageLogPath();
   const dir = dirname(path);
@@ -125,11 +140,13 @@ export function syncNewModelUsageForLimitWindow(
     if (parseResult.ok) return parseResult.value;
     return {};
   })();
-
   (loggedModelUsage[model] ??= []).push(usage);
-  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(loggedModelUsage)));
 
-  actions.setModelUsageForLimitWindow(loggedModelUsage);
+  const filtered = filterExpiredModelUsage(loggedModelUsage, expiredTime);
+
+  tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
+
+  actions.setModelUsageForLimitWindow(filtered);
 }
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
