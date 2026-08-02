@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
-import { initState, DEFAULT_CONFIG } from "./config.ts";
+import { initState, initStateForDebug, DEFAULT_CONFIG } from "./config.ts";
 import {
   getGlobalConfigPath,
   getLocalConfigPath,
@@ -1083,5 +1083,33 @@ describe("config", () => {
 
     await initState();
     assert.strictEqual(getState().app.sessionStartDate, 1_234);
+  });
+
+  describe("initStateForDebug", () => {
+    it("sets debug flag and path when --debug is passed", () => {
+      mock.method(parseCliArgsDeps, "getArgv", () => [
+        "node",
+        "script.js",
+        "--debug",
+      ]);
+
+      initStateForDebug();
+
+      assert.strictEqual(getState().app.debugLog, true);
+      assert.strictEqual(
+        getState().app.debugLogPath,
+        "/fake-home/.config/.agent-js/debug/debug-test-uuid.log",
+      );
+    });
+
+    it("keeps debug flag off when --debug is not passed", () => {
+      initStateForDebug();
+
+      assert.strictEqual(getState().app.debugLog, false);
+      assert.strictEqual(
+        getState().app.debugLogPath,
+        "/fake-home/.config/.agent-js/debug/debug-test-uuid.log",
+      );
+    });
   });
 });

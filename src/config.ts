@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { z } from "zod";
 import { tryCatch, MISSING } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
@@ -10,8 +11,13 @@ import {
 import { actions } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
 import { fsDeps } from "./deps.ts";
-import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
+import {
+  getDebugLogDir,
+  getGlobalConfigPath,
+  getLocalConfigPath,
+} from "./paths.ts";
 import { syncInitialModelUsage } from "./usage.ts";
+import { join } from "node:path";
 
 export type Provider = "anthropic" | "openai-compatible";
 
@@ -170,9 +176,6 @@ export function readConfigFile(path: string) {
 }
 
 export function initStateFromConfig() {
-  const args = parseCliArgs();
-  actions.setDebugLog(args.debug);
-
   const globalConfig = readConfigFile(getGlobalConfigPath());
   const localConfig = readConfigFile(getLocalConfigPath());
 
@@ -298,7 +301,19 @@ export async function initStateFromFs() {
   actions.setSessionStartDate();
 }
 
+export function initStateForDebug() {
+  const args = parseCliArgs();
+  actions.setDebugLog(args.debug);
+
+  const debugLogPath = join(
+    getDebugLogDir(),
+    `debug-${crypto.randomUUID()}.log`,
+  );
+  actions.setDebugLogPath(debugLogPath);
+}
+
 export async function initState() {
+  initStateForDebug();
   initStateFromConfig();
   await initStateFromFs();
 }

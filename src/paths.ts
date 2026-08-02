@@ -14,6 +14,10 @@ export function getGlobalConfigPath() {
   return join(getGlobalConfigDir(), "settings.json");
 }
 
+export function getDebugLogDir() {
+  return join(getGlobalConfigDir(), "debug");
+}
+
 export function getLocalConfigPath() {
   return join(getLocalConfigDir(), "settings.json");
 }

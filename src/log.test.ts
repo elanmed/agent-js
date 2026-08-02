@@ -4,7 +4,6 @@ import assert from "node:assert/strict";
 import {
   debugLog,
   appendToChatHistory,
-  initDebugLog,
   initPromptHistory,
   deleteExpiredPromptHistory,
 } from "./log.ts";
@@ -106,30 +105,6 @@ response
 
 `,
       );
-    });
-  });
-
-  describe("initDebugLog", () => {
-    it("creates directory and sets path when directory does not exist", () => {
-      initDebugLog();
-      assert.equal(testFs._dirs.has("/fake-home/.config/.agent-js"), true);
-      assert.equal(
-        getState().app.debugLogPath,
-        "/fake-home/.config/.agent-js/debug-test-uuid.log",
-      );
-      assert.equal(
-        testFs._files.get("/fake-home/.config/.agent-js/debug-test-uuid.log"),
-        "",
-      );
-    });
-
-    it("leaves path empty when mkdir fails", () => {
-      mock.method(fsDeps, "existsSync", () => false);
-      mock.method(fsDeps, "mkdirSync", () => {
-        throw new Error("Permission denied");
-      });
-      initDebugLog();
-      assert.equal(getState().app.debugLogPath, "");
     });
   });
 
