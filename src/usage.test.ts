@@ -398,7 +398,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -434,7 +434,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -478,7 +478,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -512,7 +512,7 @@ describe("usage", () => {
         },
       } as LanguageModelUsage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [
           {
             inputTokens: 100,
@@ -554,7 +554,7 @@ describe("usage", () => {
 
       syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
       });
       assert.strictEqual(
@@ -598,7 +598,7 @@ describe("usage", () => {
 
       syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [
           {
             inputTokens: 5,
@@ -645,7 +645,7 @@ describe("usage", () => {
 
       syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
       });
       assert.strictEqual(
@@ -678,7 +678,7 @@ describe("usage", () => {
 
       syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
       });
     });
@@ -697,7 +697,7 @@ describe("usage", () => {
 
       syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
       });
       assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
@@ -715,7 +715,7 @@ describe("usage", () => {
 
       syncNewModelUsage("gpt-4", usage);
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [usage],
       });
       assert.strictEqual(testFs._files.has(getUsageLogPath()), false);
@@ -745,7 +745,7 @@ describe("usage", () => {
 
       syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.modelUsage, {});
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
     });
 
     it("does nothing when the model has no pricing configured", () => {
@@ -769,7 +769,7 @@ describe("usage", () => {
 
       syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.modelUsage, {});
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.has(getUsageLogPath()), true);
     });
 
@@ -778,7 +778,7 @@ describe("usage", () => {
 
       syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.modelUsage, {});
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
     });
 
     it("filters modelUsage according to each duration suffix", () => {
@@ -826,7 +826,7 @@ describe("usage", () => {
 
         syncInitialModelUsage();
 
-        assert.deepStrictEqual(getState().app.modelUsage, {
+        assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
           "gpt-4": [recent],
         });
         assert.strictEqual(
@@ -854,7 +854,7 @@ describe("usage", () => {
 
       syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.modelUsage, {
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
         "gpt-4": [boundary],
       });
       assert.strictEqual(
@@ -870,7 +870,7 @@ describe("usage", () => {
 
       syncInitialModelUsage();
 
-      assert.deepStrictEqual(getState().app.modelUsage, {});
+      assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.strictEqual(testFs._files.get(getUsageLogPath()), `{}`);
     });
   });

@@ -17,6 +17,7 @@ describe("state", () => {
     const timeout = setTimeout(() => undefined, 1_000);
     actions.setLoadingStateTimeout(timeout);
     actions.setChatHistoryPath("/tmp/test.log");
+    actions.setModelUsageForSession({ "gpt-4": [] });
     actions.resetState();
     clearTimeout(timeout);
 
@@ -24,7 +25,8 @@ describe("state", () => {
       tokens: 0,
       messages: [],
     });
-    assert.deepStrictEqual(getState().app.modelUsage, {});
+    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
+    assert.deepStrictEqual(getState().app.modelUsageForSession, {});
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.loadingStateTimeout, null);
@@ -40,7 +42,8 @@ describe("state", () => {
       tokens: 0,
       messages: [],
     });
-    assert.deepStrictEqual(getState().app.modelUsage, {});
+    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
+    assert.deepStrictEqual(getState().app.modelUsageForSession, {});
     assert.equal(getState().abortControllers.question, null);
     assert.equal(getState().abortControllers.apiStream, null);
     assert.equal(getState().app.apiStartTime, null);
@@ -452,10 +455,10 @@ line3
     assert.strictEqual(getState().config.usageLimitDollar, undefined);
   });
 
-  it("set-modelUsage", () => {
-    assert.deepStrictEqual(getState().app.modelUsage, {});
+  it("set-model-usage-for-limit-window", () => {
+    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
 
-    actions.setModelUsage({
+    actions.setModelUsageForLimitWindow({
       "gpt-4": [
         {
           inputTokens: 10,
@@ -467,7 +470,7 @@ line3
       ],
     });
 
-    assert.deepStrictEqual(getState().app.modelUsage, {
+    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
       "gpt-4": [
         {
           inputTokens: 10,
@@ -480,7 +483,7 @@ line3
     });
   });
 
-  it("append-to-modelUsage", () => {
+  it("append-to-model-usage-for-limit-window", () => {
     actions.setModel("gpt-4");
     const first = {
       inputTokens: 10,
@@ -489,7 +492,7 @@ line3
       cacheWriteTokens: 1,
       date: 1_000,
     };
-    actions.appendToModelUsage(first);
+    actions.appendToModelUsageForLimitWindow(first);
 
     actions.setModel("claude");
     const second = {
@@ -499,9 +502,64 @@ line3
       cacheWriteTokens: 0,
       date: 2_000,
     };
-    actions.appendToModelUsage(second);
+    actions.appendToModelUsageForLimitWindow(second);
 
-    assert.deepStrictEqual(getState().app.modelUsage, {
+    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
+      "gpt-4": [first],
+      claude: [second],
+    });
+  });
+
+  it("set-model-usage-for-session", () => {
+    assert.deepStrictEqual(getState().app.modelUsageForSession, {});
+
+    actions.setModelUsageForSession({
+      "gpt-4": [
+        {
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 2,
+          cacheWriteTokens: 1,
+          date: 1_000,
+        },
+      ],
+    });
+
+    assert.deepStrictEqual(getState().app.modelUsageForSession, {
+      "gpt-4": [
+        {
+          inputTokens: 10,
+          outputTokens: 5,
+          cacheReadTokens: 2,
+          cacheWriteTokens: 1,
+          date: 1_000,
+        },
+      ],
+    });
+  });
+
+  it("append-to-model-usage-for-session", () => {
+    actions.setModel("gpt-4");
+    const first = {
+      inputTokens: 10,
+      outputTokens: 5,
+      cacheReadTokens: 2,
+      cacheWriteTokens: 1,
+      date: 1_000,
+    };
+    actions.appendToModelUsageForSession(first);
+
+    actions.setModel("claude");
+    const second = {
+      inputTokens: 3,
+      outputTokens: 1,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      date: 2_000,
+    };
+    actions.appendToModelUsageForSession(second);
+
+    assert.deepStrictEqual(getState().app.modelUsageForSession, {
       "gpt-4": [first],
       claude: [second],
     });

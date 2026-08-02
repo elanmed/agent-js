@@ -1014,7 +1014,7 @@ describe("config", () => {
     assert.equal(getState().app.skillsStr, "");
   });
 
-  it("sets modelUsage to an empty object", async () => {
+  it("sets modelUsageForLimitWindow to an empty object", async () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -1023,7 +1023,8 @@ describe("config", () => {
     );
 
     await initState();
-    assert.deepStrictEqual(getState().app.modelUsage, {});
+    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
+    assert.deepStrictEqual(getState().app.modelUsageForSession, {});
   });
 
   it("loads recent model usages from the usage log", async () => {
@@ -1067,7 +1068,7 @@ describe("config", () => {
 
     await initState();
 
-    assert.deepStrictEqual(getState().app.modelUsage, {
+    assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {
       "gpt-4": [recent],
     });
   });

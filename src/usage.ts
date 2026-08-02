@@ -100,12 +100,12 @@ export function syncInitialModelUsage() {
   }
 
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
-  actions.setModelUsage(filtered);
+  actions.setModelUsageForLimitWindow(filtered);
 }
 
 export function syncNewModelUsage(model: string, usage: ModelUsage) {
   if (usageLimitDisabled()) {
-    actions.appendToModelUsage(usage);
+    actions.appendToModelUsageForLimitWindow(usage);
     return;
   }
 
@@ -128,7 +128,7 @@ export function syncNewModelUsage(model: string, usage: ModelUsage) {
   (loggedModelUsage[model] ??= []).push(usage);
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(loggedModelUsage)));
 
-  actions.setModelUsage(loggedModelUsage);
+  actions.setModelUsageForLimitWindow(loggedModelUsage);
 }
 
 export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
@@ -156,7 +156,7 @@ export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
 }
 
 export function getUsageTokensForModel(model: string): TokenUsage {
-  return (getState().app.modelUsage[model] ?? []).reduce<{
+  return (getState().app.modelUsageForLimitWindow[model] ?? []).reduce<{
     inputTokens: number;
     outputTokens: number;
     cacheReadTokens: number;

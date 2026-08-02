@@ -153,12 +153,12 @@ export async function resolveApiCall(userInput: string) {
 
 export async function maybeCompactMessageParams() {
   const { model } = getState().config;
-  const contextWindow =
-    getState().config.contextWindowPerModel[model] ?? 500_000;
+  const contextWindow = getState().config.contextWindowPerModel[model];
+  if (contextWindow === undefined) return;
 
   const currRatio = getState().app.messageParams.tokens / contextWindow;
   if (currRatio <= getState().config.compactAtContextRatio) return;
-  await print.doing("Compacting…;");
+  await print.doing("Compacting…");
 
   const targetTokens = getState().config.compactTargetRatio * contextWindow;
 

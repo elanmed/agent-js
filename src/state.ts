@@ -38,7 +38,8 @@ interface State {
     loadingStateFrameIdx: number;
     apiStartTime: number | null;
     apiEndTime: number | null;
-    modelUsage: Record<string, ModelUsage[]>;
+    modelUsageForLimitWindow: Record<string, ModelUsage[]>;
+    modelUsageForSession: Record<string, ModelUsage[]>;
     sessionStartDate: number;
   };
   config: {
@@ -85,7 +86,8 @@ const initialState: State = {
     loadingStateFrameIdx: 0,
     apiStartTime: null,
     apiEndTime: null,
-    modelUsage: {},
+    modelUsageForLimitWindow: {},
+    modelUsageForSession: {},
     sessionStartDate: 0,
   },
   config: {
@@ -354,28 +356,55 @@ export const actions = {
     );
   },
 
-  setModelUsage(modelUsage: Record<string, ModelUsage[]>) {
-    const before = state.app.modelUsage;
-    state.app.modelUsage = modelUsage;
+  setModelUsageForLimitWindow(
+    modelUsageForLimitWindow: Record<string, ModelUsage[]>,
+  ) {
+    const before = state.app.modelUsageForLimitWindow;
+    state.app.modelUsageForLimitWindow = modelUsageForLimitWindow;
 
     logStateChange(
-      "set-modelUsage",
+      "set-model-usage-for-limit-window",
       String(Object.keys(before).length),
-      String(Object.keys(state.app.modelUsage).length),
+      String(Object.keys(state.app.modelUsageForLimitWindow).length),
     );
   },
 
-  appendToModelUsage(usage: ModelUsage) {
+  appendToModelUsageForLimitWindow(usage: ModelUsage) {
     const model = state.config.model;
-    state.app.modelUsage[model] ??= [];
+    state.app.modelUsageForLimitWindow[model] ??= [];
 
-    const before = state.app.modelUsage[model];
-    state.app.modelUsage[model].push(usage);
+    const before = state.app.modelUsageForLimitWindow[model];
+    state.app.modelUsageForLimitWindow[model].push(usage);
 
     logStateChange(
-      "append-to-modelUsage",
+      "append-to-model-usage-for-limit-window",
       String(before.length),
-      String(state.app.modelUsage[model].length),
+      String(state.app.modelUsageForLimitWindow[model].length),
+    );
+  },
+
+  setModelUsageForSession(modelUsageForSession: Record<string, ModelUsage[]>) {
+    const before = state.app.modelUsageForSession;
+    state.app.modelUsageForSession = modelUsageForSession;
+
+    logStateChange(
+      "set-model-usage-for-session",
+      String(Object.keys(before).length),
+      String(Object.keys(state.app.modelUsageForSession).length),
+    );
+  },
+
+  appendToModelUsageForSession(usage: ModelUsage) {
+    const model = state.config.model;
+    state.app.modelUsageForSession[model] ??= [];
+
+    const before = state.app.modelUsageForSession[model];
+    state.app.modelUsageForSession[model].push(usage);
+
+    logStateChange(
+      "append-to-model-usage-for-session",
+      String(before.length),
+      String(state.app.modelUsageForSession[model].length),
     );
   },
 

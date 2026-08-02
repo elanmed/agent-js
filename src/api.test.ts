@@ -91,7 +91,7 @@ response text
         ),
       );
       await resolveApiCall("hello");
-      const modelUsage = getState().app.modelUsage;
+      const modelUsage = getState().app.modelUsageForLimitWindow;
       assert.deepStrictEqual(modelUsage, {
         "claude-sonnet-4-20250514": [
           {
@@ -414,7 +414,7 @@ SKILLS: available skills`,
       });
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        `Compacting…;
+        `Compacting…
 Interrupted compaction
 `,
       );
