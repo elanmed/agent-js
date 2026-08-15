@@ -250,6 +250,10 @@ Minimal runtime dependencies (9 total):
 
 ## TODO (soon)
 
+- Command to rescan context?
+- Command to use the latest config?
+- Subagents?
+
 ## TODO (later)
 
 - [ ] Support MCP servers
