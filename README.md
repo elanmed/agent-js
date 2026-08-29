@@ -2,6 +2,8 @@
 
 A minimal agent implementation for working with LLMs (my own mini claude code)
 
+macOS and Linux only.
+
 ![demo](./demo.png)
 
 ## Features
