@@ -455,7 +455,10 @@ export async function spawnAndReadEditorContent(opts?: {
     }
 
     if (isExisty(processDeps.env.get("EDITOR"))) {
-      return `${processDeps.env.get("EDITOR")!} ${tempFile}`;
+      const editor = processDeps.env.get("EDITOR")!;
+      return editor.includes("__FILE__")
+        ? editor.replace("__FILE__", tempFile)
+        : `${editor} ${tempFile}`;
     }
 
     return `vi ${tempFile}`;
@@ -517,7 +520,10 @@ export async function chatHistoryCommand() {
     }
 
     if (isExisty(processDeps.env.get("EDITOR"))) {
-      return `${processDeps.env.get("EDITOR")!} "${logPath}"`;
+      const editor = processDeps.env.get("EDITOR")!;
+      return editor.includes("__FILE__")
+        ? editor.replace("__FILE__", logPath)
+        : `${editor} "${logPath}"`;
     }
 
     return `vi "${logPath}"`;
