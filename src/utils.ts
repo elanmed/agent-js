@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { basename, extname, join } from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
 import childProcess from "node:child_process";
@@ -118,4 +118,35 @@ export function truncate(str: string) {
   }
 
   return firstLine.substring(0, maxLen).concat("…");
+}
+
+interface ChatHistoryEntry {
+  absolutePath: string;
+  timestampMs: number;
+}
+
+export function listChatHistoryFiles(chatHistoryPath: string) {
+  const chatHistoryFiles: ChatHistoryEntry[] = [];
+  for (const name of fsDeps.readdirSync(chatHistoryPath)) {
+    const fullPath = join(chatHistoryPath, name);
+    const statResult = tryCatch(() => fsDeps.statSync(fullPath));
+    if (!statResult.ok) continue;
+    if (!statResult.value.isFile()) continue;
+
+    const fileName = basename(name, extname(name));
+    const parts = fileName.split("-");
+    if (parts.length !== 3) continue;
+    if (parts[0] !== "chat" || parts[1] !== "history") continue;
+
+    const timestampMs = Number(parts[2]);
+    if (Number.isNaN(timestampMs)) continue;
+
+    if (extname(name) !== ".txt") continue;
+
+    chatHistoryFiles.push({
+      absolutePath: fullPath,
+      timestampMs,
+    });
+  }
+  return chatHistoryFiles;
 }

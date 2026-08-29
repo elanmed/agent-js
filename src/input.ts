@@ -13,6 +13,7 @@ import {
   execPromise,
   isExisty,
   truncate,
+  listChatHistoryFiles,
 } from "./utils.ts";
 import {
   print,
@@ -621,22 +622,14 @@ export async function resumeCommand(rawInput: string) {
   const chatHistoryPath = getPromptHistoryDir();
   if (!fsDeps.existsSync(chatHistoryPath)) return null;
 
-  for (const name of fsDeps.readdirSync(chatHistoryPath)) {
-    const fullPath = join(chatHistoryPath, name);
-    const statResult = tryCatch(() => fsDeps.statSync(fullPath));
-    if (!statResult.ok) continue;
-    if (!statResult.value.isFile()) continue;
+  const chatHistoryFileEntries = listChatHistoryFiles(chatHistoryPath);
 
-    const fileName = basename(name, extname(name));
-    const parts = fileName.split("-");
-    if (parts.length !== 3) continue;
-    if (parts[0] !== "chat" || parts[1] !== "history") continue;
+  for (const { absolutePath, timestampMs } of chatHistoryFileEntries) {
+    if (timestampMs !== Number(sessionStartDate)) continue;
 
-    const fileTimestampMs = Number(parts[2]);
-    if (Number.isNaN(fileTimestampMs)) continue;
-    if (fileTimestampMs !== Number(sessionStartDate)) continue;
-
-    const readResult = tryCatch(() => fsDeps.readFileSync(fullPath).toString());
+    const readResult = tryCatch(() =>
+      fsDeps.readFileSync(absolutePath).toString(),
+    );
     if (!readResult.ok) continue;
 
     actions.resetMessageParams();

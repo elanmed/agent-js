@@ -1,6 +1,6 @@
-import { basename, dirname, extname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { actions, getState } from "./state.ts";
-import { normalizeLine, tryCatch } from "./utils.ts";
+import { listChatHistoryFiles, normalizeLine, tryCatch } from "./utils.ts";
 import { fsDeps } from "./deps.ts";
 import { getPromptHistoryDir } from "./paths.ts";
 
@@ -65,24 +65,12 @@ export function deleteExpiredPromptHistory() {
   const chatHistoryPath = getPromptHistoryDir();
   if (!fsDeps.existsSync(chatHistoryPath)) return;
 
-  // TODO: reuse this logic
-  for (const name of fsDeps.readdirSync(chatHistoryPath)) {
-    const fullPath = join(chatHistoryPath, name);
-    const statResult = tryCatch(() => fsDeps.statSync(fullPath));
-    if (!statResult.ok) continue;
-    if (!statResult.value.isFile()) continue;
+  const chatHistoryFileEntries = listChatHistoryFiles(chatHistoryPath);
 
-    const fileName = basename(name, extname(name));
-    const parts = fileName.split("-");
-    if (parts.length !== 3) continue;
-    if (parts[0] !== "chat" || parts[1] !== "history") continue;
-
-    const fileTimestampMs = Number(parts[2]);
-    if (Number.isNaN(fileTimestampMs)) continue;
-
+  for (const { absolutePath, timestampMs } of chatHistoryFileEntries) {
     const oneDay = 1_000 * 60 * 60 * 24;
-    if (fileTimestampMs + oneDay < getState().app.sessionStartDate) {
-      tryCatch(() => fsDeps.unlinkSync(fullPath));
+    if (timestampMs + oneDay < getState().app.sessionStartDate) {
+      tryCatch(() => fsDeps.unlinkSync(absolutePath));
     }
   }
 }
