@@ -11,7 +11,7 @@ export function getLocalConfigDir() {
 }
 
 export function getGlobalConfigPath() {
-  return join(getGlobalConfigDir(), "settings.json");
+  return join(getGlobalConfigDir(), "settings.yaml");
 }
 
 export function getDebugLogDir() {
@@ -19,7 +19,7 @@ export function getDebugLogDir() {
 }
 
 export function getLocalConfigPath() {
-  return join(getLocalConfigDir(), "settings.json");
+  return join(getLocalConfigDir(), "settings.yaml");
 }
 
 export function getGlobalContextDir() {
