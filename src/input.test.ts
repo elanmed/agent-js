@@ -436,10 +436,13 @@ Session start date: 42000
       );
     });
 
-    it("returns null when history directory does not exist", async () => {
+    it("prints error when history directory does not exist", async () => {
       const result = await resumeCommand("/resume 1234567890000");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "No conversation found with session start date: 1234567890000\n",
+      );
     });
 
     it("returns transcript and resets message params when conversation is found", async () => {

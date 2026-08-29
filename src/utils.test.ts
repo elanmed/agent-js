@@ -250,12 +250,13 @@ describe("utils", () => {
   });
 
   describe("listChatHistoryFiles", () => {
+    it("returns an empty array when the directory does not exist", () => {
+      assert.deepStrictEqual(listChatHistoryFiles(), []);
+    });
+
     it("returns an empty array when the directory has no files", () => {
       testFs._dirs.add("/fake-home/.config/agent-js/history");
-      assert.deepStrictEqual(
-        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
-        [],
-      );
+      assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
     it("returns valid chat history files with absolute path and timestamp", () => {
@@ -269,21 +270,18 @@ describe("utils", () => {
         "",
       );
 
-      assert.deepStrictEqual(
-        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
-        [
-          {
-            absolutePath:
-              "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
-            timestampMs: 1234567890000,
-          },
-          {
-            absolutePath:
-              "/fake-home/.config/agent-js/history/chat-history-999990000000.txt",
-            timestampMs: 999990000000,
-          },
-        ],
-      );
+      assert.deepStrictEqual(listChatHistoryFiles(), [
+        {
+          absolutePath:
+            "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+          timestampMs: 1234567890000,
+        },
+        {
+          absolutePath:
+            "/fake-home/.config/agent-js/history/chat-history-999990000000.txt",
+          timestampMs: 999990000000,
+        },
+      ]);
     });
 
     it("skips directory entries", () => {
@@ -291,10 +289,7 @@ describe("utils", () => {
       testFs._dirs.add(
         "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
       );
-      assert.deepStrictEqual(
-        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
-        [],
-      );
+      assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
     it("skips files that do not match chat-history-<timestamp>", () => {
@@ -311,10 +306,7 @@ describe("utils", () => {
         "/fake-home/.config/agent-js/history/chat-history-notanumber.txt",
         "",
       );
-      assert.deepStrictEqual(
-        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
-        [],
-      );
+      assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
     it("skips files with non-txt extension", () => {
@@ -323,10 +315,7 @@ describe("utils", () => {
         "/fake-home/.config/agent-js/history/chat-history-123.log",
         "",
       );
-      assert.deepStrictEqual(
-        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
-        [],
-      );
+      assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
   });
 });
