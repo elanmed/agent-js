@@ -10,6 +10,7 @@ import {
   getTempFileName,
   createQueue,
   truncate,
+  listChatHistoryFiles,
 } from "./utils.ts";
 import { testFs, setupTestContext } from "./test-helpers.ts";
 import { processDeps } from "./deps.ts";
@@ -245,6 +246,87 @@ describe("utils", () => {
       await queue.flush();
 
       assert.strictEqual(done, true);
+    });
+  });
+
+  describe("listChatHistoryFiles", () => {
+    it("returns an empty array when the directory has no files", () => {
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      assert.deepStrictEqual(
+        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
+        [],
+      );
+    });
+
+    it("returns valid chat history files with absolute path and timestamp", () => {
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._files.set(
+        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+        "",
+      );
+      testFs._files.set(
+        "/fake-home/.config/agent-js/history/chat-history-999990000000.txt",
+        "",
+      );
+
+      assert.deepStrictEqual(
+        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
+        [
+          {
+            absolutePath:
+              "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+            timestampMs: 1234567890000,
+          },
+          {
+            absolutePath:
+              "/fake-home/.config/agent-js/history/chat-history-999990000000.txt",
+            timestampMs: 999990000000,
+          },
+        ],
+      );
+    });
+
+    it("skips directory entries", () => {
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add(
+        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+      );
+      assert.deepStrictEqual(
+        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
+        [],
+      );
+    });
+
+    it("skips files that do not match chat-history-<timestamp>", () => {
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._files.set(
+        "/fake-home/.config/agent-js/history/random-file.txt",
+        "",
+      );
+      testFs._files.set(
+        "/fake-home/.config/agent-js/history/chat-history-uuid-123.txt",
+        "",
+      );
+      testFs._files.set(
+        "/fake-home/.config/agent-js/history/chat-history-notanumber.txt",
+        "",
+      );
+      assert.deepStrictEqual(
+        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
+        [],
+      );
+    });
+
+    it("skips files with non-txt extension", () => {
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._files.set(
+        "/fake-home/.config/agent-js/history/chat-history-123.log",
+        "",
+      );
+      assert.deepStrictEqual(
+        listChatHistoryFiles("/fake-home/.config/agent-js/history"),
+        [],
+      );
     });
   });
 });
