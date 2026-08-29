@@ -43,7 +43,7 @@ Content: # Agent Instructions
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set("/test-cwd/AGENTS.md", "Root content");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/context/AGENTS.md",
+        "/fake-home/.config/agent-js/context/AGENTS.md",
         "Global content",
       );
       const result = getContextStr(getContextEntries());
@@ -54,7 +54,7 @@ AGENTS.md context files:
 Path: /test-cwd/AGENTS.md
 Content: Root content
 
-Path: /fake-home/.config/.agent-js/context/AGENTS.md
+Path: /fake-home/.config/agent-js/context/AGENTS.md
 Content: Global content
 `,
       );
@@ -63,7 +63,7 @@ Content: Global content
     it("skips files that fail to read", () => {
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set(
-        "/fake-home/.config/.agent-js/context/AGENTS.md",
+        "/fake-home/.config/agent-js/context/AGENTS.md",
         "Global content",
       );
       const result = getContextStr(getContextEntries());
@@ -71,7 +71,7 @@ Content: Global content
         result,
         `
 AGENTS.md context files:
-Path: /fake-home/.config/.agent-js/context/AGENTS.md
+Path: /fake-home/.config/agent-js/context/AGENTS.md
 Content: Global content
 `,
       );
@@ -80,11 +80,11 @@ Content: Global content
     it("includes global agents dir files", () => {
       testFs._dirs.add(getGlobalContextDir());
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/context/**/AGENTS.md",
-        ["/fake-home/.config/.agent-js/context/AGENTS.md"],
+        "/fake-home/.config/agent-js/context/**/AGENTS.md",
+        ["/fake-home/.config/agent-js/context/AGENTS.md"],
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/context/AGENTS.md",
+        "/fake-home/.config/agent-js/context/AGENTS.md",
         "global content",
       );
       const result = getContextStr(getContextEntries());
@@ -92,7 +92,7 @@ Content: Global content
         result,
         `
 AGENTS.md context files:
-Path: /fake-home/.config/.agent-js/context/AGENTS.md
+Path: /fake-home/.config/agent-js/context/AGENTS.md
 Content: global content
 `,
       );
@@ -101,7 +101,7 @@ Content: global content
     it("combines cwd and global agents dir files", () => {
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set(
-        "/fake-home/.config/.agent-js/context/AGENTS.md",
+        "/fake-home/.config/agent-js/context/AGENTS.md",
         "global content",
       );
       testFs._files.set("/test-cwd/AGENTS.md", "local content");
@@ -113,7 +113,7 @@ AGENTS.md context files:
 Path: /test-cwd/AGENTS.md
 Content: local content
 
-Path: /fake-home/.config/.agent-js/context/AGENTS.md
+Path: /fake-home/.config/agent-js/context/AGENTS.md
 Content: global content
 `,
       );
@@ -128,11 +128,11 @@ Content: global content
 
     it("lists skills found in skill directories", async () => {
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/.agent-js/skills/my-skill/SKILL.md"],
+        "/fake-home/.config/agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/agent-js/skills/my-skill/SKILL.md"],
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
+        "/fake-home/.config/agent-js/skills/my-skill/SKILL.md",
         `---
 name: my-skill
 description: A test skill
@@ -159,8 +159,8 @@ would benefit from specialized instructions.
         "/test-cwd/.agent-js/skills/local-skill/SKILL.md",
       ]);
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/.agent-js/skills/global-skill/SKILL.md"],
+        "/fake-home/.config/agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/agent-js/skills/global-skill/SKILL.md"],
       );
       testFs._files.set(
         "/test-cwd/.agent-js/skills/local-skill/SKILL.md",
@@ -171,7 +171,7 @@ description: Local deploy
 # Local`,
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/global-skill/SKILL.md",
+        "/fake-home/.config/agent-js/skills/global-skill/SKILL.md",
         `---
 name: deploy
 description: Global deploy
@@ -198,8 +198,8 @@ would benefit from specialized instructions.
         "/test-cwd/.agent-js/skills/a/SKILL.md",
       ]);
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/.agent-js/skills/b/SKILL.md"],
+        "/fake-home/.config/agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/agent-js/skills/b/SKILL.md"],
       );
       testFs._files.set(
         "/test-cwd/.agent-js/skills/a/SKILL.md",
@@ -210,7 +210,7 @@ description: First
 # A`,
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/b/SKILL.md",
+        "/fake-home/.config/agent-js/skills/b/SKILL.md",
         `---
 name: deploy
 description: Second
@@ -266,11 +266,11 @@ would benefit from specialized instructions.
 
     it("skips non-existent skill directories", async () => {
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/.agent-js/skills/my-skill/SKILL.md"],
+        "/fake-home/.config/agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/agent-js/skills/my-skill/SKILL.md"],
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
+        "/fake-home/.config/agent-js/skills/my-skill/SKILL.md",
         `---
 name: my-skill
 description: A test skill
@@ -294,18 +294,18 @@ would benefit from specialized instructions.
 
     it("skips malformed skill files", async () => {
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
+        "/fake-home/.config/agent-js/skills/**/SKILL.md",
         [
-          "/fake-home/.config/.agent-js/skills/bad/SKILL.md",
-          "/fake-home/.config/.agent-js/skills/good/SKILL.md",
+          "/fake-home/.config/agent-js/skills/bad/SKILL.md",
+          "/fake-home/.config/agent-js/skills/good/SKILL.md",
         ],
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/bad/SKILL.md",
+        "/fake-home/.config/agent-js/skills/bad/SKILL.md",
         "not front matter",
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/good/SKILL.md",
+        "/fake-home/.config/agent-js/skills/good/SKILL.md",
         `---
 name: good
 description: Valid
@@ -416,11 +416,11 @@ would benefit from specialized instructions.
 
     it("nested AGENTS.md skills do not collide with regular skills", async () => {
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/.agent-js/skills/my-skill/SKILL.md"],
+        "/fake-home/.config/agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/agent-js/skills/my-skill/SKILL.md"],
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/my-skill/SKILL.md",
+        "/fake-home/.config/agent-js/skills/my-skill/SKILL.md",
         `---
 name: my-skill
 description: A test skill
@@ -455,11 +455,11 @@ would benefit from specialized instructions.
         return originalGlobSync(pattern);
       };
       testFs._globResults.set(
-        "/fake-home/.config/.agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/.agent-js/skills/ok/SKILL.md"],
+        "/fake-home/.config/agent-js/skills/**/SKILL.md",
+        ["/fake-home/.config/agent-js/skills/ok/SKILL.md"],
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/skills/ok/SKILL.md",
+        "/fake-home/.config/agent-js/skills/ok/SKILL.md",
         `---
 name: ok
 description: Works

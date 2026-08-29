@@ -997,11 +997,11 @@ describe("config", () => {
   it("sets contextStr from dep", async () => {
     testFs._dirs.add(getGlobalContextDir());
     testFs._globResults.set(
-      "/fake-home/.config/.agent-js/context/**/AGENTS.md",
-      ["/fake-home/.config/.agent-js/context/AGENTS.md"],
+      "/fake-home/.config/agent-js/context/**/AGENTS.md",
+      ["/fake-home/.config/agent-js/context/AGENTS.md"],
     );
     testFs._files.set(
-      "/fake-home/.config/.agent-js/context/AGENTS.md",
+      "/fake-home/.config/agent-js/context/AGENTS.md",
       "hello",
     );
     testFs._files.set(
@@ -1014,7 +1014,7 @@ describe("config", () => {
     await initState();
     assert.equal(
       getState().app.contextStr,
-      `\nAGENTS.md context files:\nPath: /fake-home/.config/.agent-js/context/AGENTS.md\nContent: hello\n`,
+      `\nAGENTS.md context files:\nPath: /fake-home/.config/agent-js/context/AGENTS.md\nContent: hello\n`,
     );
   });
 
@@ -1115,7 +1115,7 @@ describe("config", () => {
       assert.strictEqual(getState().app.debugLog, true);
       assert.strictEqual(
         getState().app.debugLogPath,
-        "/fake-home/.config/.agent-js/debug/debug-test-uuid.log",
+        "/fake-home/.config/agent-js/debug/debug-test-uuid.log",
       );
     });
 
@@ -1125,7 +1125,7 @@ describe("config", () => {
       assert.strictEqual(getState().app.debugLog, false);
       assert.strictEqual(
         getState().app.debugLogPath,
-        "/fake-home/.config/.agent-js/debug/debug-test-uuid.log",
+        "/fake-home/.config/agent-js/debug/debug-test-uuid.log",
       );
     });
   });

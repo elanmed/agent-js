@@ -444,9 +444,9 @@ Session start date: 42000
 
     it("returns transcript and resets message params when conversation is found", async () => {
       actions.appendToMessageParams({ role: "user", content: "hello" }, 0);
-      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
         "transcript content",
       );
       const result = await resumeCommand("/resume 1234567890000");
@@ -464,9 +464,9 @@ transcript content
     });
 
     it("prints error when no conversation is found", async () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/history/chat-history-9999999999999.txt",
+        "/fake-home/.config/agent-js/history/chat-history-9999999999999.txt",
         "transcript content",
       );
       const result = await resumeCommand("/resume 1234567890000");
@@ -478,9 +478,9 @@ transcript content
     });
 
     it("skips files that do not match the chat-history format", async () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/history/other-1234567890000.txt",
+        "/fake-home/.config/agent-js/history/other-1234567890000.txt",
         "other",
       );
       const result = await resumeCommand("/resume 1234567890000");
@@ -842,7 +842,7 @@ Local config from path: /test-cwd/.agent-js/settings.json
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Global config from path: /fake-home/.config/.agent-js/settings.json
+Global config from path: /fake-home/.config/agent-js/settings.json
 {}
 `,
       );
@@ -857,7 +857,7 @@ Global config from path: /fake-home/.config/.agent-js/settings.json
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Global config from path: /fake-home/.config/.agent-js/settings.json
+Global config from path: /fake-home/.config/agent-js/settings.json
 - model: "gpt-4"
 `,
       );
@@ -1006,12 +1006,12 @@ Applied config:
       testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
         "/test-cwd/.agent-js/commands/help.md",
       ]);
-      testFs._globResults.set("/fake-home/.config/.agent-js/commands/**/*.md", [
-        "/fake-home/.config/.agent-js/commands/status.md",
+      testFs._globResults.set("/fake-home/.config/agent-js/commands/**/*.md", [
+        "/fake-home/.config/agent-js/commands/status.md",
       ]);
       testFs._files.set("/test-cwd/.agent-js/commands/help.md", "help content");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/commands/status.md",
+        "/fake-home/.config/agent-js/commands/status.md",
         "status content",
       );
       const result = getAvailableSlashCommands();
@@ -1023,7 +1023,7 @@ Applied config:
         },
         {
           name: "status",
-          filePath: "/fake-home/.config/.agent-js/commands/status.md",
+          filePath: "/fake-home/.config/agent-js/commands/status.md",
           content: "status content",
         },
       ]);
@@ -1033,15 +1033,15 @@ Applied config:
       testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
         "/test-cwd/.agent-js/commands/help.md",
       ]);
-      testFs._globResults.set("/fake-home/.config/.agent-js/commands/**/*.md", [
-        "/fake-home/.config/.agent-js/commands/help.md",
+      testFs._globResults.set("/fake-home/.config/agent-js/commands/**/*.md", [
+        "/fake-home/.config/agent-js/commands/help.md",
       ]);
       testFs._files.set(
         "/test-cwd/.agent-js/commands/help.md",
         "local content",
       );
       testFs._files.set(
-        "/fake-home/.config/.agent-js/commands/help.md",
+        "/fake-home/.config/agent-js/commands/help.md",
         "global content",
       );
       const result = getAvailableSlashCommands();
@@ -1222,7 +1222,7 @@ Local config from path: /test-cwd/.agent-js/settings.json
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Global config from path: /fake-home/.config/.agent-js/settings.json
+Global config from path: /fake-home/.config/agent-js/settings.json
 {}
 `,
       );
@@ -1336,9 +1336,9 @@ Keymaps:
     });
 
     it("handles /resume with a session start date", async () => {
-      testFs._dirs.add("/fake-home/.config/.agent-js/history");
+      testFs._dirs.add("/fake-home/.config/agent-js/history");
       testFs._files.set(
-        "/fake-home/.config/.agent-js/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
         "transcript content",
       );
       const result = await resolveSlashCommand("/resume 1234567890000");
