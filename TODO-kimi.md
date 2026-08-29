@@ -85,9 +85,3 @@ Plan: replace with explicit `!== null` / `!== undefined` / `!== ""` / `.length >
 `initStateFromConfig()` merges `keymaps` per-key (`localConfig.keymaps?.edit ?? globalConfig.keymaps?.edit`) but replaces `pricingPerModel` and `contextWindowPerModel` wholesale — defining pricing for one model locally wipes global pricing for all other models.
 
 Plan: merge records per-model (`{...global, ...local}`) for both, matching the keymap behavior; update tests.
-
-### 30. Duplicated history-file scanning logic
-
-`resumeCommand` (`src/input.ts:614-637`) and `deleteExpiredPromptHistory` (`src/log.ts:69-87`) re-implement the same filename parse/validate loop; a `// TODO: reuse this logic` comment already exists.
-
-Plan: extract a shared `listChatHistoryFiles(dir)` helper in `log.ts` (or `utils.ts`) returning `{ fullPath, fileTimestampMs }[]`, use it in both places, remove the TODO.
