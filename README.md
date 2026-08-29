@@ -14,8 +14,9 @@ A minimal agent implementation for working with LLMs (my own mini claude code)
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
 - **AGENTS.md support**: The root file is included in context, nested files are internally represented as skills
 - **Slash commands**: Change agent settings or execute reusable prompts
-- **Toekn usage tracking**: Track spending per model within a configurable time window
+- **Token usage tracking**: Track spending per model within a configurable time window
 - **Context compaction**: The conversation is automatically compacted when nearing the model's context window limit
+  - Triggered at `compactAtContextRatio`, down to `compactTargetRatio`
 - **Session history**: Transcripts are persisted per session and past sessions can be resumed with `/resume`
 - **Keymaps**: Customizable shortcuts for executing built-in slash commands
 
@@ -25,25 +26,27 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Config Options
 
-| Option                      | Type                                   | Description                                                     |
-| --------------------------- | -------------------------------------- | --------------------------------------------------------------- |
-| `model`                     | `string`                               | Model name (required)                                           |
-| `provider`                  | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)                     |
-| `baseURL`                   | `string`                               | API base URL (required for `openai-compatible`)                 |
-| `pricingPerModel`           | `object`                               | Token pricing per model per million                             |
-| `contextWindowPerModel`     | `object`                               | Context window size in tokens per model                         |
-| `keymaps`                   | `object`                               | Custom keybindings (see below)                                  |
-| `customSlashCommandDirs`    | `string[]`                             | Additional directories for custom slash commands                |
-| `customSkillDirs`           | `string[]`                             | Additional directories for skills                               |
-| `loadingStateFrames`        | `string[]`                             | Custom spinner frames (default: `["\|", "/", "-", "\\"]`)       |
-| `loadingStateFrameDuration` | `number`                               | Spinner frame interval in ms (default: `80`)                    |
-| `promptPrefix`              | `string`                               | Prompt prefix string (default: `"> "`)                          |
-| `usageLimitMs`              | `number \| undefined`                  | Time window in ms for tracking usage (default: `undefined`)     |
-| `usageLimitDollar`          | `number \| undefined`                  | Maximum dollar spend in the usage window (default: `undefined`) |
+| Option                      | Type                                   | Description                                                        |
+| --------------------------- | -------------------------------------- | ------------------------------------------------------------------ |
+| `model`                     | `string`                               | Model name (required)                                              |
+| `provider`                  | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)                        |
+| `baseURL`                   | `string`                               | API base URL (required for `openai-compatible`)                    |
+| `pricingPerModel`           | `object`                               | Token pricing per model per million                                |
+| `contextWindowPerModel`     | `object`                               | Context window size in tokens per model                            |
+| `compactAtContextRatio`     | `number`                               | Compact when context usage exceeds this ratio (default: `0.7`)     |
+| `compactTargetRatio`        | `number`                               | Compact down to this context ratio (default: `0.3`)                |
+| `keymaps`                   | `object`                               | Custom keybindings (see below)                                     |
+| `customSlashCommandDirs`    | `string[]`                             | Additional directories for custom slash commands                   |
+| `customSkillDirs`           | `string[]`                             | Additional directories for skills                                  |
+| `loadingStateFrames`        | `string[]`                             | Custom spinner frames (default: `["\|", "/", "-", "\\"]`)          |
+| `loadingStateFrameDuration` | `number`                               | Spinner frame interval in ms (default: `80`)                       |
+| `promptPrefix`              | `string`                               | Prompt prefix string (default: `"> "`)                             |
+| `usageLimitDuration`        | `string \| undefined`                  | Time window for tracking usage, e.g. `"5h"` (default: `undefined`) |
+| `usageLimitDollar`          | `number \| undefined`                  | Maximum dollar spend in the usage window (default: `undefined`)    |
 
 ### Usage Limits
 
-When `usageLimitMs` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. Previous usages are loaded from `~/.config/.agent-js/usage.json` on startup and entries older than `usageLimitMs` are filtered out.
+When `usageLimitDuration` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. `usageLimitDuration` is a string like `"5h"` with a `[number][s,m,h,d]` suffix. Previous usages are loaded from `~/.config/.agent-js/usage.json` on startup and entries older than `usageLimitDuration` are filtered out.
 
 The current spend is shown as `$<cost> of $<limit>` in the status line.
 
@@ -102,11 +105,12 @@ Example `settings.json`:
 
 ## Environment Variables
 
-| Variable           | Description                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------------- |
-| `AGENT_JS_API_KEY` | API key for the configured provider (required)                                                     |
-| `AGENT_JS_EDIT`    | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)     |
-| `AGENT_JS_HISTORY` | Editor command with `__FILE__` placeholder for viewing chat history (fallback: `$EDITOR __FILE__`) |
+| Variable                   | Description                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `AGENT_JS_API_KEY`         | API key for the configured provider (required)                                                                         |
+| `AGENT_JS_EDIT`            | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)                         |
+| `AGENT_JS_HISTORY`         | Editor command with `__FILE__` placeholder for viewing chat history (fallback: `$EDITOR __FILE__`)                     |
+| `AGENT_JS_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
 
 ## CLI Arguments
 
@@ -137,7 +141,7 @@ Slash commands are triggered with `/command` at the prompt.
 
 ### Custom Slash Commands
 
-Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local), `~/.config/.agent-js/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Local commands take precedence over global commands with the same filename.
+Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local), `~/.config/.agent-js/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Commands with the same filename are deduplicated with the first occurrence taking precedence, in this priority order: custom dirs → local → global.
 
 #### Directory Structure
 

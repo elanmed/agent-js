@@ -60,48 +60,6 @@ Plan: print an error like the "No conversation found" branch. Add a test.
 
 ## Documentation
 
-### 10. README documents `usageLimitMs`, code implements `usageLimitDuration`
-
-`README.md:41,46` describe `usageLimitMs` (`number`, ms). `src/config.ts:78` implements `usageLimitDuration` (string like `"5h"`, validated against `[number][s,m,h,d]`). Users following the README get a schema error.
-
-Plan: update the README config table and Usage Limits section to `usageLimitDuration` with the string format and an example (`"5h"`).
-
-### 11. README typo: "Toekn usage tracking"
-
-`README.md:17`.
-
-Plan: fix to "Token usage tracking".
-
-### 12. Undocumented config options: `compactAtContextRatio`, `compactTargetRatio`
-
-Both are in `ConfigSchema`/`DEFAULT_CONFIG` (0.7 / 0.3) and drive compaction, but are absent from the README config table.
-
-Plan: add both rows to the table with defaults; mention in the Context compaction feature bullet.
-
-### 13. Undocumented env var `AGENT_JS_CLIPBOARD_PASTE`
-
-`src/input.ts:133` reads it to override the default `pbpaste`/`xclip` paste command, but it's missing from the README Environment Variables table.
-
-Plan: add a row describing it and the platform defaults.
-
-### 14. `__FILE__` placeholder docs don't match behavior for `$EDITOR`
-
-README (env table + keymaps table) says the fallback is `$EDITOR __FILE__`, but `src/input.ts:453-454,515-516` only replaces `__FILE__` for `AGENT_JS_EDIT`/`AGENT_JS_HISTORY`; for `$EDITOR` the temp path is appended verbatim and a literal `__FILE__` in `$EDITOR` is never substituted.
-
-Plan: either also `.replace("__FILE__", ...)` for the `$EDITOR` branch, or clarify in README that the placeholder is only supported in `AGENT_JS_EDIT`/`AGENT_JS_HISTORY`.
-
-### 15. Session history 1-day expiry is undocumented
-
-`src/log.ts:83-86` deletes `chat-history-*` files older than 24h on startup, while README advertises "past sessions can be resumed with `/resume`" with no mention of the retention window.
-
-Plan: document the 1-day retention in the README Session history bullet (or make retention configurable and document the option).
-
-### 16. Slash command precedence docs incomplete
-
-README says "Local commands take precedence over global commands", but `src/input.ts:725-729` resolves `customSlashCommandDirs` first, then local, then global (first-seen-wins).
-
-Plan: state the full precedence order (custom dirs → local → global), mirroring the Skills section.
-
 ### 17. `view_file` tool description omits `start_line`/`end_line` semantics
 
 `src/tools.ts:516-519` description doesn't mention the 1-based numbering or the `-1` "to end of file" sentinel that `executeViewFileTool` supports.
