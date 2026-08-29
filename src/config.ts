@@ -277,6 +277,7 @@ export function initStateFromConfig() {
     localConfig.usageLimitDuration ?? globalConfig.usageLimitDuration;
   const defaultedUsageLimitDollar =
     localConfig.usageLimitDollar ?? globalConfig.usageLimitDollar;
+
   if (
     (defaultedUsageLimitDuration === undefined) !==
     (defaultedUsageLimitDollar === undefined)
