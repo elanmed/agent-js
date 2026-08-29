@@ -112,6 +112,39 @@ Example `settings.json`:
 | `AGENT_JS_HISTORY`         | Editor command with `__FILE__` placeholder for viewing chat history (fallback: `$EDITOR __FILE__`)                     |
 | `AGENT_JS_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
 
+### Container clipboard access
+
+The `scripts/copy-server.ts` and `scripts/paste-server.ts` helpers bridge the host clipboard to a container. Each listens on a random port and prints that port to stdout, so the port can be captured via a FIFO. Set `paste_cmd`/`copy_cmd` to the host clipboard commands (e.g. `pbpaste`/`pbcopy` on macOS).
+
+```bash
+paste_fifo=$(mktemp -u /tmp/paste-fifo.XXXXXX)
+rm -f "$paste_fifo"
+mkfifo "$paste_fifo"
+node "/path/to/agent-js/scripts/paste-server.ts" "$paste_cmd" >"$paste_fifo" &
+paste_server_pid="$!"
+read -r PASTE_PORT <"$paste_fifo"
+rm -f "$paste_fifo"
+
+copy_fifo=$(mktemp -u /tmp/copy-fifo.XXXXXX)
+rm -f "$copy_fifo"
+mkfifo "$copy_fifo"
+node "/path/to/agent-js/scripts/copy-server.ts" "$copy_cmd" >"$copy_fifo" &
+copy_server_pid="$!"
+read -r COPY_PORT <"$copy_fifo"
+rm -f "$copy_fifo"
+
+trap "kill $paste_server_pid $copy_server_pid 2>/dev/null" EXIT INT TERM
+
+local podman_args=(
+  --env AGENT_JS_EDIT='nvim -c "normal! G$" -c startinsert! __FILE__'
+  --env AGENT_JS_HISTORY='nvim -c "normal! G$" __FILE__'
+  --env AGENT_JS_CLIPBOARD_PASTE="nc --recv-only host.docker.internal $PASTE_PORT"
+  --env COPY_PORT="$COPY_PORT"
+  --env PASTE_PORT="$PASTE_PORT"
+)
+```
+
+
 ## CLI Arguments
 
 | Flag      | Description          |
