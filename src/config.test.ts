@@ -65,23 +65,22 @@ describe("config", () => {
       assert.equal(getState().config.provider, "anthropic");
     });
 
-    it("uses its pricingPerModel over the global config, default config", async () => {
-      const localPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
-      localPricing["test-model"] = {
-        inputPerMillion: 999,
-        outputPerMillion: 0,
-        cacheReadPerMillion: 0,
-        cacheWritePerMillion: 0,
-      };
-
+    it("merges pricingPerModel per model, local overriding global", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
           model: "test-model",
-          pricingPerModel: DEFAULT_CONFIG.pricingPerModel,
-          usageLimitDuration: "60m",
-          usageLimitDollar: 10,
+          pricingPerModel: {
+            "global-model": {
+              inputPerMillion: 1,
+              outputPerMillion: 2,
+            },
+            "shared-model": {
+              inputPerMillion: 10,
+              outputPerMillion: 20,
+            },
+          },
         }),
       );
       testFs._files.set(
@@ -89,37 +88,65 @@ describe("config", () => {
         JSON.stringify({
           ...defaultConfig,
           model: "test-model",
-          pricingPerModel: localPricing,
-          usageLimitDuration: "60m",
-          usageLimitDollar: 10,
+          pricingPerModel: {
+            "local-model": {
+              inputPerMillion: 3,
+              outputPerMillion: 4,
+            },
+            "shared-model": {
+              inputPerMillion: 30,
+              outputPerMillion: 40,
+            },
+          },
         }),
       );
 
       await initState();
 
-      assert.deepEqual(getState().config.pricingPerModel, localPricing);
+      assert.deepEqual(getState().config.pricingPerModel, {
+        "global-model": {
+          inputPerMillion: 1,
+          outputPerMillion: 2,
+        },
+        "shared-model": {
+          inputPerMillion: 30,
+          outputPerMillion: 40,
+        },
+        "local-model": {
+          inputPerMillion: 3,
+          outputPerMillion: 4,
+        },
+      });
     });
 
-    it("uses its contextWindowPerModel over the global config, default config", async () => {
+    it("merges contextWindowPerModel per model, local overriding global", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          contextWindowPerModel: { "test-model": 100_000 },
+          contextWindowPerModel: {
+            "global-model": 100_000,
+            "shared-model": 200_000,
+          },
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           ...defaultConfig,
-          contextWindowPerModel: { "test-model": 200_000 },
+          contextWindowPerModel: {
+            "local-model": 300_000,
+            "shared-model": 400_000,
+          },
         }),
       );
 
       await initState();
 
       assert.deepEqual(getState().config.contextWindowPerModel, {
-        "test-model": 200_000,
+        "global-model": 100_000,
+        "shared-model": 400_000,
+        "local-model": 300_000,
       });
     });
 
