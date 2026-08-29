@@ -62,10 +62,7 @@ export function initPromptHistory() {
 }
 
 export function deleteExpiredPromptHistory() {
-  const chatHistoryPath = getPromptHistoryDir();
-  if (!fsDeps.existsSync(chatHistoryPath)) return;
-
-  const chatHistoryFileEntries = listChatHistoryFiles(chatHistoryPath);
+  const chatHistoryFileEntries = listChatHistoryFiles();
 
   for (const { absolutePath, timestampMs } of chatHistoryFileEntries) {
     const oneDay = 1_000 * 60 * 60 * 24;

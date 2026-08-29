@@ -619,10 +619,7 @@ export async function resumeCommand(rawInput: string) {
     return null;
   }
 
-  const chatHistoryPath = getPromptHistoryDir();
-  if (!fsDeps.existsSync(chatHistoryPath)) return null;
-
-  const chatHistoryFileEntries = listChatHistoryFiles(chatHistoryPath);
+  const chatHistoryFileEntries = listChatHistoryFiles();
 
   for (const { absolutePath, timestampMs } of chatHistoryFileEntries) {
     if (timestampMs !== Number(sessionStartDate)) continue;

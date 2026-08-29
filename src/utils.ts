@@ -3,6 +3,7 @@ import os from "node:os";
 import crypto from "node:crypto";
 import childProcess from "node:child_process";
 import { fsDeps, processDeps } from "./deps.ts";
+import { getPromptHistoryDir } from "./paths.ts";
 
 export const MISSING = "__MISSING__";
 
@@ -125,7 +126,10 @@ interface ChatHistoryEntry {
   timestampMs: number;
 }
 
-export function listChatHistoryFiles(chatHistoryPath: string) {
+export function listChatHistoryFiles() {
+  const chatHistoryPath = getPromptHistoryDir();
+  if (!fsDeps.existsSync(chatHistoryPath)) return [];
+
   const chatHistoryFiles: ChatHistoryEntry[] = [];
   for (const name of fsDeps.readdirSync(chatHistoryPath)) {
     const fullPath = join(chatHistoryPath, name);
