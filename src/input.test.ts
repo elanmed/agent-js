@@ -808,7 +808,7 @@ Keymaps:
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Local config from path: /test-cwd/.agent-js/settings.json
+Local config from path: /test-cwd/.agent-js/settings.yaml
 {}
 `,
       );
@@ -823,7 +823,7 @@ Local config from path: /test-cwd/.agent-js/settings.json
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Local config from path: /test-cwd/.agent-js/settings.json
+Local config from path: /test-cwd/.agent-js/settings.yaml
 - model: "gpt-4"
 - provider: "anthropic"
 `,
@@ -842,7 +842,7 @@ Local config from path: /test-cwd/.agent-js/settings.json
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Global config from path: /fake-home/.config/agent-js/settings.json
+Global config from path: /fake-home/.config/agent-js/settings.yaml
 {}
 `,
       );
@@ -857,7 +857,7 @@ Global config from path: /fake-home/.config/agent-js/settings.json
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Global config from path: /fake-home/.config/agent-js/settings.json
+Global config from path: /fake-home/.config/agent-js/settings.yaml
 - model: "gpt-4"
 `,
       );
@@ -1209,7 +1209,7 @@ Available commands:
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Local config from path: /test-cwd/.agent-js/settings.json
+Local config from path: /test-cwd/.agent-js/settings.yaml
 {}
 `,
       );
@@ -1222,7 +1222,7 @@ Local config from path: /test-cwd/.agent-js/settings.json
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Global config from path: /fake-home/.config/agent-js/settings.json
+Global config from path: /fake-home/.config/agent-js/settings.yaml
 {}
 `,
       );
