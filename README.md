@@ -47,7 +47,16 @@ Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/se
 
 ### Usage Limits
 
-When `usageLimit` is set, the agent tracks the running dollar cost of usage within the configured time window. `usageLimit.duration` is a string like `"5h"` with a `[number][s,m,h,d]` suffix, and `usageLimit.dollarAmount` is the maximum dollar spend in that window. Previous usages are loaded from `~/.config/agent-js/usage.json` on startup and entries older than `usageLimit.duration` are filtered out.
+When `usageLimit` is set, the agent tracks the running dollar cost of usage within the configured time window:
+
+| Field          | Type     | Default  | Description                                    |
+| -------------- | -------- | -------- | ---------------------------------------------- |
+| `duration`     | `string` | required | Time window, e.g. `"5h"` (`[number][s,m,h,d]`) |
+| `dollarAmount` | `number` | required | Maximum dollar spend in the window             |
+
+Previous usages are loaded from `~/.config/agent-js/usage.json` on startup and entries older than `duration` are filtered out.
+
+If the current model has no `pricingPerModel` entry, usage limiting is disabled for that model and a warning is printed at startup.
 
 The current spend is shown as `$<cost> of $<limit>` in the status line.
 
