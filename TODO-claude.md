@@ -137,24 +137,6 @@ become useless single-ellipsis output.
 `getColumns()` to return `undefined` and asserts `truncate` still returns
 meaningful content.
 
-### 7. `getPrettyApiDuration` produces negative durations on clock skew
-
-**File:** `src/print.ts`
-
-```ts
-const diff = endTime - startTime;
-const prettyMs = `${String(diff % 1_000)}ms`;
-```
-
-If the system clock is adjusted backwards between `setApiStartTime()` and
-`setApiEndTime()` (NTP sync, VM pause/resume, etc.), `diff` can be negative.
-`diff % 1000` for a negative number in JS returns a negative remainder,
-producing output like `"-500ms"` in the session-info fence line.
-
-**Fix:** Clamp `diff` to `Math.max(0, endTime - startTime)` before computing
-the pretty string, or switch to `process.hrtime.bigint()`/`performance.now()`
-for a monotonic clock instead of `Date.now()`.
-
 ---
 
 ## Medium
