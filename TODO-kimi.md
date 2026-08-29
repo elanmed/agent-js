@@ -80,50 +80,14 @@ AGENTS.md bans truthy/falsy coercion (`if (obj)`), but the codebase has: `src/co
 
 Plan: replace with explicit `!== null` / `!== undefined` / `!== ""` / `.length > 0` comparisons. Optionally add `grit`/eslint rule `@typescript-eslint/strict-boolean-expressions` to enforce it.
 
-### 23. Config JSON parse error omits the file path
-
-`src/config.ts:172` throws "Failed to parse config as JSON" without saying which of the two config files failed.
-
-Plan: include `path` in the error message; update tests.
-
 ### 24. Inconsistent local/global merge strategy
 
 `initStateFromConfig()` merges `keymaps` per-key (`localConfig.keymaps?.edit ?? globalConfig.keymaps?.edit`) but replaces `pricingPerModel` and `contextWindowPerModel` wholesale — defining pricing for one model locally wipes global pricing for all other models.
 
 Plan: merge records per-model (`{...global, ...local}`) for both, matching the keymap behavior; update tests.
 
-### 25. Tooling coverage gaps for `scripts/`
-
-`tsconfig.json` includes `scripts/`, but `pnpm run lint` is `eslint src` and `pnpm run format` covers only `src/ AGENTS.md eslint.config.mjs tsconfig.json .agent-js/` — `scripts/` is type-checked but never linted or formatted. `README.md`/`package.json` are also excluded from formatting while `AGENTS.md` is included.
-
-Plan: add `scripts/` (and optionally README.md) to the lint and format script paths; run format once to normalize.
-
-### 26. `scripts/copy-server.ts` usage string names the wrong flag
-
-Both scripts throw `usage: --paste-cmd [cmd]`; in `copy-server.ts` the label doesn't match the script's purpose (it receives data to copy).
-
-Plan: adjust each script's usage string to match its role, or extract a shared helper.
-
-### 28. `setDebugLog` skips `logStateChange`
-
-`src/state.ts:303-305` is the only mutating action that doesn't log a state change.
-
-Plan: add a `logStateChange("set-debug-log", ...)` call for consistency (or drop logging everywhere it adds no value — pick one convention).
-
-### 29. Naming mismatch: `setKeymapPromptHistory` vs `keymapChatHistory`
-
-The action name says "PromptHistory", the state field says "ChatHistory" (`src/state.ts:217-225`); likewise `setKeymapEditPastePrompt` / `keymapEditPastePrompt` mix "Edit" in for paste.
-
-Plan: rename actions to match state fields (`setKeymapChatHistory`, `setKeymapPastePrompt`) or vice versa; mechanical rename plus test updates.
-
 ### 30. Duplicated history-file scanning logic
 
 `resumeCommand` (`src/input.ts:614-637`) and `deleteExpiredPromptHistory` (`src/log.ts:69-87`) re-implement the same filename parse/validate loop; a `// TODO: reuse this logic` comment already exists.
 
 Plan: extract a shared `listChatHistoryFiles(dir)` helper in `log.ts` (or `utils.ts`) returning `{ fullPath, fileTimestampMs }[]`, use it in both places, remove the TODO.
-
-### 31. `parseFrontMatter` rejects `\r\n` files and files without trailing newline after closing `---`
-
-`src/context.ts:127-142` only matches `"---\n"` / `"\n---\n"`, so CRLF skill files are reported as malformed with a confusing error.
-
-Plan: either normalize line endings before parsing or document the LF requirement; optionally improve the error message to mention line endings.
