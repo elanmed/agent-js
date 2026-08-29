@@ -205,16 +205,16 @@ export function initStateFromConfig() {
   actions.setModel(defaultedModel);
   if (defaultedBaseURL) actions.setBaseURL(defaultedBaseURL);
   actions.setProvider(defaultedProvider);
-  actions.setPricingPerModel(
-    localConfig.pricingPerModel ??
-      globalConfig.pricingPerModel ??
-      DEFAULT_CONFIG.pricingPerModel,
-  );
-  actions.setContextWindowPerModel(
-    localConfig.contextWindowPerModel ??
-      globalConfig.contextWindowPerModel ??
-      DEFAULT_CONFIG.contextWindowPerModel,
-  );
+  actions.setPricingPerModel({
+    ...DEFAULT_CONFIG.pricingPerModel,
+    ...globalConfig.pricingPerModel,
+    ...localConfig.pricingPerModel,
+  });
+  actions.setContextWindowPerModel({
+    ...DEFAULT_CONFIG.contextWindowPerModel,
+    ...globalConfig.contextWindowPerModel,
+    ...localConfig.contextWindowPerModel,
+  });
   actions.setCompactAtContextRatio(
     localConfig.compactAtContextRatio ??
       globalConfig.compactAtContextRatio ??
