@@ -766,8 +766,8 @@ Keymaps:
 
     it("prints custom keymaps", async () => {
       actions.setKeymapEditPrompt({ name: "e", ctrl: true, meta: true });
-      actions.setKeymapEditPastePrompt({ name: "p", ctrl: true, shift: true });
-      actions.setKeymapPromptHistory({ name: "h", ctrl: true });
+      actions.setKeymapPastePrompt({ name: "p", ctrl: true, shift: true });
+      actions.setKeymapChatHistory({ name: "h", ctrl: true });
       actions.setKeymapClear({ name: "k", ctrl: true });
       await printKeymapsCommand();
       assert.strictEqual(
@@ -887,7 +887,7 @@ Applied config:
   "name": "g",
   "ctrl": true
 }
-- keymapEditPastePrompt: {
+- keymapPastePrompt: {
   "name": "v",
   "ctrl": true
 }
@@ -1247,7 +1247,7 @@ Applied config:
   "name": "g",
   "ctrl": true
 }
-- keymapEditPastePrompt: {
+- keymapPastePrompt: {
   "name": "v",
   "ctrl": true
 }

@@ -161,12 +161,12 @@ describe("state", () => {
     });
   });
 
-  it("set-keymap-prompt-history", () => {
+  it("set-keymap-chat-history", () => {
     assert.deepStrictEqual(
       getState().config.keymapChatHistory,
       DEFAULT_CONFIG.keymaps.history,
     );
-    actions.setKeymapPromptHistory({
+    actions.setKeymapChatHistory({
       name: "o",
       ctrl: false,
       meta: false,

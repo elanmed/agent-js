@@ -199,7 +199,7 @@ describe("config", () => {
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymapEditPastePrompt, {
+      assert.deepEqual(getState().config.keymapPastePrompt, {
         name: "t",
         ctrl: true,
         meta: false,
@@ -646,7 +646,7 @@ describe("config", () => {
         shift: false,
       });
       assert.deepEqual(
-        getState().config.keymapEditPastePrompt,
+        getState().config.keymapPastePrompt,
         DEFAULT_CONFIG.keymaps.paste,
       );
       assert.deepEqual(
@@ -755,7 +755,7 @@ describe("config", () => {
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymapEditPastePrompt, {
+        assert.deepEqual(getState().config.keymapPastePrompt, {
           name: "p",
           ctrl: false,
           meta: false,
@@ -968,13 +968,19 @@ describe("config", () => {
   it("throws on invalid YAML in global config", async () => {
     testFs._files.set(getGlobalConfigPath(), "key: [unclosed");
 
-    await assert.rejects(initState(), /Failed to parse config as YAML/);
+    await assert.rejects(
+      initState(),
+      /Failed to parse config at \/fake-home\/\.config\/agent-js\/settings\.yaml as YAML/,
+    );
   });
 
   it("throws on invalid YAML in local config", async () => {
     testFs._files.set(getLocalConfigPath(), "key: [unclosed");
 
-    await assert.rejects(initState(), /Failed to parse config as YAML/);
+    await assert.rejects(
+      initState(),
+      /Failed to parse config at \/test-cwd\/\.agent-js\/settings\.yaml as YAML/,
+    );
   });
 
   it("sets debug from args", async () => {
