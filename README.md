@@ -24,7 +24,7 @@ macOS and Linux only.
 
 ## Configuration
 
-Settings live in `~/.config/agent-js/settings.json` (global) and `./.agent-js/settings.json` (local overrides), parsed as YAML
+Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/settings.yaml` (local overrides), parsed as YAML
 
 ### Config Options
 
@@ -74,7 +74,7 @@ Each `Key` object has:
 
 You can configure individual keymaps while keeping defaults for others
 
-Example `settings.json` (YAML):
+Example `settings.yaml` (YAML):
 
 ```yaml
 model: claude-sonnet-4-6
@@ -131,8 +131,8 @@ Slash commands are triggered with `/command` at the prompt.
 | `/commands` | List available slash commands (builtin and custom)                         |
 | `/keymaps`  | List configured keybindings                                                |
 | `/usage`    | Show current session usage                                                 |
-| `/local`    | Show the local config file (`./.agent-js/settings.json`), or `{}`          |
-| `/global`   | Show the global config file (`~/.config/agent-js/settings.json`), or `{}` |
+| `/local`    | Show the local config file (`./.agent-js/settings.yaml`), or `{}`          |
+| `/global`   | Show the global config file (`~/.config/agent-js/settings.yaml`), or `{}` |
 | `/config`   | Show the applied config (merged with defaults)                             |
 | `/resume`   | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
 
