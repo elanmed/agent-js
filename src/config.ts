@@ -166,7 +166,7 @@ export function readConfigFile(path: string) {
 
   const parseResult = tryCatch((): unknown => YAML.parse(readResult.value));
   if (!parseResult.ok) {
-    throw new Error("Failed to parse config as YAML");
+    throw new Error(`Failed to parse config at ${path} as YAML`);
   }
 
   return ConfigSchema.parse(parseResult.value);
@@ -242,12 +242,12 @@ export function initStateFromConfig() {
       globalConfig.keymaps?.edit ??
       DEFAULT_CONFIG.keymaps.edit,
   );
-  actions.setKeymapEditPastePrompt(
+  actions.setKeymapPastePrompt(
     localConfig.keymaps?.paste ??
       globalConfig.keymaps?.paste ??
       DEFAULT_CONFIG.keymaps.paste,
   );
-  actions.setKeymapPromptHistory(
+  actions.setKeymapChatHistory(
     localConfig.keymaps?.history ??
       globalConfig.keymaps?.history ??
       DEFAULT_CONFIG.keymaps.history,

@@ -51,7 +51,7 @@ interface State {
     baseURL: string | null;
     provider: Provider;
     keymapEditPrompt: Key;
-    keymapEditPastePrompt: Key;
+    keymapPastePrompt: Key;
     keymapChatHistory: Key;
     keymapClear: Key;
     loadingStateFrames: string[];
@@ -101,7 +101,7 @@ const initialState: State = {
     compactAtContextRatio: DEFAULT_CONFIG.compactAtContextRatio,
     compactTargetRatio: DEFAULT_CONFIG.compactTargetRatio,
     keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
-    keymapEditPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
+    keymapPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
     keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
     keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
     loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
@@ -204,17 +204,17 @@ export const actions = {
     );
   },
 
-  setKeymapEditPastePrompt(keymap: Key) {
-    const before = state.config.keymapEditPastePrompt;
-    state.config.keymapEditPastePrompt = keymap;
+  setKeymapPastePrompt(keymap: Key) {
+    const before = state.config.keymapPastePrompt;
+    state.config.keymapPastePrompt = keymap;
     logStateChange(
-      "set-keymap-edit-paste-prompt",
+      "set-keymap-paste-prompt",
       stringify(before),
       stringify(keymap),
     );
   },
 
-  setKeymapPromptHistory(keymap: Key) {
+  setKeymapChatHistory(keymap: Key) {
     const before = state.config.keymapChatHistory;
     state.config.keymapChatHistory = keymap;
     logStateChange(
@@ -301,6 +301,8 @@ export const actions = {
   },
 
   setDebugLog(debugLog: boolean) {
+    // `logStateChange` returns early when `debugLog=false`
+    // so it can't be called in the fn where `debugLog` is set
     state.app.debugLog = debugLog;
   },
 

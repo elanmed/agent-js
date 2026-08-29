@@ -176,7 +176,7 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, getState().config.keymapEditPastePrompt)) {
+      if (isSameKey(key, getState().config.keymapPastePrompt)) {
         const editorContent = await spawnAndReadEditorContent({
           includeClipboardSuffix: true,
         });
@@ -687,7 +687,7 @@ export async function printKeymapsCommand() {
     `- history: ${JSON.stringify(getState().config.keymapChatHistory)}`,
   );
   await print(
-    `- paste: ${JSON.stringify(getState().config.keymapEditPastePrompt)}`,
+    `- paste: ${JSON.stringify(getState().config.keymapPastePrompt)}`,
   );
   await print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
 }
