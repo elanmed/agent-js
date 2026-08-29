@@ -14,9 +14,8 @@ import {
   initSigInt,
   resolveUserInput,
 } from "./input.ts";
-import { resolveApiCall } from "./api.ts";
+import { resolveApiCall, maybeCompactMessageParams } from "./api.ts";
 import { initLogs } from "./log.ts";
-import { maybeCompactMessageParams } from "./api.ts";
 
 async function main() {
   await initState();
