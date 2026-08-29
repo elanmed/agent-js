@@ -68,10 +68,10 @@ describe("config", () => {
     it("uses its pricingPerModel over the global config, default config", async () => {
       const localPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
       localPricing["test-model"] = {
-        inputPerToken: 999,
-        outputPerToken: 0,
-        cacheReadPerToken: 0,
-        cacheWritePerToken: 0,
+        inputPerMillion: 999,
+        outputPerMillion: 0,
+        cacheReadPerMillion: 0,
+        cacheWritePerMillion: 0,
       };
 
       testFs._files.set(
@@ -707,10 +707,10 @@ describe("config", () => {
       it("uses its pricingPerModel over the default config", async () => {
         const globalPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
         globalPricing["test-model"] = {
-          inputPerToken: 999,
-          outputPerToken: 0,
-          cacheReadPerToken: 0,
-          cacheWritePerToken: 0,
+          inputPerMillion: 999,
+          outputPerMillion: 0,
+          cacheReadPerMillion: 0,
+          cacheWritePerMillion: 0,
         };
 
         testFs._files.set(
@@ -1072,10 +1072,10 @@ describe("config", () => {
         usageLimitDollar: 10,
         pricingPerModel: {
           "claude-sonnet-4-6": {
-            inputPerToken: 3,
-            outputPerToken: 15,
-            cacheReadPerToken: 0.75,
-            cacheWritePerToken: 3.75,
+            inputPerMillion: 3,
+            outputPerMillion: 15,
+            cacheReadPerMillion: 0.75,
+            cacheWritePerMillion: 3.75,
           },
         },
       }),

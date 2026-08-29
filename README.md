@@ -83,10 +83,10 @@ Example `settings.json`:
   },
   "pricingPerModel": {
     "claude-sonnet-4-6": {
-      "inputPerToken": 2.5,
-      "outputPerToken": 10,
-      "cacheReadPerToken": 1.25,
-      "cacheWritePerToken": 3.75
+      "inputPerMillion": 2.5,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 1.25,
+      "cacheWritePerMillion": 3.75
     }
   },
   "contextWindowPerModel": {

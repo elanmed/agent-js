@@ -29,10 +29,10 @@ const KeySchema = z.object({
 });
 
 const ModelPricingSchema = z.object({
-  inputPerToken: z.number(),
-  outputPerToken: z.number(),
-  cacheReadPerToken: z.number().optional(),
-  cacheWritePerToken: z.number().optional(),
+  inputPerMillion: z.number(),
+  outputPerMillion: z.number(),
+  cacheReadPerMillion: z.number().optional(),
+  cacheWritePerMillion: z.number().optional(),
 });
 
 export type ModelPricing = z.infer<typeof ModelPricingSchema>;
@@ -103,10 +103,10 @@ interface DefaultConfig {
   pricingPerModel: Record<
     string,
     {
-      inputPerToken: number;
-      outputPerToken: number;
-      cacheReadPerToken: number;
-      cacheWritePerToken: number;
+      inputPerMillion: number;
+      outputPerMillion: number;
+      cacheReadPerMillion: number;
+      cacheWritePerMillion: number;
     }
   >;
   contextWindowPerModel: Record<string, number>;

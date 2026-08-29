@@ -27,22 +27,22 @@ describe("usage", () => {
       actions.resetState();
       actions.setPricingPerModel({
         "claude-haiku-4-5": {
-          inputPerToken: 1,
-          outputPerToken: 5,
-          cacheReadPerToken: 0.25,
-          cacheWritePerToken: 1.25,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
+          cacheReadPerMillion: 0.25,
+          cacheWritePerMillion: 1.25,
         },
         "claude-sonnet-4-6": {
-          inputPerToken: 3,
-          outputPerToken: 15,
-          cacheReadPerToken: 0.75,
-          cacheWritePerToken: 3.75,
+          inputPerMillion: 3,
+          outputPerMillion: 15,
+          cacheReadPerMillion: 0.75,
+          cacheWritePerMillion: 3.75,
         },
         "claude-opus-4-6": {
-          inputPerToken: 5,
-          outputPerToken: 25,
-          cacheReadPerToken: 1.25,
-          cacheWritePerToken: 6.25,
+          inputPerMillion: 5,
+          outputPerMillion: 25,
+          cacheReadPerMillion: 1.25,
+          cacheWritePerMillion: 6.25,
         },
       });
       actions.setUsageLimitDuration("60m");
@@ -223,8 +223,8 @@ describe("usage", () => {
     it("falls back to the input price when cache pricing is omitted", () => {
       actions.setPricingPerModel({
         "test-model": {
-          inputPerToken: 2,
-          outputPerToken: 10,
+          inputPerMillion: 2,
+          outputPerMillion: 10,
         },
       });
       actions.setModel("test-model");
@@ -432,16 +432,16 @@ describe("usage", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 1,
-          outputPerToken: 5,
-          cacheReadPerToken: 0.25,
-          cacheWritePerToken: 1.25,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
+          cacheReadPerMillion: 0.25,
+          cacheWritePerMillion: 1.25,
         },
         claude: {
-          inputPerToken: 1,
-          outputPerToken: 5,
-          cacheReadPerToken: 0.25,
-          cacheWritePerToken: 1.25,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
+          cacheReadPerMillion: 0.25,
+          cacheWritePerMillion: 1.25,
         },
       });
       actions.setUsageLimitDuration("60m");
@@ -657,10 +657,10 @@ describe("usage", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 1,
-          outputPerToken: 5,
-          cacheReadPerToken: 0.25,
-          cacheWritePerToken: 1.25,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
+          cacheReadPerMillion: 0.25,
+          cacheWritePerMillion: 1.25,
         },
       });
       actions.setUsageLimitDuration("60m");
@@ -999,10 +999,10 @@ describe("usage", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 1,
-          outputPerToken: 5,
-          cacheReadPerToken: 0.25,
-          cacheWritePerToken: 1.25,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
+          cacheReadPerMillion: 0.25,
+          cacheWritePerMillion: 1.25,
         },
       });
       actions.setUsageLimitDollar(10);
@@ -1065,10 +1065,10 @@ describe("usage", () => {
         actions.setModel("gpt-4");
         actions.setPricingPerModel({
           "gpt-4": {
-            inputPerToken: 1,
-            outputPerToken: 5,
-            cacheReadPerToken: 0.25,
-            cacheWritePerToken: 1.25,
+            inputPerMillion: 1,
+            outputPerMillion: 5,
+            cacheReadPerMillion: 0.25,
+            cacheWritePerMillion: 1.25,
           },
         });
         actions.setUsageLimitDuration(duration);
@@ -1160,8 +1160,8 @@ describe("usage", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 1,
-          outputPerToken: 5,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
         },
       });
       actions.setUsageLimitDollar(10);
@@ -1172,8 +1172,8 @@ describe("usage", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 1,
-          outputPerToken: 5,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
         },
       });
       actions.setUsageLimitDuration("60m");
@@ -1184,8 +1184,8 @@ describe("usage", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 1,
-          outputPerToken: 5,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
         },
       });
       actions.setUsageLimitDuration("60m");
@@ -1293,10 +1293,10 @@ describe("usage", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 1,
-          outputPerToken: 5,
-          cacheReadPerToken: 0.25,
-          cacheWritePerToken: 1.25,
+          inputPerMillion: 1,
+          outputPerMillion: 5,
+          cacheReadPerMillion: 0.25,
+          cacheWritePerMillion: 1.25,
         },
       });
     });
@@ -1334,8 +1334,8 @@ describe("usage", () => {
     it("falls back to the input price when cache pricing is omitted", () => {
       actions.setPricingPerModel({
         "gpt-4": {
-          inputPerToken: 2,
-          outputPerToken: 10,
+          inputPerMillion: 2,
+          outputPerMillion: 10,
         },
       });
       const result = getUsageMoneyForModel(

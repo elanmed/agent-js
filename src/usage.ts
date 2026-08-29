@@ -153,22 +153,22 @@ export function getUsageMoneyForModel(usageTokens: TokenUsage, model: string) {
   const pricing = getState().config.pricingPerModel[model];
   assert(pricing !== undefined);
 
-  const inputPerToken = pricing.inputPerToken;
-  const outputPerToken = pricing.outputPerToken;
-  const cacheReadPerToken = pricing.cacheReadPerToken ?? inputPerToken;
-  const cacheWritePerToken = pricing.cacheWritePerToken ?? inputPerToken;
+  const inputPerMillion = pricing.inputPerMillion;
+  const outputPerMillion = pricing.outputPerMillion;
+  const cacheReadPerMillion = pricing.cacheReadPerMillion ?? inputPerMillion;
+  const cacheWritePerMillion = pricing.cacheWritePerMillion ?? inputPerMillion;
 
   const uncachedInputTokens =
     usageTokens.inputTokens -
     usageTokens.cacheReadTokens -
     usageTokens.cacheWriteTokens;
-  const inputCost = (uncachedInputTokens * inputPerToken) / DOLLARS_PER_MILLION;
+  const inputCost = (uncachedInputTokens * inputPerMillion) / DOLLARS_PER_MILLION;
   const outputCost =
-    (usageTokens.outputTokens * outputPerToken) / DOLLARS_PER_MILLION;
+    (usageTokens.outputTokens * outputPerMillion) / DOLLARS_PER_MILLION;
   const cacheReadCost =
-    (usageTokens.cacheReadTokens * cacheReadPerToken) / DOLLARS_PER_MILLION;
+    (usageTokens.cacheReadTokens * cacheReadPerMillion) / DOLLARS_PER_MILLION;
   const cacheWriteCost =
-    (usageTokens.cacheWriteTokens * cacheWritePerToken) / DOLLARS_PER_MILLION;
+    (usageTokens.cacheWriteTokens * cacheWritePerMillion) / DOLLARS_PER_MILLION;
 
   return inputCost + outputCost + cacheReadCost + cacheWriteCost;
 }

@@ -113,10 +113,10 @@ describe("state", () => {
   it("set-pricing-per-model", () => {
     const newPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
     newPricing["test-model"] = {
-      inputPerToken: 999,
-      outputPerToken: 0,
-      cacheReadPerToken: 0,
-      cacheWritePerToken: 0,
+      inputPerMillion: 999,
+      outputPerMillion: 0,
+      cacheReadPerMillion: 0,
+      cacheWritePerMillion: 0,
     };
     actions.setPricingPerModel(newPricing);
     assert.deepStrictEqual(getState().config.pricingPerModel, newPricing);
