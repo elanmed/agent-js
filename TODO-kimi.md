@@ -108,12 +108,6 @@ Plan: state the full precedence order (custom dirs → local → global), mirror
 
 Plan: extend the tool description to document both params and the `-1` sentinel.
 
-### 18. `pricingPerModel` field names say "PerToken" but values are per million tokens
-
-`ModelPricingSchema` fields (`inputPerToken` etc.) are divided by `DOLLARS_PER_MILLION` in `src/usage.ts:165-171`; README example uses per-million values (2.5/10). The names contradict the units.
-
-Plan: cheapest fix — clarify in the README table that values are dollars per million tokens; better fix — rename schema fields to `inputPerMillionTokens` etc. (breaking config change, needs migration note).
-
 ### 19. `jq` is an undeclared system dependency of `pnpm run ci`
 
 `package.json` `cloc-source`/`cloc-tests` pipe to `jq`, which is not a devDependency and not mentioned in README.
@@ -127,18 +121,6 @@ Plan: either document `jq` as a prerequisite, or replace with `node -e` JSON par
 AGENTS.md bans truthy/falsy coercion (`if (obj)`), but the codebase has: `src/config.ts:203` `if (defaultedBaseURL)`, `src/api.ts:28,39` `apiKey && { apiKey }`, `src/input.ts:111,147,206,212` (`if (rl.line.length)`, `if (questionAbortController)`, `if (apiStream)`, `if (question)`), `src/print.ts:48` `if (color)`, `src/args.ts:17` `while (args.length)`, `src/tools.ts:340,567` (`if (signal)`, `diffResult.value.stdout`).
 
 Plan: replace with explicit `!== null` / `!== undefined` / `!== ""` / `.length > 0` comparisons. Optionally add `grit`/eslint rule `@typescript-eslint/strict-boolean-expressions` to enforce it.
-
-### 21. Hardcoded `>` prompt prefix when echoing input
-
-`src/input.ts:269,304` append `` `>${value}\n` `` to tracked stdout, ignoring the configurable `promptPrefix` (default `"> "` — note the missing space, too).
-
-Plan: use `getState().config.promptPrefix` in both places. Update tests asserting the old string.
-
-### 22. Typo in `/resume` injected prompt: "Response to this message"
-
-`src/input.ts:633`: "Response to this message with ..." should be "Respond to this message with ...".
-
-Plan: fix the string; update the matching test.
 
 ### 23. Config JSON parse error omits the file path
 
@@ -163,12 +145,6 @@ Plan: add `scripts/` (and optionally README.md) to the lint and format script pa
 Both scripts throw `usage: --paste-cmd [cmd]`; in `copy-server.ts` the label doesn't match the script's purpose (it receives data to copy).
 
 Plan: adjust each script's usage string to match its role, or extract a shared helper.
-
-### 27. Duplicate import from the same module in `src/index.ts`
-
-Lines 17 and 19 import `resolveApiCall` and `maybeCompactMessageParams` from `./api.ts` in two statements.
-
-Plan: merge into a single import statement.
 
 ### 28. `setDebugLog` skips `logStateChange`
 
