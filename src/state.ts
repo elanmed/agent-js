@@ -107,8 +107,8 @@ const initialState: State = {
     loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
     loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
     promptPrefix: DEFAULT_CONFIG.promptPrefix,
-    usageLimitDuration: DEFAULT_CONFIG.usageLimitDuration,
-    usageLimitDollar: DEFAULT_CONFIG.usageLimitDollar,
+    usageLimitDuration: undefined,
+    usageLimitDollar: undefined,
   },
   abortControllers: {
     question: null,

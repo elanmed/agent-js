@@ -123,8 +123,6 @@ interface DefaultConfig {
   loadingStateFrames: string[];
   loadingStateFrameDuration: number;
   promptPrefix: string;
-  usageLimitDuration: undefined;
-  usageLimitDollar: undefined;
 }
 
 export const DEFAULT_CONFIG: DefaultConfig = {
@@ -157,8 +155,6 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   loadingStateFrames: ["|", "/", "-", "\\"],
   loadingStateFrameDuration: 80,
   promptPrefix: "> ",
-  usageLimitDuration: undefined,
-  usageLimitDollar: undefined,
 };
 
 export function readConfigFile(path: string) {
