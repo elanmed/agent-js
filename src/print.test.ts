@@ -175,9 +175,9 @@ describe("print", () => {
     });
 
     it("prints duration and token usage when showSessionInfo is set", async () => {
-      mock.method(Date, "now", () => 1_000);
+      mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
-      mock.method(Date, "now", () => 1_500);
+      mock.method(performance, "now", () => 1_500);
       actions.setApiEndTime();
 
       await fencePrint("Output", { showSessionInfo: true });
@@ -189,9 +189,9 @@ describe("print", () => {
     });
 
     it("includes context window usage when configured", async () => {
-      mock.method(Date, "now", () => 1_000);
+      mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
-      mock.method(Date, "now", () => 1_500);
+      mock.method(performance, "now", () => 1_500);
       actions.setApiEndTime();
       actions.setModel("test-model");
       actions.setContextWindowPerModel({ "test-model": 10_000 });
@@ -212,45 +212,45 @@ describe("print", () => {
     });
 
     it("formats sub-second duration as milliseconds", () => {
-      mock.method(Date, "now", () => 1_000);
+      mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
-      mock.method(Date, "now", () => 1_500);
+      mock.method(performance, "now", () => 1_500);
       actions.setApiEndTime();
       const result = getPrettyApiDuration();
       assert.strictEqual(result, "500ms");
     });
 
     it("formats seconds and milliseconds", () => {
-      mock.method(Date, "now", () => 1_000);
+      mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
-      mock.method(Date, "now", () => 6_500);
+      mock.method(performance, "now", () => 6_500);
       actions.setApiEndTime();
       const result = getPrettyApiDuration();
       assert.strictEqual(result, "5s 500ms");
     });
 
     it("formats minutes, zero seconds, and milliseconds", () => {
-      mock.method(Date, "now", () => 1_000);
+      mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
-      mock.method(Date, "now", () => 121_500);
+      mock.method(performance, "now", () => 121_500);
       actions.setApiEndTime();
       const result = getPrettyApiDuration();
       assert.strictEqual(result, "2m 0s 500ms");
     });
 
     it("formats minutes, seconds, and milliseconds", () => {
-      mock.method(Date, "now", () => 1_000);
+      mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
-      mock.method(Date, "now", () => 126_500);
+      mock.method(performance, "now", () => 126_500);
       actions.setApiEndTime();
       const result = getPrettyApiDuration();
       assert.strictEqual(result, "2m 5s 500ms");
     });
 
     it("clamps negative durations from clock skew to zero", () => {
-      mock.method(Date, "now", () => 1_000);
+      mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
-      mock.method(Date, "now", () => 500);
+      mock.method(performance, "now", () => 500);
       actions.setApiEndTime();
       const result = getPrettyApiDuration();
       assert.strictEqual(result, "0ms");

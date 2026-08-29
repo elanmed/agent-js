@@ -391,14 +391,14 @@ line3
   });
 
   it("set-api-start-time", () => {
-    mock.method(Date, "now", () => 42_000);
+    mock.method(performance, "now", () => 42_000);
     assert.equal(getState().app.apiStartTime, null);
     actions.setApiStartTime();
     assert.strictEqual(getState().app.apiStartTime, 42_000);
   });
 
   it("set-api-end-time", () => {
-    mock.method(Date, "now", () => 99_000);
+    mock.method(performance, "now", () => 99_000);
     assert.equal(getState().app.apiEndTime, null);
     actions.setApiEndTime();
     assert.strictEqual(getState().app.apiEndTime, 99_000);

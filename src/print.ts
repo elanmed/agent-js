@@ -213,7 +213,7 @@ export function getPrettyApiDuration() {
 
   const diff = Math.max(0, endTime - startTime);
 
-  const ms = diff % 1000;
+  const ms = Math.floor(diff % 1000);
   const sec = Math.floor((diff / 1_000) % 60);
   const min = Math.floor(diff / 60_000);
 

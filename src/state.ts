@@ -412,14 +412,14 @@ export const actions = {
 
   setApiStartTime() {
     const before = state.app.apiStartTime;
-    const now = Date.now();
+    const now = performance.now();
     state.app.apiStartTime = now;
     logStateChange("set-api-start-time", String(before), String(now));
   },
 
   setApiEndTime() {
     const before = state.app.apiEndTime;
-    const now = Date.now();
+    const now = performance.now();
     state.app.apiEndTime = now;
     logStateChange("set-api-end-time", String(before), String(now));
   },
