@@ -229,6 +229,15 @@ describe("print", () => {
       assert.strictEqual(result, "5s 500ms");
     });
 
+    it("formats minutes, zero seconds, and milliseconds", () => {
+      mock.method(Date, "now", () => 1_000);
+      actions.setApiStartTime();
+      mock.method(Date, "now", () => 121_500);
+      actions.setApiEndTime();
+      const result = getPrettyApiDuration();
+      assert.strictEqual(result, "2m 0s 500ms");
+    });
+
     it("formats minutes, seconds, and milliseconds", () => {
       mock.method(Date, "now", () => 1_000);
       actions.setApiStartTime();
@@ -236,6 +245,15 @@ describe("print", () => {
       actions.setApiEndTime();
       const result = getPrettyApiDuration();
       assert.strictEqual(result, "2m 5s 500ms");
+    });
+
+    it("clamps negative durations from clock skew to zero", () => {
+      mock.method(Date, "now", () => 1_000);
+      actions.setApiStartTime();
+      mock.method(Date, "now", () => 500);
+      actions.setApiEndTime();
+      const result = getPrettyApiDuration();
+      assert.strictEqual(result, "0ms");
     });
   });
 

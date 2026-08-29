@@ -211,22 +211,25 @@ export function getPrettyApiDuration() {
   const endTime = getState().app.apiEndTime;
   assert(endTime !== null);
 
-  const diff = endTime - startTime;
-  const prettyMs = `${String(diff % 1_000)}ms`;
+  const diff = Math.max(0, endTime - startTime);
 
+  const ms = diff % 1000;
   const sec = Math.floor((diff / 1_000) % 60);
-  const prettySec = (() => {
-    if (sec > 0) {
-      return `${String(sec)}s `;
+  const min = Math.floor(diff / 60_000);
+
+  const prettyMs = `${String(ms)}ms`;
+
+  const prettyMin = (() => {
+    if (min > 0) {
+      return `${String(min)}m `;
     }
 
     return "";
   })();
 
-  const min = Math.floor(diff / 60_000);
-  const prettyMin = (() => {
-    if (min > 0) {
-      return `${String(min)}m `;
+  const prettySec = (() => {
+    if (sec > 0 || min > 0) {
+      return `${String(sec)}s `;
     }
 
     return "";
