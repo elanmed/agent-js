@@ -24,7 +24,7 @@ macOS and Linux only.
 
 ## Configuration
 
-Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/settings.json` (local overrides), parsed as YAML
+Settings live in `~/.config/agent-js/settings.json` (global) and `./.agent-js/settings.json` (local overrides), parsed as YAML
 
 ### Config Options
 
@@ -48,7 +48,7 @@ Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/s
 
 ### Usage Limits
 
-When `usageLimitDuration` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. `usageLimitDuration` is a string like `"5h"` with a `[number][s,m,h,d]` suffix. Previous usages are loaded from `~/.config/.agent-js/usage.json` on startup and entries older than `usageLimitDuration` are filtered out.
+When `usageLimitDuration` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. `usageLimitDuration` is a string like `"5h"` with a `[number][s,m,h,d]` suffix. Previous usages are loaded from `~/.config/agent-js/usage.json` on startup and entries older than `usageLimitDuration` are filtered out.
 
 The current spend is shown as `$<cost> of $<limit>` in the status line.
 
@@ -132,13 +132,13 @@ Slash commands are triggered with `/command` at the prompt.
 | `/keymaps`  | List configured keybindings                                                |
 | `/usage`    | Show current session usage                                                 |
 | `/local`    | Show the local config file (`./.agent-js/settings.json`), or `{}`          |
-| `/global`   | Show the global config file (`~/.config/.agent-js/settings.json`), or `{}` |
+| `/global`   | Show the global config file (`~/.config/agent-js/settings.json`), or `{}` |
 | `/config`   | Show the applied config (merged with defaults)                             |
 | `/resume`   | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
 
 ### Custom Slash Commands
 
-Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local), `~/.config/.agent-js/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Commands with the same filename are deduplicated with the first occurrence taking precedence, in this priority order: custom dirs → local → global.
+Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local), `~/.config/agent-js/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Commands with the same filename are deduplicated with the first occurrence taking precedence, in this priority order: custom dirs → local → global.
 
 #### Directory Structure
 
@@ -146,7 +146,7 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
 ./.agent-js/commands/              # local commands
   help.md
   refactor.md
-~/.config/.agent-js/commands/      # global commands
+~/.config/agent-js/commands/      # global commands
   status.md
 /home/me/my-commands/              # custom commands (via customSlashCommandDirs)
   custom.md
@@ -163,13 +163,13 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
   AGENTS.md                        # always in context
   src/
     AGENTS.md                      # loaded as a skill on demand
-~/.config/.agent-js/context/       # global context dir
+~/.config/agent-js/context/       # global context dir
   AGENTS.md                        # always in context
 ```
 
 ### Discovery
 
-- **Root files** — `./AGENTS.md` and `~/.config/.agent-js/context/AGENTS.md` are always included in the system prompt
+- **Root files** — `./AGENTS.md` and `~/.config/agent-js/context/AGENTS.md` are always included in the system prompt
 - **Nested files** — all `*/**/AGENTS.md` files under the current working directory are registered as skills. The agent can call `load_skill` to progressively disclose their content when needed
 
 ## Skills
@@ -177,7 +177,7 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
 ### Directory Structure
 
 ```
-~/.config/.agent-js/skills/   # global skills
+~/.config/agent-js/skills/   # global skills
   my-skill/
     SKILL.md
   category/
@@ -197,7 +197,7 @@ Skills are discovered via `**/SKILL.md` glob from three sources in priority orde
 
 1. **Custom skill dirs** — directories specified in `customSkillDirs`
 2. **Local skills** — `./.agent-js/skills/`
-3. **Global skills** — `~/.config/.agent-js/skills/`
+3. **Global skills** — `~/.config/agent-js/skills/`
 
 Skills with duplicate names are deduplicated, with the first occurrence taking precedence.
 
