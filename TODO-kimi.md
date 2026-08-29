@@ -79,9 +79,3 @@ Plan: either document `jq` as a prerequisite, or replace with `node -e` JSON par
 AGENTS.md bans truthy/falsy coercion (`if (obj)`), but the codebase has: `src/config.ts:203` `if (defaultedBaseURL)`, `src/api.ts:28,39` `apiKey && { apiKey }`, `src/input.ts:111,147,206,212` (`if (rl.line.length)`, `if (questionAbortController)`, `if (apiStream)`, `if (question)`), `src/print.ts:48` `if (color)`, `src/args.ts:17` `while (args.length)`, `src/tools.ts:340,567` (`if (signal)`, `diffResult.value.stdout`).
 
 Plan: replace with explicit `!== null` / `!== undefined` / `!== ""` / `.length > 0` comparisons. Optionally add `grit`/eslint rule `@typescript-eslint/strict-boolean-expressions` to enforce it.
-
-### 24. Inconsistent local/global merge strategy
-
-`initStateFromConfig()` merges `keymaps` per-key (`localConfig.keymaps?.edit ?? globalConfig.keymaps?.edit`) but replaces `pricingPerModel` and `contextWindowPerModel` wholesale — defining pricing for one model locally wipes global pricing for all other models.
-
-Plan: merge records per-model (`{...global, ...local}`) for both, matching the keymap behavior; update tests.
