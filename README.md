@@ -43,12 +43,11 @@ Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/se
 | `loadingStateFrames`        | `string[]`                             | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                            |
 | `loadingStateFrameDuration` | `number`                               | optional | `80`                     | Spinner frame interval in ms                     |
 | `promptPrefix`              | `string`                               | optional | `"> "`                   | Prompt prefix string                             |
-| `usageLimitDuration`        | `string`                               | optional | `undefined`              | Time window for tracking usage, e.g. `"5h"`      |
-| `usageLimitDollar`          | `number`                               | optional | `undefined`              | Maximum dollar spend in the usage window         |
+| `usageLimit`                | `object`                               | optional | `undefined`              | Dollar limit and tracking window                 |
 
 ### Usage Limits
 
-When `usageLimitDuration` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. `usageLimitDuration` is a string like `"5h"` with a `[number][s,m,h,d]` suffix. Previous usages are loaded from `~/.config/agent-js/usage.json` on startup and entries older than `usageLimitDuration` are filtered out.
+When `usageLimit` is set, the agent tracks the running dollar cost of usage within the configured time window. `usageLimit.duration` is a string like `"5h"` with a `[number][s,m,h,d]` suffix, and `usageLimit.dollarAmount` is the maximum dollar spend in that window. Previous usages are loaded from `~/.config/agent-js/usage.json` on startup and entries older than `usageLimit.duration` are filtered out.
 
 The current spend is shown as `$<cost> of $<limit>` in the status line.
 
@@ -153,8 +152,9 @@ customSkillDirs:
 loadingStateFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 loadingStateFrameDuration: 100
 promptPrefix: "🤖 "
-usageLimitDuration: "5h"
-usageLimitDollar: 10
+usageLimit:
+  duration: "5h"
+  dollarAmount: 10
 ```
 
 ## Environment Variables
