@@ -44,15 +44,10 @@ export function appendModelUsage(usage: LanguageModelUsage) {
 }
 
 export function isUsageLimitDisabled() {
-  const { usageLimitDuration, usageLimitDollar, pricingPerModel, model } =
-    getState().config;
+  const { usageLimit, pricingPerModel, model } = getState().config;
   const pricing = pricingPerModel[model];
 
-  return (
-    pricing === undefined ||
-    usageLimitDuration === undefined ||
-    usageLimitDollar === undefined
-  );
+  return pricing === undefined || usageLimit === undefined;
 }
 
 export function filterExpiredModelUsage(
@@ -68,8 +63,8 @@ export function filterExpiredModelUsage(
 }
 
 export function getExpiredTime() {
-  const { usageLimitDuration } = getState().config;
-  assert(usageLimitDuration !== undefined);
+  const { usageLimit } = getState().config;
+  assert(usageLimit !== undefined);
 
   const now = Date.now();
   const msPerDuration = {
@@ -78,10 +73,10 @@ export function getExpiredTime() {
     h: 1_000 * 60 * 60,
     d: 1_000 * 60 * 60 * 24,
   };
-  const durationSuffix = usageLimitDuration.slice(
+  const durationSuffix = usageLimit.duration.slice(
     -1,
   ) as keyof typeof msPerDuration;
-  const durationPrefix = Number(usageLimitDuration.slice(0, -1));
+  const durationPrefix = Number(usageLimit.duration.slice(0, -1));
   const duration = durationPrefix * msPerDuration[durationSuffix];
   const expiredTime = now - duration;
   return expiredTime;
@@ -90,8 +85,8 @@ export function getExpiredTime() {
 export function syncInitialModelUsageForLimitWindow() {
   if (isUsageLimitDisabled()) return;
 
-  const { usageLimitDuration } = getState().config;
-  assert(usageLimitDuration !== undefined);
+  const { usageLimit } = getState().config;
+  assert(usageLimit !== undefined);
   const expiredTime = getExpiredTime();
 
   const path = getUsageLogPath();
@@ -218,16 +213,17 @@ export function getPrettyTokenUsage() {
     });
 
   const costForSession = getUsageMoneyForModel(tokenUsageForSession, model);
-  const { usageLimitDollar } = getState().config;
+  const { usageLimit } = getState().config;
 
   if (isUsageLimitDisabled())
     return `$${getPrettyMoney(costForSession)} in session`;
 
+  assert(usageLimit !== undefined);
   const costForLimitWindow = getUsageMoneyForModel(
     tokenUsageForLimitWindow,
     model,
   );
-  return `$${getPrettyMoney(costForSession)} in session, $${getPrettyMoney(costForLimitWindow)} of $${String(usageLimitDollar)} limit`;
+  return `$${getPrettyMoney(costForSession)} in session, $${getPrettyMoney(costForLimitWindow)} of $${String(usageLimit.dollarAmount)} limit`;
 }
 
 export function getPrettyContextWindowUsage() {

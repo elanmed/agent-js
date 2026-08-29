@@ -17,6 +17,7 @@ import {
   getLocalConfigPath,
 } from "./paths.ts";
 import { syncInitialModelUsageForLimitWindow } from "./usage.ts";
+import { print } from "./print.ts";
 import { join } from "node:path";
 import YAML from "yaml";
 
@@ -37,6 +38,25 @@ const ModelPricingSchema = z.object({
 });
 
 export type ModelPricing = z.infer<typeof ModelPricingSchema>;
+
+export const UsageLimitSchema = z.strictObject({
+  duration: z.string().refine(
+    (duration) => {
+      if (duration.length < 2) return false;
+      const suffix = duration.slice(-1);
+      if (!["s", "m", "h", "d"].includes(suffix)) return false;
+      const prefix = duration.slice(0, -1);
+      if (Number.isNaN(Number(prefix))) return false;
+      return true;
+    },
+    {
+      message: "usageLimit.duration must be of the format '[number][s,m,h,d]'",
+    },
+  ),
+  dollarAmount: z.number(),
+});
+
+export type UsageLimit = z.infer<typeof UsageLimitSchema>;
 
 export const ConfigSchema = z.strictObject({
   model: z.string().optional(),
@@ -76,24 +96,7 @@ export const ConfigSchema = z.strictObject({
       { message: "loadingStateFrames must be at least length 2" },
     ),
   promptPrefix: z.string().optional(),
-  usageLimitDuration: z
-    .string()
-    .optional()
-    .refine(
-      (duration) => {
-        if (duration === undefined) return true;
-        if (duration.length < 2) return false;
-        const suffix = duration.slice(-1);
-        if (!["s", "m", "h", "d"].includes(suffix)) return false;
-        const prefix = duration.slice(0, -1);
-        if (Number.isNaN(Number(prefix))) return false;
-        return true;
-      },
-      {
-        message: "usageLimitDuration must be of the format '[number][s,m,h,d]'",
-      },
-    ),
-  usageLimitDollar: z.number().optional(),
+  usageLimit: UsageLimitSchema.optional(),
 });
 
 export type Key = z.infer<typeof KeySchema>;
@@ -172,7 +175,7 @@ export function readConfigFile(path: string) {
   return ConfigSchema.parse(parseResult.value);
 }
 
-export function initStateFromConfig() {
+export async function initStateFromConfig() {
   const globalConfig = readConfigFile(getGlobalConfigPath());
   const localConfig = readConfigFile(getLocalConfigPath());
 
@@ -205,11 +208,13 @@ export function initStateFromConfig() {
   actions.setModel(defaultedModel);
   if (defaultedBaseURL) actions.setBaseURL(defaultedBaseURL);
   actions.setProvider(defaultedProvider);
-  actions.setPricingPerModel({
+
+  const defaultedPricingPerModel = {
     ...DEFAULT_CONFIG.pricingPerModel,
     ...globalConfig.pricingPerModel,
     ...localConfig.pricingPerModel,
-  });
+  };
+  actions.setPricingPerModel(defaultedPricingPerModel);
   actions.setContextWindowPerModel({
     ...DEFAULT_CONFIG.contextWindowPerModel,
     ...globalConfig.contextWindowPerModel,
@@ -273,22 +278,18 @@ export function initStateFromConfig() {
       DEFAULT_CONFIG.promptPrefix,
   );
 
-  const defaultedUsageLimitDuration =
-    localConfig.usageLimitDuration ?? globalConfig.usageLimitDuration;
-  const defaultedUsageLimitDollar =
-    localConfig.usageLimitDollar ?? globalConfig.usageLimitDollar;
+  const defaultedUsageLimit = localConfig.usageLimit ?? globalConfig.usageLimit;
 
   if (
-    (defaultedUsageLimitDuration === undefined) !==
-    (defaultedUsageLimitDollar === undefined)
+    defaultedUsageLimit !== undefined &&
+    defaultedPricingPerModel[defaultedModel] === undefined
   ) {
-    throw new Error(
-      `Both \`usageLimitDuration\` and \`usageLimitDollar\` are required together in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
+    await print.warning(
+      `usage limit disabled: no \`pricingPerModel\` entry for the current model \`${defaultedModel}\``,
     );
   }
 
-  actions.setUsageLimitDuration(defaultedUsageLimitDuration);
-  actions.setUsageLimitDollar(defaultedUsageLimitDollar);
+  actions.setUsageLimit(defaultedUsageLimit);
 }
 
 export async function initStateFromFs() {
@@ -318,6 +319,6 @@ export function initStateForDebug() {
 
 export async function initState() {
   initStateForDebug();
-  initStateFromConfig();
+  await initStateFromConfig();
   await initStateFromFs();
 }

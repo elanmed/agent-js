@@ -6,6 +6,7 @@ import {
   type Key,
   type ModelPricing,
   type Provider,
+  type UsageLimit,
 } from "./config.ts";
 import { MISSING, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
@@ -57,8 +58,7 @@ interface State {
     loadingStateFrames: string[];
     loadingStateFrameDuration: number;
     promptPrefix: string;
-    usageLimitDuration: string | undefined;
-    usageLimitDollar: number | undefined;
+    usageLimit: UsageLimit | undefined;
   };
   abortControllers: {
     question: AbortController | null;
@@ -107,8 +107,7 @@ const initialState: State = {
     loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
     loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
     promptPrefix: DEFAULT_CONFIG.promptPrefix,
-    usageLimitDuration: undefined,
-    usageLimitDollar: undefined,
+    usageLimit: undefined,
   },
   abortControllers: {
     question: null,
@@ -485,23 +484,9 @@ export const actions = {
     logStateChange("set-prompt-prefix", before, promptPrefix);
   },
 
-  setUsageLimitDuration(usageLimitDuration: string | undefined) {
-    const before = state.config.usageLimitDuration;
-    state.config.usageLimitDuration = usageLimitDuration;
-    logStateChange(
-      "set-usage-limit-duration",
-      stringify(before),
-      stringify(usageLimitDuration),
-    );
-  },
-
-  setUsageLimitDollar(usageLimitDollar: number | undefined) {
-    const before = state.config.usageLimitDollar;
-    state.config.usageLimitDollar = usageLimitDollar;
-    logStateChange(
-      "set-usage-limit-dollar",
-      stringify(before),
-      stringify(usageLimitDollar),
-    );
+  setUsageLimit(usageLimit: UsageLimit | undefined) {
+    const before = state.config.usageLimit;
+    state.config.usageLimit = usageLimit;
+    logStateChange("set-usage-limit", stringify(before), stringify(usageLimit));
   },
 };
