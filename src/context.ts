@@ -8,7 +8,7 @@ import {
   getGlobalSkillDir,
   getLocalSkillDir,
 } from "./paths.ts";
-import { parse as parseYaml } from "yaml";
+import YAML from "yaml";
 import { z } from "zod";
 
 export interface ContextEntry {
@@ -134,7 +134,7 @@ export function parseFrontMatter(content: string) {
   // start slice on the char after the ---\n
   const yamlStr = content.slice(4, closeIndex);
   if (yamlStr === "") return null;
-  const parseResult = tryCatch(() => parseYaml(yamlStr) as unknown);
+  const parseResult = tryCatch(() => YAML.parse(yamlStr) as unknown);
   if (!parseResult.ok) return null;
 
   // start slice on the char after the \n---

@@ -18,6 +18,7 @@ import {
 } from "./paths.ts";
 import { syncInitialModelUsageForLimitWindow } from "./usage.ts";
 import { join } from "node:path";
+import YAML from "yaml";
 
 export type Provider = "anthropic" | "openai-compatible";
 
@@ -163,9 +164,9 @@ export function readConfigFile(path: string) {
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
   if (!readResult.ok) return {};
 
-  const parseResult = tryCatch((): unknown => JSON.parse(readResult.value));
+  const parseResult = tryCatch((): unknown => YAML.parse(readResult.value));
   if (!parseResult.ok) {
-    throw new Error("Failed to parse config as JSON");
+    throw new Error("Failed to parse config as YAML");
   }
 
   return ConfigSchema.parse(parseResult.value);

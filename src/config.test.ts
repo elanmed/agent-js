@@ -965,16 +965,16 @@ describe("config", () => {
     ]);
   });
 
-  it("throws on invalid JSON in global config", async () => {
-    testFs._files.set(getGlobalConfigPath(), "not valid json");
+  it("throws on invalid YAML in global config", async () => {
+    testFs._files.set(getGlobalConfigPath(), "key: [unclosed");
 
-    await assert.rejects(initState(), /Failed to parse config as JSON/);
+    await assert.rejects(initState(), /Failed to parse config as YAML/);
   });
 
-  it("throws on invalid JSON in local config", async () => {
-    testFs._files.set(getLocalConfigPath(), "not valid json");
+  it("throws on invalid YAML in local config", async () => {
+    testFs._files.set(getLocalConfigPath(), "key: [unclosed");
 
-    await assert.rejects(initState(), /Failed to parse config as JSON/);
+    await assert.rejects(initState(), /Failed to parse config as YAML/);
   });
 
   it("sets debug from args", async () => {
