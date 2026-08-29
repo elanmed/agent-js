@@ -607,11 +607,14 @@ and more text`,
       });
     });
 
-    it("returns null when closing delimiter lacks trailing newline", () => {
+    it("parses front matter when closing delimiter lacks trailing newline", () => {
       const result = parseFrontMatter(`---
 key: val
 ---`);
-      assert.equal(result, null);
+      assert.deepStrictEqual(result, {
+        data: { key: "val" },
+        body: "",
+      });
     });
 
     it("returns null on invalid yaml", () => {

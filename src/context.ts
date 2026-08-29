@@ -128,16 +128,16 @@ export function parseFrontMatter(content: string) {
   if (!content.startsWith("---\n")) return null;
 
   // start search on the char after the ---\n
-  const closeIndex = content.indexOf("\n---\n", 4);
+  const closeIndex = content.indexOf("\n---", 4);
   if (closeIndex === -1) return null;
 
-  // start slice on the char after the --- \n
+  // start slice on the char after the ---\n
   const yamlStr = content.slice(4, closeIndex);
   if (yamlStr === "") return null;
   const parseResult = tryCatch(() => parseYaml(yamlStr) as unknown);
   if (!parseResult.ok) return null;
 
-  // start slice on the char after the \n---\n
+  // start slice on the char after the \n---
   const body = content.slice(closeIndex + 5);
   return { data: parseResult.value, body };
 }
