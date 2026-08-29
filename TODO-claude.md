@@ -235,59 +235,9 @@ sessions. If it needs to be correct, switch to append-only writes (never
 rewrite/filter on every call — only filter/compact periodically or on read)
 plus a simple file lock (e.g. `proper-lockfile`) around the read-modify-write.
 
-### 13. Unverified assumption about the `ai` SDK's usage shape
-
-**File:** `src/usage.ts`, `src/api.ts`
-
-The whole cache-token accounting path (`inputTokenDetails.cacheReadTokens`/
-`cacheWriteTokens`) is only ever validated against hand-constructed test
-fixtures (`as LanguageModelUsage`), never against a real response from the
-installed `ai` package. If the SDK's actual `LanguageModelUsage` shape
-differs (different field names, or cache stats reported at the top level
-instead of nested), cache pricing (`cacheReadPerToken`/`cacheWritePerToken`)
-is silently always computed as `0`/`undefined`-defaulted, and cost estimates
-would be wrong across the board, not just in an edge case.
-
-**Fix:** Add an integration smoke test (or at least a manual check) that logs
-the raw `totalUsage` object returned by a live `generateText` call against
-the configured provider, and confirms the fields the code reads actually
-exist. Pin/document the `ai` package version this shape was verified against.
-
 ---
 
 ## Low / polish
-
-### 14. `getPrettyApiDuration` omits "0s" when minutes but no seconds
-
-**File:** `src/print.ts`
-
-For a duration like exactly 2 minutes flat, output is `"2m 0ms"` — the
-seconds segment is dropped entirely (only rendered when `sec > 0`), which
-reads oddly next to milliseconds. Not incorrect, just inconsistent
-formatting.
-
-**Fix:** Always render the seconds segment once minutes are present (i.e.
-also show `"0s "` when `min > 0 && sec === 0`), or restructure as a single
-formatter that always shows every unit down to the smallest nonzero one.
-
-### 15. Dead/redundant `editorInputValue === null` check
-
-**File:** `src/input.ts` — `resolveUserInput`
-
-```ts
-if (getState().app.editorInputValue === null && rawInput.at(0) === "/") {
-```
-
-By the time this line runs, the function has already returned early if
-`editorInputValue !== null` (top of the function), and the only other place
-`editorInputValue` gets set (`abortRlQuestionForEditor`) always pairs with
-aborting `rl.question`, which is handled in the `!inputResult.ok` branch
-above. So this condition is always true when reached — harmless, but
-confusing to future readers who'll assume it's reachable as false.
-
-**Fix:** Drop the redundant check (`if (rawInput.at(0) === "/")`), or add a
-comment explaining why it's defensive if you want to keep it as a guard
-against future refactors.
 
 ### 16. `executeStrReplaceTool` occurrence counting can undercount overlapping matches
 
@@ -305,20 +255,6 @@ edits, but worth knowing.
 
 **Fix:** If this matters, use a manual overlap-aware count (`indexOf` in a
 loop advancing by 1 instead of by `old_str.length`) instead of `split`.
-
-### 17. Config allows `baseURL` to be silently ignored for the `anthropic` provider
-
-**File:** `src/api.ts` — `getLanguageModel`; `src/config.ts`
-
-A user can set `provider: "anthropic"` and also set `baseURL` (schema doesn't
-forbid it), but `getLanguageModel()` only ever reads `baseURL` for the
-`openai-compatible` branch. Someone trying to point the Anthropic client at a
-proxy via `baseURL` will have it silently do nothing.
-
-**Fix:** Either wire `baseURL` through to `createAnthropic({ baseURL, ... })`
-as well, or have config validation reject `baseURL` when
-`provider === "anthropic"` with a clear error, so the mistake surfaces
-immediately instead of silently no-opping.
 
 ---
 
