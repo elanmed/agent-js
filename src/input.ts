@@ -266,7 +266,9 @@ export async function resolveUserInput({
     return null;
   }
 
-  actions.appendToStdout(`>${inputResult.value}\n`);
+  actions.appendToStdout(
+    `${getState().config.promptPrefix}${inputResult.value}\n`,
+  );
   appendToChatHistory(inputResult.value, "user");
   const rawInput = inputResult.value.trim();
 
@@ -301,7 +303,9 @@ async function resolveExitConfirmation() {
   }
 
   if (/^y(es)?$/i.exec(exitResult.value)) {
-    actions.appendToStdout(`>${exitResult.value}\n`);
+    actions.appendToStdout(
+      `${getState().config.promptPrefix}${exitResult.value}\n`,
+    );
 
     rl.close();
     await printSessionStartDate();
@@ -630,7 +634,7 @@ export async function resumeCommand(rawInput: string) {
     if (!readResult.ok) continue;
 
     actions.resetMessageParams();
-    return `Continue the conversation recorded in the transcript below. Response to this message with "Ready to continue chatting."
+    return `Continue the conversation recorded in the transcript below. Respond to this message with "Ready to continue chatting."
 Transcript:
 ${readResult.value}
     `;

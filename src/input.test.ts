@@ -184,7 +184,7 @@ editor content
       actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
-      assert.strictEqual(stripAnsi(getState().app.stdout), ">  hello  \n");
+      assert.strictEqual(stripAnsi(getState().app.stdout), ">   hello  \n");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  [user]
@@ -308,7 +308,7 @@ from editor
       );
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        `>yes
+        `> yes
 Session start date: 42000
 `,
       );
@@ -452,7 +452,7 @@ Session start date: 42000
       const result = await resumeCommand("/resume 1234567890000");
       assert.strictEqual(
         result,
-        `Continue the conversation recorded in the transcript below. Response to this message with "Ready to continue chatting."
+        `Continue the conversation recorded in the transcript below. Respond to this message with "Ready to continue chatting."
 Transcript:
 transcript content
     `,
@@ -1344,7 +1344,7 @@ Keymaps:
       const result = await resolveSlashCommand("/resume 1234567890000");
       assert.strictEqual(
         result,
-        `Continue the conversation recorded in the transcript below. Response to this message with "Ready to continue chatting."
+        `Continue the conversation recorded in the transcript below. Respond to this message with "Ready to continue chatting."
 Transcript:
 transcript content
     `,
