@@ -24,7 +24,7 @@ macOS and Linux only.
 
 ## Configuration
 
-Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/settings.json` (local overrides)
+Settings live in `~/.config/.agent-js/settings.json` (global) and `./.agent-js/settings.json` (local overrides), parsed as YAML
 
 ### Config Options
 
@@ -74,35 +74,30 @@ Each `Key` object has:
 
 You can configure individual keymaps while keeping defaults for others
 
-Example `settings.json`:
+Example `settings.json` (YAML):
 
-```json
-{
-  "model": "claude-sonnet-4-6",
-  "provider": "anthropic",
-  "keymaps": {
-    "edit": {
-      "name": "x",
-      "ctrl": true
-    }
-  },
-  "pricingPerModel": {
-    "claude-sonnet-4-6": {
-      "inputPerMillion": 2.5,
-      "outputPerMillion": 10,
-      "cacheReadPerMillion": 1.25,
-      "cacheWritePerMillion": 3.75
-    }
-  },
-  "contextWindowPerModel": {
-    "claude-sonnet-4-6": 200000
-  },
-  "customSlashCommandDirs": ["/home/me/my-commands"],
-  "customSkillDirs": ["/home/me/my-skills"],
-  "loadingStateFrames": ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
-  "loadingStateFrameDuration": 100,
-  "promptPrefix": "🤖 "
-}
+```yaml
+model: claude-sonnet-4-6
+provider: anthropic
+keymaps:
+  edit:
+    name: x
+    ctrl: true
+pricingPerModel:
+  claude-sonnet-4-6:
+    inputPerMillion: 2.5
+    outputPerMillion: 10
+    cacheReadPerMillion: 1.25
+    cacheWritePerMillion: 3.75
+contextWindowPerModel:
+  claude-sonnet-4-6: 200000
+customSlashCommandDirs:
+  - /home/me/my-commands
+customSkillDirs:
+  - /home/me/my-skills
+loadingStateFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+loadingStateFrameDuration: 100
+promptPrefix: "🤖 "
 ```
 
 ## Environment Variables
