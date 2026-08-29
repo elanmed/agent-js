@@ -4,7 +4,7 @@ import { execSync } from "node:child_process";
 const args = process.argv.slice(2);
 
 if (args.length !== 1) {
-  throw new Error("usage: --paste-cmd [cmd]");
+  throw new Error("usage: --copy-cmd [cmd]");
 }
 
 const server = net.createServer((socket) => {
