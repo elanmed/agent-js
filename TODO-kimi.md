@@ -52,12 +52,6 @@ Plan: check `batResult.value.status === 0` (and absence of `.error`) before prin
 
 Plan: either warn at startup when limits are set but pricing for the active model is missing, or document the pricing requirement in the README Usage Limits section.
 
-### 9. `/resume` with a missing history dir fails silently
-
-`src/input.ts:611-612`: `if (!fsDeps.existsSync(chatHistoryPath)) return null;` — no message is printed, the prompt just swallows the command.
-
-Plan: print an error like the "No conversation found" branch. Add a test.
-
 ## Documentation
 
 ### 17. `view_file` tool description omits `start_line`/`end_line` semantics
