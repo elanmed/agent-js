@@ -270,7 +270,7 @@ export async function resolveUserInput({
   appendToChatHistory(inputResult.value, "user");
   const rawInput = inputResult.value.trim();
 
-  if (getState().app.editorInputValue === null && rawInput.at(0) === "/") {
+  if (rawInput.at(0) === "/") {
     return await resolveSlashCommand(rawInput);
   }
 
