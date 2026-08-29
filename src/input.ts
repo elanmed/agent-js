@@ -34,7 +34,6 @@ import {
   getGlobalSlashCommandDir,
   getLocalConfigPath,
   getLocalSlashCommandDir,
-  getPromptHistoryDir,
 } from "./paths.ts";
 import { contextFileSkillNamePrefix } from "./context.ts";
 
