@@ -1006,10 +1006,7 @@ describe("config", () => {
       "/fake-home/.config/agent-js/context/**/AGENTS.md",
       ["/fake-home/.config/agent-js/context/AGENTS.md"],
     );
-    testFs._files.set(
-      "/fake-home/.config/agent-js/context/AGENTS.md",
-      "hello",
-    );
+    testFs._files.set("/fake-home/.config/agent-js/context/AGENTS.md", "hello");
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
