@@ -439,20 +439,15 @@ line3
     assert.strictEqual(getState().config.promptPrefix, "🤖 ");
   });
 
-  it("set-usage-limit-duration", () => {
-    assert.strictEqual(getState().config.usageLimitDuration, undefined);
-    actions.setUsageLimitDuration("60m");
-    assert.strictEqual(getState().config.usageLimitDuration, "60m");
-    actions.setUsageLimitDuration(undefined);
-    assert.strictEqual(getState().config.usageLimitDuration, undefined);
-  });
-
-  it("set-usage-limit-dollar", () => {
-    assert.strictEqual(getState().config.usageLimitDollar, undefined);
-    actions.setUsageLimitDollar(5);
-    assert.strictEqual(getState().config.usageLimitDollar, 5);
-    actions.setUsageLimitDollar(undefined);
-    assert.strictEqual(getState().config.usageLimitDollar, undefined);
+  it("set-usage-limit", () => {
+    assert.strictEqual(getState().config.usageLimit, undefined);
+    actions.setUsageLimit({ duration: "60m", dollarAmount: 5 });
+    assert.deepStrictEqual(getState().config.usageLimit, {
+      duration: "60m",
+      dollarAmount: 5,
+    });
+    actions.setUsageLimit(undefined);
+    assert.strictEqual(getState().config.usageLimit, undefined);
   });
 
   it("set-model-usage-for-limit-window", () => {

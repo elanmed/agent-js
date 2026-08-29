@@ -910,8 +910,7 @@ Applied config:
 ]
 - loadingStateFrameDuration: 80
 - promptPrefix: "> "
-- usageLimitDuration: undefined
-- usageLimitDollar: undefined
+- usageLimit: undefined
 `,
       );
     });
@@ -1270,8 +1269,7 @@ Applied config:
 ]
 - loadingStateFrameDuration: 80
 - promptPrefix: "> "
-- usageLimitDuration: undefined
-- usageLimitDollar: undefined
+- usageLimit: undefined
 `,
       );
     });

@@ -45,8 +45,7 @@ describe("usage", () => {
           cacheWritePerMillion: 6.25,
         },
       });
-      actions.setUsageLimitDuration("60m");
-      actions.setUsageLimitDollar(10);
+      actions.setUsageLimit({ duration: "60m", dollarAmount: 10 });
     });
 
     it("known model with no modelUsage returns $0.0000", () => {
@@ -137,8 +136,7 @@ describe("usage", () => {
 
     it("shows cost against the dollar limit when configured", () => {
       actions.setModel("claude-haiku-4-5");
-      actions.setUsageLimitDuration("60m");
-      actions.setUsageLimitDollar(10);
+      actions.setUsageLimit({ duration: "60m", dollarAmount: 10 });
       appendModelUsage({
         inputTokens: 900_000,
         outputTokens: 200_000,
@@ -178,8 +176,7 @@ describe("usage", () => {
 
     it("shows only session cost when the usage limit is disabled", () => {
       actions.setModel("claude-haiku-4-5");
-      actions.setUsageLimitDuration(undefined);
-      actions.setUsageLimitDollar(undefined);
+      actions.setUsageLimit(undefined);
       appendModelUsage({
         inputTokens: 900_000,
         outputTokens: 200_000,
@@ -444,8 +441,7 @@ describe("usage", () => {
           cacheWritePerMillion: 1.25,
         },
       });
-      actions.setUsageLimitDuration("60m");
-      actions.setUsageLimitDollar(10);
+      actions.setUsageLimit({ duration: "60m", dollarAmount: 10 });
     });
 
     it("appends the full usage on the first call", () => {
@@ -622,8 +618,7 @@ describe("usage", () => {
     it("appends to session usage only when the usage limit is disabled", () => {
       mock.method(Date, "now", () => 1_000);
       actions.setPricingPerModel({});
-      actions.setUsageLimitDuration(undefined);
-      actions.setUsageLimitDollar(undefined);
+      actions.setUsageLimit(undefined);
 
       appendModelUsage({
         inputTokens: 100,
@@ -663,8 +658,7 @@ describe("usage", () => {
           cacheWritePerMillion: 1.25,
         },
       });
-      actions.setUsageLimitDuration("60m");
-      actions.setUsageLimitDollar(10);
+      actions.setUsageLimit({ duration: "60m", dollarAmount: 10 });
       mock.method(Date, "now", () => 4_000_000);
     });
 
@@ -811,8 +805,7 @@ describe("usage", () => {
 
     it("does nothing when the usage limit is disabled", () => {
       actions.setPricingPerModel({});
-      actions.setUsageLimitDuration(undefined);
-      actions.setUsageLimitDollar(undefined);
+      actions.setUsageLimit(undefined);
       const usage = {
         inputTokens: 10,
         outputTokens: 5,
@@ -1005,13 +998,12 @@ describe("usage", () => {
           cacheWritePerMillion: 1.25,
         },
       });
-      actions.setUsageLimitDollar(10);
+      actions.setUsageLimit({ duration: "60m", dollarAmount: 10 });
     });
 
     it("does nothing when all usage limit options are undefined", () => {
       actions.setPricingPerModel({});
-      actions.setUsageLimitDuration(undefined);
-      actions.setUsageLimitDollar(undefined);
+      actions.setUsageLimit(undefined);
 
       syncInitialModelUsageForLimitWindow();
 
@@ -1020,7 +1012,6 @@ describe("usage", () => {
 
     it("does nothing when the model has no pricing configured", () => {
       actions.setPricingPerModel({});
-      actions.setUsageLimitDuration("60m");
       testFs._dirs.add(dirname(getUsageLogPath()));
       testFs._files.set(
         getUsageLogPath(),
@@ -1044,8 +1035,6 @@ describe("usage", () => {
     });
 
     it("does nothing when the usage log directory does not exist", () => {
-      actions.setUsageLimitDuration("60m");
-
       syncInitialModelUsageForLimitWindow();
 
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
@@ -1071,8 +1060,7 @@ describe("usage", () => {
             cacheWritePerMillion: 1.25,
           },
         });
-        actions.setUsageLimitDuration(duration);
-        actions.setUsageLimitDollar(10);
+        actions.setUsageLimit({ duration, dollarAmount: 10 });
         const recent = {
           inputTokens: 10,
           outputTokens: 5,
@@ -1107,7 +1095,6 @@ describe("usage", () => {
     });
 
     it("keeps modelUsage exactly at the duration boundary", () => {
-      actions.setUsageLimitDuration("60m");
       const boundary = {
         inputTokens: 10,
         outputTokens: 5,
@@ -1134,7 +1121,6 @@ describe("usage", () => {
     });
 
     it("overwrites a malformed usage log with an empty object", () => {
-      actions.setUsageLimitDuration("60m");
       testFs._dirs.add(dirname(getUsageLogPath()));
       testFs._files.set(getUsageLogPath(), "not-json");
 
@@ -1156,7 +1142,7 @@ describe("usage", () => {
       assert.strictEqual(isUsageLimitDisabled(), true);
     });
 
-    it("returns true when the usage limit duration is undefined", () => {
+    it("returns true when the usage limit is undefined", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
@@ -1164,11 +1150,10 @@ describe("usage", () => {
           outputPerMillion: 5,
         },
       });
-      actions.setUsageLimitDollar(10);
       assert.strictEqual(isUsageLimitDisabled(), true);
     });
 
-    it("returns true when the usage limit dollar is undefined", () => {
+    it("returns false when pricing and usage limit are configured", () => {
       actions.setModel("gpt-4");
       actions.setPricingPerModel({
         "gpt-4": {
@@ -1176,20 +1161,7 @@ describe("usage", () => {
           outputPerMillion: 5,
         },
       });
-      actions.setUsageLimitDuration("60m");
-      assert.strictEqual(isUsageLimitDisabled(), true);
-    });
-
-    it("returns false when pricing, duration, and dollar are configured", () => {
-      actions.setModel("gpt-4");
-      actions.setPricingPerModel({
-        "gpt-4": {
-          inputPerMillion: 1,
-          outputPerMillion: 5,
-        },
-      });
-      actions.setUsageLimitDuration("60m");
-      actions.setUsageLimitDollar(10);
+      actions.setUsageLimit({ duration: "60m", dollarAmount: 10 });
       assert.strictEqual(isUsageLimitDisabled(), false);
     });
   });
@@ -1260,28 +1232,28 @@ describe("usage", () => {
       mock.method(Date, "now", () => 1_000_000);
     });
 
-    it("throws when the usage limit duration is undefined", () => {
-      actions.setUsageLimitDuration(undefined);
-      assert.throws(() => getExpiredTime(), /usageLimitDuration/);
+    it("throws when the usage limit is undefined", () => {
+      actions.setUsageLimit(undefined);
+      assert.throws(() => getExpiredTime(), /usageLimit/);
     });
 
     it("computes the expired time for seconds", () => {
-      actions.setUsageLimitDuration("100s");
+      actions.setUsageLimit({ duration: "100s", dollarAmount: 10 });
       assert.strictEqual(getExpiredTime(), 1_000_000 - 100_000);
     });
 
     it("computes the expired time for minutes", () => {
-      actions.setUsageLimitDuration("10m");
+      actions.setUsageLimit({ duration: "10m", dollarAmount: 10 });
       assert.strictEqual(getExpiredTime(), 1_000_000 - 600_000);
     });
 
     it("computes the expired time for hours", () => {
-      actions.setUsageLimitDuration("2h");
+      actions.setUsageLimit({ duration: "2h", dollarAmount: 10 });
       assert.strictEqual(getExpiredTime(), 1_000_000 - 7_200_000);
     });
 
     it("computes the expired time for days", () => {
-      actions.setUsageLimitDuration("3d");
+      actions.setUsageLimit({ duration: "3d", dollarAmount: 10 });
       assert.strictEqual(getExpiredTime(), 1_000_000 - 259_200_000);
     });
   });
