@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { processDeps } from "./deps.ts";
 
 export function getGlobalConfigDir() {
-  return join(os.homedir(), ".config", ".agent-js");
+  return join(os.homedir(), ".config", "agent-js");
 }
 
 export function getLocalConfigDir() {
