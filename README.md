@@ -28,29 +28,70 @@ Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/se
 
 ### Config Options
 
-| Option                      | Type                                   | Description                                                        |
-| --------------------------- | -------------------------------------- | ------------------------------------------------------------------ |
-| `model`                     | `string`                               | Model name (required)                                              |
-| `provider`                  | `"anthropic"` \| `"openai-compatible"` | API provider (default: `openai-compatible`)                        |
-| `baseURL`                   | `string`                               | API base URL (required for `openai-compatible`)                    |
-| `pricingPerModel`           | `object`                               | Token pricing per model per million                                |
-| `contextWindowPerModel`     | `object`                               | Context window size in tokens per model                            |
-| `compactAtContextRatio`     | `number`                               | Compact when context usage exceeds this ratio (default: `0.7`)     |
-| `compactTargetRatio`        | `number`                               | Compact down to this context ratio (default: `0.3`)                |
-| `keymaps`                   | `object`                               | Custom keybindings (see below)                                     |
-| `customSlashCommandDirs`    | `string[]`                             | Additional directories for custom slash commands                   |
-| `customSkillDirs`           | `string[]`                             | Additional directories for skills                                  |
-| `loadingStateFrames`        | `string[]`                             | Custom spinner frames (default: `["\|", "/", "-", "\\"]`)          |
-| `loadingStateFrameDuration` | `number`                               | Spinner frame interval in ms (default: `80`)                       |
-| `promptPrefix`              | `string`                               | Prompt prefix string (default: `"> "`)                             |
-| `usageLimitDuration`        | `string \| undefined`                  | Time window for tracking usage, e.g. `"5h"` (default: `undefined`) |
-| `usageLimitDollar`          | `number \| undefined`                  | Maximum dollar spend in the usage window (default: `undefined`)    |
+| Option                      | Type                                   | Required | Default                  | Description                                      |
+| --------------------------- | -------------------------------------- | -------- | ------------------------ | ------------------------------------------------ |
+| `model`                     | `string`                               | required | —                        | Model name                                       |
+| `provider`                  | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                     |
+| `baseURL`                   | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)  |
+| `pricingPerModel`           | `object`                               | optional | `{}`                     | Token pricing per model per million              |
+| `contextWindowPerModel`     | `object`                               | optional | `{}`                     | Context window size in tokens per model          |
+| `compactAtContextRatio`     | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio    |
+| `compactTargetRatio`        | `number`                               | optional | `0.3`                    | Compact down to this context ratio               |
+| `keymaps`                   | `object`                               | optional | see below                | Custom keybindings                               |
+| `customSlashCommandDirs`    | `string[]`                             | optional | `[]`                     | Additional directories for custom slash commands |
+| `customSkillDirs`           | `string[]`                             | optional | `[]`                     | Additional directories for skills                |
+| `loadingStateFrames`        | `string[]`                             | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                            |
+| `loadingStateFrameDuration` | `number`                               | optional | `80`                     | Spinner frame interval in ms                     |
+| `promptPrefix`              | `string`                               | optional | `"> "`                   | Prompt prefix string                             |
+| `usageLimitDuration`        | `string`                               | optional | `undefined`              | Time window for tracking usage, e.g. `"5h"`      |
+| `usageLimitDollar`          | `number`                               | optional | `undefined`              | Maximum dollar spend in the usage window         |
 
 ### Usage Limits
 
 When `usageLimitDuration` and `usageLimitDollar` are both set, the agent tracks the running dollar cost of usage within the configured time window. `usageLimitDuration` is a string like `"5h"` with a `[number][s,m,h,d]` suffix. Previous usages are loaded from `~/.config/agent-js/usage.json` on startup and entries older than `usageLimitDuration` are filtered out.
 
 The current spend is shown as `$<cost> of $<limit>` in the status line.
+
+### Pricing Per Model
+
+Token pricing per model per million tokens:
+
+Each model maps to a pricing object with:
+
+| Field                  | Type     | Default  |
+| ---------------------- | -------- | -------- |
+| `inputPerMillion`      | `number` | required |
+| `outputPerMillion`     | `number` | required |
+| `cacheReadPerMillion`  | `number` | optional |
+| `cacheWritePerMillion` | `number` | optional |
+
+Example:
+
+```yaml
+pricingPerModel:
+  claude-sonnet-4-6:
+    inputPerMillion: 2.5
+    outputPerMillion: 10
+    cacheReadPerMillion: 1.25
+    cacheWritePerMillion: 3.75
+```
+
+### Context Window Per Model
+
+Context window size in tokens per model, used to decide when to compact the conversation:
+
+Each entry maps a model name to its context window size in tokens:
+
+| Field          | Type     | Default  |
+| -------------- | -------- | -------- |
+| `<model name>` | `number` | required |
+
+Example:
+
+```yaml
+contextWindowPerModel:
+  claude-sonnet-4-6: 200000
+```
 
 ### Keymaps
 
@@ -74,13 +115,27 @@ Each `Key` object has:
 
 You can configure individual keymaps while keeping defaults for others
 
-Example `settings.yaml` (YAML):
+### Example settings.yaml
+
+A complete example including every option:
 
 ```yaml
 model: claude-sonnet-4-6
-provider: anthropic
+provider: openai-compatible
+baseURL: https://api.example.com/v1
+compactAtContextRatio: 0.7
+compactTargetRatio: 0.3
 keymaps:
   edit:
+    name: x
+    ctrl: true
+  paste:
+    name: v
+    ctrl: true
+  history:
+    name: o
+    ctrl: true
+  clear:
     name: x
     ctrl: true
 pricingPerModel:
@@ -98,6 +153,8 @@ customSkillDirs:
 loadingStateFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 loadingStateFrameDuration: 100
 promptPrefix: "🤖 "
+usageLimitDuration: "5h"
+usageLimitDollar: 10
 ```
 
 ## Environment Variables
@@ -132,7 +189,7 @@ Slash commands are triggered with `/command` at the prompt.
 | `/keymaps`  | List configured keybindings                                                |
 | `/usage`    | Show current session usage                                                 |
 | `/local`    | Show the local config file (`./.agent-js/settings.yaml`), or `{}`          |
-| `/global`   | Show the global config file (`~/.config/agent-js/settings.yaml`), or `{}` |
+| `/global`   | Show the global config file (`~/.config/agent-js/settings.yaml`), or `{}`  |
 | `/config`   | Show the applied config (merged with defaults)                             |
 | `/resume`   | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
 
