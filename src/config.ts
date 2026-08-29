@@ -199,6 +199,12 @@ export function initStateFromConfig() {
     );
   }
 
+  if (defaultedBaseURL !== undefined && defaultedProvider === "anthropic") {
+    throw new Error(
+      `A \`baseURL\` cannot be provided when \`provider=anthropic\` in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
+    );
+  }
+
   actions.setModel(defaultedModel);
   if (defaultedBaseURL) actions.setBaseURL(defaultedBaseURL);
   actions.setProvider(defaultedProvider);

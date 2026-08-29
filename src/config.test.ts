@@ -48,14 +48,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          model: defaultConfig.model,
           provider: "openai-compatible",
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          model: defaultConfig.model,
           provider: "anthropic",
         }),
       );
@@ -679,13 +679,29 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            model: defaultConfig.model,
             provider: "anthropic",
           }),
         );
 
         await initState();
         assert.equal(getState().config.provider, "anthropic");
+      });
+
+      it("throws when baseURL is provided with anthropic provider", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            model: defaultConfig.model,
+            provider: "anthropic",
+            baseURL: "https://api.example.com",
+          }),
+        );
+
+        await assert.rejects(
+          initState(),
+          /A `baseURL` cannot be provided when `provider=anthropic`/,
+        );
       });
 
       it("uses its pricingPerModel over the default config", async () => {
