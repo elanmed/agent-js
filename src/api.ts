@@ -23,11 +23,15 @@ import { appendToChatHistory } from "./log.ts";
 
 export function getLanguageModel() {
   const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
+  const apiOptions = (() => {
+    if (apiKey === undefined) return {};
+    return { apiKey };
+  })();
 
   if (getState().config.provider === "anthropic") {
-    return createAnthropic({ ...(apiKey && { apiKey }) })(
-      getState().config.model,
-    );
+    return createAnthropic({
+      ...apiOptions,
+    })(getState().config.model);
   }
 
   const baseURL = getState().config.baseURL;
@@ -36,7 +40,7 @@ export function getLanguageModel() {
   return createOpenAICompatible({
     name: "openai-compatible",
     baseURL: baseURL,
-    ...(apiKey && { apiKey }),
+    ...apiOptions,
   })(getState().config.model);
 }
 

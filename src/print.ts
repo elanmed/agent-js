@@ -44,7 +44,7 @@ export const print = Object.assign(
 export async function colorPrint(text: Uint8Array | string, color?: Color) {
   const reset = "\x1b[0m";
   const out = (() => {
-    if (color) {
+    if (color !== undefined) {
       const colorCode = COLORS[color];
       return `${colorCode}${text.toString()}${reset}\n`;
     } else {
@@ -117,7 +117,7 @@ function writeLoadingStateFrame() {
 let stoppingPromise: Promise<void> | null = null;
 
 export function stopLoadingState(): Promise<void> {
-  if (stoppingPromise) return stoppingPromise;
+  if (stoppingPromise !== null) return stoppingPromise;
   if (getState().app.loadingStateTimeout === null) {
     return Promise.resolve();
   }

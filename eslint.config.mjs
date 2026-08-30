@@ -15,6 +15,14 @@ export default [
     rules: {
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/no-confusing-void-expression": "off",
+      "@typescript-eslint/strict-boolean-expressions": [
+        "error",
+        {
+          allowNullableObject: false,
+          allowNumber: false,
+          allowString: false,
+        },
+      ],
     },
   },
   {

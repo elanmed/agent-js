@@ -203,7 +203,7 @@ export function mockExec(opts: {
     cb(error ?? null, stdout, "");
   };
   const m = mock.method(childProcess, "exec", impl);
-  if (once) {
+  if (once === true) {
     m.mock.mockImplementationOnce(impl);
   }
 }

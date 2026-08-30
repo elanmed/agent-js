@@ -46,7 +46,7 @@ export function normalizeLine(content: string): string {
 export function getTempFileName(args?: { initialContentPath?: string }) {
   const tempFile = join(os.tmpdir(), `agent-js-${crypto.randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
-  if (initialContentPath) {
+  if (initialContentPath !== undefined) {
     const readResult = tryCatch(() =>
       fsDeps.readFileSync(initialContentPath).toString(),
     );
@@ -66,7 +66,7 @@ export function execPromise(
       command,
       { encoding: "utf8", ...options },
       (error, stdout, stderr) => {
-        if (error) {
+        if (error !== null) {
           reject(error);
         } else {
           resolve({ stdout, stderr });

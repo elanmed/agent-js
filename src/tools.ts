@@ -41,7 +41,7 @@ export async function executeBashTool(
   await toolPrint("bash", bashCommand);
 
   const bashResult = await tryCatchAsync(
-    execPromise(bashCommand, signal ? { signal } : undefined),
+    execPromise(bashCommand, signal === undefined ? undefined : { signal }),
   );
 
   if (!bashResult.ok) {
@@ -337,7 +337,7 @@ function createFetchTimeout(signal?: AbortSignal) {
     controller.abort();
   };
 
-  if (signal) {
+  if (signal !== undefined) {
     if (signal.aborted) {
       controller.abort();
     } else {
@@ -564,7 +564,7 @@ export async function printGitDiff(args: {
     }),
   );
 
-  if (diffResult.ok && diffResult.value.stdout) {
+  if (diffResult.ok && diffResult.value.stdout.length > 0) {
     await printNewline();
     await fencePrint(`File change: ${args.path}`);
     await print(normalizeLine(diffResult.value.stdout));
@@ -589,7 +589,7 @@ export async function execGitDiff(opts: {
 
   return new Promise((resolve, reject) => {
     childProcess.exec(cmd, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
-      if (error && error.code !== 1) {
+      if (error !== null && error.code !== 1) {
         reject(error);
       } else {
         resolve({ stdout, stderr });

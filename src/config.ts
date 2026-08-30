@@ -208,7 +208,7 @@ export async function initStateFromConfig() {
   }
 
   actions.setModel(defaultedModel);
-  if (defaultedBaseURL) actions.setBaseURL(defaultedBaseURL);
+  if (defaultedBaseURL !== undefined) actions.setBaseURL(defaultedBaseURL);
   actions.setProvider(defaultedProvider);
 
   const defaultedPricingPerModel = {

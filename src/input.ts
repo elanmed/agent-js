@@ -108,7 +108,7 @@ async function getEditorInitialContent(opts: {
   })();
 
   const readlineContent = (() => {
-    if (rl.line.length) {
+    if (rl.line.length > 0) {
       return rl.line;
     }
 
@@ -144,7 +144,7 @@ async function getEditorInitialContent(opts: {
 function abortRlQuestionForEditor(editorContent: string) {
   actions.setEditorInputValue(editorContent);
   const questionAbortController = getState().abortControllers.question;
-  if (questionAbortController) {
+  if (questionAbortController !== null) {
     const rl = clearRlLine()!;
 
     const truncatedFirstLine = truncate(editorContent);
@@ -203,13 +203,13 @@ export function initSigInt() {
   assert(rl !== null);
   rl.on("SIGINT", () => {
     const apiStream = getState().abortControllers.apiStream;
-    if (apiStream) {
+    if (apiStream !== null) {
       apiStream.abort();
       return;
     }
 
     const question = getState().abortControllers.question;
-    if (question) {
+    if (question !== null) {
       if (rl.line.length > 0) {
         clearRlLine();
         return;
@@ -302,7 +302,7 @@ async function resolveExitConfirmation() {
     return;
   }
 
-  if (/^y(es)?$/i.exec(exitResult.value)) {
+  if (/^y(es)?$/i.exec(exitResult.value) !== null) {
     actions.appendToStdout(
       `${getState().config.promptPrefix}${exitResult.value}\n`,
     );
