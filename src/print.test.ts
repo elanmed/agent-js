@@ -305,6 +305,66 @@ describe("print", () => {
 
       assert.strictEqual(stripAnsi(captured), "test content\n\n");
     });
+
+    it("falls back to plain text when bat exits with non-zero status", async () => {
+      mockExec({ stdout: "bat 0.25.0" });
+      mock.method(childProcess, "spawnSync", () => {
+        return {
+          status: 1,
+          stdout: "bat-rendered\n",
+          stderr: "bat error",
+        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      });
+
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      await executeBat("test content\n");
+
+      assert.strictEqual(stripAnsi(captured), "test content\n\n");
+    });
+
+    it("prints bat stdout when stderr is empty", async () => {
+      mockExec({ stdout: "bat 0.25.0" });
+      mock.method(childProcess, "spawnSync", () => {
+        return {
+          status: 0,
+          stdout: "bat-rendered\n",
+          stderr: "",
+        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      });
+
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      await executeBat("test content\n");
+
+      assert.strictEqual(stripAnsi(captured), "bat-rendered\n\n");
+    });
+
+    it("falls back to plain text when bat writes stderr", async () => {
+      mockExec({ stdout: "bat 0.25.0" });
+      mock.method(childProcess, "spawnSync", () => {
+        return {
+          status: 0,
+          stdout: "bat-rendered\n",
+          stderr: "bat warning",
+        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      });
+
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      await executeBat("test content\n");
+
+      assert.strictEqual(stripAnsi(captured), "test content\n\n");
+    });
   });
 
   describe("printSessionStartDate", () => {
