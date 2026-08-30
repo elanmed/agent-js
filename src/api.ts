@@ -162,7 +162,7 @@ export async function maybeCompactMessageParams() {
 
   const targetTokens = getState().config.compactTargetRatio * contextWindow;
 
-  const compactMessageParam = `Compact the following conversation into roughly ${String(targetTokens)}:
+  const compactMessageParam = `Compact the following conversation into roughly ${String(targetTokens)} tokens:
 ${JSON.stringify(getState().app.messageParams.messages)}
 `;
 

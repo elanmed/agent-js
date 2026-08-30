@@ -373,7 +373,7 @@ SKILLS: available skills`,
       assert.strictEqual(capturedMessages.length, 1);
       assert.strictEqual(
         capturedMessages[0]!.content,
-        `Compact the following conversation into roughly 25000:
+        `Compact the following conversation into roughly 25000 tokens:
 [
   {
     "role": "user",
