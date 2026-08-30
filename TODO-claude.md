@@ -116,48 +116,9 @@ it as user input, or (b) estimate its token size and warn/refuse if it's
 already over the compaction threshold, prompting the user to resume from a
 different session or accept a lossy summary.
 
-### 6. `truncate()` produces garbage output when stdout is not a TTY
-
-**File:** `src/utils.ts` — `truncate`
-
-```ts
-const maxLen = 0.9 * processDeps.stdout.getColumns();
-```
-
-`process.stdout.columns` is `undefined` when stdout isn't a TTY (piped
-output, redirected to a file, running in some CI/non-interactive contexts).
-`0.9 * undefined` is `NaN`, and `str.substring(0, NaN)` treats `NaN` as `0`,
-so every truncated string collapses to just `"…"`. This is used both for the
-edited-content preview (`abortRlQuestionForEditor`) and for `toolPrint`
-labels shown for every tool call — in a non-TTY environment, all of these
-become useless single-ellipsis output.
-
-**Fix:** Default to a sane column width (e.g. `80`) when
-`processDeps.stdout.getColumns()` is falsy/`NaN`. Add a test that mocks
-`getColumns()` to return `undefined` and asserts `truncate` still returns
-meaningful content.
-
 ---
 
 ## Medium
-
-### 8. No validation that `compactTargetRatio < compactAtContextRatio`
-
-**File:** `src/config.ts` — `ConfigSchema`
-
-Both ratios are independently validated to be in `[0, 1]`, but nothing
-prevents `compactTargetRatio >= compactAtContextRatio` (e.g. target `0.8`,
-trigger `0.7`). If a compaction summary doesn't actually shrink the
-conversation below the trigger ratio (plausible if the model doesn't follow
-the "compact to roughly N tokens" instruction precisely), every subsequent
-turn re-triggers compaction, burning tokens/money on repeated no-op
-summarization.
-
-**Fix:** Add a schema-level `.refine` (or a post-merge assertion in
-`initStateFromConfig`) requiring `compactTargetRatio < compactAtContextRatio`,
-with a clear error message. Consider also asserting the _post_-compaction
-token count is actually below the target as a safety net, logging a warning
-if not.
 
 ### 9. `usageLimitDuration` accepts a negative numeric prefix
 
