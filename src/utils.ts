@@ -100,7 +100,8 @@ export function createQueue() {
 }
 
 export function truncate(str: string) {
-  const maxLen = 0.9 * processDeps.stdout.getColumns();
+  const columns = processDeps.stdout.getColumns() ?? 80;
+  const maxLen = 0.9 * columns;
   const newlineIdx = str.indexOf("\n");
 
   const firstLine = (() => {
