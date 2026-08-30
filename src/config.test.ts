@@ -844,7 +844,10 @@ describe("config", () => {
 
     describe("when the global config does not exist", () => {
       it("throws when model is not configured", async () => {
-        await assert.rejects(initState(), /A `model` is required/);
+        await assert.rejects(
+          initState(),
+          /Invalid input: expected string, received undefined/,
+        );
       });
 
       it("throws when baseURL is not configured for openai-compatible provider", async () => {

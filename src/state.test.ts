@@ -1,6 +1,5 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { MISSING } from "./utils.ts";
 import { actions, getState } from "./state.ts";
 import { DEFAULT_CONFIG } from "./config.ts";
 import { makeFakeRl } from "./test-helpers.ts";
@@ -93,7 +92,7 @@ describe("state", () => {
   });
 
   it("set-model", () => {
-    assert.equal(getState().config.model, MISSING);
+    assert.equal(getState().config.model, "");
     actions.setModel("claude-haiku-4-5");
     assert.equal(getState().config.model, "claude-haiku-4-5");
   });
@@ -105,7 +104,7 @@ describe("state", () => {
   });
 
   it("set-base-url", () => {
-    assert.equal(getState().config.baseURL, null);
+    assert.equal(getState().config.baseURL, undefined);
     actions.setBaseURL("https://api.example.com/v1");
     assert.equal(getState().config.baseURL, "https://api.example.com/v1");
   });

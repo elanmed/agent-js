@@ -879,9 +879,9 @@ Global config from path: /fake-home/.config/agent-js/settings.yaml
         stripAnsi(getState().app.stdout),
         `
 Applied config:
-- model: "__MISSING__"
+- model: ""
 - provider: "openai-compatible"
-- baseURL: null
+- baseURL: undefined
 - pricingPerModel: {}
 - contextWindowPerModel: {}
 - compactAtContextRatio: 0.7
@@ -1238,9 +1238,9 @@ Global config from path: /fake-home/.config/agent-js/settings.yaml
         stripAnsi(getState().app.stdout),
         `
 Applied config:
-- model: "__MISSING__"
+- model: ""
 - provider: "openai-compatible"
-- baseURL: null
+- baseURL: undefined
 - pricingPerModel: {}
 - contextWindowPerModel: {}
 - compactAtContextRatio: 0.7
