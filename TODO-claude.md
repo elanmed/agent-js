@@ -31,22 +31,6 @@ session on a single bad turn.
 returned by the installed `ai` version against this assumption (the field
 name may not even be `inputTokenDetails` — verify against `ai`'s type defs).
 
-### 2. Compaction API call's usage/cost is never tracked
-
-**File:** `src/api.ts` — `maybeCompactMessageParams`
-
-The compaction call goes straight through `aiDeps.generateText(...)` and never
-calls `appendModelUsage`. Compaction consumes real tokens (and costs real
-money against `usageLimitDollar`), but:
-
-- `/usage` and the fence line under-report actual spend for the session.
-- The dollar-based usage limit silently misses this cost, so a user relying
-  on `usageLimitDollar` to cap spend can go over budget without the tool ever
-  reflecting it.
-
-**Fix:** Call `appendModelUsage(totalUsage)` (or an equivalent) after the
-compaction `generateText` call succeeds, same as `resolveApiCall` does.
-
 ### 3. Tool-call callbacks can throw uncaught inside `generateText`
 
 **File:** `src/api.ts` — `experimental_onToolCallStart` / `...Finish`
@@ -119,20 +103,6 @@ different session or accept a lossy summary.
 ---
 
 ## Medium
-
-### 9. `usageLimitDuration` accepts a negative numeric prefix
-
-**File:** `src/config.ts` — `ConfigSchema.usageLimitDuration` refine
-
-The refine only checks that the prefix parses as a number and the suffix is
-one of `s/m/h/d` — `"-5m"` passes validation. `getExpiredTime()` would then
-compute `expiredTime = now - (negative duration)`, i.e. a time in the
-_future_, which would cause `filterExpiredModelUsage` to treat effectively
-all usage as "expired" (since `usage.date >= expiredTime` would rarely hold)
-or behave unpredictably depending on data.
-
-**Fix:** Extend the refine to reject a negative or zero prefix
-(`Number(prefix) > 0`).
 
 ### 11. `bat` unavailability is reported inconsistently
 
