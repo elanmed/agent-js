@@ -78,7 +78,7 @@ ${skillsFormatted}
 export async function getSkills() {
   const seenSkills = new Set<string>();
   const skillGrandparentDirs = [
-    ...getState().app.customSkillDirs,
+    ...getState().config.customSkillDirs,
     getLocalSkillDir(),
     getGlobalSkillDir(),
   ];

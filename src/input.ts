@@ -160,7 +160,7 @@ export function initKeypress() {
   assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
     void (async () => {
-      if (isSameKey(key, getState().config.keymapEditPrompt)) {
+      if (isSameKey(key, getState().config.keymaps.edit)) {
         const editorContent = await spawnAndReadEditorContent();
         if (editorContent !== null) {
           abortRlQuestionForEditor(editorContent);
@@ -168,7 +168,7 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, getState().config.keymapClear)) {
+      if (isSameKey(key, getState().config.keymaps.clear)) {
         if (getState().abortControllers.question === null) return;
 
         rl.write("/clear\n");
@@ -176,7 +176,7 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, getState().config.keymapPastePrompt)) {
+      if (isSameKey(key, getState().config.keymaps.paste)) {
         const editorContent = await spawnAndReadEditorContent({
           includeClipboardSuffix: true,
         });
@@ -186,7 +186,7 @@ export function initKeypress() {
         return;
       }
 
-      if (isSameKey(key, getState().config.keymapChatHistory)) {
+      if (isSameKey(key, getState().config.keymaps.history)) {
         await chatHistoryCommand();
         return;
       }
@@ -671,14 +671,12 @@ export function isSameKey(a: Key, b: Key) {
 export async function printKeymapsCommand() {
   await printNewline();
   await print.doing("Keymaps:");
-  await print(`- edit: ${JSON.stringify(getState().config.keymapEditPrompt)}`);
+  await print(`- edit: ${JSON.stringify(getState().config.keymaps.edit)}`);
   await print(
-    `- history: ${JSON.stringify(getState().config.keymapChatHistory)}`,
+    `- history: ${JSON.stringify(getState().config.keymaps.history)}`,
   );
-  await print(
-    `- paste: ${JSON.stringify(getState().config.keymapPastePrompt)}`,
-  );
-  await print(`- clear: ${JSON.stringify(getState().config.keymapClear)}`);
+  await print(`- paste: ${JSON.stringify(getState().config.keymaps.paste)}`);
+  await print(`- clear: ${JSON.stringify(getState().config.keymaps.clear)}`);
 }
 
 function getPrettyConfig(config: object) {
@@ -722,7 +720,7 @@ export function getAvailableSlashCommands() {
   const slashCommandFilePaths: string[] = [];
 
   const slashCommandDirs = [
-    ...getState().app.customSlashCommandDirs,
+    ...getState().config.customSlashCommandDirs,
     getLocalSlashCommandDir(),
     getGlobalSlashCommandDir(),
   ];

@@ -71,6 +71,12 @@ const KeymapsSchema = z.object({
   history: KeySchema.optional(),
   clear: KeySchema.optional(),
 });
+const DefaultedKeymapsSchema = z.object({
+  edit: KeySchema,
+  paste: KeySchema,
+  history: KeySchema,
+  clear: KeySchema,
+});
 const CustomSlashCommandDirsSchema = z.array(z.string());
 const CustomSkillDirsSchema = z.array(z.string());
 const LoadingStateFrameDurationSchema = z.number();
@@ -115,12 +121,11 @@ export const DefaultedConfigSchema = z.strictObject({
   contextWindowPerModel: ContextWindowPerModelSchema,
   compactAtContextRatio: CompactAtContextRatioSchema,
   compactTargetRatio: CompactTargetRatioSchema,
-  keymapEditPrompt: KeySchema,
-  keymapPastePrompt: KeySchema,
-  keymapChatHistory: KeySchema,
-  keymapClear: KeySchema,
-  loadingStateFrames: LoadingStateFramesSchema,
+  keymaps: DefaultedKeymapsSchema,
+  customSlashCommandDirs: CustomSlashCommandDirsSchema,
+  customSkillDirs: CustomSkillDirsSchema,
   loadingStateFrameDuration: LoadingStateFrameDurationSchema,
+  loadingStateFrames: LoadingStateFramesSchema,
   promptPrefix: PromptPrefixSchema,
   usageLimit: UsageLimitSchema.optional(),
 });
@@ -129,9 +134,10 @@ export type DefaultedConfig = z.infer<typeof DefaultedConfigSchema>;
 
 export type Key = z.infer<typeof KeySchema>;
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: DefaultedConfig = {
+  model: "",
   provider: "openai-compatible" as const,
-  pricingPerModel: {} as Record<string, ModelPricing>,
+  pricingPerModel: {},
   contextWindowPerModel: {},
   compactAtContextRatio: 0.7,
   compactTargetRatio: 0.3,

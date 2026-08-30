@@ -25,8 +25,6 @@ interface State {
     messageParams: { tokens: number; messages: ModelMessage[] };
     editorInputValue: string | null;
     slashCommands: SlashCommand[];
-    customSlashCommandDirs: string[];
-    customSkillDirs: string[];
     stdout: string;
     debugLog: boolean;
     debugLogPath: string;
@@ -56,8 +54,6 @@ const initialState: State = {
     messageParams: { tokens: 0, messages: [] },
     editorInputValue: null,
     slashCommands: [],
-    customSlashCommandDirs: [],
-    customSkillDirs: [],
     stdout: "",
     debugLog: false,
     debugLogPath: "",
@@ -77,20 +73,21 @@ const initialState: State = {
   },
   config: {
     model: "",
-    provider: DEFAULT_CONFIG.provider,
     baseURL: undefined,
+    provider: DEFAULT_CONFIG.provider,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
     contextWindowPerModel: structuredClone(
       DEFAULT_CONFIG.contextWindowPerModel,
     ),
     compactAtContextRatio: DEFAULT_CONFIG.compactAtContextRatio,
     compactTargetRatio: DEFAULT_CONFIG.compactTargetRatio,
-    keymapEditPrompt: structuredClone(DEFAULT_CONFIG.keymaps.edit),
-    keymapPastePrompt: structuredClone(DEFAULT_CONFIG.keymaps.paste),
-    keymapChatHistory: structuredClone(DEFAULT_CONFIG.keymaps.history),
-    keymapClear: structuredClone(DEFAULT_CONFIG.keymaps.clear),
-    loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
+    keymaps: structuredClone(DEFAULT_CONFIG.keymaps),
+    customSlashCommandDirs: structuredClone(
+      DEFAULT_CONFIG.customSlashCommandDirs,
+    ),
+    customSkillDirs: structuredClone(DEFAULT_CONFIG.customSkillDirs),
     loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
+    loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
     promptPrefix: DEFAULT_CONFIG.promptPrefix,
     usageLimit: undefined,
   },
@@ -179,8 +176,8 @@ export const actions = {
   },
 
   setKeymapEditPrompt(keymap: Key) {
-    const before = state.config.keymapEditPrompt;
-    state.config.keymapEditPrompt = keymap;
+    const before = state.config.keymaps.edit;
+    state.config.keymaps.edit = keymap;
     logStateChange(
       "set-keymap-edit-prompt",
       stringify(before),
@@ -189,8 +186,8 @@ export const actions = {
   },
 
   setKeymapPastePrompt(keymap: Key) {
-    const before = state.config.keymapPastePrompt;
-    state.config.keymapPastePrompt = keymap;
+    const before = state.config.keymaps.paste;
+    state.config.keymaps.paste = keymap;
     logStateChange(
       "set-keymap-paste-prompt",
       stringify(before),
@@ -199,8 +196,8 @@ export const actions = {
   },
 
   setKeymapChatHistory(keymap: Key) {
-    const before = state.config.keymapChatHistory;
-    state.config.keymapChatHistory = keymap;
+    const before = state.config.keymaps.history;
+    state.config.keymaps.history = keymap;
     logStateChange(
       "set-keymap-chat-history",
       stringify(before),
@@ -209,8 +206,8 @@ export const actions = {
   },
 
   setKeymapClear(keymap: Key) {
-    const before = state.config.keymapClear;
-    state.config.keymapClear = keymap;
+    const before = state.config.keymaps.clear;
+    state.config.keymaps.clear = keymap;
     logStateChange("set-keymap-clear", stringify(before), stringify(keymap));
   },
 
@@ -253,8 +250,8 @@ export const actions = {
   },
 
   setCustomSlashCommandDirs(dirs: string[]) {
-    const before = state.app.customSlashCommandDirs;
-    state.app.customSlashCommandDirs = dirs;
+    const before = state.config.customSlashCommandDirs;
+    state.config.customSlashCommandDirs = dirs;
     logStateChange(
       "set-custom-slash-command-dirs",
       String(before),
@@ -263,8 +260,8 @@ export const actions = {
   },
 
   setCustomSkillDirs(dirs: string[]) {
-    const before = state.app.customSkillDirs;
-    state.app.customSkillDirs = dirs;
+    const before = state.config.customSkillDirs;
+    state.config.customSkillDirs = dirs;
     logStateChange("set-custom-skill-dirs", String(before), String(dirs));
   },
 
