@@ -143,7 +143,7 @@ describe("state", () => {
 
   it("set-keymap-edit-prompt", () => {
     assert.deepStrictEqual(
-      getState().config.keymapEditPrompt,
+      getState().config.keymaps.edit,
       DEFAULT_CONFIG.keymaps.edit,
     );
     actions.setKeymapEditPrompt({
@@ -152,7 +152,7 @@ describe("state", () => {
       meta: false,
       shift: false,
     });
-    assert.deepStrictEqual(getState().config.keymapEditPrompt, {
+    assert.deepStrictEqual(getState().config.keymaps.edit, {
       name: "v",
       ctrl: false,
       meta: false,
@@ -162,7 +162,7 @@ describe("state", () => {
 
   it("set-keymap-chat-history", () => {
     assert.deepStrictEqual(
-      getState().config.keymapChatHistory,
+      getState().config.keymaps.history,
       DEFAULT_CONFIG.keymaps.history,
     );
     actions.setKeymapChatHistory({
@@ -171,7 +171,7 @@ describe("state", () => {
       meta: false,
       shift: false,
     });
-    assert.deepStrictEqual(getState().config.keymapChatHistory, {
+    assert.deepStrictEqual(getState().config.keymaps.history, {
       name: "o",
       ctrl: false,
       meta: false,
@@ -181,7 +181,7 @@ describe("state", () => {
 
   it("set-keymap-clear", () => {
     assert.deepStrictEqual(
-      getState().config.keymapClear,
+      getState().config.keymaps.clear,
       DEFAULT_CONFIG.keymaps.clear,
     );
     actions.setKeymapClear({
@@ -190,7 +190,7 @@ describe("state", () => {
       meta: false,
       shift: false,
     });
-    assert.deepStrictEqual(getState().config.keymapClear, {
+    assert.deepStrictEqual(getState().config.keymaps.clear, {
       name: "k",
       ctrl: false,
       meta: false,
@@ -330,18 +330,18 @@ hello`,
   });
 
   it("set-custom-slash-command-dirs", () => {
-    assert.deepStrictEqual(getState().app.customSlashCommandDirs, []);
+    assert.deepStrictEqual(getState().config.customSlashCommandDirs, []);
     actions.setCustomSlashCommandDirs(["/my-commands", "/more"]);
-    assert.deepStrictEqual(getState().app.customSlashCommandDirs, [
+    assert.deepStrictEqual(getState().config.customSlashCommandDirs, [
       "/my-commands",
       "/more",
     ]);
   });
 
   it("set-custom-skill-dirs", () => {
-    assert.deepStrictEqual(getState().app.customSkillDirs, []);
+    assert.deepStrictEqual(getState().config.customSkillDirs, []);
     actions.setCustomSkillDirs(["/my-skills", "/more"]);
-    assert.deepStrictEqual(getState().app.customSkillDirs, [
+    assert.deepStrictEqual(getState().config.customSkillDirs, [
       "/my-skills",
       "/more",
     ]);

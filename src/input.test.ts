@@ -880,35 +880,39 @@ Global config from path: /fake-home/.config/agent-js/settings.yaml
         `
 Applied config:
 - model: ""
-- provider: "openai-compatible"
 - baseURL: undefined
+- provider: "openai-compatible"
 - pricingPerModel: {}
 - contextWindowPerModel: {}
 - compactAtContextRatio: 0.7
 - compactTargetRatio: 0.3
-- keymapEditPrompt: {
-  "name": "g",
-  "ctrl": true
+- keymaps: {
+  "edit": {
+    "name": "g",
+    "ctrl": true
+  },
+  "paste": {
+    "name": "v",
+    "ctrl": true
+  },
+  "history": {
+    "name": "o",
+    "ctrl": true
+  },
+  "clear": {
+    "name": "x",
+    "ctrl": true
+  }
 }
-- keymapPastePrompt: {
-  "name": "v",
-  "ctrl": true
-}
-- keymapChatHistory: {
-  "name": "o",
-  "ctrl": true
-}
-- keymapClear: {
-  "name": "x",
-  "ctrl": true
-}
+- customSlashCommandDirs: []
+- customSkillDirs: []
+- loadingStateFrameDuration: 80
 - loadingStateFrames: [
   "|",
   "/",
   "-",
   "\\\\"
 ]
-- loadingStateFrameDuration: 80
 - promptPrefix: "> "
 - usageLimit: undefined
 `,
@@ -1239,35 +1243,39 @@ Global config from path: /fake-home/.config/agent-js/settings.yaml
         `
 Applied config:
 - model: ""
-- provider: "openai-compatible"
 - baseURL: undefined
+- provider: "openai-compatible"
 - pricingPerModel: {}
 - contextWindowPerModel: {}
 - compactAtContextRatio: 0.7
 - compactTargetRatio: 0.3
-- keymapEditPrompt: {
-  "name": "g",
-  "ctrl": true
+- keymaps: {
+  "edit": {
+    "name": "g",
+    "ctrl": true
+  },
+  "paste": {
+    "name": "v",
+    "ctrl": true
+  },
+  "history": {
+    "name": "o",
+    "ctrl": true
+  },
+  "clear": {
+    "name": "x",
+    "ctrl": true
+  }
 }
-- keymapPastePrompt: {
-  "name": "v",
-  "ctrl": true
-}
-- keymapChatHistory: {
-  "name": "o",
-  "ctrl": true
-}
-- keymapClear: {
-  "name": "x",
-  "ctrl": true
-}
+- customSlashCommandDirs: []
+- customSkillDirs: []
+- loadingStateFrameDuration: 80
 - loadingStateFrames: [
   "|",
   "/",
   "-",
   "\\\\"
 ]
-- loadingStateFrameDuration: 80
 - promptPrefix: "> "
 - usageLimit: undefined
 `,

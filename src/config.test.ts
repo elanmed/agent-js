@@ -1,7 +1,13 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { getState } from "./state.ts";
-import { initState, initStateForDebug, DEFAULT_CONFIG } from "./config.ts";
+import {
+  initState,
+  initStateForDebug,
+  DEFAULT_CONFIG,
+  ConfigSchema,
+  DefaultedConfigSchema,
+} from "./config.ts";
 import {
   getGlobalConfigPath,
   getLocalConfigPath,
@@ -21,6 +27,13 @@ describe("config", () => {
   beforeEach(() => {
     setupTestContext();
     mock.method(parseCliArgsDeps, "getArgv", () => ["node", "script.js"]);
+  });
+
+  it("ConfigSchema and DefaultedConfigSchema have the same keys", () => {
+    assert.deepStrictEqual(
+      Object.keys(ConfigSchema.shape).sort(),
+      Object.keys(DefaultedConfigSchema.shape).sort(),
+    );
   });
 
   describe("when local config exists", () => {
@@ -220,25 +233,25 @@ describe("config", () => {
 
       await initState();
 
-      assert.deepEqual(getState().config.keymapEditPrompt, {
+      assert.deepEqual(getState().config.keymaps.edit, {
         name: "e",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymapPastePrompt, {
+      assert.deepEqual(getState().config.keymaps.paste, {
         name: "t",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymapChatHistory, {
+      assert.deepEqual(getState().config.keymaps.history, {
         name: "l",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymapClear, {
+      assert.deepEqual(getState().config.keymaps.clear, {
         name: "k",
         ctrl: true,
         meta: false,
@@ -264,7 +277,7 @@ describe("config", () => {
 
       await initState();
 
-      assert.deepStrictEqual(getState().app.customSlashCommandDirs, [
+      assert.deepStrictEqual(getState().config.customSlashCommandDirs, [
         "/local-dir",
       ]);
     });
@@ -287,7 +300,9 @@ describe("config", () => {
 
       await initState();
 
-      assert.deepStrictEqual(getState().app.customSkillDirs, ["/local-skills"]);
+      assert.deepStrictEqual(getState().config.customSkillDirs, [
+        "/local-skills",
+      ]);
     });
 
     it("uses its loadingStateFrames over the global config, default config", async () => {
@@ -613,22 +628,22 @@ describe("config", () => {
 
       await initState();
 
-      assert.deepEqual(getState().config.keymapEditPrompt, {
+      assert.deepEqual(getState().config.keymaps.edit, {
         name: "v",
         ctrl: false,
         meta: false,
         shift: false,
       });
       assert.deepEqual(
-        getState().config.keymapPastePrompt,
+        getState().config.keymaps.paste,
         DEFAULT_CONFIG.keymaps.paste,
       );
       assert.deepEqual(
-        getState().config.keymapChatHistory,
+        getState().config.keymaps.history,
         DEFAULT_CONFIG.keymaps.history,
       );
       assert.deepEqual(
-        getState().config.keymapClear,
+        getState().config.keymaps.clear,
         DEFAULT_CONFIG.keymaps.clear,
       );
     });
@@ -722,25 +737,25 @@ describe("config", () => {
 
         await initState();
 
-        assert.deepEqual(getState().config.keymapEditPrompt, {
+        assert.deepEqual(getState().config.keymaps.edit, {
           name: "v",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymapPastePrompt, {
+        assert.deepEqual(getState().config.keymaps.paste, {
           name: "p",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymapChatHistory, {
+        assert.deepEqual(getState().config.keymaps.history, {
           name: "o",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymapClear, {
+        assert.deepEqual(getState().config.keymaps.clear, {
           name: "j",
           ctrl: false,
           meta: false,
@@ -836,7 +851,7 @@ describe("config", () => {
 
         await initState();
 
-        assert.deepStrictEqual(getState().app.customSkillDirs, [
+        assert.deepStrictEqual(getState().config.customSkillDirs, [
           "/global-skills",
         ]);
       });
