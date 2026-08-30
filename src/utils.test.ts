@@ -143,6 +143,11 @@ describe("utils", () => {
         `${"a".repeat(MAX_LEN)}…`,
       );
     });
+
+    it("falls back to 80 columns when stdout columns are undefined", () => {
+      mock.method(processDeps.stdout, "getColumns", () => undefined);
+      assert.equal(truncate("a".repeat(100)), `${"a".repeat(72)}…`);
+    });
   });
 
   describe("getTempFileName", () => {
