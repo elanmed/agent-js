@@ -329,7 +329,7 @@ Minimal runtime dependencies (9 total):
 | `yaml`                      | Parsing Skill metadata                  |
 | `globby`                    | Glob with .gitignore support            |
 
-- This project uses **pnpm v11** for package management, which helps [prevent supply chain attacks](https://pnpm.io/supply-chain-security)
+- This project uses **pnpm v11** for package management, which helps [mitigate the risk of supply chain attacks](https://pnpm.io/supply-chain-security)
 - All tests are written with the Node.js native test runner and mocks i.e. no Jest
 - TypeScript is executed directly via `node` (no build step), keeping the toolchain minimal
 
