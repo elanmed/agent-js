@@ -163,25 +163,25 @@ describe("config", () => {
       });
     });
 
-    it("uses its compactAtContextRatio over the global config, default config", async () => {
+    it("uses its compactTriggerRatio over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...testConfig,
-          compactAtContextRatio: 0.8,
+          compactTriggerRatio: 0.8,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           ...testConfig,
-          compactAtContextRatio: 0.5,
+          compactTriggerRatio: 0.5,
         }),
       );
 
       await initState();
 
-      assert.strictEqual(getState().config.compactAtContextRatio, 0.5);
+      assert.strictEqual(getState().config.compactTriggerRatio, 0.5);
     });
 
     it("uses its compactTargetRatio over the global config, default config", async () => {
@@ -543,36 +543,36 @@ describe("config", () => {
       await assert.rejects(initState(), /Invalid input: expected number/);
     });
 
-    it("rejects compactAtContextRatio above 1", async () => {
+    it("rejects compactTriggerRatio above 1", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...testConfig,
-          compactAtContextRatio: 1.5,
+          compactTriggerRatio: 1.5,
         }),
       );
 
       await assert.rejects(initState(), /Too big: expected number to be <=1/);
     });
 
-    it("rejects compactAtContextRatio below 0", async () => {
+    it("rejects compactTriggerRatio below 0", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...testConfig,
-          compactAtContextRatio: -0.1,
+          compactTriggerRatio: -0.1,
         }),
       );
 
       await assert.rejects(initState(), /Too small: expected number to be >=0/);
     });
 
-    it("rejects non-number compactAtContextRatio", async () => {
+    it("rejects non-number compactTriggerRatio", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           ...testConfig,
-          compactAtContextRatio: "half",
+          compactTriggerRatio: "half",
         }),
       );
 
@@ -613,6 +613,38 @@ describe("config", () => {
       );
 
       await assert.rejects(initState(), /Invalid input: expected number/);
+    });
+
+    it("rejects compactTriggerRatio equal to compactTargetRatio", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          compactTriggerRatio: 0.5,
+          compactTargetRatio: 0.5,
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /compactTriggerRatio \(0\.5\) must be greater than compactTargetRatio \(0\.5\)/,
+      );
+    });
+
+    it("rejects compactTriggerRatio below compactTargetRatio", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          compactTriggerRatio: 0.3,
+          compactTargetRatio: 0.5,
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /compactTriggerRatio \(0\.3\) must be greater than compactTargetRatio \(0\.5\)/,
+      );
     });
 
     it("merges partial keymaps with defaults", async () => {

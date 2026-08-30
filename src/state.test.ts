@@ -129,10 +129,10 @@ describe("state", () => {
     });
   });
 
-  it("set-compact-at-context-ratio", () => {
-    assert.strictEqual(getState().config.compactAtContextRatio, 0.7);
-    actions.setCompactAtContextRatio(0.5);
-    assert.strictEqual(getState().config.compactAtContextRatio, 0.5);
+  it("set-compact-trigger-ratio", () => {
+    assert.strictEqual(getState().config.compactTriggerRatio, 0.7);
+    actions.setCompactTriggerRatio(0.5);
+    assert.strictEqual(getState().config.compactTriggerRatio, 0.5);
   });
 
   it("set-compact-target-ratio", () => {

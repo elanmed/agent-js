@@ -16,7 +16,7 @@ A minimal agent harness
 - **Slash commands**: Change agent settings or execute reusable prompts
 - **Token usage tracking**: Track spending per model within a configurable time window
 - **Context compaction**: The conversation is automatically compacted when nearing the model's context window limit
-  - Triggered at `compactAtContextRatio`, down to `compactTargetRatio`
+  - Triggered at `compactTriggerRatio`, down to `compactTargetRatio`
 - **Session history**: Transcripts are persisted per session and past sessions can be resumed with `/resume`
 - **Keymaps**: Customizable shortcuts for executing built-in slash commands
 
@@ -33,7 +33,7 @@ Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/se
 | `baseURL`                   | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)  |
 | `pricingPerModel`           | `object`                               | optional | `{}`                     | Token pricing per model per million              |
 | `contextWindowPerModel`     | `object`                               | optional | `{}`                     | Context window size in tokens per model          |
-| `compactAtContextRatio`     | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio    |
+| `compactTriggerRatio`       | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio    |
 | `compactTargetRatio`        | `number`                               | optional | `0.3`                    | Compact down to this context ratio               |
 | `keymaps`                   | `object`                               | optional | see below                | Custom keybindings                               |
 | `customSlashCommandDirs`    | `string[]`                             | optional | `[]`                     | Additional directories for custom slash commands |
@@ -149,7 +149,7 @@ A complete example including every option:
 model: claude-sonnet-4-6
 provider: openai-compatible
 baseURL: https://api.example.com/v1
-compactAtContextRatio: 0.7
+compactTriggerRatio: 0.7
 compactTargetRatio: 0.3
 keymaps:
   edit:

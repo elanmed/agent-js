@@ -63,7 +63,7 @@ const BaseURLSchema = z.string();
 const ProviderSchema = z.enum(["anthropic", "openai-compatible"]);
 const PricingPerModelSchema = z.record(z.string(), ModelPricingSchema);
 const ContextWindowPerModelSchema = z.record(z.string(), z.number());
-const CompactAtContextRatioSchema = z.number().min(0).max(1);
+const CompactTriggerRatioSchema = z.number().min(0).max(1);
 const CompactTargetRatioSchema = z.number().min(0).max(1);
 const KeymapsSchema = z.object({
   edit: KeySchema.optional(),
@@ -100,7 +100,7 @@ export const ConfigSchema = z.strictObject({
   provider: ProviderSchema.optional(),
   pricingPerModel: PricingPerModelSchema.optional(),
   contextWindowPerModel: ContextWindowPerModelSchema.optional(),
-  compactAtContextRatio: CompactAtContextRatioSchema.optional(),
+  compactTriggerRatio: CompactTriggerRatioSchema.optional(),
   compactTargetRatio: CompactTargetRatioSchema.optional(),
   keymaps: KeymapsSchema.optional(),
   customSlashCommandDirs: CustomSlashCommandDirsSchema.optional(),
@@ -119,7 +119,7 @@ export const DefaultedConfigSchema = z.strictObject({
   provider: ProviderSchema,
   pricingPerModel: PricingPerModelSchema,
   contextWindowPerModel: ContextWindowPerModelSchema,
-  compactAtContextRatio: CompactAtContextRatioSchema,
+  compactTriggerRatio: CompactTriggerRatioSchema,
   compactTargetRatio: CompactTargetRatioSchema,
   keymaps: DefaultedKeymapsSchema,
   customSlashCommandDirs: CustomSlashCommandDirsSchema,
@@ -139,7 +139,7 @@ export const defaultConfig: DefaultedConfig = {
   provider: "openai-compatible" as const,
   pricingPerModel: {},
   contextWindowPerModel: {},
-  compactAtContextRatio: 0.7,
+  compactTriggerRatio: 0.7,
   compactTargetRatio: 0.3,
   keymaps: {
     edit: {
@@ -221,16 +221,21 @@ export async function initStateFromConfig() {
     ...globalConfig.contextWindowPerModel,
     ...localConfig.contextWindowPerModel,
   });
-  actions.setCompactAtContextRatio(
-    localConfig.compactAtContextRatio ??
-      globalConfig.compactAtContextRatio ??
-      defaultConfig.compactAtContextRatio,
-  );
-  actions.setCompactTargetRatio(
+  const defaultedCompactTriggerRatio =
+    localConfig.compactTriggerRatio ??
+    globalConfig.compactTriggerRatio ??
+    defaultConfig.compactTriggerRatio;
+  const defaultedCompactTargetRatio =
     localConfig.compactTargetRatio ??
-      globalConfig.compactTargetRatio ??
-      defaultConfig.compactTargetRatio,
-  );
+    globalConfig.compactTargetRatio ??
+    defaultConfig.compactTargetRatio;
+  if (defaultedCompactTriggerRatio <= defaultedCompactTargetRatio) {
+    throw new Error(
+      `compactTriggerRatio (${String(defaultedCompactTriggerRatio)}) must be greater than compactTargetRatio (${String(defaultedCompactTargetRatio)})`,
+    );
+  }
+  actions.setCompactTriggerRatio(defaultedCompactTriggerRatio);
+  actions.setCompactTargetRatio(defaultedCompactTargetRatio);
 
   actions.setCustomSlashCommandDirs(
     localConfig.customSlashCommandDirs ??

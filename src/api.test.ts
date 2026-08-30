@@ -333,7 +333,7 @@ SKILLS: available skills`,
   describe("maybeCompactMessageParams", () => {
     beforeEach(() => {
       actions.setContextWindowPerModel({ "claude-sonnet-4-20250514": 100_000 });
-      actions.setCompactAtContextRatio(0.7);
+      actions.setCompactTriggerRatio(0.7);
       actions.setCompactTargetRatio(0.3);
     });
 
@@ -373,7 +373,7 @@ SKILLS: available skills`,
       assert.strictEqual(capturedMessages.length, 1);
       assert.strictEqual(
         capturedMessages[0]!.content,
-        `Compact the following conversation into roughly 25000 tokens:
+        `Compact the following conversation. Your summary must be less than 25000 tokens:
 [
   {
     "role": "user",
@@ -386,6 +386,35 @@ SKILLS: available skills`,
         tokens: 25_000,
         messages: [{ role: "user", content: "compacted summary" }],
       });
+    });
+
+    it("warns when compaction does not reach the target", async () => {
+      actions.resetStdout();
+      actions.setCompactTargetRatio(0.25);
+      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
+      mock.method(aiDeps, "generateText", () =>
+        Promise.resolve(
+          makeGenerateTextResult({
+            text: "compacted summary",
+            totalUsage: {
+              inputTokens: 0,
+              outputTokens: 30_000,
+              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
+            },
+          }),
+        ),
+      );
+      await maybeCompactMessageParams();
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 30_000,
+        messages: [{ role: "user", content: "compacted summary" }],
+      });
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `Compacting…
+Compacted to 30,000, 5,000 over the target.
+`,
+      );
     });
 
     it("keeps messages when generateText fails", async () => {

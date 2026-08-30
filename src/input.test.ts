@@ -884,7 +884,7 @@ Applied config:
 - provider: "openai-compatible"
 - pricingPerModel: {}
 - contextWindowPerModel: {}
-- compactAtContextRatio: 0.7
+- compactTriggerRatio: 0.7
 - compactTargetRatio: 0.3
 - keymaps: {
   "edit": {
@@ -1247,7 +1247,7 @@ Applied config:
 - provider: "openai-compatible"
 - pricingPerModel: {}
 - contextWindowPerModel: {}
-- compactAtContextRatio: 0.7
+- compactTriggerRatio: 0.7
 - compactTargetRatio: 0.3
 - keymaps: {
   "edit": {

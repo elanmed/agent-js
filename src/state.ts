@@ -77,7 +77,7 @@ const initialState: State = {
     provider: defaultConfig.provider,
     pricingPerModel: structuredClone(defaultConfig.pricingPerModel),
     contextWindowPerModel: structuredClone(defaultConfig.contextWindowPerModel),
-    compactAtContextRatio: defaultConfig.compactAtContextRatio,
+    compactTriggerRatio: defaultConfig.compactTriggerRatio,
     compactTargetRatio: defaultConfig.compactTargetRatio,
     keymaps: structuredClone(defaultConfig.keymaps),
     customSlashCommandDirs: structuredClone(
@@ -153,13 +153,13 @@ export const actions = {
     );
   },
 
-  setCompactAtContextRatio(compactAtContextRatio: number) {
-    const before = state.config.compactAtContextRatio;
-    state.config.compactAtContextRatio = compactAtContextRatio;
+  setCompactTriggerRatio(compactTriggerRatio: number) {
+    const before = state.config.compactTriggerRatio;
+    state.config.compactTriggerRatio = compactTriggerRatio;
     logStateChange(
-      "set-compact-at-context-ratio",
+      "set-compact-trigger-ratio",
       String(before),
-      String(compactAtContextRatio),
+      String(compactTriggerRatio),
     );
   },
 

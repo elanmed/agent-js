@@ -157,12 +157,12 @@ export async function maybeCompactMessageParams() {
   if (contextWindow === undefined) return;
 
   const currRatio = getState().app.messageParams.tokens / contextWindow;
-  if (currRatio <= getState().config.compactAtContextRatio) return;
+  if (currRatio <= getState().config.compactTriggerRatio) return;
   await print.doing("Compacting…");
 
   const targetTokens = getState().config.compactTargetRatio * contextWindow;
 
-  const compactMessageParam = `Compact the following conversation into roughly ${String(targetTokens)} tokens:
+  const compactMessageParam = `Compact the following conversation. Your summary must be less than ${String(targetTokens)} tokens:
 ${JSON.stringify(getState().app.messageParams.messages)}
 `;
 
@@ -190,10 +190,16 @@ ${JSON.stringify(getState().app.messageParams.messages)}
   }
 
   const { totalUsage, text } = generateTextResult.value;
+  const afterCompactionTokens = totalUsage.outputTokens ?? 0;
 
   actions.resetMessageParams();
   actions.appendToMessageParams(
     { content: text, role: "user" },
-    totalUsage.outputTokens ?? 0,
+    afterCompactionTokens,
   );
+  if (afterCompactionTokens >= targetTokens) {
+    await print.warning(
+      `Compacted to ${afterCompactionTokens.toLocaleString()}, ${(afterCompactionTokens - targetTokens).toLocaleString()} over the target.`,
+    );
+  }
 }
