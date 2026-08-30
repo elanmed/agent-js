@@ -16,12 +16,6 @@ Plan: call `appendModelUsage(totalUsage)` in `maybeCompactMessageParams()` after
 
 Plan: if `totalUsage.inputTokens === undefined`, skip the delta math and leave token count unchanged (or clamp the delta at 0). Add a test with a mocked `generateText` returning usage without `inputTokens`.
 
-### 4. `truncate()` returns only "…" for every string when stdout is not a TTY
-
-`src/utils.ts:104`: `0.9 * processDeps.stdout.getColumns()` is `NaN` when `process.stdout.columns` is `undefined` (piped output), so `substring(0, NaN)` yields `""` and every tool print becomes just `…`.
-
-Plan: default to a sane width (e.g. `getColumns() || 80`) before computing `maxLen`. Add a test with `getColumns` mocked to return `undefined`.
-
 ### 5. `execGitDiff` exit-code handling breaks when piping through `delta`
 
 `src/tools.ts:584-597`: the `error.code !== 1` carve-out (git diff exits 1 when there are differences) only works without the pipe. With `| delta`, the pipeline exit code is delta's, so real git failures (e.g. exit 128) are silently swallowed and no error surfaces.
