@@ -1,8 +1,6 @@
 # `agent-js`
 
-A minimal agent implementation for working with LLMs (my own mini claude code)
-
-macOS and Linux only.
+A minimal agent harness
 
 ![demo](./demo.png)
 
@@ -377,3 +375,4 @@ vim.g.clipboard = {
 - [ ] Support MCP servers
 - [ ] Look into tanstack ai when it supports openai compatible
   - [ ] Support code-mode
+- [ ] Support Windows-style newlines
