@@ -137,8 +137,10 @@ export async function resolveApiCall(userInput: string) {
   appendModelUsage(totalUsage);
 
   const allInputTokens = totalUsage.inputTokens ?? 0;
-  const tokensForInputMessageParam =
-    allInputTokens - getState().app.messageParams.tokens;
+  const tokensForInputMessageParam = Math.max(
+    0,
+    allInputTokens - getState().app.messageParams.tokens,
+  );
 
   const outputTokens = totalUsage.outputTokens ?? 0;
 
@@ -190,11 +192,12 @@ ${JSON.stringify(getState().app.messageParams.messages)}
   }
 
   const { totalUsage, text } = generateTextResult.value;
+  appendModelUsage(totalUsage);
   const afterCompactionTokens = totalUsage.outputTokens ?? 0;
 
   actions.resetMessageParams();
   actions.appendToMessageParams(
-    { content: text, role: "user" },
+    { content: text, role: "assistant" },
     afterCompactionTokens,
   );
   if (afterCompactionTokens >= targetTokens) {

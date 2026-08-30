@@ -40,7 +40,6 @@ describe("api", () => {
 
   describe("resolveApiCall", () => {
     it("returns text on success", async () => {
-      mock.method(Date, "now", () => 0);
       actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveApiCall("hello");
       assert.strictEqual(result, "response text");
@@ -137,6 +136,33 @@ response text
         messages: [
           { role: "user", content: "first" },
           { role: "user", content: "second" },
+          { role: "assistant", content: "answer" },
+        ],
+      });
+    });
+
+    it("clamps negative input token delta to 0", async () => {
+      actions.appendToMessageParams({ role: "user", content: "existing" }, 100);
+      mock.method(aiDeps, "generateText", () =>
+        Promise.resolve(
+          makeGenerateTextResult({
+            totalUsage: {
+              inputTokens: 50,
+              outputTokens: 5,
+              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
+            },
+            response: {
+              messages: [{ role: "assistant", content: "answer" }],
+            },
+          }),
+        ),
+      );
+      await resolveApiCall("hello");
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 105,
+        messages: [
+          { role: "user", content: "existing" },
+          { role: "user", content: "hello" },
           { role: "assistant", content: "answer" },
         ],
       });
@@ -384,7 +410,18 @@ SKILLS: available skills`,
       );
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 25_000,
-        messages: [{ role: "user", content: "compacted summary" }],
+        messages: [{ role: "assistant", content: "compacted summary" }],
+      });
+      assert.deepStrictEqual(getState().app.modelUsageForSession, {
+        "claude-sonnet-4-20250514": [
+          {
+            inputTokens: 0,
+            outputTokens: 25_000,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            date: 0,
+          },
+        ],
       });
     });
 
@@ -407,7 +444,7 @@ SKILLS: available skills`,
       await maybeCompactMessageParams();
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 30_000,
-        messages: [{ role: "user", content: "compacted summary" }],
+        messages: [{ role: "assistant", content: "compacted summary" }],
       });
       assert.strictEqual(
         stripAnsi(getState().app.stdout),

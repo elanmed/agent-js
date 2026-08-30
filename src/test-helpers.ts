@@ -184,6 +184,7 @@ export function setupTestContext() {
   mock.method(os, "homedir", () => "/fake-home");
   mock.method(os, "tmpdir", () => "/tmp");
   mock.method(crypto, "randomUUID", () => "test-uuid");
+  mock.method(Date, "now", () => 0);
 }
 
 type ExecCallback = (

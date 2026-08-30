@@ -161,7 +161,6 @@ describe("input", () => {
     });
 
     it("returns editor input value when set and clears it", async () => {
-      mock.method(Date, "now", () => 0);
       actions.setChatHistoryPath("/tmp/test-history.log");
       actions.setEditorInputValue("editor content");
       const result = await resolveUserInput({ isFirstInput: false });
@@ -180,7 +179,6 @@ editor content
       mock.method(getState().app.rl!, "question", () =>
         Promise.resolve("  hello  "),
       );
-      mock.method(Date, "now", () => 0);
       actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
@@ -195,7 +193,6 @@ hello
     });
 
     it("resolves slash commands when input starts with /", async () => {
-      mock.method(Date, "now", () => 0);
       actions.setChatHistoryPath("/tmp/test-history.log");
       actions.setModel("old");
       actions.resetStdout();
@@ -224,7 +221,6 @@ hello
     });
 
     it("returns editor value when aborted by editor", async () => {
-      mock.method(Date, "now", () => 0);
       actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(getState().app.rl!, "question", () => {
         actions.setEditorInputValue("from editor");
@@ -1092,7 +1088,6 @@ Applied config:
     });
 
     it("handles /edit command and logs editor content to chat history", async () => {
-      mock.method(Date, "now", () => 0);
       actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(childProcess, "spawnSync", () => {
         testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "from editor");
@@ -1109,7 +1104,6 @@ from editor
     });
 
     it("handles /paste command and logs editor content to chat history", async () => {
-      mock.method(Date, "now", () => 0);
       actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(os, "platform", () => "linux");
       mockExec({ stdout: "clip" });
