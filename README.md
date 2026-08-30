@@ -8,7 +8,7 @@ macOS and Linux only.
 
 ## Features
 
-- **Minimal**: 3,100 lines of source code, 6,400 lines of tests
+- **Minimal**: 3,100 lines of source code, 6,500 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
