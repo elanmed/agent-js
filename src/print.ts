@@ -6,10 +6,9 @@ import {
   normalizeLine,
   execPromise,
   createQueue,
-  type Result,
 } from "./utils.ts";
 import { processDeps } from "./deps.ts";
-import { spawnSync } from "node:child_process";
+import childProcess from "node:child_process";
 import assert from "node:assert";
 import { getPrettyUsage } from "./usage.ts";
 
@@ -157,9 +156,9 @@ export async function checkDelta(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("delta --version"))).ok;
 }
 
-function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
+function spawnBat(input: string) {
   return tryCatch(() =>
-    spawnSync(
+    childProcess.spawnSync(
       "bat",
       [
         "--language",
@@ -170,7 +169,7 @@ function spawnBat(input: string): Result<{ stdout: Buffer | string }> {
         "--color=always",
         "-",
       ],
-      { input },
+      { input, encoding: "utf8" },
     ),
   );
 }
@@ -197,12 +196,12 @@ export async function executeBat(content: string) {
   }
 
   const batResult = spawnBat(content);
-  if (batResult.ok) {
-    await print(batResult.value.stdout);
-    return;
+  if (!batResult.ok) return await print(content);
+  if (batResult.value.status !== 0) return await print(content);
+  if (batResult.value.stderr.length !== 0) {
+    return await print(content);
   }
-
-  await print(content);
+  await print(batResult.value.stdout);
 }
 
 export function getPrettyApiDuration() {
