@@ -3,12 +3,13 @@ import type readline from "node:readline/promises";
 import type { ModelMessage } from "ai";
 import {
   DEFAULT_CONFIG,
+  type DefaultedConfig,
   type Key,
   type ModelPricing,
   type Provider,
   type UsageLimit,
 } from "./config.ts";
-import { MISSING, stringify } from "./utils.ts";
+import { stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import type { ModelUsage } from "./usage.ts";
 import type { ContextEntry, Skill } from "./context.ts";
@@ -43,23 +44,7 @@ interface State {
     modelUsageForSession: Record<string, ModelUsage[]>;
     sessionStartDate: number;
   };
-  config: {
-    pricingPerModel: Record<string, ModelPricing>;
-    contextWindowPerModel: Record<string, number>;
-    compactAtContextRatio: number;
-    compactTargetRatio: number;
-    model: string;
-    baseURL: string | null;
-    provider: Provider;
-    keymapEditPrompt: Key;
-    keymapPastePrompt: Key;
-    keymapChatHistory: Key;
-    keymapClear: Key;
-    loadingStateFrames: string[];
-    loadingStateFrameDuration: number;
-    promptPrefix: string;
-    usageLimit: UsageLimit | undefined;
-  };
+  config: DefaultedConfig;
   abortControllers: {
     question: AbortController | null;
     apiStream: AbortController | null;
@@ -91,9 +76,9 @@ const initialState: State = {
     sessionStartDate: 0,
   },
   config: {
-    model: MISSING,
+    model: "",
     provider: DEFAULT_CONFIG.provider,
-    baseURL: null,
+    baseURL: undefined,
     pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
     contextWindowPerModel: structuredClone(
       DEFAULT_CONFIG.contextWindowPerModel,

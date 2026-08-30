@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import { tryCatch, MISSING } from "./utils.ts";
+import { tryCatch } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
 import {
   getContextEntries,
@@ -58,84 +58,83 @@ export const UsageLimitSchema = z.strictObject({
 
 export type UsageLimit = z.infer<typeof UsageLimitSchema>;
 
+const ModelSchema = z.string();
+const BaseURLSchema = z.string();
+const ProviderSchema = z.enum(["anthropic", "openai-compatible"]);
+const PricingPerModelSchema = z.record(z.string(), ModelPricingSchema);
+const ContextWindowPerModelSchema = z.record(z.string(), z.number());
+const CompactAtContextRatioSchema = z.number().min(0).max(1);
+const CompactTargetRatioSchema = z.number().min(0).max(1);
+const KeymapsSchema = z.object({
+  edit: KeySchema.optional(),
+  paste: KeySchema.optional(),
+  history: KeySchema.optional(),
+  clear: KeySchema.optional(),
+});
+const CustomSlashCommandDirsSchema = z.array(z.string());
+const CustomSkillDirsSchema = z.array(z.string());
+const LoadingStateFrameDurationSchema = z.number();
+const LoadingStateFramesSchema = z
+  .array(z.string())
+  .refine(
+    (frames) => {
+      if (frames.length === 0) return true;
+      return new Set(frames.map((f) => f.length)).size === 1;
+    },
+    { message: "All loadingStateFrames strings must be the same length" },
+  )
+  .refine((frames) => frames.length >= 2, {
+    message: "loadingStateFrames must be at least length 2",
+  });
+const PromptPrefixSchema = z.string();
+
 export const ConfigSchema = z.strictObject({
-  model: z.string().optional(),
-  baseURL: z.string().optional(),
-  provider: z.enum(["anthropic", "openai-compatible"]).optional(),
-  pricingPerModel: z.record(z.string(), ModelPricingSchema).optional(),
-  contextWindowPerModel: z.record(z.string(), z.number()).optional(),
-  compactAtContextRatio: z.number().min(0).max(1).optional(),
-  compactTargetRatio: z.number().min(0).max(1).optional(),
-  keymaps: z
-    .object({
-      edit: KeySchema.optional(),
-      paste: KeySchema.optional(),
-      history: KeySchema.optional(),
-      clear: KeySchema.optional(),
-    })
-    .optional(),
-  customSlashCommandDirs: z.array(z.string()).optional(),
-  customSkillDirs: z.array(z.string()).optional(),
-  loadingStateFrameDuration: z.number().optional(),
-  loadingStateFrames: z
-    .array(z.string())
-    .optional()
-    .refine(
-      (frames) => {
-        if (frames === undefined) return true;
-        if (frames.length === 0) return true;
-        return new Set(frames.map((f) => f.length)).size === 1;
-      },
-      { message: "All loadingStateFrames strings must be the same length" },
-    )
-    .refine(
-      (frames) => {
-        if (frames === undefined) return true;
-        return frames.length >= 2;
-      },
-      { message: "loadingStateFrames must be at least length 2" },
-    ),
-  promptPrefix: z.string().optional(),
+  model: ModelSchema,
+  baseURL: BaseURLSchema.optional(),
+  provider: ProviderSchema.optional(),
+  pricingPerModel: PricingPerModelSchema.optional(),
+  contextWindowPerModel: ContextWindowPerModelSchema.optional(),
+  compactAtContextRatio: CompactAtContextRatioSchema.optional(),
+  compactTargetRatio: CompactTargetRatioSchema.optional(),
+  keymaps: KeymapsSchema.optional(),
+  customSlashCommandDirs: CustomSlashCommandDirsSchema.optional(),
+  customSkillDirs: CustomSkillDirsSchema.optional(),
+  loadingStateFrameDuration: LoadingStateFrameDurationSchema.optional(),
+  loadingStateFrames: LoadingStateFramesSchema.optional(),
+  promptPrefix: PromptPrefixSchema.optional(),
   usageLimit: UsageLimitSchema.optional(),
 });
 
+export type Config = z.infer<typeof ConfigSchema>;
+
+export const DefaultedConfigSchema = z.strictObject({
+  model: ModelSchema,
+  baseURL: BaseURLSchema.optional(),
+  provider: ProviderSchema,
+  pricingPerModel: PricingPerModelSchema,
+  contextWindowPerModel: ContextWindowPerModelSchema,
+  compactAtContextRatio: CompactAtContextRatioSchema,
+  compactTargetRatio: CompactTargetRatioSchema,
+  keymapEditPrompt: KeySchema,
+  keymapPastePrompt: KeySchema,
+  keymapChatHistory: KeySchema,
+  keymapClear: KeySchema,
+  loadingStateFrames: LoadingStateFramesSchema,
+  loadingStateFrameDuration: LoadingStateFrameDurationSchema,
+  promptPrefix: PromptPrefixSchema,
+  usageLimit: UsageLimitSchema.optional(),
+});
+
+export type DefaultedConfig = z.infer<typeof DefaultedConfigSchema>;
+
 export type Key = z.infer<typeof KeySchema>;
 
-interface DefaultConfig {
-  model: string;
-  provider: Provider;
-  pricingPerModel: Record<
-    string,
-    {
-      inputPerMillion: number;
-      outputPerMillion: number;
-      cacheReadPerMillion: number;
-      cacheWritePerMillion: number;
-    }
-  >;
-  contextWindowPerModel: Record<string, number>;
-  compactAtContextRatio: number;
-  compactTargetRatio: number;
-  keymaps: {
-    edit: Key;
-    paste: Key;
-    history: Key;
-    clear: Key;
-  };
-  customSlashCommandDirs: string[];
-  customSkillDirs: string[];
-  loadingStateFrames: string[];
-  loadingStateFrameDuration: number;
-  promptPrefix: string;
-}
-
-export const DEFAULT_CONFIG: DefaultConfig = {
-  provider: "openai-compatible",
-  pricingPerModel: {},
+export const DEFAULT_CONFIG = {
+  provider: "openai-compatible" as const,
+  pricingPerModel: {} as Record<string, ModelPricing>,
   contextWindowPerModel: {},
   compactAtContextRatio: 0.7,
   compactTargetRatio: 0.3,
-  model: MISSING,
   keymaps: {
     edit: {
       name: "g",
@@ -161,7 +160,7 @@ export const DEFAULT_CONFIG: DefaultConfig = {
   promptPrefix: "> ",
 };
 
-export function readConfigFile(path: string) {
+export function readConfigFile(path: string): Partial<Config> {
   if (!fsDeps.existsSync(path)) return {};
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
@@ -179,13 +178,9 @@ export async function initStateFromConfig() {
   const globalConfig = readConfigFile(getGlobalConfigPath());
   const localConfig = readConfigFile(getLocalConfigPath());
 
-  const defaultedModel =
-    localConfig.model ?? globalConfig.model ?? DEFAULT_CONFIG.model;
-  if (defaultedModel === MISSING) {
-    throw new Error(
-      `A \`model\` is required in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
-    );
-  }
+  const defaultedModel = ModelSchema.parse(
+    localConfig.model ?? globalConfig.model,
+  );
 
   const defaultedProvider =
     localConfig.provider ?? globalConfig.provider ?? DEFAULT_CONFIG.provider;

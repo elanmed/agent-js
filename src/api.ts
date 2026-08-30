@@ -31,7 +31,7 @@ export function getLanguageModel() {
   }
 
   const baseURL = getState().config.baseURL;
-  assert(baseURL !== null);
+  assert(baseURL !== undefined);
 
   return createOpenAICompatible({
     name: "openai-compatible",

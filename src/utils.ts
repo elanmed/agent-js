@@ -5,8 +5,6 @@ import childProcess from "node:child_process";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getPromptHistoryDir } from "./paths.ts";
 
-export const MISSING = "__MISSING__";
-
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
 export function isAbortError(error: unknown): boolean {
