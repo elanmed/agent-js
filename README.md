@@ -333,7 +333,7 @@ Minimal runtime dependencies (9 total):
 - All tests are written with the Node.js native test runner and mocks i.e. no Jest
 - TypeScript is executed directly via `node` (no build step), keeping the toolchain minimal
 
-### Running in a container
+## Running in a container
 
 The `scripts/copy-server.ts` and `scripts/paste-server.ts` helpers bridge the host clipboard to a container. In the example below, each listens on a random port and prints that port to stdout, so the port can be captured via a FIFO. Set `paste_cmd`/`copy_cmd` to the host clipboard commands (e.g. `pbpaste`/`pbcopy` on macOS).
 
