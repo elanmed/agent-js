@@ -58,6 +58,14 @@ If the current model has no `pricingPerModel` entry, usage limiting is disabled 
 
 The current spend is shown as `$<cost> of $<limit>` in the status line.
 
+Example:
+
+```yaml
+usageLimit:
+  duration: "5h"
+  dollarAmount: 10
+```
+
 ### Pricing Per Model
 
 Token pricing per model per million tokens:
@@ -120,6 +128,18 @@ Each `Key` object has:
 | `shift` | `boolean` | `false`  |
 
 You can configure individual keymaps while keeping defaults for others
+
+Example:
+
+```yaml
+keymaps:
+  edit:
+    name: x
+    ctrl: true
+  paste:
+    name: v
+    ctrl: true
+```
 
 ### Example settings.yaml
 
