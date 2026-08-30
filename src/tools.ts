@@ -515,7 +515,7 @@ export const TOOLS = {
   }),
   view_file: tool({
     description:
-      "View the contents of a file or list a directory. File contents are returned with line numbers.",
+      "View the contents of a file or list a directory. File contents are returned with line numbers. Optional start_line and end_line are 1-based and inclusive; end_line -1 (or omitted) reads to end of file.",
     inputSchema: viewFileToolInputSchema,
     execute: (args) => executeViewFileTool(args),
   }),
