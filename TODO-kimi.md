@@ -10,12 +10,6 @@ Verified state: `tsc`, `eslint src`, all 419 tests, and `prettier --check` pass.
 
 Plan: call `appendModelUsage(totalUsage)` in `maybeCompactMessageParams()` after a successful result; add a test asserting usage is appended after compaction.
 
-### 2. Compaction prompt is missing the token unit
-
-`src/api.ts:165` builds `Compact the following conversation into roughly ${targetTokens}:` — the number has no unit, so the LLM doesn't know it's a token budget.
-
-Plan: change to `...into roughly ${targetTokens} tokens:`, or round and format the number (it can be a float, e.g. `0.3 * 250000 = 75000.00000000001`). Update any matching test fixture.
-
 ### 3. Token accounting can go negative when a provider omits `inputTokens`
 
 `src/api.ts:139-141`: `allInputTokens = totalUsage.inputTokens ?? 0`, then `tokensForInputMessageParam = allInputTokens - messageParams.tokens`. If the provider reports no input tokens, this subtracts the whole tracked history from 0, driving `messageParams.tokens` negative and silently disabling context-window tracking / compaction.
@@ -39,26 +33,6 @@ Plan: use `set -o pipefail` in the command, or check stderr content / run git di
 `src/api.ts`: `toolCallIdToTempFile` entries are only cleaned up in `experimental_onToolCallFinish`. If `generateText` throws/aborts between start and finish, the temp files in `os.tmpdir()` are never unlinked.
 
 Plan: in the error path of `resolveApiCall()` (and a `finally`), iterate `toolCallIdToTempFile.values()` and `tryCatch(() => fsDeps.unlinkSync(...))` each.
-
-### 7. `executeBat` ignores spawn failure / non-zero exit
-
-`src/print.ts:199-205`: `spawnSync` rarely throws, so `batResult.ok` is true even if `bat` exits non-zero (result has `.error`/`.status`); the fallback prints `batResult.value.stdout`, which may be empty — the LLM response is lost.
-
-Plan: check `batResult.value.status === 0` (and absence of `.error`) before printing stdout; otherwise fall back to plain `print(content)`.
-
-## Documentation
-
-### 17. `view_file` tool description omits `start_line`/`end_line` semantics
-
-`src/tools.ts:516-519` description doesn't mention the 1-based numbering or the `-1` "to end of file" sentinel that `executeViewFileTool` supports.
-
-Plan: extend the tool description to document both params and the `-1` sentinel.
-
-### 19. `jq` is an undeclared system dependency of `pnpm run ci`
-
-`package.json` `cloc-source`/`cloc-tests` pipe to `jq`, which is not a devDependency and not mentioned in README.
-
-Plan: either document `jq` as a prerequisite, or replace with `node -e` JSON parsing to stay Node-only.
 
 ## Code style / consistency
 
