@@ -2,7 +2,7 @@
 import type readline from "node:readline/promises";
 import type { ModelMessage } from "ai";
 import {
-  DEFAULT_CONFIG,
+  defaultConfig,
   type DefaultedConfig,
   type Key,
   type ModelPricing,
@@ -74,21 +74,19 @@ const initialState: State = {
   config: {
     model: "",
     baseURL: undefined,
-    provider: DEFAULT_CONFIG.provider,
-    pricingPerModel: structuredClone(DEFAULT_CONFIG.pricingPerModel),
-    contextWindowPerModel: structuredClone(
-      DEFAULT_CONFIG.contextWindowPerModel,
-    ),
-    compactAtContextRatio: DEFAULT_CONFIG.compactAtContextRatio,
-    compactTargetRatio: DEFAULT_CONFIG.compactTargetRatio,
-    keymaps: structuredClone(DEFAULT_CONFIG.keymaps),
+    provider: defaultConfig.provider,
+    pricingPerModel: structuredClone(defaultConfig.pricingPerModel),
+    contextWindowPerModel: structuredClone(defaultConfig.contextWindowPerModel),
+    compactAtContextRatio: defaultConfig.compactAtContextRatio,
+    compactTargetRatio: defaultConfig.compactTargetRatio,
+    keymaps: structuredClone(defaultConfig.keymaps),
     customSlashCommandDirs: structuredClone(
-      DEFAULT_CONFIG.customSlashCommandDirs,
+      defaultConfig.customSlashCommandDirs,
     ),
-    customSkillDirs: structuredClone(DEFAULT_CONFIG.customSkillDirs),
-    loadingStateFrameDuration: DEFAULT_CONFIG.loadingStateFrameDuration,
-    loadingStateFrames: structuredClone(DEFAULT_CONFIG.loadingStateFrames),
-    promptPrefix: DEFAULT_CONFIG.promptPrefix,
+    customSkillDirs: structuredClone(defaultConfig.customSkillDirs),
+    loadingStateFrameDuration: defaultConfig.loadingStateFrameDuration,
+    loadingStateFrames: structuredClone(defaultConfig.loadingStateFrames),
+    promptPrefix: defaultConfig.promptPrefix,
     usageLimit: undefined,
   },
   abortControllers: {

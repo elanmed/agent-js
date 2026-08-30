@@ -134,7 +134,7 @@ export type DefaultedConfig = z.infer<typeof DefaultedConfigSchema>;
 
 export type Key = z.infer<typeof KeySchema>;
 
-export const DEFAULT_CONFIG: DefaultedConfig = {
+export const defaultConfig: DefaultedConfig = {
   model: "",
   provider: "openai-compatible" as const,
   pricingPerModel: {},
@@ -189,7 +189,7 @@ export async function initStateFromConfig() {
   );
 
   const defaultedProvider =
-    localConfig.provider ?? globalConfig.provider ?? DEFAULT_CONFIG.provider;
+    localConfig.provider ?? globalConfig.provider ?? defaultConfig.provider;
   const defaultedBaseURL = localConfig.baseURL ?? globalConfig.baseURL;
   if (
     defaultedBaseURL === undefined &&
@@ -211,72 +211,72 @@ export async function initStateFromConfig() {
   actions.setProvider(defaultedProvider);
 
   const defaultedPricingPerModel = {
-    ...DEFAULT_CONFIG.pricingPerModel,
+    ...defaultConfig.pricingPerModel,
     ...globalConfig.pricingPerModel,
     ...localConfig.pricingPerModel,
   };
   actions.setPricingPerModel(defaultedPricingPerModel);
   actions.setContextWindowPerModel({
-    ...DEFAULT_CONFIG.contextWindowPerModel,
+    ...defaultConfig.contextWindowPerModel,
     ...globalConfig.contextWindowPerModel,
     ...localConfig.contextWindowPerModel,
   });
   actions.setCompactAtContextRatio(
     localConfig.compactAtContextRatio ??
       globalConfig.compactAtContextRatio ??
-      DEFAULT_CONFIG.compactAtContextRatio,
+      defaultConfig.compactAtContextRatio,
   );
   actions.setCompactTargetRatio(
     localConfig.compactTargetRatio ??
       globalConfig.compactTargetRatio ??
-      DEFAULT_CONFIG.compactTargetRatio,
+      defaultConfig.compactTargetRatio,
   );
 
   actions.setCustomSlashCommandDirs(
     localConfig.customSlashCommandDirs ??
       globalConfig.customSlashCommandDirs ??
-      DEFAULT_CONFIG.customSlashCommandDirs,
+      defaultConfig.customSlashCommandDirs,
   );
   actions.setSlashCommands(getAvailableSlashCommands());
   actions.setCustomSkillDirs(
     localConfig.customSkillDirs ??
       globalConfig.customSkillDirs ??
-      DEFAULT_CONFIG.customSkillDirs,
+      defaultConfig.customSkillDirs,
   );
   actions.setKeymapEditPrompt(
     localConfig.keymaps?.edit ??
       globalConfig.keymaps?.edit ??
-      DEFAULT_CONFIG.keymaps.edit,
+      defaultConfig.keymaps.edit,
   );
   actions.setKeymapPastePrompt(
     localConfig.keymaps?.paste ??
       globalConfig.keymaps?.paste ??
-      DEFAULT_CONFIG.keymaps.paste,
+      defaultConfig.keymaps.paste,
   );
   actions.setKeymapChatHistory(
     localConfig.keymaps?.history ??
       globalConfig.keymaps?.history ??
-      DEFAULT_CONFIG.keymaps.history,
+      defaultConfig.keymaps.history,
   );
   actions.setKeymapClear(
     localConfig.keymaps?.clear ??
       globalConfig.keymaps?.clear ??
-      DEFAULT_CONFIG.keymaps.clear,
+      defaultConfig.keymaps.clear,
   );
   actions.setLoadingStateFrames(
     localConfig.loadingStateFrames ??
       globalConfig.loadingStateFrames ??
-      DEFAULT_CONFIG.loadingStateFrames,
+      defaultConfig.loadingStateFrames,
   );
   actions.setLoadingStateFrameDuration(
     localConfig.loadingStateFrameDuration ??
       globalConfig.loadingStateFrameDuration ??
-      DEFAULT_CONFIG.loadingStateFrameDuration,
+      defaultConfig.loadingStateFrameDuration,
   );
   actions.setPromptPrefix(
     localConfig.promptPrefix ??
       globalConfig.promptPrefix ??
-      DEFAULT_CONFIG.promptPrefix,
+      defaultConfig.promptPrefix,
   );
 
   const defaultedUsageLimit = localConfig.usageLimit ?? globalConfig.usageLimit;

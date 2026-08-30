@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
-import { DEFAULT_CONFIG } from "./config.ts";
+import { defaultConfig } from "./config.ts";
 import { makeFakeRl } from "./test-helpers.ts";
 
 describe("state", () => {
@@ -110,7 +110,7 @@ describe("state", () => {
   });
 
   it("set-pricing-per-model", () => {
-    const newPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
+    const newPricing = structuredClone(defaultConfig.pricingPerModel);
     newPricing["test-model"] = {
       inputPerMillion: 999,
       outputPerMillion: 0,
@@ -144,7 +144,7 @@ describe("state", () => {
   it("set-keymap-edit-prompt", () => {
     assert.deepStrictEqual(
       getState().config.keymaps.edit,
-      DEFAULT_CONFIG.keymaps.edit,
+      defaultConfig.keymaps.edit,
     );
     actions.setKeymapEditPrompt({
       name: "v",
@@ -163,7 +163,7 @@ describe("state", () => {
   it("set-keymap-chat-history", () => {
     assert.deepStrictEqual(
       getState().config.keymaps.history,
-      DEFAULT_CONFIG.keymaps.history,
+      defaultConfig.keymaps.history,
     );
     actions.setKeymapChatHistory({
       name: "o",
@@ -182,7 +182,7 @@ describe("state", () => {
   it("set-keymap-clear", () => {
     assert.deepStrictEqual(
       getState().config.keymaps.clear,
-      DEFAULT_CONFIG.keymaps.clear,
+      defaultConfig.keymaps.clear,
     );
     actions.setKeymapClear({
       name: "k",

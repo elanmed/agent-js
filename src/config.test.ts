@@ -4,7 +4,7 @@ import { getState } from "./state.ts";
 import {
   initState,
   initStateForDebug,
-  DEFAULT_CONFIG,
+  defaultConfig,
   ConfigSchema,
   DefaultedConfigSchema,
 } from "./config.ts";
@@ -18,7 +18,7 @@ import { testFs, setupTestContext } from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
 import { dirname } from "node:path";
 
-const defaultConfig = {
+const testConfig = {
   model: "claude-sonnet-4-6",
   baseURL: "https://api.example.com",
 };
@@ -41,13 +41,13 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           model: "claude-haiku-4-5",
         }),
       );
@@ -61,14 +61,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          model: defaultConfig.model,
+          model: testConfig.model,
           provider: "openai-compatible",
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          model: defaultConfig.model,
+          model: testConfig.model,
           provider: "anthropic",
         }),
       );
@@ -82,7 +82,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           model: "test-model",
           pricingPerModel: {
             "global-model": {
@@ -99,7 +99,7 @@ describe("config", () => {
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           model: "test-model",
           pricingPerModel: {
             "local-model": {
@@ -136,7 +136,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           contextWindowPerModel: {
             "global-model": 100_000,
             "shared-model": 200_000,
@@ -146,7 +146,7 @@ describe("config", () => {
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           contextWindowPerModel: {
             "local-model": 300_000,
             "shared-model": 400_000,
@@ -167,14 +167,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactAtContextRatio: 0.8,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactAtContextRatio: 0.5,
         }),
       );
@@ -188,14 +188,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactTargetRatio: 0.4,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactTargetRatio: 0.25,
         }),
       );
@@ -209,7 +209,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
             paste: { name: "p", ctrl: false, meta: false, shift: false },
@@ -221,7 +221,7 @@ describe("config", () => {
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           keymaps: {
             edit: { name: "e", ctrl: true, meta: false, shift: false },
             paste: { name: "t", ctrl: true, meta: false, shift: false },
@@ -263,14 +263,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           customSlashCommandDirs: ["/global-dir"],
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           customSlashCommandDirs: ["/local-dir"],
         }),
       );
@@ -286,14 +286,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           customSkillDirs: ["/global-skills"],
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           customSkillDirs: ["/local-skills"],
         }),
       );
@@ -309,14 +309,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           loadingStateFrames: ["⣾", "⣽", "⣻", "⢿"],
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           loadingStateFrames: ["⠋", "⠙", "⠹", "⠸"],
         }),
       );
@@ -335,14 +335,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           loadingStateFrameDuration: 100,
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           loadingStateFrameDuration: 200,
         }),
       );
@@ -356,14 +356,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           promptPrefix: "> ",
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           promptPrefix: "🤖 ",
         }),
       );
@@ -377,14 +377,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "2h", dollarAmount: 10 },
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "60m", dollarAmount: 20 },
         }),
       );
@@ -401,14 +401,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "2h", dollarAmount: 10 },
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
         }),
       );
 
@@ -424,14 +424,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           contextPerModel: { "deepseek-v4-flash-free": 4000 },
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
         }),
       );
 
@@ -442,14 +442,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { dollarAmount: 10 },
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
         }),
       );
 
@@ -460,14 +460,14 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "2h" },
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
         }),
       );
 
@@ -478,7 +478,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: 3_600_000, dollarAmount: 10 },
         }),
       );
@@ -490,7 +490,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "10x", dollarAmount: 10 },
         }),
       );
@@ -505,7 +505,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "3600000", dollarAmount: 10 },
         }),
       );
@@ -520,7 +520,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "abch", dollarAmount: 10 },
         }),
       );
@@ -535,7 +535,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           usageLimit: { duration: "2h", dollarAmount: "five" },
         }),
       );
@@ -547,7 +547,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactAtContextRatio: 1.5,
         }),
       );
@@ -559,7 +559,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactAtContextRatio: -0.1,
         }),
       );
@@ -571,7 +571,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactAtContextRatio: "half",
         }),
       );
@@ -583,7 +583,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactTargetRatio: 1.5,
         }),
       );
@@ -595,7 +595,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactTargetRatio: -0.1,
         }),
       );
@@ -607,7 +607,7 @@ describe("config", () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           compactTargetRatio: "half",
         }),
       );
@@ -619,7 +619,7 @@ describe("config", () => {
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
-          ...defaultConfig,
+          ...testConfig,
           keymaps: {
             edit: { name: "v", ctrl: false, meta: false, shift: false },
           },
@@ -636,15 +636,15 @@ describe("config", () => {
       });
       assert.deepEqual(
         getState().config.keymaps.paste,
-        DEFAULT_CONFIG.keymaps.paste,
+        defaultConfig.keymaps.paste,
       );
       assert.deepEqual(
         getState().config.keymaps.history,
-        DEFAULT_CONFIG.keymaps.history,
+        defaultConfig.keymaps.history,
       );
       assert.deepEqual(
         getState().config.keymaps.clear,
-        DEFAULT_CONFIG.keymaps.clear,
+        defaultConfig.keymaps.clear,
       );
     });
   });
@@ -655,7 +655,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             model: "claude-haiku-4-5",
           }),
         );
@@ -668,7 +668,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            model: defaultConfig.model,
+            model: testConfig.model,
             provider: "anthropic",
           }),
         );
@@ -681,7 +681,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            model: defaultConfig.model,
+            model: testConfig.model,
             provider: "anthropic",
             baseURL: "https://api.example.com",
           }),
@@ -694,7 +694,7 @@ describe("config", () => {
       });
 
       it("uses its pricingPerModel over the default config", async () => {
-        const globalPricing = structuredClone(DEFAULT_CONFIG.pricingPerModel);
+        const globalPricing = structuredClone(defaultConfig.pricingPerModel);
         globalPricing["test-model"] = {
           inputPerMillion: 999,
           outputPerMillion: 0,
@@ -705,7 +705,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             model: "test-model",
             pricingPerModel: globalPricing,
             usageLimit: { duration: "60m", dollarAmount: 10 },
@@ -720,7 +720,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             keymaps: {
               edit: { name: "v", ctrl: false, meta: false, shift: false },
               paste: { name: "p", ctrl: false, meta: false, shift: false },
@@ -767,7 +767,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             loadingStateFrames: ["⣾", "⣽", "⣻", "⢿"],
           }),
         );
@@ -786,7 +786,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             loadingStateFrameDuration: 150,
           }),
         );
@@ -800,7 +800,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             promptPrefix: "❯ ",
           }),
         );
@@ -814,7 +814,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             usageLimit: { duration: "2h", dollarAmount: 20 },
           }),
         );
@@ -831,7 +831,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
           }),
         );
 
@@ -844,7 +844,7 @@ describe("config", () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
-            ...defaultConfig,
+            ...testConfig,
             customSkillDirs: ["/global-skills"],
           }),
         );
@@ -882,7 +882,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
         loadingStateFrames: ["..", "...", ".."],
       }),
     );
@@ -897,7 +897,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
         loadingStateFrames: [".."],
       }),
     );
@@ -912,7 +912,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
         loadingStateFrames: [],
       }),
     );
@@ -927,7 +927,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
         loadingStateFrames: ["..", "..", ".."],
       }),
     );
@@ -967,7 +967,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
       }),
     );
 
@@ -985,7 +985,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
       }),
     );
 
@@ -1000,7 +1000,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
       }),
     );
 
@@ -1012,7 +1012,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
       }),
     );
 
@@ -1044,7 +1044,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
         usageLimit: { duration: "60m", dollarAmount: 10 },
         pricingPerModel: {
           "claude-sonnet-4-6": {
@@ -1070,7 +1070,7 @@ describe("config", () => {
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
-        ...defaultConfig,
+        ...testConfig,
       }),
     );
 
