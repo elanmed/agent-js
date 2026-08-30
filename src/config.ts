@@ -47,10 +47,11 @@ export const UsageLimitSchema = z.strictObject({
       if (!["s", "m", "h", "d"].includes(suffix)) return false;
       const prefix = duration.slice(0, -1);
       if (Number.isNaN(Number(prefix))) return false;
+      if (Number(prefix) < 0) return false;
       return true;
     },
     {
-      message: "usageLimit.duration must be of the format '[number][s,m,h,d]'",
+      message: "usageLimit.duration must be of the format '[>= 0][s,m,h,d]'",
     },
   ),
   dollarAmount: z.number(),

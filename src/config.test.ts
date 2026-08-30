@@ -531,6 +531,21 @@ describe("config", () => {
       );
     });
 
+    it("rejects usageLimit.duration with a negative prefix", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          usageLimit: { duration: "-2h", dollarAmount: 10 },
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /usageLimit\.duration must be of the format/,
+      );
+    });
+
     it("rejects non-number usageLimit.dollarAmount", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
