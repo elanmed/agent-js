@@ -173,21 +173,6 @@ or behave unpredictably depending on data.
 **Fix:** Extend the refine to reject a negative or zero prefix
 (`Number(prefix) > 0`).
 
-### 10. Duplicated "parse `chat-history-<timestamp>.txt`" logic
-
-**Files:** `src/log.ts` (`deleteExpiredPromptHistory`) and `src/input.ts`
-(`resumeCommand`)
-
-Both independently re-implement the same filename-parsing logic (split on
-`-`, check `parts.length === 3`, check prefix, parse timestamp). There's
-literally a `// TODO: reuse this logic` comment in `log.ts` marking this.
-Any future change to the naming scheme requires updating both call sites in
-lockstep, and it's easy to update one and forget the other.
-
-**Fix:** Extract a shared helper, e.g.
-`parseChatHistoryFilename(name: string): number | null`, used by both
-`deleteExpiredPromptHistory` and `resumeCommand`.
-
 ### 11. `bat` unavailability is reported inconsistently
 
 **File:** `src/print.ts` — `executeBat`
@@ -237,15 +222,3 @@ edits, but worth knowing.
 
 **Fix:** If this matters, use a manual overlap-aware count (`indexOf` in a
 loop advancing by 1 instead of by `old_str.length`) instead of `split`.
-
----
-
-## Suggested order of work
-
-1. #1, #2, #3 — crash/cost-correctness bugs, low effort, high value.
-2. #6, #7 — cheap, isolated fixes with easy regression tests.
-3. #4, #5 — token accounting correctness; needs a bit more design thought
-   (what "correct" means across a model switch or resume).
-4. #8, #9, #12, #13 — config/validation hardening and verifying the `ai` SDK
-   assumption, since everything else in the cost-tracking story rests on it.
-5. #10, #11, #14–#17 — cleanup, can be batched into one pass.

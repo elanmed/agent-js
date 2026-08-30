@@ -46,12 +46,6 @@ Plan: in the error path of `resolveApiCall()` (and a `finally`), iterate `toolCa
 
 Plan: check `batResult.value.status === 0` (and absence of `.error`) before printing stdout; otherwise fall back to plain `print(content)`.
 
-### 8. Usage-limit config validation ignores pricing requirement
-
-`src/usage.ts:46-56` `isUsageLimitDisabled()` also requires `pricingPerModel[model]`, but `initStateFromConfig()` only validates that `usageLimitDuration` + `usageLimitDollar` are set together. Setting both limits without pricing silently disables the limit feature.
-
-Plan: either warn at startup when limits are set but pricing for the active model is missing, or document the pricing requirement in the README Usage Limits section.
-
 ## Documentation
 
 ### 17. `view_file` tool description omits `start_line`/`end_line` semantics
