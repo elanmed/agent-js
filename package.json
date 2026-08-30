@@ -12,8 +12,8 @@
     "lint": "eslint src scripts",
     "types": "tsc",
     "format": "prettier --write src/ scripts/ AGENTS.md eslint.config.mjs tsconfig.json .agent-js/",
-    "cloc-source": "cloc src --not-match-f='\\.test\\.ts$' --json --quiet | jq '.SUM.code'",
-    "cloc-tests": "cloc src --match-f='\\.test\\.ts$' --json --quiet | jq '.SUM.code'",
+    "cloc-source": "cloc src --not-match-f='\\.test\\.ts$' --json --quiet | node scripts/cloc-code.ts",
+    "cloc-tests": "cloc src --match-f='\\.test\\.ts$' --json --quiet | node scripts/cloc-code.ts",
     "cloc": "pnpm run cloc-source && pnpm run cloc-tests",
     "ci": "pnpm run test && pnpm run lint && pnpm run types && pnpm run format && pnpm run cloc-source && pnpm run cloc-tests"
   },
