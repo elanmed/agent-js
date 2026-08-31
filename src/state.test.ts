@@ -98,7 +98,6 @@ describe("state", () => {
     assert.equal(getState().app.messageParams.tokensStale, true);
   });
 
-
   it("reset-message-params", () => {
     actions.appendToMessageParams({ role: "user", content: "hi" });
     actions.setMessageParamTokens(7);
