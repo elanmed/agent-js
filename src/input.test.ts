@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
 import {
@@ -23,13 +23,13 @@ import {
   testFs,
   testProcessEnv,
   setupTestContext,
+  setupKeypressTests,
   makeFakeRl,
-  mockExec,
+  mockClipboardPaste,
   stripAnsi,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
-import os from "node:os";
 import { getLocalConfigPath, getGlobalConfigPath } from "./paths.ts";
 
 describe("input", () => {
@@ -115,8 +115,7 @@ describe("input", () => {
 
     it("includes clipboard content when includeClipboardSuffix is true", async () => {
       actions.setRl(makeFakeRl({ line: "hello " }));
-      mock.method(os, "platform", () => "linux");
-      mockExec({ stdout: "world" });
+      mockClipboardPaste("world");
       mock.method(childProcess, "spawnSync", () => {
         testFs.writeFileSync(
           "/tmp/agent-js-test-uuid.txt",
@@ -131,8 +130,7 @@ describe("input", () => {
 
     it("returns content when includeClipboardSuffix is true and editor saves unchanged content", async () => {
       actions.setRl(makeFakeRl({ line: "query" }));
-      mock.method(os, "platform", () => "linux");
-      mockExec({ stdout: "clip" });
+      mockClipboardPaste("clip");
       mock.method(childProcess, "spawnSync", () => {
         testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "queryclip");
       });
@@ -144,8 +142,7 @@ describe("input", () => {
 
     it("returns null when includeClipboardSuffix is true and editor is closed without saving", async () => {
       actions.setRl(makeFakeRl({ line: "query" }));
-      mock.method(os, "platform", () => "linux");
-      mockExec({ stdout: "clip" });
+      mockClipboardPaste("clip");
       const result = await spawnAndReadEditorContent({
         includeClipboardSuffix: true,
       });
@@ -712,7 +709,7 @@ Available commands:
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         `/test/.agent-js/commands/custom.md
-${"-".repeat("/test/.agent-js/commands/custom.md".length)}
+----------------------------------
 custom command content`,
       );
     });
@@ -909,6 +906,195 @@ Applied config:
     });
   });
 
+  describe("initKeypress", () => {
+    let harness: ReturnType<typeof setupKeypressTests>;
+
+    beforeEach(() => {
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test/.agent-js/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      actions.setKeymap("custom", { name: "c", ctrl: true });
+      harness = setupKeypressTests();
+    });
+
+    afterEach(() => {
+      harness.cleanup();
+    });
+
+    it("types custom slash command into the prompt when its keymap matches", () => {
+      harness.emitKey({ name: "c", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "/custom\n");
+      assert.deepStrictEqual(harness.writes, [
+        { chunk: "/custom\n", key: undefined },
+      ]);
+    });
+
+    it("does not type custom slash command when no question is pending", () => {
+      actions.setQuestionAbortController(null);
+      harness.emitKey({ name: "c", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "");
+      assert.deepStrictEqual(harness.writes, []);
+    });
+
+    it("does nothing on unmatched keys", () => {
+      harness.emitKey({ name: "x", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "");
+      assert.deepStrictEqual(harness.writes, []);
+    });
+
+    it("runs edit command when its keymap matches", async () => {
+      mock.method(childProcess, "spawnSync", () => {
+        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "  edited  ");
+      });
+      harness.emitKey({ name: "g", ctrl: true });
+      await harness.flush();
+      assert.strictEqual(getState().app.editorInputValue, "edited\n");
+    });
+
+    it("runs paste command with clipboard when its keymap matches", async () => {
+      mockClipboardPaste("world");
+      mock.method(childProcess, "spawnSync", () => {
+        testFs.writeFileSync(
+          "/tmp/agent-js-test-uuid.txt",
+          "  hello world modified  \n",
+        );
+      });
+      harness.emitKey({ name: "v", ctrl: true });
+      await harness.flush();
+      assert.strictEqual(
+        getState().app.editorInputValue,
+        "hello world modified\n",
+      );
+    });
+
+    it("opens chat history in a pager when history keymap matches", () => {
+      const spawned: string[] = [];
+      mock.method(childProcess, "spawnSync", (cmd: string) => {
+        spawned.push(cmd);
+      });
+      actions.setKeymap("history", { name: "h", ctrl: true });
+      actions.setChatHistoryPath("/tmp/editor.log");
+      testFs._files.set("/tmp/editor.log", "log content");
+      harness.emitKey({ name: "h", ctrl: true });
+      assert.strictEqual(spawned[0], `less "/tmp/agent-js-test-uuid.txt"`);
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "log content",
+      );
+      assert.strictEqual(getState().app.stdout, "");
+    });
+
+    it("opens config in a pager when config keymap matches", () => {
+      mock.method(childProcess, "spawnSync", () => undefined);
+      actions.setKeymap("config", { name: "q", ctrl: true });
+      harness.emitKey({ name: "q", ctrl: true });
+      assert.match(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt") ?? "",
+        /Applied config:/,
+      );
+      assert.strictEqual(getState().app.stdout, "");
+    });
+
+    it("opens context in a pager when context-str keymap matches", async () => {
+      mock.method(childProcess, "spawnSync", () => undefined);
+      actions.setKeymap("context-str", { name: "d", ctrl: true });
+      actions.setContextEntries([
+        { filePath: "/project/AGENTS.md", content: "context" },
+      ]);
+      actions.setContextStr("context string content");
+      harness.emitKey({ name: "d", ctrl: true });
+      await harness.flush();
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "context string content",
+      );
+      assert.strictEqual(getState().app.stdout, "");
+    });
+
+    it("opens custom commands in a pager when commands-str keymap matches", () => {
+      mock.method(childProcess, "spawnSync", () => undefined);
+      actions.setKeymap("commands-str", { name: "m", ctrl: true });
+      harness.emitKey({ name: "m", ctrl: true });
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        `/test/.agent-js/commands/custom.md
+----------------------------------
+custom command content`,
+      );
+      assert.strictEqual(getState().app.stdout, "");
+    });
+
+    for (const [command, keyName] of [
+      ["clear", "k"],
+      ["model", "m"],
+      ["skills", "l"],
+      ["context", "n"],
+      ["commands", "o"],
+      ["keymaps", "p"],
+      ["usage", "u"],
+      ["resume", "r"],
+    ] as const) {
+      it(`types /${command} into the prompt when its keymap matches`, () => {
+        actions.setKeymap(command, { name: keyName, ctrl: true });
+        harness.emitKey({ name: keyName, ctrl: true });
+        assert.strictEqual(getState().app.stdout, `/${command}\n`);
+        assert.deepStrictEqual(harness.writes, [
+          { chunk: `/${command}\n`, key: undefined },
+        ]);
+      });
+    }
+
+    it("does not type builtin command when no question is pending", () => {
+      actions.setKeymap("clear", { name: "k", ctrl: true });
+      actions.setQuestionAbortController(null);
+      harness.emitKey({ name: "k", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "");
+      assert.deepStrictEqual(harness.writes, []);
+    });
+
+    it("uses the first matching builtin keymap when commands share a key", () => {
+      actions.setKeymap("clear", { name: "x", ctrl: true });
+      actions.setKeymap("skills", { name: "x", ctrl: true });
+      harness.emitKey({ name: "x", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "/clear\n");
+    });
+
+    it("prefers builtin commands over custom commands on the same key", () => {
+      actions.setKeymap("clear", { name: "c", ctrl: true });
+      harness.emitKey({ name: "c", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "/clear\n");
+    });
+
+    it("clears the line on unmatched keys during loading", () => {
+      actions.setLoadingStateTimeout({} as NodeJS.Timeout);
+      harness.emitKey({ name: "z", ctrl: true });
+      assert.deepStrictEqual(harness.writes, [
+        { chunk: null, key: { ctrl: true, name: "u" } },
+      ]);
+      assert.strictEqual(getState().app.stdout, "");
+    });
+
+    it("types keymap command while loading when a question is pending", () => {
+      actions.setKeymap("clear", { name: "k", ctrl: true });
+      actions.setLoadingStateTimeout({} as NodeJS.Timeout);
+      harness.emitKey({ name: "k", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "/clear\n");
+    });
+
+    it("does not clear the line for matched keys during loading", () => {
+      actions.setKeymap("clear", { name: "k", ctrl: true });
+      actions.setQuestionAbortController(null);
+      actions.setLoadingStateTimeout({} as NodeJS.Timeout);
+      harness.emitKey({ name: "k", ctrl: true });
+      assert.strictEqual(getState().app.stdout, "");
+      assert.deepStrictEqual(harness.writes, []);
+    });
+  });
+
   describe("isSameKey", () => {
     it("returns true when all fields match", () => {
       assert.equal(
@@ -1098,8 +1284,7 @@ from editor
 
     it("handles /paste command and logs editor content to chat history", async () => {
       actions.setChatHistoryPath("/tmp/test-history.log");
-      mock.method(os, "platform", () => "linux");
-      mockExec({ stdout: "clip" });
+      mockClipboardPaste("clip");
       mock.method(childProcess, "spawnSync", () => {
         testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "pasted content");
       });
@@ -1215,7 +1400,7 @@ Available commands:
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         `/test/.agent-js/commands/custom.md
-${"-".repeat("/test/.agent-js/commands/custom.md".length)}
+----------------------------------
 custom command content`,
       );
     });

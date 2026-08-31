@@ -4,7 +4,10 @@ import childProcess from "node:child_process";
 import { mock } from "node:test";
 import { fsDeps, processDeps } from "./deps.ts";
 import { actions } from "./state.ts";
+import { initKeypress } from "./input.ts";
+import type { Key } from "./config.ts";
 import readline from "node:readline/promises";
+import { stdin } from "node:process";
 
 export interface FakeFsDeps {
   _files: Map<string, string>;
@@ -178,6 +181,17 @@ export function makeFakeRl(overrides: object = {}) {
   } as unknown as readline.Interface;
 }
 
+export function makeFakeRlWithWrites(overrides: object = {}) {
+  const writes: { chunk: unknown; key: unknown }[] = [];
+  const rl = makeFakeRl({
+    write: (chunk: unknown, key?: unknown) => {
+      writes.push({ chunk, key });
+    },
+    ...overrides,
+  });
+  return { rl, writes };
+}
+
 export function setupTestContext() {
   actions.resetState();
   setupFakeDeps();
@@ -206,6 +220,28 @@ export function mockExec(opts: {
   if (once === true) {
     m.mock.mockImplementationOnce(impl);
   }
+}
+
+export function mockClipboardPaste(stdout: string) {
+  mock.method(os, "platform", () => "linux");
+  mockExec({ stdout });
+}
+
+export function setupKeypressTests() {
+  const { rl, writes } = makeFakeRlWithWrites();
+  actions.setRl(rl);
+  actions.setQuestionAbortController(new AbortController());
+  initKeypress();
+
+  const emitKey = (key: Key) => {
+    actions.resetStdout();
+    writes.length = 0;
+    stdin.emit("keypress", key.name, key);
+  };
+  const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
+  const cleanup = () => stdin.removeAllListeners("keypress");
+
+  return { rl, writes, emitKey, flush, cleanup };
 }
 
 export function mockSetInterval() {

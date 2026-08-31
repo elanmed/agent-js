@@ -163,7 +163,7 @@ export function initKeypress() {
   function typeCommand(command: string) {
     assert(rl !== null);
     rl.write(`/${command}\n`);
-    actions.appendToStdout("/${command}\n");
+    actions.appendToStdout(`/${command}\n`);
   }
 
   stdin.on("keypress", (_char, key: Key) => {
@@ -228,6 +228,17 @@ export function initKeypress() {
             command satisfies never;
           }
         }
+      }
+
+      for (const slashCommand of getState().app.slashCommands) {
+        const keymap = keymaps[slashCommand.name];
+        if (keymap === undefined) continue;
+        if (!isSameKey(key, keymap)) continue;
+
+        if (getState().abortControllers.question !== null) {
+          typeCommand(slashCommand.name);
+        }
+        return;
       }
 
       if (getState().app.loadingStateTimeout !== null) {
