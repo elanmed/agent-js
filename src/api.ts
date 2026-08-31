@@ -127,6 +127,10 @@ export async function resolveApiCall(userInput: string) {
   actions.setApiEndTime();
 
   if (!generateTextResult.ok) {
+    for (const tempFile of toolCallIdToTempFile.values()) {
+      fsDeps.unlinkSync(tempFile);
+    }
+
     if (isAbortError(generateTextResult.error)) {
       await print.error("Interrupted");
       return null;
@@ -140,17 +144,15 @@ export async function resolveApiCall(userInput: string) {
 
   appendModelUsage(totalUsage);
 
-  const allInputTokens = totalUsage.inputTokens ?? 0;
-  const tokensForInputMessageParam = Math.max(
-    0,
-    allInputTokens - getState().app.messageParams.tokens,
-  );
-
+  const inputTokens = totalUsage.inputTokens ?? 0;
   const outputTokens = totalUsage.outputTokens ?? 0;
 
-  actions.appendToMessageParams(inputMessageParam, tokensForInputMessageParam);
-  for (const [idx, msg] of response.messages.entries()) {
-    actions.appendToMessageParams(msg, idx === 0 ? outputTokens : 0);
+  actions.setMessageParamTokens(inputTokens + outputTokens);
+  actions.setMessageParamTokensStale(false);
+
+  actions.appendToMessageParams(inputMessageParam);
+  for (const message of response.messages) {
+    actions.appendToMessageParams(message);
   }
   appendToChatHistory(text, "assistant");
 
@@ -161,6 +163,8 @@ export async function maybeCompactMessageParams() {
   const { model } = getState().config;
   const contextWindow = getState().config.contextWindowPerModel[model];
   if (contextWindow === undefined) return;
+
+  if (getState().app.messageParams.tokensStale) return;
 
   const currRatio = getState().app.messageParams.tokens / contextWindow;
   if (currRatio <= getState().config.compactTriggerRatio) return;
@@ -200,10 +204,8 @@ ${JSON.stringify(getState().app.messageParams.messages)}
   const afterCompactionTokens = totalUsage.outputTokens ?? 0;
 
   actions.resetMessageParams();
-  actions.appendToMessageParams(
-    { content: text, role: "assistant" },
-    afterCompactionTokens,
-  );
+  actions.appendToMessageParams({ content: text, role: "assistant" });
+  actions.setMessageParamTokens(afterCompactionTokens);
   if (afterCompactionTokens >= targetTokens) {
     await print.warning(
       `Compacted to ${afterCompactionTokens.toLocaleString()}, ${(afterCompactionTokens - targetTokens).toLocaleString()} over the target.`,

@@ -320,6 +320,7 @@ Session start date: 42000
       actions.setModel("old-model");
       await setModelCommand("/model new-model");
       assert.strictEqual(getState().config.model, "new-model");
+      assert.strictEqual(getState().app.messageParams.tokensStale, true);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         "Model updated from `old-model` to `new-model`\n",
@@ -387,10 +388,11 @@ Session start date: 42000
     });
 
     it("resets params", async () => {
-      actions.appendToMessageParams({ role: "user", content: "hello" }, 0);
+      actions.appendToMessageParams({ role: "user", content: "hello" });
       await clearCommand();
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 0,
+        tokensStale: false,
         messages: [],
       });
       assert.strictEqual(
@@ -442,7 +444,7 @@ Session start date: 42000
     });
 
     it("returns transcript and resets message params when conversation is found", async () => {
-      actions.appendToMessageParams({ role: "user", content: "hello" }, 0);
+      actions.appendToMessageParams({ role: "user", content: "hello" });
       testFs._dirs.add("/fake-home/.config/agent-js/history");
       testFs._files.set(
         "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
@@ -458,6 +460,7 @@ transcript content
       );
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 0,
+        tokensStale: false,
         messages: [],
       });
     });
@@ -1319,7 +1322,8 @@ Keymaps:
       actions.resetStdout();
       actions.setModel("test-model");
       actions.setContextWindowPerModel({ "test-model": 10_000 });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(5_000);
       const result = await resolveSlashCommand("/usage");
       assert.strictEqual(result, null);
       assert.strictEqual(

@@ -10,7 +10,7 @@ describe("state", () => {
   });
 
   it("resetState restores initial state after mutations", () => {
-    actions.appendToMessageParams({ role: "user", content: "hi" }, 0);
+    actions.appendToMessageParams({ role: "user", content: "hi" });
     actions.setQuestionAbortController(new AbortController());
     actions.setApiStreamAbortController(new AbortController());
     const timeout = setTimeout(() => undefined, 1_000);
@@ -22,6 +22,7 @@ describe("state", () => {
 
     assert.deepStrictEqual(getState().app.messageParams, {
       tokens: 0,
+      tokensStale: false,
       messages: [],
     });
     assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
@@ -39,6 +40,7 @@ describe("state", () => {
   it("initial state", () => {
     assert.deepStrictEqual(getState().app.messageParams, {
       tokens: 0,
+      tokensStale: false,
       messages: [],
     });
     assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
@@ -55,12 +57,14 @@ describe("state", () => {
     it("appends new message to the list", () => {
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 0,
+        tokensStale: false,
         messages: [],
       });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 5);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
       assert.equal(getState().app.messageParams.messages.length, 1);
       assert.deepStrictEqual(getState().app.messageParams, {
-        tokens: 5,
+        tokens: 0,
+        tokensStale: false,
         messages: [{ role: "user", content: "hi" }],
       });
     });
@@ -68,25 +72,41 @@ describe("state", () => {
     it("appends multiple messages in order", () => {
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 0,
+        tokensStale: false,
         messages: [],
       });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 2);
-      actions.appendToMessageParams({ role: "assistant", content: "hello" }, 3);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.appendToMessageParams({ role: "assistant", content: "hello" });
 
       const params = getState().app.messageParams.messages;
       assert.equal(params.length, 2);
       assert.equal(params[0]!.role, "user");
       assert.equal(params[1]!.role, "assistant");
-      assert.equal(getState().app.messageParams.tokens, 5);
+      assert.equal(getState().app.messageParams.tokens, 0);
     });
   });
 
+  it("set-message-param-tokens", () => {
+    assert.equal(getState().app.messageParams.tokens, 0);
+    actions.setMessageParamTokens(42);
+    assert.equal(getState().app.messageParams.tokens, 42);
+  });
+
+  it("set-message-param-tokens-stale", () => {
+    assert.equal(getState().app.messageParams.tokensStale, false);
+    actions.setMessageParamTokensStale(true);
+    assert.equal(getState().app.messageParams.tokensStale, true);
+  });
+
+
   it("reset-message-params", () => {
-    actions.appendToMessageParams({ role: "user", content: "hi" }, 7);
+    actions.appendToMessageParams({ role: "user", content: "hi" });
+    actions.setMessageParamTokens(7);
     assert.equal(getState().app.messageParams.tokens, 7);
     actions.resetMessageParams();
     assert.deepStrictEqual(getState().app.messageParams, {
       tokens: 0,
+      tokensStale: false,
       messages: [],
     });
   });

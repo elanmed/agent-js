@@ -379,7 +379,8 @@ describe("usage", () => {
     it("returns the percent of the context window used", () => {
       actions.setModel("test-model");
       actions.setContextWindowPerModel({ "test-model": 10_000 });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(5_000);
       const result = getPrettyContextWindowUsage();
       assert.strictEqual(result, "50% of context window");
     });
@@ -387,7 +388,8 @@ describe("usage", () => {
     it("floors partial percents", () => {
       actions.setModel("test-model");
       actions.setContextWindowPerModel({ "test-model": 10_000 });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 1_666);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(1_666);
       const result = getPrettyContextWindowUsage();
       assert.strictEqual(result, "16% of context window");
     });
@@ -395,7 +397,8 @@ describe("usage", () => {
     it("returns percents above 100", () => {
       actions.setModel("test-model");
       actions.setContextWindowPerModel({ "test-model": 10_000 });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 15_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(15_000);
       const result = getPrettyContextWindowUsage();
       assert.strictEqual(result, "150% of context window");
     });
@@ -416,7 +419,8 @@ describe("usage", () => {
     it("includes context window usage when configured", () => {
       actions.setModel("test-model");
       actions.setContextWindowPerModel({ "test-model": 10_000 });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(5_000);
       const result = getPrettyUsage();
       assert.strictEqual(result, "0 tokens in session, 50% of context window");
     });

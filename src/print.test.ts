@@ -195,7 +195,8 @@ describe("print", () => {
       actions.setApiEndTime();
       actions.setModel("test-model");
       actions.setContextWindowPerModel({ "test-model": 10_000 });
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 5_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(5_000);
 
       await fencePrint("Output", { showSessionInfo: true });
 

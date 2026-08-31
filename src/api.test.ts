@@ -104,6 +104,7 @@ response text
       assert.deepStrictEqual(getState().app.modelUsageForLimitWindow, {});
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 49,
+        tokensStale: false,
         messages: [
           { role: "user", content: "hello" },
           { role: "assistant", content: "tool call" },
@@ -112,9 +113,9 @@ response text
       });
     });
 
-    it("attributes delta input tokens across multiple calls", async () => {
+    it("sets tokens to input plus output tokens on each call", async () => {
       await resolveApiCall("first");
-      assert.strictEqual(getState().app.messageParams.tokens, 10);
+      assert.strictEqual(getState().app.messageParams.tokens, 15);
 
       mock.method(aiDeps, "generateText", () =>
         Promise.resolve(
@@ -133,6 +134,7 @@ response text
       await resolveApiCall("second");
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 17,
+        tokensStale: false,
         messages: [
           { role: "user", content: "first" },
           { role: "user", content: "second" },
@@ -141,8 +143,10 @@ response text
       });
     });
 
-    it("clamps negative input token delta to 0", async () => {
-      actions.appendToMessageParams({ role: "user", content: "existing" }, 100);
+    it("re-baselines tokens from usage when stale after model switch", async () => {
+      actions.appendToMessageParams({ role: "user", content: "existing" });
+      actions.setMessageParamTokens(100);
+      actions.setMessageParamTokensStale(true);
       mock.method(aiDeps, "generateText", () =>
         Promise.resolve(
           makeGenerateTextResult({
@@ -159,7 +163,8 @@ response text
       );
       await resolveApiCall("hello");
       assert.deepStrictEqual(getState().app.messageParams, {
-        tokens: 105,
+        tokens: 55,
+        tokensStale: false,
         messages: [
           { role: "user", content: "existing" },
           { role: "user", content: "hello" },
@@ -329,11 +334,8 @@ SKILLS: available skills`,
     });
 
     it("includes previous messages in request", async () => {
-      actions.appendToMessageParams({ role: "user", content: "previous" }, 0);
-      actions.appendToMessageParams(
-        { role: "assistant", content: "response" },
-        0,
-      );
+      actions.appendToMessageParams({ role: "user", content: "previous" });
+      actions.appendToMessageParams({ role: "assistant", content: "response" });
       let capturedMessages: ModelMessage[] = [];
       mock.method(aiDeps, "generateText", (opts: Record<string, unknown>) => {
         capturedMessages = opts["messages"] as ModelMessage[];
@@ -364,7 +366,8 @@ SKILLS: available skills`,
     });
 
     it("returns early when below the compact threshold", async () => {
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 60_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(60_000);
       let called = false;
       mock.method(aiDeps, "generateText", () => {
         called = true;
@@ -374,13 +377,33 @@ SKILLS: available skills`,
       assert.strictEqual(called, false);
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 60_000,
+        tokensStale: false,
+        messages: [{ role: "user", content: "hi" }],
+      });
+    });
+
+    it("returns early when tokens are stale", async () => {
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(80_000);
+      actions.setMessageParamTokensStale(true);
+      let called = false;
+      mock.method(aiDeps, "generateText", () => {
+        called = true;
+        return Promise.resolve(makeGenerateTextResult());
+      });
+      await maybeCompactMessageParams();
+      assert.strictEqual(called, false);
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 80_000,
+        tokensStale: true,
         messages: [{ role: "user", content: "hi" }],
       });
     });
 
     it("compacts the conversation when above the threshold", async () => {
       actions.setCompactTargetRatio(0.25);
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(80_000);
       let capturedMessages: ModelMessage[] = [];
       mock.method(aiDeps, "generateText", (opts: Record<string, unknown>) => {
         capturedMessages = opts["messages"] as ModelMessage[];
@@ -410,6 +433,7 @@ SKILLS: available skills`,
       );
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 25_000,
+        tokensStale: false,
         messages: [{ role: "assistant", content: "compacted summary" }],
       });
       assert.deepStrictEqual(getState().app.modelUsageForSession, {
@@ -428,7 +452,8 @@ SKILLS: available skills`,
     it("warns when compaction does not reach the target", async () => {
       actions.resetStdout();
       actions.setCompactTargetRatio(0.25);
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(80_000);
       mock.method(aiDeps, "generateText", () =>
         Promise.resolve(
           makeGenerateTextResult({
@@ -444,6 +469,7 @@ SKILLS: available skills`,
       await maybeCompactMessageParams();
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 30_000,
+        tokensStale: false,
         messages: [{ role: "assistant", content: "compacted summary" }],
       });
       assert.strictEqual(
@@ -455,20 +481,23 @@ Compacted to 30,000, 5,000 over the target.
     });
 
     it("keeps messages when generateText fails", async () => {
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(80_000);
       mock.method(aiDeps, "generateText", () =>
         Promise.reject(new Error("network error")),
       );
       await maybeCompactMessageParams();
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 80_000,
+        tokensStale: false,
         messages: [{ role: "user", content: "hi" }],
       });
     });
 
     it("keeps messages and prints Interrupted compaction on abort error", async () => {
       actions.resetStdout();
-      actions.appendToMessageParams({ role: "user", content: "hi" }, 80_000);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(80_000);
       const err = new Error("aborted");
       err.name = "AbortError";
       mock.method(aiDeps, "generateText", () => Promise.reject(err));
@@ -476,6 +505,7 @@ Compacted to 30,000, 5,000 over the target.
       assert.strictEqual(getState().abortControllers.apiStream, null);
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 80_000,
+        tokensStale: false,
         messages: [{ role: "user", content: "hi" }],
       });
       assert.strictEqual(

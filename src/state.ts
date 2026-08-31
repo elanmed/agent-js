@@ -22,7 +22,11 @@ export interface SlashCommand {
 
 interface State {
   app: {
-    messageParams: { tokens: number; messages: ModelMessage[] };
+    messageParams: {
+      tokens: number;
+      tokensStale: boolean;
+      messages: ModelMessage[];
+    };
     editorInputValue: string | null;
     slashCommands: SlashCommand[];
     stdout: string;
@@ -51,7 +55,7 @@ interface State {
 
 const initialState: State = {
   app: {
-    messageParams: { tokens: 0, messages: [] },
+    messageParams: { tokens: 0, tokensStale: false, messages: [] },
     editorInputValue: null,
     slashCommands: [],
     stdout: "",
@@ -104,14 +108,29 @@ const logStateChange = (actionType: string, before: string, after: string) => {
 };
 
 export const actions = {
-  appendToMessageParams(message: ModelMessage, tokens: number) {
-    const before = state.app.messageParams.tokens;
+  appendToMessageParams(message: ModelMessage) {
+    const before = state.app.messageParams.messages.length;
     state.app.messageParams.messages.push(message);
-    state.app.messageParams.tokens += tokens;
     logStateChange(
       "append-to-message-params",
       String(before),
-      String(state.app.messageParams.tokens),
+      String(state.app.messageParams.messages.length),
+    );
+  },
+
+  setMessageParamTokens(tokens: number) {
+    const before = state.app.messageParams.tokens;
+    state.app.messageParams.tokens = tokens;
+    logStateChange("set-message-param-tokens", String(before), String(tokens));
+  },
+
+  setMessageParamTokensStale(tokensStale: boolean) {
+    const before = state.app.messageParams.tokensStale;
+    state.app.messageParams.tokensStale = tokensStale;
+    logStateChange(
+      "set-message-param-tokens-stale",
+      String(before),
+      String(tokensStale),
     );
   },
 
@@ -211,7 +230,7 @@ export const actions = {
 
   resetMessageParams() {
     const before = state.app.messageParams.tokens;
-    state.app.messageParams = { tokens: 0, messages: [] };
+    state.app.messageParams = { tokens: 0, tokensStale: false, messages: [] };
     logStateChange("reset-message-params", String(before), "0");
   },
 

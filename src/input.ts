@@ -555,6 +555,7 @@ export async function setModelCommand(rawInput: string) {
   const prevModel = getState().config.model;
   actions.setModel(model);
   await print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
+  actions.setMessageParamTokensStale(true);
 }
 
 export async function printSkillsCommand() {
