@@ -6,6 +6,7 @@ import {
   normalizeLine,
   execPromise,
   createQueue,
+  getMessageFromError,
 } from "./utils.ts";
 import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
@@ -187,19 +188,34 @@ export async function executeBat(content: string) {
   content = normalizeLine(content);
   const isBatAvailable = await checkBat();
 
-  if (!isBatAvailable) {
-    await print.error(
-      "`bat` is not available, falling back to plain text rendering",
-    );
+  async function fallbackPrint(message: string) {
+    await print.error(message);
     await print(content);
-    return;
   }
 
+  if (!isBatAvailable) {
+    return await fallbackPrint(
+      "`bat` is not available, falling back to plain text rendering",
+    );
+  }
+
+  const baseMessage =
+    "Falling back to plain text rendering, an error occurred when spawning `bat`: ";
   const batResult = spawnBat(content);
-  if (!batResult.ok) return await print(content);
-  if (batResult.value.status !== 0) return await print(content);
+  if (!batResult.ok) {
+    return await fallbackPrint(
+      baseMessage.concat(getMessageFromError(batResult.error)),
+    );
+  }
+  if (batResult.value.status !== null && batResult.value.status !== 0) {
+    return await fallbackPrint(
+      baseMessage.concat(
+        `\`bat\` returned code ${String(batResult.value.status)}`,
+      ),
+    );
+  }
   if (batResult.value.stderr.length !== 0) {
-    return await print(content);
+    return await fallbackPrint(baseMessage.concat(batResult.value.stderr));
   }
   await print(batResult.value.stdout);
 }

@@ -304,7 +304,13 @@ describe("print", () => {
 
       await executeBat("test content\n");
 
-      assert.strictEqual(stripAnsi(captured), "test content\n\n");
+      assert.strictEqual(
+        stripAnsi(captured),
+        `Falling back to plain text rendering, an error occurred when spawning \`bat\`: spawn failed
+test content
+
+`,
+      );
     });
 
     it("falls back to plain text when bat exits with non-zero status", async () => {
@@ -324,7 +330,33 @@ describe("print", () => {
 
       await executeBat("test content\n");
 
-      assert.strictEqual(stripAnsi(captured), "test content\n\n");
+      assert.strictEqual(
+        stripAnsi(captured),
+        `Falling back to plain text rendering, an error occurred when spawning \`bat\`: \`bat\` returned code 1
+test content
+
+`,
+      );
+    });
+
+    it("prints bat stdout when status is null", async () => {
+      mockExec({ stdout: "bat 0.25.0" });
+      mock.method(childProcess, "spawnSync", () => {
+        return {
+          status: null,
+          stdout: "bat-rendered\n",
+          stderr: "",
+        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      });
+
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        captured += out;
+      });
+
+      await executeBat("test content\n");
+
+      assert.strictEqual(stripAnsi(captured), "bat-rendered\n\n");
     });
 
     it("prints bat stdout when stderr is empty", async () => {
@@ -364,7 +396,13 @@ describe("print", () => {
 
       await executeBat("test content\n");
 
-      assert.strictEqual(stripAnsi(captured), "test content\n\n");
+      assert.strictEqual(
+        stripAnsi(captured),
+        `Falling back to plain text rendering, an error occurred when spawning \`bat\`: bat warning
+test content
+
+`,
+      );
     });
   });
 
