@@ -168,56 +168,66 @@ export function initKeypress() {
 
   stdin.on("keypress", (_char, key: Key) => {
     void (async () => {
-      const keymaps: Record<string, Key> = getState().config.keymaps;
+      const keymaps = getState().config.keymaps;
 
-      for (const [command, keymap] of Object.entries(keymaps)) {
+      for (const command of builtinSlashCommands) {
+        const keymap = keymaps[command];
+        if (keymap === undefined) continue;
         if (!isSameKey(key, keymap)) continue;
 
-        if (command === "edit") {
-          const editorContent = await spawnAndReadEditorContent();
-          if (editorContent !== null) {
-            abortRlQuestionForEditor(editorContent);
+        switch (command) {
+          case "edit": {
+            const editorContent = await spawnAndReadEditorContent();
+            if (editorContent !== null) {
+              abortRlQuestionForEditor(editorContent);
+            }
+            return;
           }
-          return;
-        }
-
-        if (command === "paste") {
-          const editorContent = await spawnAndReadEditorContent({
-            includeClipboardSuffix: true,
-          });
-          if (editorContent !== null) {
-            abortRlQuestionForEditor(editorContent);
+          case "paste": {
+            const editorContent = await spawnAndReadEditorContent({
+              includeClipboardSuffix: true,
+            });
+            if (editorContent !== null) {
+              abortRlQuestionForEditor(editorContent);
+            }
+            return;
           }
-          return;
+          case "history": {
+            openWithPager({
+              initialContentPath: getState().app.chatHistoryPath,
+              pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+            });
+            return;
+          }
+          case "config": {
+            configCommand();
+            return;
+          }
+          case "context-str": {
+            await pageContextFiles();
+            return;
+          }
+          case "commands-str": {
+            pageCommands();
+            return;
+          }
+          case "model":
+          case "skills":
+          case "context":
+          case "commands":
+          case "keymaps":
+          case "usage":
+          case "resume":
+          case "clear": {
+            if (getState().abortControllers.question !== null) {
+              typeCommand(command);
+            }
+            return;
+          }
+          default: {
+            command satisfies never;
+          }
         }
-
-        if (command === "history") {
-          openWithPager({
-            initialContentPath: getState().app.chatHistoryPath,
-            pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-          });
-          return;
-        }
-
-        if (command === "config") {
-          configCommand();
-          return;
-        }
-
-        if (command === "context-str") {
-          void pageContextFiles();
-          return;
-        }
-
-        if (command === "commands-str") {
-          pageCommands();
-          return;
-        }
-
-        if (getState().abortControllers.question !== null) {
-          typeCommand(command);
-        }
-        return;
       }
 
       if (getState().app.loadingStateTimeout !== null) {
