@@ -73,7 +73,6 @@ export async function resolveApiCall(userInput: string) {
         switch (toolCall.toolName as ToolName) {
           case "create_file": {
             const tempFileBefore = getTempFileName();
-            fsDeps.writeFileSync(tempFileBefore, "");
             toolCallIdToTempFile.set(toolCall.toolCallId, tempFileBefore);
             break;
           }

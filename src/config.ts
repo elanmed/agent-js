@@ -154,13 +154,19 @@ export const defaultConfig: DefaultedConfig = {
   promptPrefix: "> ",
 };
 
-export function readConfigFile(path: string): Partial<Config> {
-  if (!fsDeps.existsSync(path)) return {};
+export function readConfigFileStr(path: string) {
+  if (!fsDeps.existsSync(path)) return "{}";
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
-  if (!readResult.ok) return {};
+  if (!readResult.ok) return "{}";
 
-  const parseResult = tryCatch((): unknown => YAML.parse(readResult.value));
+  return readResult.value;
+}
+
+export function readConfigFile(path: string): Partial<Config> {
+  const configFileStr = readConfigFileStr(path);
+
+  const parseResult = tryCatch((): unknown => YAML.parse(configFileStr));
   if (!parseResult.ok) {
     throw new Error(`Failed to parse config at ${path} as YAML`);
   }

@@ -15,6 +15,7 @@ import {
   truncate,
   listChatHistoryFiles,
   openWithPager,
+  stringify,
 } from "./utils.ts";
 import {
   print,
@@ -27,7 +28,7 @@ import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
-import { readConfigFile, type Key } from "./config.ts";
+import { initState, readConfigFileStr, type Key } from "./config.ts";
 import { appendToChatHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import {
@@ -37,6 +38,7 @@ import {
   getLocalSlashCommandDir,
 } from "./paths.ts";
 import { contextFileSkillNamePrefix } from "./context.ts";
+import { printGitDiff } from "./tools.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -200,7 +202,11 @@ export function initKeypress() {
             return;
           }
           case "config": {
-            configCommand();
+            openWithPager({
+              pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
+              initialContentStr: getAllPrettyConfig(),
+            });
+
             return;
           }
           case "context-str": {
@@ -209,6 +215,10 @@ export function initKeypress() {
           }
           case "commands-str": {
             pageCommands();
+            return;
+          }
+          case "reload": {
+            await reload();
             return;
           }
           case "model":
@@ -380,6 +390,7 @@ const builtinSlashCommands = [
   "usage",
   "resume",
   "config",
+  "reload",
 ] as const;
 type BuiltinSlashCommand = (typeof builtinSlashCommands)[number];
 
@@ -446,15 +457,23 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "usage": {
-      await usageCommand();
+      await printUsage();
       return { handled: true, inputFromCommand: null };
     }
     case "config": {
-      configCommand();
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
+        initialContentStr: getAllPrettyConfig(),
+      });
+
       return { handled: true, inputFromCommand: null };
     }
     case "resume": {
       await print.error("Usage: /resume [session start date]");
+      return { handled: true, inputFromCommand: null };
+    }
+    case "reload": {
+      await reload();
       return { handled: true, inputFromCommand: null };
     }
     default: {
@@ -477,7 +496,7 @@ async function resolveParameterizedBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "resume": {
-      const content = await resumeCommand(commandWithArgs);
+      const content = await resume(commandWithArgs);
       if (content !== null) appendToChatHistory(content, "user");
       return { handled: true, inputFromCommand: content };
     }
@@ -536,7 +555,7 @@ export async function clearCommand() {
   actions.setModelUsageForSession({});
 }
 
-export async function usageCommand() {
+export async function printUsage() {
   await print.doing(getPrettyUsage());
 }
 
@@ -685,7 +704,7 @@ export async function printContextFiles() {
   await print(formatted);
 }
 
-export async function resumeCommand(rawInput: string) {
+export async function resume(rawInput: string) {
   const parts = rawInput.trim().split(/\s+/);
 
   if (parts.length !== 2) {
@@ -773,33 +792,43 @@ export async function printKeymaps() {
   }
 }
 
-function getPrettyConfig(config: object) {
-  const entries = Object.entries(config);
-  if (entries.length === 0) return "{}";
-  return entries
-    .map(([key, value]) => `- ${key}: ${JSON.stringify(value, null, 2)}`)
-    .join("\n");
-}
-
-export function configCommand() {
+function getAllPrettyConfig() {
   const globalConfigTitle = `Global config from path: ${getGlobalConfigPath()}`;
   const localConfigTitle = `Local config from path: ${getLocalConfigPath()}`;
 
-  const configStr = `${globalConfigTitle}
+  return `${globalConfigTitle}
 ${"-".repeat(globalConfigTitle.length)}
-${getPrettyConfig(readConfigFile(getGlobalConfigPath()))}
+${readConfigFileStr(getGlobalConfigPath())}
 
 ${localConfigTitle}
 ${"-".repeat(localConfigTitle.length)}
-${getPrettyConfig(readConfigFile(getLocalConfigPath()))}
+${readConfigFileStr(getLocalConfigPath())}
 
 Applied config:
 ---------------
-${getPrettyConfig(getState().config)}`;
-  openWithPager({
-    pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
-    initialContentStr: configStr,
+${stringify(getState().config)}`;
+}
+
+async function reload() {
+  const tempFileBefore = getTempFileName({
+    // TODO: store pretty config at the start
+    initialContentStr: getAllPrettyConfig(),
   });
+
+  // TODO: remove destructive actions
+  await initState();
+
+  const tempFileAfter = getTempFileName({
+    initialContentStr: getAllPrettyConfig(),
+  });
+  await printGitDiff({
+    tempFileBeforePath: tempFileBefore,
+    tempFileAfterPath: tempFileAfter,
+    // TODO: make optional
+    path: "Config",
+  });
+  fsDeps.unlinkSync(tempFileBefore);
+  fsDeps.unlinkSync(tempFileAfter);
 }
 
 export function clearRlLine(): readline.Interface | null {

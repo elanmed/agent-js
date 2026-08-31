@@ -60,10 +60,10 @@ export function getTempFileName(args?: {
     if (readResult.ok) {
       tryCatch(() => fsDeps.writeFileSync(tempFile, readResult.value));
     }
-  }
-
-  if (initialContentStr !== undefined) {
+  } else if (initialContentStr !== undefined) {
     tryCatch(() => fsDeps.writeFileSync(tempFile, initialContentStr));
+  } else {
+    tryCatch(() => fsDeps.writeFileSync(tempFile, ""));
   }
 
   return tempFile;
