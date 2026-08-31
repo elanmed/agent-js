@@ -153,3 +153,69 @@ export function listChatHistoryFiles() {
   }
   return chatHistoryFiles;
 }
+
+export function createLockUtils(lockPath: string) {
+  function writeLockFile() {
+    return tryCatch(() =>
+      fsDeps.writeFileSync(lockPath, String(process.pid), { flag: "wx" }),
+    );
+  }
+
+  function overwriteLockFile() {
+    const unlinkResult = tryCatch(() => fsDeps.unlinkSync(lockPath));
+    if (!unlinkResult.ok) return false;
+    return writeLockFile().ok;
+  }
+
+  function writeLock() {
+    const writeLockResult = writeLockFile();
+    if (writeLockResult.ok) return true;
+
+    const readLockResult = tryCatch(() =>
+      fsDeps.readFileSync(lockPath).toString(),
+    );
+    if (!readLockResult.ok) {
+      return overwriteLockFile();
+    }
+
+    const lockContentPid = Number(readLockResult.value);
+    if (Number.isNaN(lockContentPid)) {
+      return overwriteLockFile();
+    }
+
+    const killResult = tryCatch(() => processDeps.kill(lockContentPid, 0));
+    if (killResult.ok) return false;
+    if ((killResult.error as NodeJS.ErrnoException).code === "EPERM") {
+      return false;
+    }
+
+    return overwriteLockFile();
+  }
+
+  return {
+    async createLock() {
+      let iter = 0;
+      const maxIter = 10;
+
+      let pendingWrite = !writeLock();
+      while (pendingWrite && iter < maxIter) {
+        await sleep(25);
+        pendingWrite = !writeLock();
+        iter++;
+      }
+
+      return iter < maxIter;
+    },
+    deleteLock() {
+      tryCatch(() => fsDeps.unlinkSync(lockPath));
+    },
+  };
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
+}

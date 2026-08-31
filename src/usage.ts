@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { actions, getState } from "./state.ts";
-import { tryCatch } from "./utils.ts";
+import { createLockUtils, tryCatch } from "./utils.ts";
 import { fsDeps } from "./deps.ts";
 import assert from "node:assert";
 import type { LanguageModelUsage } from "ai";
-import { getUsageLogPath } from "./paths.ts";
+import { getUsageLogLockPath, getUsageLogPath } from "./paths.ts";
 import { dirname } from "node:path";
+import { print } from "./print.ts";
 
 export const ModelUsageSchema = z.object({
   inputTokens: z.number(),
@@ -27,7 +28,7 @@ export interface TokenUsage {
 
 const DOLLARS_PER_MILLION = 1_000_000;
 
-export function appendModelUsage(usage: LanguageModelUsage) {
+export async function appendModelUsage(usage: LanguageModelUsage) {
   const { model } = getState().config;
   const now = Date.now();
 
@@ -39,7 +40,7 @@ export function appendModelUsage(usage: LanguageModelUsage) {
     date: now,
   };
 
-  syncNewModelUsageForLimitWindow(model, defaultedUsage);
+  await syncNewModelUsageForLimitWindow(model, defaultedUsage);
   actions.appendToModelUsageForSession(defaultedUsage);
 }
 
@@ -82,7 +83,7 @@ export function getExpiredTime() {
   return expiredTime;
 }
 
-export function syncInitialModelUsageForLimitWindow() {
+export async function syncInitialModelUsageForLimitWindow() {
   if (isUsageLimitDisabled()) return;
 
   const { usageLimit } = getState().config;
@@ -92,6 +93,14 @@ export function syncInitialModelUsageForLimitWindow() {
   const path = getUsageLogPath();
   const dir = dirname(path);
   if (!fsDeps.existsSync(dir)) return;
+
+  const lockUtils = createLockUtils(getUsageLogLockPath());
+  const created = await lockUtils.createLock();
+  if (!created) {
+    return await print.warning(
+      `Failed to acquire a lock for ${getUsageLogLockPath()}`,
+    );
+  }
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
   if (!readResult.ok) {
@@ -109,10 +118,12 @@ export function syncInitialModelUsageForLimitWindow() {
   const filtered = filterExpiredModelUsage(parseResult.value, expiredTime);
 
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
+
+  lockUtils.deleteLock();
   actions.setModelUsageForLimitWindow(filtered);
 }
 
-export function syncNewModelUsageForLimitWindow(
+export async function syncNewModelUsageForLimitWindow(
   model: string,
   usage: ModelUsage,
 ) {
@@ -124,6 +135,14 @@ export function syncNewModelUsageForLimitWindow(
   const dir = dirname(path);
   if (!fsDeps.existsSync(dir)) {
     tryCatch(() => fsDeps.mkdirSync(dir, { recursive: true }));
+  }
+
+  const lockUtils = createLockUtils(getUsageLogLockPath());
+  const created = await lockUtils.createLock();
+  if (!created) {
+    return await print.warning(
+      `Failed to acquire a lock for ${getUsageLogLockPath()}`,
+    );
   }
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path).toString());
@@ -140,6 +159,7 @@ export function syncNewModelUsageForLimitWindow(
   const filtered = filterExpiredModelUsage(loggedModelUsage, expiredTime);
 
   tryCatch(() => fsDeps.writeFileSync(path, JSON.stringify(filtered)));
+  lockUtils.deleteLock();
 
   actions.setModelUsageForLimitWindow(filtered);
 }

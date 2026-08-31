@@ -300,7 +300,7 @@ export async function initStateFromConfig() {
 }
 
 export async function initStateFromFs() {
-  syncInitialModelUsageForLimitWindow();
+  await syncInitialModelUsageForLimitWindow();
 
   const contextEntries = getContextEntries();
   actions.setContextEntries(contextEntries);

@@ -49,3 +49,7 @@ export function getPromptHistoryDir() {
 export function getUsageLogPath() {
   return join(getGlobalConfigDir(), "usage.json");
 }
+
+export function getUsageLogLockPath() {
+  return join(getGlobalConfigDir(), "usage.lock");
+}

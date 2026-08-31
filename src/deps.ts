@@ -35,6 +35,7 @@ export const processDeps = {
     },
   },
   cwd: () => process.cwd(),
+  kill: (pid: number, signal: number) => process.kill(pid, signal),
 };
 
 export const aiDeps = {

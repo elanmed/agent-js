@@ -142,7 +142,7 @@ export async function resolveApiCall(userInput: string) {
 
   const { totalUsage, text, response } = generateTextResult.value;
 
-  appendModelUsage(totalUsage);
+  await appendModelUsage(totalUsage);
 
   const inputTokens = totalUsage.inputTokens ?? 0;
   const outputTokens = totalUsage.outputTokens ?? 0;
@@ -200,7 +200,7 @@ ${JSON.stringify(getState().app.messageParams.messages)}
   }
 
   const { totalUsage, text } = generateTextResult.value;
-  appendModelUsage(totalUsage);
+  await appendModelUsage(totalUsage);
   const afterCompactionTokens = totalUsage.outputTokens ?? 0;
 
   actions.resetMessageParams();
