@@ -9,14 +9,12 @@ import {
   isSameKey,
   getAvailableSlashCommands,
   clearCommand,
-  chatHistoryCommand,
   printSkillsCommand,
   printContextFilesCommand,
   printCommandsCommand,
   printKeymapsCommand,
-  localCommand,
-  globalCommand,
   configCommand,
+  pageContextFilesCommand,
   spawnAndReadEditorContent,
   resumeCommand,
 } from "./input.ts";
@@ -494,37 +492,46 @@ transcript content
     });
   });
 
-  describe("chatHistoryCommand", () => {
-    it("opens chat history in a pager via AGENT_JS_PAGER_HISTORY", () => {
-      let spawned = "";
-      mock.method(childProcess, "spawnSync", (cmd: string) => {
-        spawned = cmd;
-      });
-      testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
-      actions.setChatHistoryPath("/tmp/editor.log");
-      testFs._files.set("/tmp/editor.log", "log content");
-      chatHistoryCommand();
-      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
+  describe("pageContextFilesCommand", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.resetStdout();
     });
 
-    it("copies chat history content into the temp file", () => {
-      actions.setChatHistoryPath("/tmp/editor.log");
-      testFs._files.set("/tmp/editor.log", "log content");
-      chatHistoryCommand();
+    it("prints no available context files when entries list is empty", async () => {
+      await pageContextFilesCommand();
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        "log content",
+        stripAnsi(getState().app.stdout),
+        `
+No available context files
+`,
       );
     });
 
-    it("opens pager with less when chat history cannot be read", () => {
+    it("opens context string in a pager via AGENT_JS_PAGER_CONTEXT", async () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      actions.setChatHistoryPath("/tmp/missing.log");
-      chatHistoryCommand();
-      assert.strictEqual(spawned, `less "/tmp/agent-js-test-uuid.txt"`);
+      testProcessEnv._set("AGENT_JS_PAGER_CONTEXT", "nano __FILE__");
+      actions.setContextStr("context string content");
+      actions.setContextEntries([
+        { filePath: "/project/AGENTS.md", content: "context" },
+      ]);
+      await pageContextFilesCommand();
+      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
+    });
+
+    it("copies context string into the temp file", async () => {
+      actions.setContextStr("context string content");
+      actions.setContextEntries([
+        { filePath: "/project/AGENTS.md", content: "context" },
+      ]);
+      await pageContextFilesCommand();
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "context string content",
+      );
       assert.strictEqual(getState().app.stdout, "");
     });
   });
@@ -678,12 +685,11 @@ Available commands:
 - /model
 - /skills
 - /context
+- /context-str
 - /commands
 - /keymaps
 - /usage
 - /resume
-- /local
-- /global
 - /config
 - /test/.agent-js/commands/custom.md
 `,
@@ -756,85 +762,36 @@ Keymaps:
     });
   });
 
-  describe("localCommand", () => {
-    beforeEach(() => {
-      actions.resetState();
-      actions.resetStdout();
-    });
-
-    it("prints {} when no local config file exists", async () => {
-      await localCommand();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Local config from path: /test-cwd/.agent-js/settings.yaml
-{}
-`,
-      );
-    });
-
-    it("prints each key of the local config file", async () => {
-      testFs._files.set(
-        getLocalConfigPath(),
-        JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
-      );
-      await localCommand();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Local config from path: /test-cwd/.agent-js/settings.yaml
-- model: "gpt-4"
-- provider: "anthropic"
-`,
-      );
-    });
-  });
-
-  describe("globalCommand", () => {
-    beforeEach(() => {
-      actions.resetState();
-      actions.resetStdout();
-    });
-
-    it("prints {} when no global config file exists", async () => {
-      await globalCommand();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Global config from path: /fake-home/.config/agent-js/settings.yaml
-{}
-`,
-      );
-    });
-
-    it("prints each key of the global config file", async () => {
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({ model: "gpt-4" }),
-      );
-      await globalCommand();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Global config from path: /fake-home/.config/agent-js/settings.yaml
-- model: "gpt-4"
-`,
-      );
-    });
-  });
-
   describe("configCommand", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
     });
 
-    it("prints each key of the current config", async () => {
-      await configCommand();
+    it("opens combined config in a pager via AGENT_JS_PAGER_CONFIG", () => {
+      let spawned = "";
+      mock.method(childProcess, "spawnSync", (cmd: string) => {
+        spawned = cmd;
+      });
+      testProcessEnv._set("AGENT_JS_PAGER_CONFIG", "nano __FILE__");
+      configCommand();
+      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
+    });
+
+    it("writes combined config string into the temp file", () => {
+      configCommand();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        `Global config from path: /fake-home/.config/agent-js/settings.yaml
+------------------------------------------------------------------
+{}
+
+Local config from path: /test-cwd/.agent-js/settings.yaml
+---------------------------------------------------------
+{}
+
 Applied config:
+---------------
 - model: ""
 - baseURL: undefined
 - provider: "openai-compatible"
@@ -870,8 +827,70 @@ Applied config:
   "\\\\"
 ]
 - promptPrefix: "> "
-- usageLimit: undefined
-`,
+- usageLimit: undefined`,
+      );
+      assert.strictEqual(getState().app.stdout, "");
+    });
+
+    it("includes local and global config file contents", () => {
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
+      );
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({ model: "gpt-4" }),
+      );
+      configCommand();
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        `Global config from path: /fake-home/.config/agent-js/settings.yaml
+------------------------------------------------------------------
+- model: "gpt-4"
+
+Local config from path: /test-cwd/.agent-js/settings.yaml
+---------------------------------------------------------
+- model: "gpt-4"
+- provider: "anthropic"
+
+Applied config:
+---------------
+- model: ""
+- baseURL: undefined
+- provider: "openai-compatible"
+- pricingPerModel: {}
+- contextWindowPerModel: {}
+- compactTriggerRatio: 0.7
+- compactTargetRatio: 0.3
+- keymaps: {
+  "edit": {
+    "name": "g",
+    "ctrl": true
+  },
+  "paste": {
+    "name": "v",
+    "ctrl": true
+  },
+  "history": {
+    "name": "o",
+    "ctrl": true
+  },
+  "clear": {
+    "name": "x",
+    "ctrl": true
+  }
+}
+- customSlashCommandDirs: []
+- customSkillDirs: []
+- loadingStateFrameDuration: 80
+- loadingStateFrames: [
+  "|",
+  "/",
+  "-",
+  "\\\\"
+]
+- promptPrefix: "> "
+- usageLimit: undefined`,
       );
     });
   });
@@ -1086,10 +1105,16 @@ pasted content
       assert.strictEqual(result, null);
     });
 
-    it("handles /history command", async () => {
-      actions.setRl(makeFakeRl());
+    it("handles /history command by opening chat history in a pager", async () => {
+      testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
+      actions.setChatHistoryPath("/tmp/test-history.log");
+      testFs._files.set("/tmp/test-history.log", "log content");
       const result = await resolveSlashCommand("/history");
       assert.strictEqual(result, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "log content",
+      );
     });
 
     it("handles /model command", async () => {
@@ -1151,89 +1176,53 @@ Available commands:
 - /model
 - /skills
 - /context
+- /context-str
 - /commands
 - /keymaps
 - /usage
 - /resume
-- /local
-- /global
 - /config
 `,
       );
     });
 
-    it("handles /local command", async () => {
+    it("handles /context-str command with no context files", async () => {
       actions.resetStdout();
-      const result = await resolveSlashCommand("/local");
+      const result = await resolveSlashCommand("/context-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
-Local config from path: /test-cwd/.agent-js/settings.yaml
-{}
+No available context files
 `,
       );
     });
 
-    it("handles /global command", async () => {
-      actions.resetStdout();
-      const result = await resolveSlashCommand("/global");
+    it("handles /context-str command by opening context in a pager", async () => {
+      testProcessEnv._set("AGENT_JS_PAGER_CONTEXT", "nano __FILE__");
+      actions.setContextStr("context string content");
+      actions.setContextEntries([
+        { filePath: "/project/AGENTS.md", content: "context" },
+      ]);
+      const result = await resolveSlashCommand("/context-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Global config from path: /fake-home/.config/agent-js/settings.yaml
-{}
-`,
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "context string content",
       );
     });
 
-    it("handles /config command", async () => {
+    it("handles /config command by opening combined config in a pager", async () => {
+      testProcessEnv._set("AGENT_JS_PAGER_CONFIG", "nano __FILE__");
       actions.resetStdout();
       const result = await resolveSlashCommand("/config");
       assert.strictEqual(result, null);
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Applied config:
-- model: ""
-- baseURL: undefined
-- provider: "openai-compatible"
-- pricingPerModel: {}
-- contextWindowPerModel: {}
-- compactTriggerRatio: 0.7
-- compactTargetRatio: 0.3
-- keymaps: {
-  "edit": {
-    "name": "g",
-    "ctrl": true
-  },
-  "paste": {
-    "name": "v",
-    "ctrl": true
-  },
-  "history": {
-    "name": "o",
-    "ctrl": true
-  },
-  "clear": {
-    "name": "x",
-    "ctrl": true
-  }
-}
-- customSlashCommandDirs: []
-- customSkillDirs: []
-- loadingStateFrameDuration: 80
-- loadingStateFrames: [
-  "|",
-  "/",
-  "-",
-  "\\\\"
-]
-- promptPrefix: "> "
-- usageLimit: undefined
-`,
-      );
+      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+      const tempContent = testFs._files.get("/tmp/agent-js-test-uuid.txt");
+      assert.ok(tempContent !== undefined);
+      assert.match(tempContent, /^Global config from path: /);
+      assert.match(tempContent, /\nLocal config from path: /);
+      assert.match(tempContent, /Applied config:\n/);
     });
 
     it("handles /keymaps command", async () => {
@@ -1349,12 +1338,11 @@ Invalid command: /unknown, valid commands:
 - /model
 - /skills
 - /context
+- /context-str
 - /commands
 - /keymaps
 - /usage
 - /resume
-- /local
-- /global
 - /config
 - /test-cwd/.agent-js/commands/known.md
 `,

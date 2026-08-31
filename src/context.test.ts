@@ -34,8 +34,10 @@ describe("context", () => {
         result,
         `
 AGENTS.md context files:
+
 Path: /test-cwd/AGENTS.md
-Content: # Agent Instructions
+Content:
+# Agent Instructions
 `,
       );
     });
@@ -52,11 +54,14 @@ Content: # Agent Instructions
         result,
         `
 AGENTS.md context files:
+
 Path: /test-cwd/AGENTS.md
-Content: Root content
+Content:
+Root content
 
 Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content: Global content
+Content:
+Global content
 `,
       );
     });
@@ -72,8 +77,10 @@ Content: Global content
         result,
         `
 AGENTS.md context files:
+
 Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content: Global content
+Content:
+Global content
 `,
       );
     });
@@ -93,8 +100,10 @@ Content: Global content
         result,
         `
 AGENTS.md context files:
+
 Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content: global content
+Content:
+global content
 `,
       );
     });
@@ -111,11 +120,14 @@ Content: global content
         result,
         `
 AGENTS.md context files:
+
 Path: /test-cwd/AGENTS.md
-Content: local content
+Content:
+local content
 
 Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content: global content
+Content:
+global content
 `,
       );
     });

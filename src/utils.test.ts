@@ -194,6 +194,28 @@ describe("utils", () => {
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
     });
+
+    it("writes initialContentStr into the temp file", () => {
+      const result = getTempFileName({
+        initialContentStr: "string content",
+      });
+      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "string content",
+      );
+    });
+
+    it("throws when both initialContentPath and initialContentStr are provided", () => {
+      assert.throws(
+        () =>
+          getTempFileName({
+            initialContentPath: "/source/file.txt",
+            initialContentStr: "string content",
+          }),
+        /falsy value/,
+      );
+    });
   });
   describe("openWithPager", () => {
     let spawned: string[];
@@ -209,7 +231,6 @@ describe("utils", () => {
       testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
       openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-        initialContentPath: undefined,
       });
       assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
     });
@@ -218,7 +239,6 @@ describe("utils", () => {
       testProcessEnv._set("AGENT_JS_PAGER", "bat __FILE__");
       openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-        initialContentPath: undefined,
       });
       assert.strictEqual(spawned[0], "bat /tmp/agent-js-test-uuid.txt");
     });
@@ -227,7 +247,6 @@ describe("utils", () => {
       testProcessEnv._set("PAGER", "more");
       openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-        initialContentPath: undefined,
       });
       assert.strictEqual(spawned[0], `more "/tmp/agent-js-test-uuid.txt"`);
     });
@@ -235,7 +254,6 @@ describe("utils", () => {
     it("falls back to less", () => {
       openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-        initialContentPath: undefined,
       });
       assert.strictEqual(spawned[0], `less "/tmp/agent-js-test-uuid.txt"`);
     });
@@ -259,12 +277,34 @@ describe("utils", () => {
       });
       openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-        initialContentPath: undefined,
       });
       assert.deepStrictEqual(spawnArgs, [
         `less "/tmp/agent-js-test-uuid.txt"`,
         { shell: true, stdio: "inherit" },
       ]);
+    });
+
+    it("writes initialContentStr into the temp file", () => {
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        initialContentStr: "string content",
+      });
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "string content",
+      );
+    });
+
+    it("throws when both initialContentPath and initialContentStr are provided", () => {
+      assert.throws(
+        () =>
+          openWithPager({
+            pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+            initialContentPath: "/source/file.txt",
+            initialContentStr: "string content",
+          }),
+        /falsy value/,
+      );
     });
   });
 

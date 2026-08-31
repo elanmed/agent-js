@@ -22,11 +22,17 @@ export function getContextStr(contextEntries: ContextEntry[]) {
   if (contextEntries.length === 0) return "";
 
   const contextFilesList = contextEntries
-    .map((entry) => `Path: ${entry.filePath}\nContent: ${entry.content}\n`)
+    .map(
+      (entry) => `Path: ${entry.filePath}
+Content:
+${entry.content}
+`,
+    )
     .join("\n");
 
   return `
 AGENTS.md context files:
+
 ${contextFilesList}`;
 }
 

@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import childProcess from "node:child_process";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getPromptHistoryDir } from "./paths.ts";
+import assert from "node:assert";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
@@ -44,10 +45,14 @@ export function normalizeLine(content: string): string {
 }
 
 export function getTempFileName(args?: {
-  initialContentPath: string | undefined;
+  initialContentPath?: string | undefined;
+  initialContentStr?: string | undefined;
 }) {
+  const { initialContentPath, initialContentStr } = args ?? {};
+  assert(initialContentPath === undefined || initialContentStr === undefined);
+
   const tempFile = join(os.tmpdir(), `agent-js-${crypto.randomUUID()}.txt`);
-  const initialContentPath = args?.initialContentPath;
+
   if (initialContentPath !== undefined) {
     const readResult = tryCatch(() =>
       fsDeps.readFileSync(initialContentPath).toString(),
@@ -56,17 +61,26 @@ export function getTempFileName(args?: {
       tryCatch(() => fsDeps.writeFileSync(tempFile, readResult.value));
     }
   }
+
+  if (initialContentStr !== undefined) {
+    tryCatch(() => fsDeps.writeFileSync(tempFile, initialContentStr));
+  }
+
   return tempFile;
 }
 
 export function openWithPager({
   pagerEnvKey,
   initialContentPath,
+  initialContentStr,
 }: {
-  initialContentPath: string | undefined;
+  initialContentPath?: string;
+  initialContentStr?: string;
   pagerEnvKey: string;
 }) {
-  const tempFile = getTempFileName({ initialContentPath });
+  assert(initialContentPath === undefined || initialContentStr === undefined);
+
+  const tempFile = getTempFileName({ initialContentPath, initialContentStr });
 
   const pagerCommand = (() => {
     const pagerEnvValue = processDeps.env.get(pagerEnvKey);

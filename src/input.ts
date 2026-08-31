@@ -189,7 +189,11 @@ export function initKeypress() {
       }
 
       if (isSameKey(key, getState().config.keymaps.history)) {
-        chatHistoryCommand();
+        openWithPager({
+          initialContentPath: getState().app.chatHistoryPath,
+          pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        });
+
         return;
       }
 
@@ -325,12 +329,11 @@ const builtinSlashCommands = [
   "model",
   "skills",
   "context",
+  "context-str",
   "commands",
   "keymaps",
   "usage",
   "resume",
-  "local",
-  "global",
   "config",
 ];
 
@@ -356,7 +359,10 @@ export async function resolveSlashCommand(rawInput: string) {
       return null;
     }
     case "history": {
-      chatHistoryCommand();
+      openWithPager({
+        initialContentPath: getState().app.chatHistoryPath,
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+      });
       return null;
     }
     case "model": {
@@ -371,6 +377,10 @@ export async function resolveSlashCommand(rawInput: string) {
       await printContextFilesCommand();
       return null;
     }
+    case "context-str": {
+      await pageContextFilesCommand();
+      return null;
+    }
     case "commands": {
       await printCommandsCommand();
       return null;
@@ -383,16 +393,8 @@ export async function resolveSlashCommand(rawInput: string) {
       await usageCommand();
       return null;
     }
-    case "local": {
-      await localCommand();
-      return null;
-    }
-    case "global": {
-      await globalCommand();
-      return null;
-    }
     case "config": {
-      await configCommand();
+      configCommand();
       return null;
     }
     case "resume": {
@@ -503,13 +505,6 @@ export async function spawnAndReadEditorContent(opts?: {
   return normalizeLine(readResult.value);
 }
 
-export function chatHistoryCommand() {
-  return openWithPager({
-    initialContentPath: getState().app.chatHistoryPath,
-    pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-  });
-}
-
 export async function getModelCommand() {
   await print.doing(getState().config.model);
   return;
@@ -529,6 +524,19 @@ export async function setModelCommand(rawInput: string) {
   actions.setModel(model);
   await print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
   actions.setMessageParamTokensStale(true);
+}
+
+export async function pageContextFilesCommand() {
+  if (getState().app.contextEntries.length === 0) {
+    await printNewline();
+    await print.doing("No available context files");
+    return;
+  }
+
+  openWithPager({
+    pagerEnvKey: "AGENT_JS_PAGER_CONTEXT",
+    initialContentStr: getState().app.contextStr,
+  });
 }
 
 export async function printSkillsCommand() {
@@ -661,22 +669,25 @@ function getPrettyConfig(config: object) {
     .join("\n");
 }
 
-export async function localCommand() {
-  await printNewline();
-  await print.doing(`Local config from path: ${getLocalConfigPath()}`);
-  await print(getPrettyConfig(readConfigFile(getLocalConfigPath())));
-}
+export function configCommand() {
+  const globalConfigTitle = `Global config from path: ${getGlobalConfigPath()}`;
+  const localConfigTitle = `Local config from path: ${getLocalConfigPath()}`;
 
-export async function globalCommand() {
-  await printNewline();
-  await print.doing(`Global config from path: ${getGlobalConfigPath()}`);
-  await print(getPrettyConfig(readConfigFile(getGlobalConfigPath())));
-}
+  const configStr = `${globalConfigTitle}
+${"-".repeat(globalConfigTitle.length)}
+${getPrettyConfig(readConfigFile(getGlobalConfigPath()))}
 
-export async function configCommand() {
-  await printNewline();
-  await print.doing("Applied config:");
-  await print(getPrettyConfig(getState().config));
+${localConfigTitle}
+${"-".repeat(localConfigTitle.length)}
+${getPrettyConfig(readConfigFile(getLocalConfigPath()))}
+
+Applied config:
+---------------
+${getPrettyConfig(getState().config)}`;
+  openWithPager({
+    pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
+    initialContentStr: configStr,
+  });
 }
 
 export function clearRlLine(): readline.Interface | null {
