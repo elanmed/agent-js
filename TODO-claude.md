@@ -1,62 +1,8 @@
 # agent-js audit — TODO
 
-Findings from a read-through of `src/`. Grouped by severity. Each item has a
-short repro/why-it's-a-bug note and a fix plan.
-
----
-
-## Critical
-
-### 3. Tool-call callbacks can throw uncaught inside `generateText`
-
-**File:** `src/api.ts` — `experimental_onToolCallStart` / `...Finish`
-
-```ts
-const { path } = objectWithPathSchema.parse(toolCall.input);
-```
-
-If the model produces a malformed `str_replace`/`insert_lines` tool call
-(e.g. missing `path`, or the arg parsing schema mismatches whatever the
-provider returns), `.parse` throws a `ZodError` synchronously inside a
-callback that isn't wrapped in `tryCatch`. This isn't guarded by the outer
-`tryCatchAsync` around `generateText` in the way you'd hope — depending on
-where in the SDK's execution loop the callback fires, this can crash the
-whole turn ungracefully instead of failing that one tool call.
-
-**Fix:** Wrap the `.parse(...)` (and the temp-file bookkeeping around it) in
-`tryCatch`, and on failure, skip the diff-printing/temp-file logic instead of
-throwing. Add a test with an intentionally malformed tool call input.
-
 ---
 
 ## High
-
-### 4. Switching models mid-session corrupts token accounting
-
-**File:** `src/api.ts` — `resolveApiCall`
-
-```ts
-const allInputTokens = totalUsage.inputTokens ?? 0;
-const tokensForInputMessageParam =
-  allInputTokens - getState().app.messageParams.tokens;
-```
-
-This assumes `totalUsage.inputTokens` (reported by the _current_ model/
-tokenizer) is directly comparable to the running `messageParams.tokens` total
-(which may have been accumulated under a _different_ model's tokenizer, via
-`/model <new-model>`). Switching models mid-conversation can produce a wildly
-different token count for the same message history, making
-`tokensForInputMessageParam` go negative or nonsensical. This then gets
-written into `messageParams.tokens` via `appendToMessageParams`, silently
-poisoning the running total used for context-window-usage percentage and
-future compaction decisions.
-
-**Fix:** Either (a) clamp `tokensForInputMessageParam` to `>= 0`, or (b) on
-`/model` change, mark the token accounting as "unknown" and re-derive it from
-the next API response instead of doing a delta against a total computed under
-the old model. At minimum, add a regression test: append messages under model
-A, switch to model B via `/model`, call `resolveApiCall` again, and assert
-`messageParams.tokens` doesn't go negative.
 
 ### 5. `/resume` can inject a transcript larger than the context window with no compaction check
 

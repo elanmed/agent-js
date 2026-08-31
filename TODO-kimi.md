@@ -9,9 +9,3 @@ Verified state: `tsc`, `eslint src`, all 419 tests, and `prettier --check` pass.
 `src/tools.ts:584-597`: the `error.code !== 1` carve-out (git diff exits 1 when there are differences) only works without the pipe. With `| delta`, the pipeline exit code is delta's, so real git failures (e.g. exit 128) are silently swallowed and no error surfaces.
 
 Plan: use `set -o pipefail` in the command, or check stderr content / run git diff separately from the delta pretty-printing step.
-
-### 6. Temp files leak when a tool call is aborted mid-stream
-
-`src/api.ts`: `toolCallIdToTempFile` entries are only cleaned up in `experimental_onToolCallFinish`. If `generateText` throws/aborts between start and finish, the temp files in `os.tmpdir()` are never unlinked.
-
-Plan: in the error path of `resolveApiCall()` (and a `finally`), iterate `toolCallIdToTempFile.values()` and `tryCatch(() => fsDeps.unlinkSync(...))` each.
