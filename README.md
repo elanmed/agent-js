@@ -28,7 +28,7 @@ Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/se
 
 | Option                      | Type                                   | Required | Default                  | Description                                      |
 | --------------------------- | -------------------------------------- | -------- | ------------------------ | ------------------------------------------------ |
-| `model`                     | `string`                               | required | —                        | Model name                                       |
+| `model`                     | `string`                               | optional | —                        | Model name (required in the merged config)       |
 | `provider`                  | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                     |
 | `baseURL`                   | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)  |
 | `pricingPerModel`           | `object`                               | optional | `{}`                     | Token pricing per model per million              |
@@ -406,7 +406,6 @@ vim.g.clipboard = {
 
 ## TODO (soon)
 
-- [ ] Command to rescan context, use the latest config
 - [ ] Tool for creating subagents
 - [ ] Validate that two slash commands don't share the same keymap
 - [ ] Support additional user content after a slash command without args
