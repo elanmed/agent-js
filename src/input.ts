@@ -28,7 +28,7 @@ import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
-import { initState, type Key } from "./config.ts";
+import { initStateRepeatable, type Key } from "./config.ts";
 import { appendToChatHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import {
@@ -38,7 +38,7 @@ import {
   getLocalSlashCommandDir,
 } from "./paths.ts";
 import { contextFileSkillNamePrefix } from "./context.ts";
-import { getGitDiff } from "./tools.ts";
+import { execGitDiff } from "./tools.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -814,16 +814,17 @@ async function reload() {
     initialContentStr: getAllPrettyConfig(),
   });
 
-  // TODO: remove destructive actions
-  await initState();
+  await initStateRepeatable();
 
   const tempFileAfter = getTempFileName({
     initialContentStr: getAllPrettyConfig(),
   });
-  const diffResult = await getGitDiff({
-    tempFileBeforePath: tempFileBefore,
-    tempFileAfterPath: tempFileAfter,
-  });
+  const diffResult = await tryCatchAsync(
+    execGitDiff({
+      tempFileBeforePath: tempFileBefore,
+      tempFileAfterPath: tempFileAfter,
+    }),
+  );
   fsDeps.unlinkSync(tempFileBefore);
   fsDeps.unlinkSync(tempFileAfter);
 
@@ -833,7 +834,10 @@ async function reload() {
     );
     return;
   }
-  if (diffResult.value.stdout.length === 0) return;
+  if (diffResult.value.stdout.length === 0) {
+    await print.info("No diff from reload");
+    return;
+  }
 
   openWithPager({
     pagerEnvKey: "AGENT_JS_PAGER_RELOAD",

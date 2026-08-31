@@ -552,21 +552,6 @@ export const TOOLS = {
 
 export type ToolName = keyof typeof TOOLS;
 
-export async function getGitDiff({
-  tempFileAfterPath,
-  tempFileBeforePath,
-}: {
-  tempFileBeforePath: string;
-  tempFileAfterPath: string;
-}) {
-  return tryCatchAsync(
-    execGitDiff({
-      tempFileBeforePath,
-      tempFileAfterPath,
-    }),
-  );
-}
-
 export async function printGitDiff({
   path,
   tempFileAfterPath,
@@ -576,10 +561,12 @@ export async function printGitDiff({
   tempFileAfterPath: string;
   path: string;
 }) {
-  const diffResult = await getGitDiff({
-    tempFileAfterPath,
-    tempFileBeforePath,
-  });
+  const diffResult = await tryCatchAsync(
+    execGitDiff({
+      tempFileBeforePath,
+      tempFileAfterPath,
+    }),
+  );
 
   if (!diffResult.ok) {
     await print.error(

@@ -4,6 +4,7 @@ import { getState } from "./state.ts";
 import {
   initState,
   initStateForDebug,
+  initStateRepeatable,
   defaultConfig,
   ConfigSchema,
   DefaultedConfigSchema,
@@ -1185,8 +1186,23 @@ hello
     assert.strictEqual(getState().app.sessionStartDate, 1_234);
   });
 
+  it("sets debug log path", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...testConfig,
+      }),
+    );
+
+    await initState();
+    assert.strictEqual(
+      getState().app.debugLogPath,
+      "/fake-home/.config/agent-js/debug/debug-test-uuid.log",
+    );
+  });
+
   describe("initStateForDebug", () => {
-    it("sets debug flag and path when --debug is passed", () => {
+    it("sets debug flag when --debug is passed", () => {
       mock.method(parseCliArgsDeps, "getArgv", () => [
         "node",
         "script.js",
@@ -1196,20 +1212,52 @@ hello
       initStateForDebug();
 
       assert.strictEqual(getState().app.debugLog, true);
-      assert.strictEqual(
-        getState().app.debugLogPath,
-        "/fake-home/.config/agent-js/debug/debug-test-uuid.log",
-      );
     });
-
     it("keeps debug flag off when --debug is not passed", () => {
       initStateForDebug();
 
       assert.strictEqual(getState().app.debugLog, false);
-      assert.strictEqual(
-        getState().app.debugLogPath,
-        "/fake-home/.config/agent-js/debug/debug-test-uuid.log",
+    });
+  });
+
+  describe("initStateRepeatable", () => {
+    it("updates config and context without resetting session start date", async () => {
+      mock.method(Date, "now", () => 1_234);
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+        }),
       );
+
+      await initState();
+      assert.strictEqual(getState().app.sessionStartDate, 1_234);
+
+      const globalConfigStr = JSON.stringify({
+        ...testConfig,
+        model: "claude-haiku-4-5",
+      });
+      testFs._files.set(getGlobalConfigPath(), globalConfigStr);
+
+      await initStateRepeatable();
+
+      assert.strictEqual(getState().app.sessionStartDate, 1_234);
+      assert.strictEqual(getState().app.globalConfigStr, globalConfigStr);
+      assert.strictEqual(getState().config.model, "claude-haiku-4-5");
+    });
+
+    it("does not set the session start date or debug log path", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+        }),
+      );
+
+      await initStateRepeatable();
+
+      assert.strictEqual(getState().app.sessionStartDate, 0);
+      assert.strictEqual(getState().app.debugLogPath, "");
     });
   });
 });

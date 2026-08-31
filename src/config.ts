@@ -289,23 +289,28 @@ export async function initStateFromFs() {
   const skills = await getSkills();
   actions.setSkills(skills);
   actions.setSkillsStr(getSkillsStr(skills));
-
-  actions.setSessionStartDate();
 }
 
 export function initStateForDebug() {
   const args = parseCliArgs();
   actions.setDebugLog(args.debug);
+}
 
+export async function initStateRepeatable() {
+  initStateForDebug();
+  await initStateFromConfig();
+  await initStateFromFs();
+}
+
+export async function initState() {
+  initStateForDebug();
   const debugLogPath = join(
     getDebugLogDir(),
     `debug-${crypto.randomUUID()}.log`,
   );
   actions.setDebugLogPath(debugLogPath);
-}
 
-export async function initState() {
-  initStateForDebug();
   await initStateFromConfig();
   await initStateFromFs();
+  actions.setSessionStartDate();
 }
