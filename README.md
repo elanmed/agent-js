@@ -6,7 +6,7 @@ A minimal agent harness
 
 ## Features
 
-- **Minimal**: 3,300 lines of source code, 6,800 lines of tests
+- **Minimal**: 3,300 lines of source code, 7,000 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
@@ -191,6 +191,9 @@ usageLimit:
 | `AGENT_JS_API_KEY`         | API key for the configured provider (required)                                                                         |
 | `AGENT_JS_EDIT`            | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)                         |
 | `AGENT_JS_PAGER_HISTORY`   | Pager command with `__FILE__` placeholder for viewing chat history (fallback: `$AGENT_JS_PAGER`)                       |
+| `AGENT_JS_PAGER_CONFIG`    | Pager command with `__FILE__` placeholder for viewing config (fallback: `$AGENT_JS_PAGER`)                             |
+| `AGENT_JS_PAGER_CONTEXT`   | Pager command with `__FILE__` placeholder for viewing context (fallback: `$AGENT_JS_PAGER`)                            |
+| `AGENT_JS_PAGER_COMMANDS`  | Pager command with `__FILE__` placeholder for viewing custom commands (fallback: `$AGENT_JS_PAGER`)                    |
 | `AGENT_JS_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `less`)                                    |
 | `AGENT_JS_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
 
@@ -204,22 +207,22 @@ usageLimit:
 
 Slash commands are triggered with `/command` at the prompt.
 
-| Command     | Description                                                                |
-| ----------- | -------------------------------------------------------------------------- |
-| `/edit`     | Call the `edit` keymap                                                     |
-| `/clear`    | Call the `clear` keymap                                                    |
-| `/history`  | Call the `history` keymap                                                  |
-| `/paste`    | Call the `paste` keymap                                                    |
-| `/model`    | Switch the model at runtime (e.g. `/model kimi-k2.6`)                      |
-| `/skills`   | List available skills                                                      |
-| `/context`  | List available context files                                               |
-| `/commands` | List available slash commands (builtin and custom)                         |
-| `/keymaps`  | List configured keybindings                                                |
-| `/usage`    | Show current session usage                                                 |
-| `/local`    | Show the local config file (`./.agent-js/settings.yaml`), or `{}`          |
-| `/global`   | Show the global config file (`~/.config/agent-js/settings.yaml`), or `{}`  |
-| `/config`   | Show the applied config (merged with defaults)                             |
-| `/resume`   | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
+| Command         | Description                                                                |
+| --------------- | -------------------------------------------------------------------------- |
+| `/edit`         | Call the `edit` keymap                                                     |
+| `/clear`        | Call the `clear` keymap                                                    |
+| `/history`      | Call the `history` keymap                                                  |
+| `/paste`        | Call the `paste` keymap                                                    |
+| `/model`        | Switch the model at runtime (e.g. `/model kimi-k2.6`)                      |
+| `/skills`       | List available skills                                                      |
+| `/context`      | List available context files                                               |
+| `/context-str`  | View the raw context string in a pager                                     |
+| `/commands`     | List available slash commands (builtin and custom)                         |
+| `/commands-str` | View custom slash command contents in a pager                              |
+| `/keymaps`      | List configured keybindings                                                |
+| `/usage`        | Show current session usage                                                 |
+| `/config`       | View global, local, and applied config in a pager                          |
+| `/resume`       | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
 
 ### Custom Slash Commands
 
