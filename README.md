@@ -6,7 +6,7 @@ A minimal agent harness
 
 ## Features
 
-- **Minimal**: 3,400 lines of source code, 7,100 lines of tests
+- **Minimal**: 3,500 lines of source code, 7,100 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
@@ -22,7 +22,7 @@ A minimal agent harness
 
 ## Configuration
 
-Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/settings.yaml` (local overrides), parsed as YAML
+Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/settings.yaml` (local overrides), parsed as YAML 1.2 (the `yaml` package default).
 
 ### Config Options
 
