@@ -305,7 +305,7 @@ from editor
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `> yes
-Session start date: 42000
+Resume this session with /resume 42000
 `,
       );
     });

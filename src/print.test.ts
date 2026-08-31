@@ -424,7 +424,7 @@ test content
       await printSessionStartDate();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
-        "Session start date: 42000\n",
+        "Resume this session with /resume 42000\n",
       );
     });
   });
