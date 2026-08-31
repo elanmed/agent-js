@@ -43,7 +43,9 @@ export function normalizeLine(content: string): string {
   return content.trim().concat("\n");
 }
 
-export function getTempFileName(args?: { initialContentPath?: string }) {
+export function getTempFileName(args?: {
+  initialContentPath: string | undefined;
+}) {
   const tempFile = join(os.tmpdir(), `agent-js-${crypto.randomUUID()}.txt`);
   const initialContentPath = args?.initialContentPath;
   if (initialContentPath !== undefined) {
@@ -55,6 +57,40 @@ export function getTempFileName(args?: { initialContentPath?: string }) {
     }
   }
   return tempFile;
+}
+
+export function openWithPager({
+  pagerEnvKey,
+  initialContentPath,
+}: {
+  initialContentPath: string | undefined;
+  pagerEnvKey: string;
+}) {
+  const tempFile = getTempFileName({ initialContentPath });
+
+  const pagerCommand = (() => {
+    const pagerEnvValue = processDeps.env.get(pagerEnvKey);
+    if (isExisty(pagerEnvValue)) {
+      return pagerEnvValue.replace("__FILE__", tempFile);
+    }
+
+    const agentJsDefaultPagerEnvValue = processDeps.env.get("AGENT_JS_PAGER");
+    if (isExisty(agentJsDefaultPagerEnvValue)) {
+      return agentJsDefaultPagerEnvValue.replace("__FILE__", tempFile);
+    }
+
+    const defaultPagerEnvValue = processDeps.env.get("PAGER");
+    if (isExisty(defaultPagerEnvValue)) {
+      return `${defaultPagerEnvValue} "${tempFile}"`;
+    }
+
+    return `less "${tempFile}"`;
+  })();
+
+  childProcess.spawnSync(pagerCommand, {
+    shell: true,
+    stdio: "inherit",
+  });
 }
 
 export function execPromise(

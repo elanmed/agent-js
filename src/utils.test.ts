@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
+import childProcess from "node:child_process";
 
 import {
   isAbortError,
@@ -8,12 +9,18 @@ import {
   normalizeLine,
   getMessageFromError,
   getTempFileName,
+  openWithPager,
   createQueue,
   createLockUtils,
   truncate,
   listChatHistoryFiles,
 } from "./utils.ts";
-import { testFs, mockSetTimeout, setupTestContext } from "./test-helpers.ts";
+import {
+  testFs,
+  testProcessEnv,
+  mockSetTimeout,
+  setupTestContext,
+} from "./test-helpers.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 
 describe("utils", () => {
@@ -186,6 +193,78 @@ describe("utils", () => {
         initialContentPath: "/source.txt",
       });
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+    });
+  });
+  describe("openWithPager", () => {
+    let spawned: string[];
+
+    beforeEach(() => {
+      spawned = [];
+      mock.method(childProcess, "spawnSync", (cmd: string) => {
+        spawned.push(cmd);
+      });
+    });
+
+    it("uses pagerEnvKey env var with __FILE__ replacement", () => {
+      testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        initialContentPath: undefined,
+      });
+      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
+    });
+
+    it("falls back to AGENT_JS_PAGER env var", () => {
+      testProcessEnv._set("AGENT_JS_PAGER", "bat __FILE__");
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        initialContentPath: undefined,
+      });
+      assert.strictEqual(spawned[0], "bat /tmp/agent-js-test-uuid.txt");
+    });
+
+    it("falls back to PAGER env var with quoted temp file", () => {
+      testProcessEnv._set("PAGER", "more");
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        initialContentPath: undefined,
+      });
+      assert.strictEqual(spawned[0], `more "/tmp/agent-js-test-uuid.txt"`);
+    });
+
+    it("falls back to less", () => {
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        initialContentPath: undefined,
+      });
+      assert.strictEqual(spawned[0], `less "/tmp/agent-js-test-uuid.txt"`);
+    });
+
+    it("copies initial content into the temp file", () => {
+      testFs._files.set("/source/file.txt", "initial content");
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        initialContentPath: "/source/file.txt",
+      });
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "initial content",
+      );
+    });
+
+    it("spawns pager with shell and inherit stdio", () => {
+      let spawnArgs: unknown[] = [];
+      mock.method(childProcess, "spawnSync", (...args: unknown[]) => {
+        spawnArgs = args;
+      });
+      openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        initialContentPath: undefined,
+      });
+      assert.deepStrictEqual(spawnArgs, [
+        `less "/tmp/agent-js-test-uuid.txt"`,
+        { shell: true, stdio: "inherit" },
+      ]);
     });
   });
 

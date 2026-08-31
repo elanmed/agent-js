@@ -14,6 +14,7 @@ import {
   isExisty,
   truncate,
   listChatHistoryFiles,
+  openWithPager,
 } from "./utils.ts";
 import {
   print,
@@ -160,6 +161,7 @@ export function initKeypress() {
   assert(rl !== null);
   stdin.on("keypress", (_char, key: Key) => {
     void (async () => {
+      // TODO: support every slash command
       if (isSameKey(key, getState().config.keymaps.edit)) {
         const editorContent = await spawnAndReadEditorContent();
         if (editorContent !== null) {
@@ -187,7 +189,7 @@ export function initKeypress() {
       }
 
       if (isSameKey(key, getState().config.keymaps.history)) {
-        await chatHistoryCommand();
+        chatHistoryCommand();
         return;
       }
 
@@ -354,7 +356,7 @@ export async function resolveSlashCommand(rawInput: string) {
       return null;
     }
     case "history": {
-      await chatHistoryCommand();
+      chatHistoryCommand();
       return null;
     }
     case "model": {
@@ -501,40 +503,11 @@ export async function spawnAndReadEditorContent(opts?: {
   return normalizeLine(readResult.value);
 }
 
-export async function chatHistoryCommand() {
-  const logPath = getState().app.chatHistoryPath;
-  const logContentResult = tryCatch(() =>
-    fsDeps.readFileSync(logPath).toString(),
-  );
-  if (!logContentResult.ok) {
-    await print.warning("[Cannot read history]");
-    clearRlLine()!.prompt();
-    return;
-  }
-
-  const editCommand = (() => {
-    if (isExisty(processDeps.env.get("AGENT_JS_HISTORY"))) {
-      return processDeps.env
-        .get("AGENT_JS_HISTORY")!
-        .replace("__FILE__", logPath);
-    }
-
-    if (isExisty(processDeps.env.get("EDITOR"))) {
-      const editor = processDeps.env.get("EDITOR")!;
-      return editor.includes("__FILE__")
-        ? editor.replace("__FILE__", logPath)
-        : `${editor} "${logPath}"`;
-    }
-
-    return `vi "${logPath}"`;
-  })();
-
-  childProcess.spawnSync(editCommand, {
-    shell: true,
-    stdio: "inherit",
+export function chatHistoryCommand() {
+  return openWithPager({
+    initialContentPath: getState().app.chatHistoryPath,
+    pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
   });
-
-  tryCatch(() => fsDeps.writeFileSync(logPath, logContentResult.value));
 }
 
 export async function getModelCommand() {

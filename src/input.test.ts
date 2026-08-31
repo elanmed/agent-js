@@ -495,80 +495,37 @@ transcript content
   });
 
   describe("chatHistoryCommand", () => {
-    beforeEach(() => {
-      mock.method(childProcess, "spawnSync", () => undefined);
-    });
-
-    it("prints warning when log does not exist", async () => {
-      actions.setChatHistoryPath("/tmp/nonexistent.log");
-      actions.setRl(makeFakeRl());
-      await chatHistoryCommand();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        "[Cannot read history]\n",
-      );
-    });
-
-    it("uses AGENT_JS_HISTORY env var with __FILE__ when available", async () => {
+    it("opens chat history in a pager via AGENT_JS_PAGER_HISTORY", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      testProcessEnv._set("AGENT_JS_HISTORY", "nano __FILE__");
+      testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
       actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
-      await chatHistoryCommand();
-      assert.strictEqual(spawned, "nano /tmp/editor.log");
+      chatHistoryCommand();
+      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_HISTORY is not set", async () => {
+    it("copies chat history content into the temp file", () => {
+      actions.setChatHistoryPath("/tmp/editor.log");
+      testFs._files.set("/tmp/editor.log", "log content");
+      chatHistoryCommand();
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "log content",
+      );
+    });
+
+    it("opens pager with less when chat history cannot be read", () => {
       let spawned = "";
       mock.method(childProcess, "spawnSync", (cmd: string) => {
         spawned = cmd;
       });
-      testProcessEnv._set("EDITOR", "vim");
-      actions.setChatHistoryPath("/tmp/editor.log");
-      testFs._files.set("/tmp/editor.log", "log content");
-      await chatHistoryCommand();
-      assert.strictEqual(spawned, 'vim "/tmp/editor.log"');
-    });
-
-    it("falls back to vi when no editor env vars are set", async () => {
-      let spawned = "";
-      mock.method(childProcess, "spawnSync", (cmd: string) => {
-        spawned = cmd;
-      });
-      actions.setChatHistoryPath("/tmp/editor.log");
-      testFs._files.set("/tmp/editor.log", "log content");
-      await chatHistoryCommand();
-      assert.strictEqual(spawned, 'vi "/tmp/editor.log"');
-    });
-
-    it("prints warning when log cannot be read", async () => {
-      actions.setChatHistoryPath("/tmp/editor.log");
-      testFs._files.set("/tmp/editor.log", "log content");
-      actions.setRl(makeFakeRl());
-      mock.method(fsDeps, "readFileSync", () => {
-        throw new Error("read failed");
-      });
-      await chatHistoryCommand();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        "[Cannot read history]\n",
-      );
-    });
-
-    it("restores original log content after editing", async () => {
-      actions.setChatHistoryPath("/tmp/editor.log");
-      testFs._files.set("/tmp/editor.log", "original content");
-      mock.method(childProcess, "spawnSync", () => {
-        testFs._files.set("/tmp/editor.log", "modified by editor");
-      });
-      await chatHistoryCommand();
-      assert.strictEqual(
-        testFs._files.get("/tmp/editor.log"),
-        "original content",
-      );
+      actions.setChatHistoryPath("/tmp/missing.log");
+      chatHistoryCommand();
+      assert.strictEqual(spawned, `less "/tmp/agent-js-test-uuid.txt"`);
+      assert.strictEqual(getState().app.stdout, "");
     });
   });
 

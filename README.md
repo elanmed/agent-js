@@ -109,12 +109,12 @@ contextWindowPerModel:
 
 ### Keymaps
 
-| Key       | Type  | Default                     | Description                                                                                     |
-| --------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `edit`    | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                         |
-| `paste`   | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
-| `history` | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_HISTORY` or `$EDITOR __FILE__` to view chat history                             |
-| `clear`   | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                      |
+| Key       | Type  | Default                     | Description                                                                                         |
+| --------- | ----- | --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `edit`    | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                             |
+| `paste`   | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in     |
+| `history` | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_PAGER_HISTORY` (fallback: `$AGENT_JS_PAGER`, `$PAGER`, `less`) to view chat history |
+| `clear`   | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                          |
 
 The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
 
@@ -190,7 +190,8 @@ usageLimit:
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `AGENT_JS_API_KEY`         | API key for the configured provider (required)                                                                         |
 | `AGENT_JS_EDIT`            | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)                         |
-| `AGENT_JS_HISTORY`         | Editor command with `__FILE__` placeholder for viewing chat history (fallback: `$EDITOR __FILE__`)                     |
+| `AGENT_JS_PAGER_HISTORY`   | Pager command with `__FILE__` placeholder for viewing chat history (fallback: `$AGENT_JS_PAGER`)                       |
+| `AGENT_JS_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `less`)                                    |
 | `AGENT_JS_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
 
 ## CLI Arguments
@@ -359,7 +360,7 @@ agent() {
 
   local podman_args=(
     --env AGENT_JS_EDIT='nvim -c "normal! G$" -c startinsert! __FILE__'
-    --env AGENT_JS_HISTORY='nvim -c "normal! G$" __FILE__'
+    --env AGENT_JS_PAGER_HISTORY='nvim -c "normal! G$" __FILE__'
     --env AGENT_JS_CLIPBOARD_PASTE="nc --recv-only host.docker.internal $PASTE_PORT"
     --env COPY_PORT="$COPY_PORT"
     --env PASTE_PORT="$PASTE_PORT"
@@ -388,7 +389,7 @@ vim.g.clipboard = {
 
 - Command to rescan context, use the latest config
 - Tool for creating subagents
-- Support a pager for viewing config, chat history
+- Support a pager for viewing config
 
 ## TODO (later)
 
