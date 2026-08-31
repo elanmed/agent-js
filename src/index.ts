@@ -28,7 +28,6 @@ async function main() {
   let isFirstInput = true;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   while (true) {
-    await maybeCompactMessageParams();
     const userInput = await resolveUserInput({ isFirstInput });
     isFirstInput = false;
     if (userInput === null) continue;
@@ -41,6 +40,7 @@ async function main() {
     const text = await resolveApiCall(userInput);
     if (text === null) continue;
 
+    await maybeCompactMessageParams(userInput);
     await printNewline();
     await fencePrint("Output", {
       showSessionInfo: true,
