@@ -209,7 +209,7 @@ usageLimit:
 | `AGENT_JS_PAGER_CONTEXT`   | Pager command with `__FILE__` placeholder for viewing context (fallback: `$AGENT_JS_PAGER`)                            |
 | `AGENT_JS_PAGER_COMMANDS`  | Pager command with `__FILE__` placeholder for viewing custom commands (fallback: `$AGENT_JS_PAGER`)                    |
 | `AGENT_JS_PAGER_RELOAD`    | Pager command with `__FILE__` placeholder for viewing the reload config diff (fallback: `$AGENT_JS_PAGER`)             |
-| `AGENT_JS_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `bat`)                                     |
+| `AGENT_JS_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `bat`, then `less`)                        |
 | `AGENT_JS_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
 
 ## CLI Arguments
