@@ -373,7 +373,7 @@ SKILLS: available skills`,
         called = true;
         return Promise.resolve(makeGenerateTextResult());
       });
-      await maybeCompactMessageParams();
+      await maybeCompactMessageParams("hi");
       assert.strictEqual(called, false);
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 60_000,
@@ -391,7 +391,7 @@ SKILLS: available skills`,
         called = true;
         return Promise.resolve(makeGenerateTextResult());
       });
-      await maybeCompactMessageParams();
+      await maybeCompactMessageParams("hi");
       assert.strictEqual(called, false);
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 80_000,
@@ -418,7 +418,7 @@ SKILLS: available skills`,
           }),
         );
       });
-      await maybeCompactMessageParams();
+      await maybeCompactMessageParams("hi");
       assert.strictEqual(capturedMessages.length, 1);
       assert.strictEqual(
         capturedMessages[0]!.content,
@@ -449,6 +449,36 @@ SKILLS: available skills`,
       });
     });
 
+    it("compacts when the user input pushes tokens over the threshold", async () => {
+      actions.setCompactTargetRatio(0.25);
+      actions.appendToMessageParams({ role: "user", content: "hi" });
+      actions.setMessageParamTokens(70_000);
+      let capturedMessages: ModelMessage[] = [];
+      mock.method(aiDeps, "generateText", (opts: Record<string, unknown>) => {
+        capturedMessages = opts["messages"] as ModelMessage[];
+        return Promise.resolve(
+          makeGenerateTextResult({
+            text: "compacted summary",
+            totalUsage: {
+              inputTokens: 0,
+              outputTokens: 25_000,
+              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
+            },
+          }),
+        );
+      });
+
+      // 300 chars ≈ 100 tokens, pushing 70_000 over the 0.7 trigger (70_000 tokens).
+      await maybeCompactMessageParams("x".repeat(300));
+
+      assert.strictEqual(capturedMessages.length, 1);
+      assert.deepStrictEqual(getState().app.messageParams, {
+        tokens: 25_000,
+        tokensStale: false,
+        messages: [{ role: "assistant", content: "compacted summary" }],
+      });
+    });
+
     it("warns when compaction does not reach the target", async () => {
       actions.resetStdout();
       actions.setCompactTargetRatio(0.25);
@@ -466,7 +496,7 @@ SKILLS: available skills`,
           }),
         ),
       );
-      await maybeCompactMessageParams();
+      await maybeCompactMessageParams("hi");
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 30_000,
         tokensStale: false,
@@ -486,7 +516,7 @@ Compacted to 30,000, 5,000 over the target.
       mock.method(aiDeps, "generateText", () =>
         Promise.reject(new Error("network error")),
       );
-      await maybeCompactMessageParams();
+      await maybeCompactMessageParams("hi");
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 80_000,
         tokensStale: false,
@@ -501,7 +531,7 @@ Compacted to 30,000, 5,000 over the target.
       const err = new Error("aborted");
       err.name = "AbortError";
       mock.method(aiDeps, "generateText", () => Promise.reject(err));
-      await maybeCompactMessageParams();
+      await maybeCompactMessageParams("hi");
       assert.strictEqual(getState().abortControllers.apiStream, null);
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 80_000,
