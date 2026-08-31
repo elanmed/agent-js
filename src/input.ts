@@ -214,7 +214,11 @@ export function initKeypress() {
             return;
           }
           case "commands-str": {
-            await pageCommands();
+            await openWithPager({
+              pagerEnvKey: "AGENT_JS_PAGER_COMMANDS",
+              initialContentStr: getPrettySlashCommandsStr(),
+            });
+
             return;
           }
           case "reload": {
@@ -449,7 +453,11 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "commands-str": {
-      await pageCommands();
+      await openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_COMMANDS",
+        initialContentStr: getPrettySlashCommandsStr(),
+      });
+
       return { handled: true, inputFromCommand: null };
     }
     case "keymaps": {
@@ -754,21 +762,6 @@ function getCommandsStr() {
   return builtinCommandsFormatted.concat(customCommandsFormatted).join("\n");
 }
 
-export async function pageCommands() {
-  const customCommandsStr = getState()
-    .app.slashCommands.map((command) => {
-      return `${command.filePath}
-${"-".repeat(command.filePath.length)}
-${command.content}`;
-    })
-    .join("\n");
-
-  await openWithPager({
-    pagerEnvKey: "AGENT_JS_PAGER_COMMANDS",
-    initialContentStr: customCommandsStr,
-  });
-}
-
 export async function printCommands() {
   await printNewline();
   await print.doing("Available commands:");
@@ -809,6 +802,18 @@ Applied config:
 ${stringify(getState().config)}`;
 }
 
+function getPrettySlashCommandsStr() {
+  return getState()
+    .app.slashCommands.map(
+      ({ content, filePath }) =>
+        `${filePath}
+${"-".repeat(filePath.length)}
+${content}
+`,
+    )
+    .join("\n");
+}
+
 function getPrettyReloadStr() {
   return `${getAllPrettyConfig()}
 
@@ -817,7 +822,12 @@ Context files:
 ${getState().app.contextStr}
 
 Skills:
+-------
 ${getState().app.skillsStr}
+
+Slash commands:
+---------------
+${getPrettySlashCommandsStr()}
 `;
 }
 

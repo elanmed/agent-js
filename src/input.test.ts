@@ -12,9 +12,7 @@ import {
   printSkills,
   printContextFiles,
   printCommands,
-  printKeymaps,
   pageContextFiles,
-  pageCommands,
   spawnAndReadEditorContent,
   resume,
 } from "./input.ts";
@@ -697,96 +695,6 @@ Available commands:
     });
   });
 
-  describe("pageCommands", () => {
-    it("writes custom commands string into the temp file", () => {
-      actions.setSlashCommands([
-        {
-          name: "custom",
-          filePath: "/test/.agent-js/commands/custom.md",
-          content: "custom command content",
-        },
-      ]);
-      pageCommands();
-      assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        `/test/.agent-js/commands/custom.md
-----------------------------------
-custom command content`,
-      );
-    });
-
-    it("opens custom commands in a pager via AGENT_JS_PAGER_COMMANDS", async () => {
-      const { spawned } = mockPagerSpawn();
-      testProcessEnv._set("AGENT_JS_PAGER_COMMANDS", "nano __FILE__");
-      actions.setSlashCommands([
-        {
-          name: "custom",
-          filePath: "/test/.agent-js/commands/custom.md",
-          content: "custom command content",
-        },
-      ]);
-      await pageCommands();
-      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
-    });
-
-    it("writes empty temp file when there are no custom commands", () => {
-      pageCommands();
-      assert.strictEqual(testFs._files.get("/tmp/agent-js-test-uuid.txt"), "");
-    });
-  });
-
-  describe("printKeymaps", () => {
-    beforeEach(() => {
-      actions.resetState();
-      actions.resetStdout();
-    });
-
-    it("prints default keymaps", async () => {
-      await printKeymaps();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Keymaps:
-- edit: {
-  "name": "g",
-  "ctrl": true
-}
-- paste: {
-  "name": "v",
-  "ctrl": true
-}
-`,
-      );
-    });
-
-    it("prints custom keymaps", async () => {
-      actions.setKeymap("edit", { name: "e", ctrl: true, meta: true });
-      actions.setKeymap("paste", { name: "p", ctrl: true, shift: true });
-      actions.setKeymap("skills", { name: "s", ctrl: true });
-      await printKeymaps();
-      assert.strictEqual(
-        stripAnsi(getState().app.stdout),
-        `
-Keymaps:
-- edit: {
-  "name": "e",
-  "ctrl": true,
-  "meta": true
-}
-- paste: {
-  "name": "p",
-  "ctrl": true,
-  "shift": true
-}
-- skills: {
-  "name": "s",
-  "ctrl": true
-}
-`,
-      );
-    });
-  });
-
   describe("initKeypress", () => {
     let harness: ReturnType<typeof setupKeypressTests>;
 
@@ -906,7 +814,8 @@ Keymaps:
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         `/test/.agent-js/commands/custom.md
 ----------------------------------
-custom command content`,
+custom command content
+`,
       );
       assert.strictEqual(getState().app.stdout, "");
     });
@@ -1285,8 +1194,31 @@ Available commands:
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         `/test/.agent-js/commands/custom.md
 ----------------------------------
-custom command content`,
+custom command content
+`,
       );
+    });
+
+    it("uses AGENT_JS_PAGER_COMMANDS for the commands-str pager", async () => {
+      const { spawned } = mockPagerSpawn();
+      testProcessEnv._set("AGENT_JS_PAGER_COMMANDS", "nano __FILE__");
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test/.agent-js/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      const result = await resolveSlashCommand("/commands-str");
+      assert.strictEqual(result, null);
+      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
+    });
+
+    it("writes empty temp file for commands-str when there are no custom commands", async () => {
+      mockBatAvailable(true);
+      const result = await resolveSlashCommand("/commands-str");
+      assert.strictEqual(result, null);
+      assert.strictEqual(testFs._files.get("/tmp/agent-js-test-uuid.txt"), "");
     });
 
     it("handles /context-str command with no context files", async () => {

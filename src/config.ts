@@ -238,7 +238,6 @@ export async function initStateFromConfig() {
       globalConfig.customSlashCommandDirs ??
       defaultConfig.customSlashCommandDirs,
   );
-  actions.setSlashCommands(getAvailableSlashCommands());
   actions.setCustomSkillDirs(
     localConfig.customSkillDirs ??
       globalConfig.customSkillDirs ??
@@ -289,6 +288,9 @@ export async function initStateFromFs() {
   const skills = await getSkills();
   actions.setSkills(skills);
   actions.setSkillsStr(getSkillsStr(skills));
+
+  const slashCommands = getAvailableSlashCommands();
+  actions.setSlashCommands(slashCommands);
 }
 
 export function initStateForDebug() {
