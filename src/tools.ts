@@ -552,28 +552,45 @@ export const TOOLS = {
 
 export type ToolName = keyof typeof TOOLS;
 
-export async function printGitDiff(args: {
+export async function getGitDiff({
+  tempFileAfterPath,
+  tempFileBeforePath,
+}: {
+  tempFileBeforePath: string;
+  tempFileAfterPath: string;
+}) {
+  return tryCatchAsync(
+    execGitDiff({
+      tempFileBeforePath,
+      tempFileAfterPath,
+    }),
+  );
+}
+
+export async function printGitDiff({
+  path,
+  tempFileAfterPath,
+  tempFileBeforePath,
+}: {
   tempFileBeforePath: string;
   tempFileAfterPath: string;
   path: string;
 }) {
-  const diffResult = await tryCatchAsync(
-    execGitDiff({
-      tempFileBeforePath: args.tempFileBeforePath,
-      tempFileAfterPath: args.tempFileAfterPath,
-    }),
-  );
+  const diffResult = await getGitDiff({
+    tempFileAfterPath,
+    tempFileBeforePath,
+  });
 
   if (!diffResult.ok) {
     await print.error(
-      `An error occurred when getting the diff for ${args.path}: ${getMessageFromError(diffResult.error)}`,
+      `An error occurred when getting the diff for ${path}: ${getMessageFromError(diffResult.error)}`,
     );
     return;
   }
 
   if (diffResult.value.stdout.length > 0) {
     await printNewline();
-    await fencePrint(`File change: ${args.path}`);
+    await fencePrint(`File change: ${path}`);
     await print(normalizeLine(diffResult.value.stdout));
     await printNewline();
   }

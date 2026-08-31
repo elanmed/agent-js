@@ -177,6 +177,8 @@ export function readConfigFile(path: string): Partial<Config> {
 export async function initStateFromConfig() {
   const globalConfig = readConfigFile(getGlobalConfigPath());
   const localConfig = readConfigFile(getLocalConfigPath());
+  actions.setGlobalConfigStr(readConfigFileStr(getGlobalConfigPath()));
+  actions.setLocalConfigStr(readConfigFileStr(getLocalConfigPath()));
 
   const defaultedModel = ModelSchema.parse(
     localConfig.model ?? globalConfig.model,

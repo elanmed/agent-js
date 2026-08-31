@@ -28,7 +28,7 @@ import { basename, extname, join } from "node:path";
 import { actions, getState, type SlashCommand } from "./state.ts";
 import childProcess from "node:child_process";
 import os from "node:os";
-import { initState, readConfigFileStr, type Key } from "./config.ts";
+import { initState, type Key } from "./config.ts";
 import { appendToChatHistory } from "./log.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 import {
@@ -38,7 +38,7 @@ import {
   getLocalSlashCommandDir,
 } from "./paths.ts";
 import { contextFileSkillNamePrefix } from "./context.ts";
-import { printGitDiff } from "./tools.ts";
+import { getGitDiff } from "./tools.ts";
 
 // https://stackoverflow.com/a/33500118
 const mutedStdout = new Writable({
@@ -798,11 +798,11 @@ function getAllPrettyConfig() {
 
   return `${globalConfigTitle}
 ${"-".repeat(globalConfigTitle.length)}
-${readConfigFileStr(getGlobalConfigPath())}
+${getState().app.globalConfigStr}
 
 ${localConfigTitle}
 ${"-".repeat(localConfigTitle.length)}
-${readConfigFileStr(getLocalConfigPath())}
+${getState().app.localConfigStr}
 
 Applied config:
 ---------------
@@ -811,7 +811,6 @@ ${stringify(getState().config)}`;
 
 async function reload() {
   const tempFileBefore = getTempFileName({
-    // TODO: store pretty config at the start
     initialContentStr: getAllPrettyConfig(),
   });
 
@@ -821,14 +820,25 @@ async function reload() {
   const tempFileAfter = getTempFileName({
     initialContentStr: getAllPrettyConfig(),
   });
-  await printGitDiff({
+  const diffResult = await getGitDiff({
     tempFileBeforePath: tempFileBefore,
     tempFileAfterPath: tempFileAfter,
-    // TODO: make optional
-    path: "Config",
   });
   fsDeps.unlinkSync(tempFileBefore);
   fsDeps.unlinkSync(tempFileAfter);
+
+  if (!diffResult.ok) {
+    await print.error(
+      `An error occurred when getting the diff: ${getMessageFromError(diffResult.error)}`,
+    );
+    return;
+  }
+  if (diffResult.value.stdout.length === 0) return;
+
+  openWithPager({
+    pagerEnvKey: "AGENT_JS_PAGER_RELOAD",
+    initialContentStr: diffResult.value.stdout,
+  });
 }
 
 export function clearRlLine(): readline.Interface | null {

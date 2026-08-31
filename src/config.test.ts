@@ -1070,6 +1070,39 @@ hello
     );
   });
 
+  it("sets local and global config strings from dep", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({ model: "gpt-4" }),
+    );
+    testFs._files.set(
+      getLocalConfigPath(),
+      JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
+    );
+
+    await initState();
+    assert.equal(
+      getState().app.globalConfigStr,
+      JSON.stringify({ model: "gpt-4" }),
+    );
+    assert.equal(
+      getState().app.localConfigStr,
+      JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
+    );
+  });
+
+  it("sets missing local config string from dep to {}", async () => {
+    testFs._files.set(
+      getGlobalConfigPath(),
+      JSON.stringify({
+        ...testConfig,
+      }),
+    );
+
+    await initState();
+    assert.equal(getState().app.localConfigStr, "{}");
+  });
+
   it("sets skillsStr from dep", async () => {
     testFs._files.set(
       getGlobalConfigPath(),

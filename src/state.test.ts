@@ -258,6 +258,18 @@ hello`,
     );
   });
 
+  it("set-global-config-str", () => {
+    assert.equal(getState().app.globalConfigStr, "");
+    actions.setGlobalConfigStr("model: gpt-4");
+    assert.equal(getState().app.globalConfigStr, "model: gpt-4");
+  });
+
+  it("set-local-config-str", () => {
+    assert.equal(getState().app.localConfigStr, "");
+    actions.setLocalConfigStr("model: claude");
+    assert.equal(getState().app.localConfigStr, "model: claude");
+  });
+
   it("set-skills-str", () => {
     assert.equal(getState().app.skillsStr, "");
     actions.setSkillsStr("- skill: desc");

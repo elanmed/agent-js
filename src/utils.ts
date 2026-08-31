@@ -98,7 +98,7 @@ export function openWithPager({
       return `${defaultPagerEnvValue} "${tempFile}"`;
     }
 
-    return `less "${tempFile}"`;
+    return `bat "${tempFile}"`;
   })();
 
   childProcess.spawnSync(pagerCommand, {

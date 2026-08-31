@@ -251,11 +251,11 @@ describe("utils", () => {
       assert.strictEqual(spawned[0], `more "/tmp/agent-js-test-uuid.txt"`);
     });
 
-    it("falls back to less", () => {
+    it("falls back to bat", () => {
       openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
-      assert.strictEqual(spawned[0], `less "/tmp/agent-js-test-uuid.txt"`);
+      assert.strictEqual(spawned[0], `bat "/tmp/agent-js-test-uuid.txt"`);
     });
 
     it("copies initial content into the temp file", () => {
@@ -279,7 +279,7 @@ describe("utils", () => {
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
       assert.deepStrictEqual(spawnArgs, [
-        `less "/tmp/agent-js-test-uuid.txt"`,
+        `bat "/tmp/agent-js-test-uuid.txt"`,
         { shell: true, stdio: "inherit" },
       ]);
     });

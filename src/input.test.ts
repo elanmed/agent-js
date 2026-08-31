@@ -13,11 +13,10 @@ import {
   printContextFiles,
   printCommands,
   printKeymaps,
-  configCommand,
   pageContextFiles,
   pageCommands,
   spawnAndReadEditorContent,
-  resumeCommand,
+  resume,
 } from "./input.ts";
 import {
   testFs,
@@ -26,11 +25,12 @@ import {
   setupKeypressTests,
   makeFakeRl,
   mockClipboardPaste,
+  mockExec,
   stripAnsi,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
-import { getLocalConfigPath, getGlobalConfigPath } from "./paths.ts";
+import { getGlobalConfigPath } from "./paths.ts";
 
 describe("input", () => {
   beforeEach(() => {
@@ -398,13 +398,13 @@ Resume this session with /resume 42000
     });
   });
 
-  describe("resumeCommand", () => {
+  describe("resume", () => {
     beforeEach(() => {
       actions.resetStdout();
     });
 
     it("prints usage error when no session start date is provided", async () => {
-      const result = await resumeCommand("/resume");
+      const result = await resume("/resume");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -413,7 +413,7 @@ Resume this session with /resume 42000
     });
 
     it("prints usage error when too many parts are provided", async () => {
-      const result = await resumeCommand("/resume 123 456");
+      const result = await resume("/resume 123 456");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -422,7 +422,7 @@ Resume this session with /resume 42000
     });
 
     it("prints usage error when session start date is not a number", async () => {
-      const result = await resumeCommand("/resume abc");
+      const result = await resume("/resume abc");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -431,7 +431,7 @@ Resume this session with /resume 42000
     });
 
     it("prints error when history directory does not exist", async () => {
-      const result = await resumeCommand("/resume 1234567890000");
+      const result = await resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -446,7 +446,7 @@ Resume this session with /resume 42000
         "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
         "transcript content",
       );
-      const result = await resumeCommand("/resume 1234567890000");
+      const result = await resume("/resume 1234567890000");
       assert.strictEqual(
         result,
         `Continue the conversation recorded in the transcript below. Respond to this message with "Ready to continue chatting."
@@ -467,7 +467,7 @@ transcript content
         "/fake-home/.config/agent-js/history/chat-history-9999999999999.txt",
         "transcript content",
       );
-      const result = await resumeCommand("/resume 1234567890000");
+      const result = await resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -481,7 +481,7 @@ transcript content
         "/fake-home/.config/agent-js/history/other-1234567890000.txt",
         "other",
       );
-      const result = await resumeCommand("/resume 1234567890000");
+      const result = await resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -690,6 +690,7 @@ Available commands:
 - /usage
 - /resume
 - /config
+- /reload
 - /test/.agent-js/commands/custom.md
 `,
       );
@@ -789,123 +790,6 @@ Keymaps:
     });
   });
 
-  describe("configCommand", () => {
-    beforeEach(() => {
-      actions.resetState();
-      actions.resetStdout();
-    });
-
-    it("opens combined config in a pager via AGENT_JS_PAGER_CONFIG", () => {
-      let spawned = "";
-      mock.method(childProcess, "spawnSync", (cmd: string) => {
-        spawned = cmd;
-      });
-      testProcessEnv._set("AGENT_JS_PAGER_CONFIG", "nano __FILE__");
-      configCommand();
-      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
-    });
-
-    it("writes combined config string into the temp file", () => {
-      configCommand();
-      assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        `Global config from path: /fake-home/.config/agent-js/settings.yaml
-------------------------------------------------------------------
-{}
-
-Local config from path: /test-cwd/.agent-js/settings.yaml
----------------------------------------------------------
-{}
-
-Applied config:
----------------
-- model: ""
-- baseURL: undefined
-- provider: "openai-compatible"
-- pricingPerModel: {}
-- contextWindowPerModel: {}
-- compactTriggerRatio: 0.7
-- compactTargetRatio: 0.3
-- keymaps: {
-  "edit": {
-    "name": "g",
-    "ctrl": true
-  },
-  "paste": {
-    "name": "v",
-    "ctrl": true
-  }
-}
-- customSlashCommandDirs: []
-- customSkillDirs: []
-- loadingStateFrameDuration: 80
-- loadingStateFrames: [
-  "|",
-  "/",
-  "-",
-  "\\\\"
-]
-- promptPrefix: "> "
-- usageLimit: undefined`,
-      );
-      assert.strictEqual(getState().app.stdout, "");
-    });
-
-    it("includes local and global config file contents", () => {
-      testFs._files.set(
-        getLocalConfigPath(),
-        JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
-      );
-      testFs._files.set(
-        getGlobalConfigPath(),
-        JSON.stringify({ model: "gpt-4" }),
-      );
-      configCommand();
-      assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        `Global config from path: /fake-home/.config/agent-js/settings.yaml
-------------------------------------------------------------------
-- model: "gpt-4"
-
-Local config from path: /test-cwd/.agent-js/settings.yaml
----------------------------------------------------------
-- model: "gpt-4"
-- provider: "anthropic"
-
-Applied config:
----------------
-- model: ""
-- baseURL: undefined
-- provider: "openai-compatible"
-- pricingPerModel: {}
-- contextWindowPerModel: {}
-- compactTriggerRatio: 0.7
-- compactTargetRatio: 0.3
-- keymaps: {
-  "edit": {
-    "name": "g",
-    "ctrl": true
-  },
-  "paste": {
-    "name": "v",
-    "ctrl": true
-  }
-}
-- customSlashCommandDirs: []
-- customSkillDirs: []
-- loadingStateFrameDuration: 80
-- loadingStateFrames: [
-  "|",
-  "/",
-  "-",
-  "\\\\"
-]
-- promptPrefix: "> "
-- usageLimit: undefined`,
-      );
-    });
-  });
-
   describe("initKeypress", () => {
     let harness: ReturnType<typeof setupKeypressTests>;
 
@@ -980,7 +864,7 @@ Applied config:
       actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       harness.emitKey({ name: "h", ctrl: true });
-      assert.strictEqual(spawned[0], `less "/tmp/agent-js-test-uuid.txt"`);
+      assert.strictEqual(spawned[0], `bat "/tmp/agent-js-test-uuid.txt"`);
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         "log content",
@@ -1382,6 +1266,7 @@ Available commands:
 - /usage
 - /resume
 - /config
+- /reload
 `,
       );
     });
@@ -1515,6 +1400,23 @@ transcript content
       );
     });
 
+    it("handles /reload command by opening the config diff in a pager", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          model: "gpt-4",
+          baseURL: "https://api.example.com",
+        }),
+      );
+      mockExec({ stdout: "config diff content" });
+      const result = await resolveSlashCommand("/reload");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        "config diff content",
+      );
+    });
+
     it("handles custom slash command successfully", async () => {
       actions.setSlashCommands([
         {
@@ -1556,6 +1458,7 @@ Invalid command: /unknown, valid commands:
 - /usage
 - /resume
 - /config
+- /reload
 - /test-cwd/.agent-js/commands/known.md
 `,
       );

@@ -6,7 +6,7 @@ A minimal agent harness
 
 ## Features
 
-- **Minimal**: 3,300 lines of source code, 7,100 lines of tests
+- **Minimal**: 3,400 lines of source code, 7,100 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
@@ -208,7 +208,8 @@ usageLimit:
 | `AGENT_JS_PAGER_CONFIG`    | Pager command with `__FILE__` placeholder for viewing config (fallback: `$AGENT_JS_PAGER`)                             |
 | `AGENT_JS_PAGER_CONTEXT`   | Pager command with `__FILE__` placeholder for viewing context (fallback: `$AGENT_JS_PAGER`)                            |
 | `AGENT_JS_PAGER_COMMANDS`  | Pager command with `__FILE__` placeholder for viewing custom commands (fallback: `$AGENT_JS_PAGER`)                    |
-| `AGENT_JS_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `less`)                                    |
+| `AGENT_JS_PAGER_RELOAD`    | Pager command with `__FILE__` placeholder for viewing the reload config diff (fallback: `$AGENT_JS_PAGER`)             |
+| `AGENT_JS_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `bat`)                                     |
 | `AGENT_JS_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
 
 ## CLI Arguments
@@ -236,6 +237,7 @@ Slash commands are triggered with `/command` at the prompt.
 | `/keymaps`      | List configured keybindings                                                |
 | `/usage`        | Show current session usage                                                 |
 | `/config`       | View global, local, and applied config in a pager                          |
+| `/reload`       | Reload config and context, diff the result in a pager                      |
 | `/resume`       | Continue a past session from its start date (e.g. `/resume 1754000000000`) |
 
 ### Custom Slash Commands

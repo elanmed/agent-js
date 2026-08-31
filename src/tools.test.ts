@@ -12,6 +12,7 @@ import {
   executeWebFetchJsonTool,
   loadSkillTool,
   printGitDiff,
+  getGitDiff,
   execGitDiff,
   TOOLS,
 } from "./tools.ts";
@@ -752,10 +753,43 @@ bottom`,
     });
   });
 
+  describe("getGitDiff", () => {
+    beforeEach(() => {
+      actions.resetStdout();
+    });
+
+    it("returns diff stdout without printing", async () => {
+      mockExec({ stdout: "+added line" });
+      const result = await getGitDiff({
+        tempFileBeforePath: "/tmp/before",
+        tempFileAfterPath: "/tmp/after",
+      });
+      assert.deepStrictEqual(result, {
+        ok: true,
+        value: { stdout: "+added line", stderr: "" },
+      });
+      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+    });
+
+    it("returns ok false without printing on error", async () => {
+      const err = new Error("fatal") as Error & { code: number };
+      err.code = 128;
+      mockExec({ stdout: "", error: err });
+      const result = await getGitDiff({
+        tempFileBeforePath: "/tmp/before",
+        tempFileAfterPath: "/tmp/after",
+      });
+      assert.strictEqual(result.ok, false);
+      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+    });
+  });
+
   describe("printGitDiff", () => {
     beforeEach(() => {
       actions.resetStdout();
     });
+
+    
 
     it("prints diff with lines style", async () => {
       mockExec({ stdout: "+added line" });

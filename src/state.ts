@@ -35,6 +35,8 @@ interface State {
     chatHistoryPath: string;
     contextEntries: ContextEntry[];
     contextStr: string;
+    globalConfigStr: string;
+    localConfigStr: string;
     skillsStr: string;
     skills: Skill[];
     rl: readline.Interface | null;
@@ -64,6 +66,8 @@ const initialState: State = {
     chatHistoryPath: "",
     contextEntries: [],
     contextStr: "",
+    globalConfigStr: "",
+    localConfigStr: "",
     skillsStr: "",
     skills: [],
     rl: null,
@@ -313,6 +317,26 @@ export const actions = {
       "set-context-str",
       String(before.length),
       String(contextStr.length),
+    );
+  },
+
+  setGlobalConfigStr(globalConfigStr: string) {
+    const before = state.app.globalConfigStr;
+    state.app.globalConfigStr = globalConfigStr;
+    logStateChange(
+      "set-global-config-str",
+      String(before.length),
+      String(globalConfigStr.length),
+    );
+  },
+
+  setLocalConfigStr(localConfigStr: string) {
+    const before = state.app.localConfigStr;
+    state.app.localConfigStr = localConfigStr;
+    logStateChange(
+      "set-local-config-str",
+      String(before.length),
+      String(localConfigStr.length),
     );
   },
 
