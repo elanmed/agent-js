@@ -19,7 +19,7 @@ import {
 import { syncInitialModelUsageForLimitWindow } from "./usage.ts";
 import { print } from "./print.ts";
 import { join } from "node:path";
-import YAML from "yaml";
+import * as YAML from "yaml";
 
 export type Provider = "anthropic" | "openai-compatible";
 
