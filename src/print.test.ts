@@ -38,10 +38,15 @@ describe("print", () => {
       );
     });
 
-    it("returns original content when formatting fails", async () => {
+    it("returns original content and warns when formatting fails", async () => {
+      actions.resetStdout();
       const invalid = null as unknown as string;
       const result = await formatMarkdown(invalid);
       assert.equal(result, invalid);
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "Outputting raw content, markdown formatting failed: Cannot read properties of null (reading 'length')\n",
+      );
     });
   });
 

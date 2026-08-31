@@ -180,6 +180,9 @@ export async function formatMarkdown(content: string): Promise<string> {
     format(content, { parser: "markdown" }),
   );
   if (formatResult.ok) return formatResult.value;
+  await print.warning(
+    `Outputting raw content, markdown formatting failed: ${getMessageFromError(formatResult.error)}`,
+  );
   return content;
 }
 

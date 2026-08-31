@@ -1,6 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { getEventListeners } from "node:events";
+import childProcess from "node:child_process";
 import {
   executeBashTool,
   executeCreateFileTool,
@@ -660,9 +661,24 @@ bottom`,
   });
 
   describe("execGitDiff", () => {
+    function mockExecCalls(results: { stdout: string; error?: Error }[]) {
+      const queue = [...results];
+      mock.method(
+        childProcess,
+        "exec",
+        (
+          _cmd: string,
+          _opts: unknown,
+          cb: (error: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          const { stdout, error } = queue.shift()!;
+          cb(error ?? null, stdout, "");
+        },
+      );
+    }
+
     it("uses delta when available and resolves with stdout", async () => {
-      mockExec({ stdout: "delta 0.18.2", once: true });
-      mockExec({ stdout: "diff output" });
+      mockExecCalls([{ stdout: "delta 0.18.2" }, { stdout: "diff output" }]);
       const result = await execGitDiff({
         tempFileBeforePath: "a",
         tempFileAfterPath: "b",
@@ -670,32 +686,21 @@ bottom`,
       assert.deepStrictEqual(result, { stdout: "diff output", stderr: "" });
     });
 
-    it("resolves when git diff exits with code 1 (no differences)", async () => {
-      const err = new Error("diff failed") as Error & { code: number };
+    it("rejects when delta exits with non-zero status", async () => {
+      const err = new Error("delta failed") as Error & { code: number };
       err.code = 1;
-      mockExec({ stdout: "delta 0.18.2", once: true });
-      mockExec({ stdout: "", error: err });
-      const result = await execGitDiff({
-        tempFileBeforePath: "a",
-        tempFileAfterPath: "b",
-      });
-      assert.deepStrictEqual(result, { stdout: "", stderr: "" });
-    });
-
-    it("rejects when git diff exits with code !== 1", async () => {
-      const err = new Error("fatal") as Error & { code: number };
-      err.code = 128;
-      mockExec({ stdout: "delta 0.18.2", once: true });
-      mockExec({ stdout: "", error: err });
+      mockExecCalls([{ stdout: "delta 0.18.2" }, { stdout: "", error: err }]);
       await assert.rejects(
         execGitDiff({ tempFileBeforePath: "a", tempFileAfterPath: "b" }),
-        /fatal/,
+        /delta failed/,
       );
     });
 
     it("falls back to plain git diff when delta is not available", async () => {
-      mockExec({ stdout: "", error: new Error("not found"), once: true });
-      mockExec({ stdout: "plain diff" });
+      mockExecCalls([
+        { stdout: "", error: new Error("not found") },
+        { stdout: "plain diff" },
+      ]);
       const result = await execGitDiff({
         tempFileBeforePath: "a",
         tempFileAfterPath: "b",
@@ -703,11 +708,43 @@ bottom`,
       assert.deepStrictEqual(result, { stdout: "plain diff", stderr: "" });
     });
 
-    it("rejects on plain git diff error with code !== 1", async () => {
+    it("resolves when plain git diff exits with code 1 (differences found)", async () => {
+      const err = new Error("diff failed") as Error & { code: number };
+      err.code = 1;
+      mockExecCalls([
+        { stdout: "", error: new Error("not found") },
+        { stdout: "", error: err },
+      ]);
+      const result = await execGitDiff({
+        tempFileBeforePath: "a",
+        tempFileAfterPath: "b",
+      });
+      assert.deepStrictEqual(result, { stdout: "", stderr: "" });
+    });
+
+    it("resolves on plain git diff error with code below 128", async () => {
+      const err = new Error("git: command not found") as Error & {
+        code: number;
+      };
+      err.code = 127;
+      mockExecCalls([
+        { stdout: "", error: new Error("not found") },
+        { stdout: "", error: err },
+      ]);
+      const result = await execGitDiff({
+        tempFileBeforePath: "a",
+        tempFileAfterPath: "b",
+      });
+      assert.deepStrictEqual(result, { stdout: "", stderr: "" });
+    });
+
+    it("rejects on fatal plain git diff error", async () => {
       const err = new Error("fatal") as Error & { code: number };
       err.code = 128;
-      mockExec({ stdout: "", error: new Error("not found"), once: true });
-      mockExec({ stdout: "", error: err });
+      mockExecCalls([
+        { stdout: "", error: new Error("not found") },
+        { stdout: "", error: err },
+      ]);
       await assert.rejects(
         execGitDiff({ tempFileBeforePath: "a", tempFileAfterPath: "b" }),
         /fatal/,
@@ -737,14 +774,19 @@ bottom`,
       );
     });
 
-    it("does not print when execGitDiff fails", async () => {
-      mockExec({ stdout: "", error: new Error("fatal") });
+    it("prints an error when execGitDiff fails", async () => {
+      const err = new Error("fatal") as Error & { code: number };
+      err.code = 128;
+      mockExec({ stdout: "", error: err });
       await printGitDiff({
         tempFileBeforePath: "/tmp/before",
         tempFileAfterPath: "/tmp/after",
         path: "/test/file.txt",
       });
-      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        "An error occurred when getting the diff for /test/file.txt: fatal\n",
+      );
     });
 
     it("does not print when execGitDiff returns empty stdout", async () => {

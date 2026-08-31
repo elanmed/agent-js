@@ -564,7 +564,14 @@ export async function printGitDiff(args: {
     }),
   );
 
-  if (diffResult.ok && diffResult.value.stdout.length > 0) {
+  if (!diffResult.ok) {
+    await print.error(
+      `An error occurred when getting the diff for ${args.path}: ${getMessageFromError(diffResult.error)}`,
+    );
+    return;
+  }
+
+  if (diffResult.value.stdout.length > 0) {
     await printNewline();
     await fencePrint(`File change: ${args.path}`);
     await print(normalizeLine(diffResult.value.stdout));
@@ -576,20 +583,26 @@ export async function execGitDiff(opts: {
   tempFileBeforePath: string;
   tempFileAfterPath: string;
 }): Promise<{ stdout: string; stderr: string }> {
-  const cmd = await (async () => {
-    const linesGitDiffCmd = `git diff --no-index --color=always ${opts.tempFileBeforePath} ${opts.tempFileAfterPath}`;
+  const isDeltaAvailable = await checkDelta();
+  const linesGitDiffCmd = `git diff --no-index --color=always ${opts.tempFileBeforePath} ${opts.tempFileAfterPath}`;
 
-    const isDeltaAvailable = await checkDelta();
+  const cmd = (() => {
     if (isDeltaAvailable) {
       return `${linesGitDiffCmd} | delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit`;
     }
-
     return linesGitDiffCmd;
+  })();
+
+  const isErrorCode = (() => {
+    if (isDeltaAvailable) {
+      return (status: number) => status > 0;
+    }
+    return (status: number) => status >= 128;
   })();
 
   return new Promise((resolve, reject) => {
     childProcess.exec(cmd, { cwd: os.tmpdir() }, (error, stdout, stderr) => {
-      if (error !== null && error.code !== 1) {
+      if (error?.code !== undefined && isErrorCode(error.code)) {
         reject(error);
       } else {
         resolve({ stdout, stderr });
