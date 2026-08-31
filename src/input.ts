@@ -362,145 +362,145 @@ const builtinSlashCommands = [
 ] as const;
 type BuiltinSlashCommand = (typeof builtinSlashCommands)[number];
 
-type BuiltinSlashCommandsWithArgs = "resume" | "model";
+type ParameterizedBuiltinSlashCommand = "resume" | "model";
 
-interface SlashCommandResult {
-  resolved: boolean;
+interface SlashCommandOutcome {
+  handled: boolean;
   inputFromCommand: string | null;
 }
 
 async function resolveBuiltinSlashCommand(
   command: BuiltinSlashCommand,
-): Promise<SlashCommandResult> {
+): Promise<SlashCommandOutcome> {
   switch (command) {
     case "edit": {
       const content = await spawnAndReadEditorContent();
       if (content !== null) appendToChatHistory(content, "user");
-      return { resolved: true, inputFromCommand: content };
+      return { handled: true, inputFromCommand: content };
     }
     case "paste": {
       const content = await spawnAndReadEditorContent({
         includeClipboardSuffix: true,
       });
       if (content !== null) appendToChatHistory(content, "user");
-      return { resolved: true, inputFromCommand: content };
+      return { handled: true, inputFromCommand: content };
     }
     case "clear": {
       await clearCommand();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "history": {
       openWithPager({
         initialContentPath: getState().app.chatHistoryPath,
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "model": {
       await getModel();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "skills": {
       await printSkills();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "context": {
       await printContextFiles();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "context-str": {
       await pageContextFiles();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "commands": {
       await printCommands();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "commands-str": {
       pageCommands();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "keymaps": {
       await printKeymaps();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "usage": {
       await usageCommand();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "config": {
       configCommand();
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "resume": {
       await print.error("Usage: /resume [session start date]");
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     default: {
       command satisfies never;
-      return { resolved: false, inputFromCommand: null };
+      return { handled: false, inputFromCommand: null };
     }
   }
 }
 
-async function resolveBuiltinSlashCommandWithArgs(
+async function resolveParameterizedBuiltinSlashCommand(
   commandWithArgs: string,
-): Promise<SlashCommandResult> {
+): Promise<SlashCommandOutcome> {
   const parts = commandWithArgs.trim().split(/\s+/);
-  const command = parts[0] as BuiltinSlashCommandsWithArgs | undefined;
-  if (command === undefined) return { resolved: false, inputFromCommand: null };
+  const command = parts[0] as ParameterizedBuiltinSlashCommand | undefined;
+  if (command === undefined) return { handled: false, inputFromCommand: null };
 
   switch (command) {
     case "model": {
       await setModelCommand(commandWithArgs);
-      return { resolved: true, inputFromCommand: null };
+      return { handled: true, inputFromCommand: null };
     }
     case "resume": {
       const content = await resumeCommand(commandWithArgs);
       if (content !== null) appendToChatHistory(content, "user");
-      return { resolved: true, inputFromCommand: content };
+      return { handled: true, inputFromCommand: content };
     }
     default: {
       command satisfies never;
-      return { resolved: false, inputFromCommand: null };
+      return { handled: false, inputFromCommand: null };
     }
   }
 }
 
 async function resolveCustomSlashCommand(
   command: string,
-): Promise<SlashCommandResult> {
+): Promise<SlashCommandOutcome> {
   const slashCommands = getState().app.slashCommands;
   const matchedCommand = slashCommands.find((c) => c.name === command);
 
   if (matchedCommand !== undefined) {
     await print.infoSubtle(`Executing slash command: ${command}`);
-    return { resolved: true, inputFromCommand: matchedCommand.content };
+    return { handled: true, inputFromCommand: matchedCommand.content };
   }
 
-  return { resolved: false, inputFromCommand: null };
+  return { handled: false, inputFromCommand: null };
 }
 
 export async function resolveSlashCommand(rawInput: string) {
   const commandWithoutSlash = rawInput.slice(1);
 
-  const builtinSlashCommandResult = await resolveBuiltinSlashCommand(
+  const builtinSlashCommandOutcome = await resolveBuiltinSlashCommand(
     commandWithoutSlash as BuiltinSlashCommand,
   );
-  if (builtinSlashCommandResult.resolved) {
-    return builtinSlashCommandResult.inputFromCommand;
+  if (builtinSlashCommandOutcome.handled) {
+    return builtinSlashCommandOutcome.inputFromCommand;
   }
 
-  const builtinSlashCommandWithArgsResult =
-    await resolveBuiltinSlashCommandWithArgs(commandWithoutSlash);
-  if (builtinSlashCommandWithArgsResult.resolved) {
-    return builtinSlashCommandWithArgsResult.inputFromCommand;
+  const parameterizedBuiltinSlashCommandOutcome =
+    await resolveParameterizedBuiltinSlashCommand(commandWithoutSlash);
+  if (parameterizedBuiltinSlashCommandOutcome.handled) {
+    return parameterizedBuiltinSlashCommandOutcome.inputFromCommand;
   }
 
-  const customSlashCommandResult =
+  const customSlashCommandOutcome =
     await resolveCustomSlashCommand(commandWithoutSlash);
-  if (customSlashCommandResult.resolved) {
-    return customSlashCommandResult.inputFromCommand;
+  if (customSlashCommandOutcome.handled) {
+    return customSlashCommandOutcome.inputFromCommand;
   }
 
   await printNewline();
