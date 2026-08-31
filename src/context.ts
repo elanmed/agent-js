@@ -8,7 +8,7 @@ import {
   getGlobalSkillDir,
   getLocalSkillDir,
 } from "./paths.ts";
-import YAML from "yaml";
+import * as YAML from "yaml";
 import { z } from "zod";
 
 export interface ContextEntry {
@@ -23,19 +23,19 @@ export function getContextStr(contextEntries: ContextEntry[]) {
 
   const contextFilesList = contextEntries
     .map(
-      (entry) => `Path: ${entry.filePath}
-Content:
+      (entry) => `# Path: ${entry.filePath}
+---
+\`\`\`md
 ${entry.content}
-`,
+\`\`\``,
     )
-    .join("\n");
+    .join("\n\n");
 
-  return `
-AGENTS.md context files:
+  return `# AGENTS.md context files
+---
 
 ${contextFilesList}`;
 }
-
 export function getContextEntries() {
   const agentFileDirs: string[] = [processDeps.cwd(), getGlobalContextDir()];
 
@@ -70,17 +70,16 @@ export function getSkillsStr(skills: Skill[]) {
     .map((skill) => `- ${skill.name}: ${skill.description}`)
     .join("\n");
 
-  return `
-Skills:
+  return `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 ${skillsFormatted}
 `;
 }
-
 export async function getSkills() {
   const seenSkills = new Set<string>();
   const skillGrandparentDirs = [

@@ -5,7 +5,7 @@ import childProcess from "node:child_process";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getPromptHistoryDir } from "./paths.ts";
 import assert from "node:assert";
-import { checkBat } from "./print.ts";
+import { checkBat, batFlags } from "./print.ts";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
@@ -101,7 +101,7 @@ export async function openWithPager({
 
     const isBatAvailable = await checkBat();
     if (isBatAvailable) {
-      return `bat --style=changes,grid,numbers,snip "${tempFile}"`;
+      return `bat ${batFlags.join(" ")} "${tempFile}"`;
     }
 
     return `less "${tempFile}"`;

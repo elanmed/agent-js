@@ -422,14 +422,7 @@ SKILLS: available skills`,
       assert.strictEqual(capturedMessages.length, 1);
       assert.strictEqual(
         capturedMessages[0]!.content,
-        `Compact the following conversation. Your summary must be less than 25000 tokens:
-[
-  {
-    "role": "user",
-    "content": "hi"
-  }
-]
-`,
+        `Compact the following conversation. Your summary must be less than 25000 tokens:\n[{"role":"user","content":"hi"}]\n`,
       );
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 25_000,

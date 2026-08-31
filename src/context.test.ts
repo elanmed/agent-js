@@ -32,13 +32,14 @@ describe("context", () => {
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `
-AGENTS.md context files:
+        `# AGENTS.md context files
+---
 
-Path: /test-cwd/AGENTS.md
-Content:
+# Path: /test-cwd/AGENTS.md
+---
+\`\`\`md
 # Agent Instructions
-`,
+\`\`\``,
       );
     });
 
@@ -52,17 +53,20 @@ Content:
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `
-AGENTS.md context files:
+        `# AGENTS.md context files
+---
 
-Path: /test-cwd/AGENTS.md
-Content:
+# Path: /test-cwd/AGENTS.md
+---
+\`\`\`md
 Root content
+\`\`\`
 
-Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content:
+# Path: /fake-home/.config/agent-js/context/AGENTS.md
+---
+\`\`\`md
 Global content
-`,
+\`\`\``,
       );
     });
 
@@ -75,13 +79,14 @@ Global content
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `
-AGENTS.md context files:
+        `# AGENTS.md context files
+---
 
-Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content:
+# Path: /fake-home/.config/agent-js/context/AGENTS.md
+---
+\`\`\`md
 Global content
-`,
+\`\`\``,
       );
     });
 
@@ -98,13 +103,14 @@ Global content
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `
-AGENTS.md context files:
+        `# AGENTS.md context files
+---
 
-Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content:
+# Path: /fake-home/.config/agent-js/context/AGENTS.md
+---
+\`\`\`md
 global content
-`,
+\`\`\``,
       );
     });
 
@@ -118,17 +124,20 @@ global content
       const result = getContextStr(getContextEntries());
       assert.equal(
         result,
-        `
-AGENTS.md context files:
+        `# AGENTS.md context files
+---
 
-Path: /test-cwd/AGENTS.md
-Content:
+# Path: /test-cwd/AGENTS.md
+---
+\`\`\`md
 local content
+\`\`\`
 
-Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content:
+# Path: /fake-home/.config/agent-js/context/AGENTS.md
+---
+\`\`\`md
 global content
-`,
+\`\`\``,
       );
     });
   });
@@ -155,13 +164,13 @@ description: A test skill
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - my-skill: A test skill
 `,
       );
@@ -194,13 +203,13 @@ description: Global deploy
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - deploy: Local deploy
 `,
       );
@@ -264,13 +273,13 @@ description: Second
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - skill-a: First
 - skill-b: Second
 `,
@@ -293,13 +302,13 @@ description: A test skill
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - my-skill: A test skill
 `,
       );
@@ -328,13 +337,13 @@ description: Valid
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - good: Valid
 `,
       );
@@ -356,13 +365,13 @@ description: From custom dir
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - custom-skill: From custom dir
 `,
       );
@@ -395,13 +404,13 @@ description: Local deploy
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - deploy: Custom deploy
 `,
       );
@@ -415,13 +424,13 @@ would benefit from specialized instructions.
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - __agent-js-context-for-/test-cwd/src: Context relevant for /test-cwd/src
 `,
       );
@@ -447,13 +456,13 @@ description: A test skill
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - my-skill: A test skill
 - __agent-js-context-for-/test-cwd/src: Context relevant for /test-cwd/src
 `,
@@ -481,13 +490,13 @@ description: Works
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `
-Skills:
+        `# Skills
+---
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
- Available skills:
+Available skills:
 - ok: Works
 `,
       );

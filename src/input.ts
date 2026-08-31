@@ -785,48 +785,52 @@ export async function printKeymaps() {
   }
 }
 
+function markdownFence(lang: string, content: string) {
+  return `\`\`\`${lang}
+${content}
+\`\`\``;
+}
+
 function getAllPrettyConfig() {
   const globalConfigTitle = `Global config from path: ${getGlobalConfigPath()}`;
   const localConfigTitle = `Local config from path: ${getLocalConfigPath()}`;
 
-  return `${globalConfigTitle}
-${"-".repeat(globalConfigTitle.length)}
-${getState().app.globalConfigStr}
+  return `# ${globalConfigTitle}
+---
+${markdownFence("yaml", getState().app.globalConfigStr)}
 
-${localConfigTitle}
-${"-".repeat(localConfigTitle.length)}
-${getState().app.localConfigStr}
+# ${localConfigTitle}
+---
+${markdownFence("yaml", getState().app.localConfigStr)}
 
-Applied config:
----------------
-${stringify(getState().config)}`;
+# Applied config
+---
+${markdownFence("json", stringify(getState().config))}`;
 }
 
 function getPrettySlashCommandsStr() {
   return getState()
     .app.slashCommands.map(
-      ({ content, filePath }) =>
-        `${filePath}
-${"-".repeat(filePath.length)}
-${content}
-`,
+      ({ content, filePath }) => `# ${filePath}
+---
+${content}`,
     )
-    .join("\n");
+    .join("\n\n");
 }
 
 function getPrettyReloadStr() {
   return `${getAllPrettyConfig()}
 
-Context files:
---------------
+# Context files:
+---
 ${getState().app.contextStr}
 
-Skills:
--------
+# Skills:
+---
 ${getState().app.skillsStr}
 
-Slash commands:
----------------
+# Slash commands:
+---
 ${getPrettySlashCommandsStr()}
 `;
 }

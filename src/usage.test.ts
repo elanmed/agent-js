@@ -683,17 +683,7 @@ describe("usage", () => {
       assert.deepStrictEqual(getState().app.modelUsageForSession, {});
       assert.strictEqual(
         testFs._files.get(getUsageLogPath()),
-        `{
-  "gpt-4": [
-    {
-      "inputTokens": 10,
-      "outputTokens": 5,
-      "cacheReadTokens": 1,
-      "cacheWriteTokens": 0,
-      "date": 500000
-    }
-  ]
-}`,
+        JSON.stringify({ "gpt-4": [usage] }),
       );
     });
 
@@ -736,24 +726,18 @@ describe("usage", () => {
       });
       assert.strictEqual(
         testFs._files.get(getUsageLogPath()),
-        `{
-  "gpt-4": [
-    {
-      "inputTokens": 5,
-      "outputTokens": 2,
-      "cacheReadTokens": 0,
-      "cacheWriteTokens": 0,
-      "date": 500000
-    },
-    {
-      "inputTokens": 10,
-      "outputTokens": 5,
-      "cacheReadTokens": 1,
-      "cacheWriteTokens": 0,
-      "date": 1000000
-    }
-  ]
-}`,
+        JSON.stringify({
+          "gpt-4": [
+            {
+              inputTokens: 5,
+              outputTokens: 2,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              date: 500_000,
+            },
+            usage,
+          ],
+        }),
       );
     });
 
@@ -774,17 +758,7 @@ describe("usage", () => {
       });
       assert.strictEqual(
         testFs._files.get(getUsageLogPath()),
-        `{
-  "gpt-4": [
-    {
-      "inputTokens": 10,
-      "outputTokens": 5,
-      "cacheReadTokens": 1,
-      "cacheWriteTokens": 0,
-      "date": 500000
-    }
-  ]
-}`,
+        JSON.stringify({ "gpt-4": [usage] }),
       );
     });
 

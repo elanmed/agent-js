@@ -785,7 +785,7 @@ Available commands:
       harness.emitKey({ name: "q", ctrl: true });
       assert.match(
         testFs._files.get("/tmp/agent-js-test-uuid.txt") ?? "",
-        /Applied config:/,
+        /# Applied config/,
       );
       assert.strictEqual(getState().app.stdout, "");
     });
@@ -812,10 +812,9 @@ Available commands:
       harness.emitKey({ name: "m", ctrl: true });
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        `/test/.agent-js/commands/custom.md
-----------------------------------
-custom command content
-`,
+        `# /test/.agent-js/commands/custom.md
+---
+custom command content`,
       );
       assert.strictEqual(getState().app.stdout, "");
     });
@@ -1192,10 +1191,9 @@ Available commands:
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        `/test/.agent-js/commands/custom.md
-----------------------------------
-custom command content
-`,
+        `# /test/.agent-js/commands/custom.md
+---
+custom command content`,
       );
     });
 
@@ -1255,9 +1253,9 @@ No available context files
       assert.strictEqual(stripAnsi(getState().app.stdout), "");
       const tempContent = testFs._files.get("/tmp/agent-js-test-uuid.txt");
       assert.ok(tempContent !== undefined);
-      assert.match(tempContent, /^Global config from path: /);
-      assert.match(tempContent, /\nLocal config from path: /);
-      assert.match(tempContent, /Applied config:\n/);
+      assert.match(tempContent, /^# Global config from path: /);
+      assert.match(tempContent, /\n# Local config from path: /);
+      assert.match(tempContent, /# Applied config\n/);
     });
 
     it("handles /keymaps command", async () => {
@@ -1268,14 +1266,8 @@ No available context files
         stripAnsi(getState().app.stdout),
         `
 Keymaps:
-- edit: {
-  "name": "g",
-  "ctrl": true
-}
-- paste: {
-  "name": "v",
-  "ctrl": true
-}
+- edit: {"name":"g","ctrl":true}
+- paste: {"name":"v","ctrl":true}
 `,
       );
     });
@@ -1384,7 +1376,7 @@ transcript content
       assert.strictEqual(result, null);
       assert.strictEqual(snapshots.length, 1);
       assert.ok(snapshots[0] !== undefined);
-      assert.match(snapshots[0], /Applied config:/);
+      assert.match(snapshots[0], /# Applied config/);
       assert.match(snapshots[0], /Context files:/);
       assert.match(snapshots[0], /Skills:/);
       assert.match(

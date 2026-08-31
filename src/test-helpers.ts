@@ -8,6 +8,7 @@ import { initKeypress } from "./input.ts";
 import type { Key } from "./config.ts";
 import readline from "node:readline/promises";
 import { stdin } from "node:process";
+import { batFlags } from "./print.ts";
 
 export interface FakeFsDeps {
   _files: Map<string, string>;
@@ -144,8 +145,6 @@ export function stripAnsi(str: string): string {
   return str.replace(ANSI_ESCAPE_PATTERN, "");
 }
 
-const originalStringify = JSON.stringify;
-
 export function setupFakeDeps() {
   testFs._restore();
   for (const key of Object.keys(testFs)) {
@@ -162,12 +161,6 @@ export function setupFakeDeps() {
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());
-  mock.method(
-    JSON,
-    "stringify",
-    (value: unknown, replacer?: unknown, space?: number | string) =>
-      originalStringify(value, replacer as never, space ?? 2),
-  );
 }
 
 export function makeFakeRl(overrides: object = {}) {
@@ -244,7 +237,7 @@ export function mockBatAvailable(available: boolean) {
 }
 
 export function batPagerCmd(tempFile: string) {
-  return `bat --style=changes,grid,numbers,snip "${tempFile}"`;
+  return `bat ${batFlags.join(" ")} "${tempFile}"`;
 }
 
 export function setupKeypressTests() {

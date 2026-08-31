@@ -157,21 +157,20 @@ export async function checkDelta(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("delta --version"))).ok;
 }
 
+export const batFlags = [
+  "--language",
+  "md",
+  "--italic-text=always",
+  "--style=plain",
+  "--color=always",
+];
+
 function spawnBat(input: string) {
   return tryCatch(() =>
-    childProcess.spawnSync(
-      "bat",
-      [
-        "--language",
-        "md",
-        "--paging=never",
-        "--italic-text=always",
-        "--style=plain",
-        "--color=always",
-        "-",
-      ],
-      { input, encoding: "utf8" },
-    ),
+    childProcess.spawnSync("bat", [...batFlags, "--paging=never", "-"], {
+      input,
+      encoding: "utf8",
+    }),
   );
 }
 

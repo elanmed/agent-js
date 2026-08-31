@@ -1061,13 +1061,14 @@ describe("config", () => {
     await initState();
     assert.equal(
       getState().app.contextStr,
-      `
-AGENTS.md context files:
+      `# AGENTS.md context files
+---
 
-Path: /fake-home/.config/agent-js/context/AGENTS.md
-Content:
+# Path: /fake-home/.config/agent-js/context/AGENTS.md
+---
+\`\`\`md
 hello
-`,
+\`\`\``,
     );
   });
 
