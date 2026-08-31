@@ -7,30 +7,6 @@ short repro/why-it's-a-bug note and a fix plan.
 
 ## Critical
 
-### 1. `appendModelUsage` assumes `usage.inputTokenDetails` always exists
-
-**File:** `src/usage.ts`
-
-```ts
-cacheReadTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
-cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
-```
-
-Every test constructs `LanguageModelUsage` with `inputTokenDetails` explicitly
-set (via `as LanguageModelUsage` casts), so this is never exercised with a
-missing/undefined `inputTokenDetails`. The real `ai` SDK's `LanguageModelUsage`
-type does not guarantee a nested `inputTokenDetails` object for every
-provider/model — if it's ever `undefined` this throws
-`TypeError: Cannot read properties of undefined`, which is uncaught and
-propagates all the way to `main()`'s top-level catch, killing the whole
-session on a single bad turn.
-
-**Fix:** Guard the read: `usage.inputTokenDetails?.cacheReadTokens ?? 0`
-(same for cacheWrite). Add a unit test that calls `appendModelUsage` with
-`inputTokenDetails` entirely omitted. Double check the actual runtime shape
-returned by the installed `ai` version against this assumption (the field
-name may not even be `inputTokenDetails` — verify against `ai`'s type defs).
-
 ### 3. Tool-call callbacks can throw uncaught inside `generateText`
 
 **File:** `src/api.ts` — `experimental_onToolCallStart` / `...Finish`
