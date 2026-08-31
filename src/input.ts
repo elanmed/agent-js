@@ -331,6 +331,7 @@ const builtinSlashCommands = [
   "context",
   "context-str",
   "commands",
+  "commands-str",
   "keymaps",
   "usage",
   "resume",
@@ -366,27 +367,31 @@ export async function resolveSlashCommand(rawInput: string) {
       return null;
     }
     case "model": {
-      await getModelCommand();
+      await getModel();
       return null;
     }
     case "skills": {
-      await printSkillsCommand();
+      await printSkills();
       return null;
     }
     case "context": {
-      await printContextFilesCommand();
+      await printContextFiles();
       return null;
     }
     case "context-str": {
-      await pageContextFilesCommand();
+      await pageContextFiles();
       return null;
     }
     case "commands": {
-      await printCommandsCommand();
+      await printCommands();
+      return null;
+    }
+    case "commands-str": {
+      pageCommands();
       return null;
     }
     case "keymaps": {
-      await printKeymapsCommand();
+      await printKeymaps();
       return null;
     }
     case "usage": {
@@ -505,7 +510,7 @@ export async function spawnAndReadEditorContent(opts?: {
   return normalizeLine(readResult.value);
 }
 
-export async function getModelCommand() {
+export async function getModel() {
   await print.doing(getState().config.model);
   return;
 }
@@ -526,7 +531,7 @@ export async function setModelCommand(rawInput: string) {
   actions.setMessageParamTokensStale(true);
 }
 
-export async function pageContextFilesCommand() {
+export async function pageContextFiles() {
   if (getState().app.contextEntries.length === 0) {
     await printNewline();
     await print.doing("No available context files");
@@ -539,7 +544,7 @@ export async function pageContextFilesCommand() {
   });
 }
 
-export async function printSkillsCommand() {
+export async function printSkills() {
   if (getState().app.skills.length === 0) {
     await printNewline();
     await print.doing("No available skills");
@@ -561,7 +566,7 @@ export async function printSkillsCommand() {
   await print(skillsList);
 }
 
-export async function printContextFilesCommand() {
+export async function printContextFiles() {
   if (getState().app.contextEntries.length === 0) {
     await printNewline();
     await print.doing("No available context files");
@@ -635,7 +640,22 @@ function getCommandsStr() {
   return builtinCommandsFormatted.concat(customCommandsFormatted).join("\n");
 }
 
-export async function printCommandsCommand() {
+export function pageCommands() {
+  const customCommandsStr = getState()
+    .app.slashCommands.map((command) => {
+      return `${command.filePath}
+${"-".repeat(command.filePath.length)}
+${command.content}`;
+    })
+    .join("\n");
+
+  openWithPager({
+    pagerEnvKey: "AGENT_JS_PAGER_COMMANDS",
+    initialContentStr: customCommandsStr,
+  });
+}
+
+export async function printCommands() {
   await printNewline();
   await print.doing("Available commands:");
   await print(getCommandsStr());
@@ -650,7 +670,7 @@ export function isSameKey(a: Key, b: Key) {
   );
 }
 
-export async function printKeymapsCommand() {
+export async function printKeymaps() {
   await printNewline();
   await print.doing("Keymaps:");
   await print(`- edit: ${JSON.stringify(getState().config.keymaps.edit)}`);

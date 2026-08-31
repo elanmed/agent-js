@@ -4,17 +4,18 @@ import { actions, getState } from "./state.ts";
 import {
   resolveSlashCommand,
   resolveUserInput,
-  getModelCommand,
+  getModel,
   setModelCommand,
   isSameKey,
   getAvailableSlashCommands,
   clearCommand,
-  printSkillsCommand,
-  printContextFilesCommand,
-  printCommandsCommand,
-  printKeymapsCommand,
+  printSkills,
+  printContextFiles,
+  printCommands,
+  printKeymaps,
   configCommand,
-  pageContextFilesCommand,
+  pageContextFiles,
+  pageCommands,
   spawnAndReadEditorContent,
   resumeCommand,
 } from "./input.ts";
@@ -368,14 +369,14 @@ Resume this session with /resume 42000
     });
   });
 
-  describe("getModelCommand", () => {
+  describe("getModel", () => {
     beforeEach(() => {
       actions.resetStdout();
     });
 
     it("prints current model", async () => {
       actions.setModel("gpt-4");
-      await getModelCommand();
+      await getModel();
       assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
     });
   });
@@ -492,14 +493,14 @@ transcript content
     });
   });
 
-  describe("pageContextFilesCommand", () => {
+  describe("pageContextFiles", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
     });
 
     it("prints no available context files when entries list is empty", async () => {
-      await pageContextFilesCommand();
+      await pageContextFiles();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -518,7 +519,7 @@ No available context files
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      await pageContextFilesCommand();
+      await pageContextFiles();
       assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
     });
 
@@ -527,7 +528,7 @@ No available context files
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      await pageContextFilesCommand();
+      await pageContextFiles();
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         "context string content",
@@ -536,7 +537,7 @@ No available context files
     });
   });
 
-  describe("printSkillsCommand", () => {
+  describe("printSkills", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
@@ -551,7 +552,7 @@ No available context files
           content: "skill content",
         },
       ]);
-      await printSkillsCommand();
+      await printSkills();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -563,7 +564,7 @@ Available skills:
     });
 
     it("prints no available skills when skills list is empty", async () => {
-      await printSkillsCommand();
+      await printSkills();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -587,7 +588,7 @@ No available skills
           content: "skill content",
         },
       ]);
-      await printSkillsCommand();
+      await printSkills();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -599,7 +600,7 @@ Available skills:
     });
   });
 
-  describe("printContextFilesCommand", () => {
+  describe("printContextFiles", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
@@ -609,7 +610,7 @@ Available skills:
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      await printContextFilesCommand();
+      await printContextFiles();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -620,7 +621,7 @@ Available context files:
     });
 
     it("prints no available context files when entries list is empty", async () => {
-      await printContextFilesCommand();
+      await printContextFiles();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -647,7 +648,7 @@ No available context files
           content: "skill content",
         },
       ]);
-      await printContextFilesCommand();
+      await printContextFiles();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -659,7 +660,7 @@ Available context files:
     });
   });
 
-  describe("printCommandsCommand", () => {
+  describe("printCommands", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
@@ -673,7 +674,7 @@ Available context files:
           content: "custom",
         },
       ]);
-      await printCommandsCommand();
+      await printCommands();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -687,6 +688,7 @@ Available commands:
 - /context
 - /context-str
 - /commands
+- /commands-str
 - /keymaps
 - /usage
 - /resume
@@ -697,14 +699,55 @@ Available commands:
     });
   });
 
-  describe("printKeymapsCommand", () => {
+  describe("pageCommands", () => {
+    it("writes custom commands string into the temp file", () => {
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test/.agent-js/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      pageCommands();
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        `/test/.agent-js/commands/custom.md
+${"-".repeat("/test/.agent-js/commands/custom.md".length)}
+custom command content`,
+      );
+    });
+
+    it("opens custom commands in a pager via AGENT_JS_PAGER_COMMANDS", () => {
+      let spawned = "";
+      mock.method(childProcess, "spawnSync", (cmd: string) => {
+        spawned = cmd;
+      });
+      testProcessEnv._set("AGENT_JS_PAGER_COMMANDS", "nano __FILE__");
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test/.agent-js/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      pageCommands();
+      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
+    });
+
+    it("writes empty temp file when there are no custom commands", () => {
+      pageCommands();
+      assert.strictEqual(testFs._files.get("/tmp/agent-js-test-uuid.txt"), "");
+    });
+  });
+
+  describe("printKeymaps", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
     });
 
     it("prints default keymaps", async () => {
-      await printKeymapsCommand();
+      await printKeymaps();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -734,7 +777,7 @@ Keymaps:
       actions.setKeymapPastePrompt({ name: "p", ctrl: true, shift: true });
       actions.setKeymapChatHistory({ name: "h", ctrl: true });
       actions.setKeymapClear({ name: "k", ctrl: true });
-      await printKeymapsCommand();
+      await printKeymaps();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -1178,11 +1221,31 @@ Available commands:
 - /context
 - /context-str
 - /commands
+- /commands-str
 - /keymaps
 - /usage
 - /resume
 - /config
 `,
+      );
+    });
+
+    it("handles /commands-str command by opening custom commands in a pager", async () => {
+      testProcessEnv._set("AGENT_JS_PAGER_COMMANDS", "nano __FILE__");
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test/.agent-js/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      const result = await resolveSlashCommand("/commands-str");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        `/test/.agent-js/commands/custom.md
+${"-".repeat("/test/.agent-js/commands/custom.md".length)}
+custom command content`,
       );
     });
 
@@ -1340,6 +1403,7 @@ Invalid command: /unknown, valid commands:
 - /context
 - /context-str
 - /commands
+- /commands-str
 - /keymaps
 - /usage
 - /resume
