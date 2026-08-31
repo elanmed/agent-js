@@ -599,7 +599,7 @@ export async function execGitDiff(opts: {
 
   const isErrorCode = (() => {
     if (isDeltaAvailable) {
-      return (status: number) => status > 0;
+      return (status: number) => status > 1;
     }
     return (status: number) => status >= 128;
   })();

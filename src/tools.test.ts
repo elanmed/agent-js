@@ -686,14 +686,15 @@ bottom`,
       assert.deepStrictEqual(result, { stdout: "diff output", stderr: "" });
     });
 
-    it("rejects when delta exits with non-zero status", async () => {
-      const err = new Error("delta failed") as Error & { code: number };
+    it("resolves when delta exits with code 1 (differences found)", async () => {
+      const err = new Error("diff failed") as Error & { code: number };
       err.code = 1;
       mockExecCalls([{ stdout: "delta 0.18.2" }, { stdout: "", error: err }]);
-      await assert.rejects(
-        execGitDiff({ tempFileBeforePath: "a", tempFileAfterPath: "b" }),
-        /delta failed/,
-      );
+      const result = await execGitDiff({
+        tempFileBeforePath: "a",
+        tempFileAfterPath: "b",
+      });
+      assert.deepStrictEqual(result, { stdout: "", stderr: "" });
     });
 
     it("falls back to plain git diff when delta is not available", async () => {
