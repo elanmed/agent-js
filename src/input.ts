@@ -195,14 +195,14 @@ export function initKeypress() {
             return;
           }
           case "history": {
-            openWithPager({
+            await openWithPager({
               initialContentPath: getState().app.chatHistoryPath,
               pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
             });
             return;
           }
           case "config": {
-            openWithPager({
+            await openWithPager({
               pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
               initialContentStr: getAllPrettyConfig(),
             });
@@ -214,7 +214,7 @@ export function initKeypress() {
             return;
           }
           case "commands-str": {
-            pageCommands();
+            await pageCommands();
             return;
           }
           case "reload": {
@@ -422,7 +422,7 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "history": {
-      openWithPager({
+      await openWithPager({
         initialContentPath: getState().app.chatHistoryPath,
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
@@ -449,7 +449,7 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "commands-str": {
-      pageCommands();
+      await pageCommands();
       return { handled: true, inputFromCommand: null };
     }
     case "keymaps": {
@@ -461,7 +461,7 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "config": {
-      openWithPager({
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
         initialContentStr: getAllPrettyConfig(),
       });
@@ -652,7 +652,7 @@ export async function pageContextFiles() {
     return;
   }
 
-  openWithPager({
+  await openWithPager({
     pagerEnvKey: "AGENT_JS_PAGER_CONTEXT",
     initialContentStr: getState().app.contextStr,
   });
@@ -754,7 +754,7 @@ function getCommandsStr() {
   return builtinCommandsFormatted.concat(customCommandsFormatted).join("\n");
 }
 
-export function pageCommands() {
+export async function pageCommands() {
   const customCommandsStr = getState()
     .app.slashCommands.map((command) => {
       return `${command.filePath}
@@ -763,7 +763,7 @@ ${command.content}`;
     })
     .join("\n");
 
-  openWithPager({
+  await openWithPager({
     pagerEnvKey: "AGENT_JS_PAGER_COMMANDS",
     initialContentStr: customCommandsStr,
   });
@@ -809,15 +809,27 @@ Applied config:
 ${stringify(getState().config)}`;
 }
 
+function getPrettyReloadStr() {
+  return `${getAllPrettyConfig()}
+
+Context files:
+--------------
+${getState().app.contextStr}
+
+Skills:
+${getState().app.skillsStr}
+`;
+}
+
 async function reload() {
   const tempFileBefore = getTempFileName({
-    initialContentStr: getAllPrettyConfig(),
+    initialContentStr: getPrettyReloadStr(),
   });
 
   await initStateRepeatable();
 
   const tempFileAfter = getTempFileName({
-    initialContentStr: getAllPrettyConfig(),
+    initialContentStr: getPrettyReloadStr(),
   });
   const diffResult = await tryCatchAsync(
     execGitDiff({
@@ -839,7 +851,7 @@ async function reload() {
     return;
   }
 
-  openWithPager({
+  await openWithPager({
     pagerEnvKey: "AGENT_JS_PAGER_RELOAD",
     initialContentStr: diffResult.value.stdout,
   });

@@ -20,6 +20,9 @@ import {
   testProcessEnv,
   mockSetTimeout,
   setupTestContext,
+  mockPagerSpawn,
+  mockBatAvailable,
+  batPagerCmd,
 } from "./test-helpers.ts";
 import { fsDeps, processDeps } from "./deps.ts";
 
@@ -221,46 +224,47 @@ describe("utils", () => {
     let spawned: string[];
 
     beforeEach(() => {
-      spawned = [];
-      mock.method(childProcess, "spawnSync", (cmd: string) => {
-        spawned.push(cmd);
-      });
+      spawned = mockPagerSpawn().spawned;
+      mockBatAvailable(true);
     });
 
-    it("uses pagerEnvKey env var with __FILE__ replacement", () => {
+    it("uses pagerEnvKey env var with __FILE__ replacement", async () => {
       testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
-      openWithPager({
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
       assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
     });
 
-    it("falls back to AGENT_JS_PAGER env var", () => {
+    it("falls back to AGENT_JS_PAGER env var", async () => {
       testProcessEnv._set("AGENT_JS_PAGER", "bat __FILE__");
-      openWithPager({
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
       assert.strictEqual(spawned[0], "bat /tmp/agent-js-test-uuid.txt");
     });
 
-    it("falls back to PAGER env var with quoted temp file", () => {
+    it("falls back to PAGER env var with quoted temp file", async () => {
       testProcessEnv._set("PAGER", "more");
-      openWithPager({
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
       assert.strictEqual(spawned[0], `more "/tmp/agent-js-test-uuid.txt"`);
     });
 
-    it("falls back to bat", () => {
-      openWithPager({
+    it("falls back to bat", async () => {
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
-      assert.strictEqual(spawned[0], `bat "/tmp/agent-js-test-uuid.txt"`);
+      assert.strictEqual(
+        spawned[0],
+        batPagerCmd("/tmp/agent-js-test-uuid.txt"),
+      );
     });
 
-    it("copies initial content into the temp file", () => {
+    it("copies initial content into the temp file", async () => {
       testFs._files.set("/source/file.txt", "initial content");
-      openWithPager({
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
         initialContentPath: "/source/file.txt",
       });
@@ -270,22 +274,22 @@ describe("utils", () => {
       );
     });
 
-    it("spawns pager with shell and inherit stdio", () => {
+    it("spawns pager with shell and inherit stdio", async () => {
       let spawnArgs: unknown[] = [];
       mock.method(childProcess, "spawnSync", (...args: unknown[]) => {
         spawnArgs = args;
       });
-      openWithPager({
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
       assert.deepStrictEqual(spawnArgs, [
-        `bat "/tmp/agent-js-test-uuid.txt"`,
+        batPagerCmd("/tmp/agent-js-test-uuid.txt"),
         { shell: true, stdio: "inherit" },
       ]);
     });
 
-    it("writes initialContentStr into the temp file", () => {
-      openWithPager({
+    it("writes initialContentStr into the temp file", async () => {
+      await openWithPager({
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
         initialContentStr: "string content",
       });
@@ -295,16 +299,23 @@ describe("utils", () => {
       );
     });
 
-    it("throws when both initialContentPath and initialContentStr are provided", () => {
-      assert.throws(
-        () =>
-          openWithPager({
-            pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-            initialContentPath: "/source/file.txt",
-            initialContentStr: "string content",
-          }),
+    it("throws when both initialContentPath and initialContentStr are provided", async () => {
+      await assert.rejects(
+        openWithPager({
+          pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+          initialContentPath: "/source/file.txt",
+          initialContentStr: "string content",
+        }),
         /falsy value/,
       );
+    });
+
+    it("falls back to less when bat is unavailable", async () => {
+      mockBatAvailable(false);
+      await openWithPager({
+        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+      });
+      assert.strictEqual(spawned[0], `less "/tmp/agent-js-test-uuid.txt"`);
     });
   });
 

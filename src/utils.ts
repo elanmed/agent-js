@@ -5,6 +5,7 @@ import childProcess from "node:child_process";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getPromptHistoryDir } from "./paths.ts";
 import assert from "node:assert";
+import { checkBat } from "./print.ts";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
@@ -69,7 +70,7 @@ export function getTempFileName(args?: {
   return tempFile;
 }
 
-export function openWithPager({
+export async function openWithPager({
   pagerEnvKey,
   initialContentPath,
   initialContentStr,
@@ -82,7 +83,7 @@ export function openWithPager({
 
   const tempFile = getTempFileName({ initialContentPath, initialContentStr });
 
-  const pagerCommand = (() => {
+  const pagerCommand = await (async () => {
     const pagerEnvValue = processDeps.env.get(pagerEnvKey);
     if (isExisty(pagerEnvValue)) {
       return pagerEnvValue.replace("__FILE__", tempFile);
@@ -98,7 +99,12 @@ export function openWithPager({
       return `${defaultPagerEnvValue} "${tempFile}"`;
     }
 
-    return `bat "${tempFile}"`;
+    const isBatAvailable = await checkBat();
+    if (isBatAvailable) {
+      return `bat --style=changes,grid,numbers,snip "${tempFile}"`;
+    }
+
+    return `less "${tempFile}"`;
   })();
 
   childProcess.spawnSync(pagerCommand, {

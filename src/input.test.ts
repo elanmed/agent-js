@@ -26,11 +26,14 @@ import {
   makeFakeRl,
   mockClipboardPaste,
   mockExec,
+  mockPagerSpawn,
+  mockBatAvailable,
+  batPagerCmd,
   stripAnsi,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
-import { getGlobalConfigPath } from "./paths.ts";
+import { getGlobalConfigPath, getGlobalContextDir } from "./paths.ts";
 
 describe("input", () => {
   beforeEach(() => {
@@ -507,17 +510,14 @@ No available context files
     });
 
     it("opens context string in a pager via AGENT_JS_PAGER_CONTEXT", async () => {
-      let spawned = "";
-      mock.method(childProcess, "spawnSync", (cmd: string) => {
-        spawned = cmd;
-      });
+      const { spawned } = mockPagerSpawn();
       testProcessEnv._set("AGENT_JS_PAGER_CONTEXT", "nano __FILE__");
       actions.setContextStr("context string content");
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
       await pageContextFiles();
-      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
     });
 
     it("copies context string into the temp file", async () => {
@@ -715,11 +715,8 @@ custom command content`,
       );
     });
 
-    it("opens custom commands in a pager via AGENT_JS_PAGER_COMMANDS", () => {
-      let spawned = "";
-      mock.method(childProcess, "spawnSync", (cmd: string) => {
-        spawned = cmd;
-      });
+    it("opens custom commands in a pager via AGENT_JS_PAGER_COMMANDS", async () => {
+      const { spawned } = mockPagerSpawn();
       testProcessEnv._set("AGENT_JS_PAGER_COMMANDS", "nano __FILE__");
       actions.setSlashCommands([
         {
@@ -728,8 +725,8 @@ custom command content`,
           content: "custom command content",
         },
       ]);
-      pageCommands();
-      assert.strictEqual(spawned, "nano /tmp/agent-js-test-uuid.txt");
+      await pageCommands();
+      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
     });
 
     it("writes empty temp file when there are no custom commands", () => {
@@ -855,16 +852,18 @@ Keymaps:
       );
     });
 
-    it("opens chat history in a pager when history keymap matches", () => {
-      const spawned: string[] = [];
-      mock.method(childProcess, "spawnSync", (cmd: string) => {
-        spawned.push(cmd);
-      });
+    it("opens chat history in a pager when history keymap matches", async () => {
+      const { spawned } = mockPagerSpawn();
+      mockBatAvailable(true);
       actions.setKeymap("history", { name: "h", ctrl: true });
       actions.setChatHistoryPath("/tmp/editor.log");
       testFs._files.set("/tmp/editor.log", "log content");
       harness.emitKey({ name: "h", ctrl: true });
-      assert.strictEqual(spawned[0], `bat "/tmp/agent-js-test-uuid.txt"`);
+      await harness.flush();
+      assert.strictEqual(
+        spawned[0],
+        batPagerCmd("/tmp/agent-js-test-uuid.txt"),
+      );
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         "log content",
@@ -1414,6 +1413,51 @@ transcript content
       assert.strictEqual(
         testFs._files.get("/tmp/agent-js-test-uuid.txt"),
         "config diff content",
+      );
+    });
+
+    it("snapshots config, context, and skills around reload", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          model: "gpt-4",
+          baseURL: "https://api.example.com",
+        }),
+      );
+      testFs._dirs.add(getGlobalContextDir());
+      testFs._files.set(
+        "/fake-home/.config/agent-js/context/AGENTS.md",
+        "hello",
+      );
+
+      const snapshots: string[] = [];
+      mock.method(
+        childProcess,
+        "exec",
+        (cmd: string, _opts: unknown, cb: unknown) => {
+          if (cmd.includes("git diff")) {
+            snapshots.push(
+              testFs._files.get("/tmp/agent-js-test-uuid.txt") ?? "",
+            );
+          }
+          (cb as (error: Error | null, stdout: string, stderr: string) => void)(
+            null,
+            "diff",
+            "",
+          );
+        },
+      );
+
+      const result = await resolveSlashCommand("/reload");
+      assert.strictEqual(result, null);
+      assert.strictEqual(snapshots.length, 1);
+      assert.ok(snapshots[0] !== undefined);
+      assert.match(snapshots[0], /Applied config:/);
+      assert.match(snapshots[0], /Context files:/);
+      assert.match(snapshots[0], /Skills:/);
+      assert.match(
+        snapshots[0],
+        /Path: \/fake-home\/.config\/agent-js\/context\/AGENTS.md/,
       );
     });
 

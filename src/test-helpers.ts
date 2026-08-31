@@ -227,6 +227,26 @@ export function mockClipboardPaste(stdout: string) {
   mockExec({ stdout });
 }
 
+export function mockPagerSpawn() {
+  const spawned: string[] = [];
+  mock.method(childProcess, "spawnSync", (cmd: string) => {
+    spawned.push(cmd);
+  });
+  return { spawned };
+}
+
+export function mockBatAvailable(available: boolean) {
+  if (available) {
+    mockExec({ stdout: "" });
+  } else {
+    mockExec({ stdout: "", error: new Error("bat not found") });
+  }
+}
+
+export function batPagerCmd(tempFile: string) {
+  return `bat --style=changes,grid,numbers,snip "${tempFile}"`;
+}
+
 export function setupKeypressTests() {
   const { rl, writes } = makeFakeRlWithWrites();
   actions.setRl(rl);

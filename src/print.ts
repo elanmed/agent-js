@@ -149,7 +149,7 @@ export function stopLoadingState(): Promise<void> {
   return stoppingPromise;
 }
 
-async function checkBat(): Promise<boolean> {
+export async function checkBat(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("bat --version"))).ok;
 }
 
