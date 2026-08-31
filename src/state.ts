@@ -192,40 +192,20 @@ export const actions = {
     );
   },
 
-  setKeymapEditPrompt(keymap: Key) {
-    const before = state.config.keymaps.edit;
-    state.config.keymaps.edit = keymap;
+  setKeymaps(keymaps: Record<string, Key>) {
+    const before = structuredClone(state.config.keymaps);
+    state.config.keymaps = { ...defaultConfig.keymaps, ...keymaps };
+    logStateChange("set-keymaps", stringify(before), stringify(keymaps));
+  },
+
+  setKeymap(command: string, keymap: Key) {
+    const before = state.config.keymaps[command];
+    state.config.keymaps[command] = keymap;
     logStateChange(
-      "set-keymap-edit-prompt",
+      `set-keymap-${command}`,
       stringify(before),
       stringify(keymap),
     );
-  },
-
-  setKeymapPastePrompt(keymap: Key) {
-    const before = state.config.keymaps.paste;
-    state.config.keymaps.paste = keymap;
-    logStateChange(
-      "set-keymap-paste-prompt",
-      stringify(before),
-      stringify(keymap),
-    );
-  },
-
-  setKeymapChatHistory(keymap: Key) {
-    const before = state.config.keymaps.history;
-    state.config.keymaps.history = keymap;
-    logStateChange(
-      "set-keymap-chat-history",
-      stringify(before),
-      stringify(keymap),
-    );
-  },
-
-  setKeymapClear(keymap: Key) {
-    const before = state.config.keymaps.clear;
-    state.config.keymaps.clear = keymap;
-    logStateChange("set-keymap-clear", stringify(before), stringify(keymap));
   },
 
   resetMessageParams() {

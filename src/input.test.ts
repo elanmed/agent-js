@@ -756,16 +756,8 @@ Keymaps:
   "name": "g",
   "ctrl": true
 }
-- history: {
-  "name": "o",
-  "ctrl": true
-}
 - paste: {
   "name": "v",
-  "ctrl": true
-}
-- clear: {
-  "name": "x",
   "ctrl": true
 }
 `,
@@ -773,10 +765,9 @@ Keymaps:
     });
 
     it("prints custom keymaps", async () => {
-      actions.setKeymapEditPrompt({ name: "e", ctrl: true, meta: true });
-      actions.setKeymapPastePrompt({ name: "p", ctrl: true, shift: true });
-      actions.setKeymapChatHistory({ name: "h", ctrl: true });
-      actions.setKeymapClear({ name: "k", ctrl: true });
+      actions.setKeymap("edit", { name: "e", ctrl: true, meta: true });
+      actions.setKeymap("paste", { name: "p", ctrl: true, shift: true });
+      actions.setKeymap("skills", { name: "s", ctrl: true });
       await printKeymaps();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
@@ -787,17 +778,13 @@ Keymaps:
   "ctrl": true,
   "meta": true
 }
-- history: {
-  "name": "h",
-  "ctrl": true
-}
 - paste: {
   "name": "p",
   "ctrl": true,
   "shift": true
 }
-- clear: {
-  "name": "k",
+- skills: {
+  "name": "s",
   "ctrl": true
 }
 `,
@@ -849,14 +836,6 @@ Applied config:
   },
   "paste": {
     "name": "v",
-    "ctrl": true
-  },
-  "history": {
-    "name": "o",
-    "ctrl": true
-  },
-  "clear": {
-    "name": "x",
     "ctrl": true
   }
 }
@@ -912,14 +891,6 @@ Applied config:
   },
   "paste": {
     "name": "v",
-    "ctrl": true
-  },
-  "history": {
-    "name": "o",
-    "ctrl": true
-  },
-  "clear": {
-    "name": "x",
     "ctrl": true
   }
 }
@@ -1300,16 +1271,8 @@ Keymaps:
   "name": "g",
   "ctrl": true
 }
-- history: {
-  "name": "o",
-  "ctrl": true
-}
 - paste: {
   "name": "v",
-  "ctrl": true
-}
-- clear: {
-  "name": "x",
   "ctrl": true
 }
 `,

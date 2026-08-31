@@ -160,12 +160,12 @@ describe("state", () => {
     assert.strictEqual(getState().config.compactTargetRatio, 0.25);
   });
 
-  it("set-keymap-edit-prompt", () => {
+  it("set-keymap", () => {
     assert.deepStrictEqual(
       getState().config.keymaps.edit,
       defaultConfig.keymaps.edit,
     );
-    actions.setKeymapEditPrompt({
+    actions.setKeymap("edit", {
       name: "v",
       ctrl: false,
       meta: false,
@@ -179,41 +179,31 @@ describe("state", () => {
     });
   });
 
-  it("set-keymap-chat-history", () => {
-    assert.deepStrictEqual(
-      getState().config.keymaps.history,
-      defaultConfig.keymaps.history,
-    );
-    actions.setKeymapChatHistory({
-      name: "o",
+  it("set-keymap-adds-new-command", () => {
+    assert.strictEqual(getState().config.keymaps["skills"], undefined);
+    actions.setKeymap("skills", {
+      name: "s",
       ctrl: false,
       meta: false,
       shift: false,
     });
-    assert.deepStrictEqual(getState().config.keymaps.history, {
-      name: "o",
+    assert.deepStrictEqual(getState().config.keymaps["skills"], {
+      name: "s",
       ctrl: false,
       meta: false,
       shift: false,
     });
   });
 
-  it("set-keymap-clear", () => {
-    assert.deepStrictEqual(
-      getState().config.keymaps.clear,
-      defaultConfig.keymaps.clear,
-    );
-    actions.setKeymapClear({
-      name: "k",
-      ctrl: false,
-      meta: false,
-      shift: false,
+  it("set-keymaps", () => {
+    actions.setKeymaps({
+      edit: { name: "v", ctrl: false, meta: false, shift: false },
+      skills: { name: "s", ctrl: false, meta: false, shift: false },
     });
-    assert.deepStrictEqual(getState().config.keymaps.clear, {
-      name: "k",
-      ctrl: false,
-      meta: false,
-      shift: false,
+    assert.deepStrictEqual(getState().config.keymaps, {
+      edit: { name: "v", ctrl: false, meta: false, shift: false },
+      paste: defaultConfig.keymaps.paste,
+      skills: { name: "s", ctrl: false, meta: false, shift: false },
     });
   });
 

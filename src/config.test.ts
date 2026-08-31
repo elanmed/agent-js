@@ -227,6 +227,7 @@ describe("config", () => {
             paste: { name: "t", ctrl: true, meta: false, shift: false },
             history: { name: "l", ctrl: true, meta: false, shift: false },
             clear: { name: "k", ctrl: true, meta: false, shift: false },
+            skills: { name: "s", ctrl: true, meta: false, shift: false },
           },
         }),
       );
@@ -245,14 +246,20 @@ describe("config", () => {
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymaps.history, {
+      assert.deepEqual(getState().config.keymaps["history"], {
         name: "l",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymaps.clear, {
+      assert.deepEqual(getState().config.keymaps["clear"], {
         name: "k",
+        ctrl: true,
+        meta: false,
+        shift: false,
+      });
+      assert.deepEqual(getState().config.keymaps["skills"], {
+        name: "s",
         ctrl: true,
         meta: false,
         shift: false,
@@ -685,14 +692,8 @@ describe("config", () => {
         getState().config.keymaps.paste,
         defaultConfig.keymaps.paste,
       );
-      assert.deepEqual(
-        getState().config.keymaps.history,
-        defaultConfig.keymaps.history,
-      );
-      assert.deepEqual(
-        getState().config.keymaps.clear,
-        defaultConfig.keymaps.clear,
-      );
+      assert.strictEqual(getState().config.keymaps["history"], undefined);
+      assert.strictEqual(getState().config.keymaps["clear"], undefined);
     });
   });
 
@@ -796,13 +797,13 @@ describe("config", () => {
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymaps.history, {
+        assert.deepEqual(getState().config.keymaps["history"], {
           name: "o",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymaps.clear, {
+        assert.deepEqual(getState().config.keymaps["clear"], {
           name: "j",
           ctrl: false,
           meta: false,

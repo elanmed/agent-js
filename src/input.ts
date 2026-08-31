@@ -159,41 +159,64 @@ function abortRlQuestionForEditor(editorContent: string) {
 export function initKeypress() {
   const rl = getState().app.rl;
   assert(rl !== null);
+
+  function typeCommand(command: string) {
+    assert(rl !== null);
+    rl.write(`/${command}\n`);
+    actions.appendToStdout("/${command}\n");
+  }
+
   stdin.on("keypress", (_char, key: Key) => {
     void (async () => {
-      // TODO: support every slash command
-      if (isSameKey(key, getState().config.keymaps.edit)) {
-        const editorContent = await spawnAndReadEditorContent();
-        if (editorContent !== null) {
-          abortRlQuestionForEditor(editorContent);
+      const keymaps: Record<string, Key> = getState().config.keymaps;
+
+      for (const [command, keymap] of Object.entries(keymaps)) {
+        if (!isSameKey(key, keymap)) continue;
+
+        if (command === "edit") {
+          const editorContent = await spawnAndReadEditorContent();
+          if (editorContent !== null) {
+            abortRlQuestionForEditor(editorContent);
+          }
+          return;
         }
-        return;
-      }
 
-      if (isSameKey(key, getState().config.keymaps.clear)) {
-        if (getState().abortControllers.question === null) return;
-
-        rl.write("/clear\n");
-        actions.appendToStdout("/clear\n");
-        return;
-      }
-
-      if (isSameKey(key, getState().config.keymaps.paste)) {
-        const editorContent = await spawnAndReadEditorContent({
-          includeClipboardSuffix: true,
-        });
-        if (editorContent !== null) {
-          abortRlQuestionForEditor(editorContent);
+        if (command === "paste") {
+          const editorContent = await spawnAndReadEditorContent({
+            includeClipboardSuffix: true,
+          });
+          if (editorContent !== null) {
+            abortRlQuestionForEditor(editorContent);
+          }
+          return;
         }
-        return;
-      }
 
-      if (isSameKey(key, getState().config.keymaps.history)) {
-        openWithPager({
-          initialContentPath: getState().app.chatHistoryPath,
-          pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
-        });
+        if (command === "history") {
+          openWithPager({
+            initialContentPath: getState().app.chatHistoryPath,
+            pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+          });
+          return;
+        }
 
+        if (command === "config") {
+          configCommand();
+          return;
+        }
+
+        if (command === "context-str") {
+          void pageContextFiles();
+          return;
+        }
+
+        if (command === "commands-str") {
+          pageCommands();
+          return;
+        }
+
+        if (getState().abortControllers.question !== null) {
+          typeCommand(command);
+        }
         return;
       }
 
@@ -336,103 +359,154 @@ const builtinSlashCommands = [
   "usage",
   "resume",
   "config",
-];
+] as const;
+type BuiltinSlashCommand = (typeof builtinSlashCommands)[number];
 
-export async function resolveSlashCommand(rawInput: string) {
-  const commandWithoutSlash = rawInput.slice(1);
+type BuiltinSlashCommandsWithArgs = "resume" | "model";
 
-  // TODO: separate slash commands with and without args
-  switch (commandWithoutSlash) {
+interface SlashCommandResult {
+  resolved: boolean;
+  inputFromCommand: string | null;
+}
+
+async function resolveBuiltinSlashCommand(
+  command: BuiltinSlashCommand,
+): Promise<SlashCommandResult> {
+  switch (command) {
     case "edit": {
       const content = await spawnAndReadEditorContent();
       if (content !== null) appendToChatHistory(content, "user");
-      return content;
+      return { resolved: true, inputFromCommand: content };
     }
     case "paste": {
       const content = await spawnAndReadEditorContent({
         includeClipboardSuffix: true,
       });
       if (content !== null) appendToChatHistory(content, "user");
-      return content;
+      return { resolved: true, inputFromCommand: content };
     }
     case "clear": {
       await clearCommand();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "history": {
       openWithPager({
         initialContentPath: getState().app.chatHistoryPath,
         pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
       });
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "model": {
       await getModel();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "skills": {
       await printSkills();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "context": {
       await printContextFiles();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "context-str": {
       await pageContextFiles();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "commands": {
       await printCommands();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "commands-str": {
       pageCommands();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "keymaps": {
       await printKeymaps();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "usage": {
       await usageCommand();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "config": {
       configCommand();
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     case "resume": {
       await print.error("Usage: /resume [session start date]");
-      return null;
+      return { resolved: true, inputFromCommand: null };
     }
     default: {
-      if (commandWithoutSlash.startsWith("model ")) {
-        await setModelCommand(rawInput);
-        return null;
-      }
-
-      if (commandWithoutSlash.startsWith("resume ")) {
-        const content = await resumeCommand(rawInput);
-        if (content !== null) appendToChatHistory(content, "user");
-        return content;
-      }
-
-      const slashCommands = getState().app.slashCommands;
-      const matchedCommand = slashCommands.find(
-        (command) => command.name === commandWithoutSlash,
-      );
-      if (matchedCommand !== undefined) {
-        await print.infoSubtle(`Executing slash command: ${rawInput}`);
-        return matchedCommand.content;
-      }
-
-      await printNewline();
-      await print.error(`Invalid command: ${rawInput}, valid commands:`);
-      await print(getCommandsStr());
-      return null;
+      command satisfies never;
+      return { resolved: false, inputFromCommand: null };
     }
   }
+}
+
+async function resolveBuiltinSlashCommandWithArgs(
+  commandWithArgs: string,
+): Promise<SlashCommandResult> {
+  const parts = commandWithArgs.trim().split(/\s+/);
+  const command = parts[0] as BuiltinSlashCommandsWithArgs | undefined;
+  if (command === undefined) return { resolved: false, inputFromCommand: null };
+
+  switch (command) {
+    case "model": {
+      await setModelCommand(commandWithArgs);
+      return { resolved: true, inputFromCommand: null };
+    }
+    case "resume": {
+      const content = await resumeCommand(commandWithArgs);
+      if (content !== null) appendToChatHistory(content, "user");
+      return { resolved: true, inputFromCommand: content };
+    }
+    default: {
+      command satisfies never;
+      return { resolved: false, inputFromCommand: null };
+    }
+  }
+}
+
+async function resolveCustomSlashCommand(
+  command: string,
+): Promise<SlashCommandResult> {
+  const slashCommands = getState().app.slashCommands;
+  const matchedCommand = slashCommands.find((c) => c.name === command);
+
+  if (matchedCommand !== undefined) {
+    await print.infoSubtle(`Executing slash command: ${command}`);
+    return { resolved: true, inputFromCommand: matchedCommand.content };
+  }
+
+  return { resolved: false, inputFromCommand: null };
+}
+
+export async function resolveSlashCommand(rawInput: string) {
+  const commandWithoutSlash = rawInput.slice(1);
+
+  const builtinSlashCommandResult = await resolveBuiltinSlashCommand(
+    commandWithoutSlash as BuiltinSlashCommand,
+  );
+  if (builtinSlashCommandResult.resolved) {
+    return builtinSlashCommandResult.inputFromCommand;
+  }
+
+  const builtinSlashCommandWithArgsResult =
+    await resolveBuiltinSlashCommandWithArgs(commandWithoutSlash);
+  if (builtinSlashCommandWithArgsResult.resolved) {
+    return builtinSlashCommandWithArgsResult.inputFromCommand;
+  }
+
+  const customSlashCommandResult =
+    await resolveCustomSlashCommand(commandWithoutSlash);
+  if (customSlashCommandResult.resolved) {
+    return customSlashCommandResult.inputFromCommand;
+  }
+
+  await printNewline();
+  await print.error(`Invalid command: ${rawInput}, valid commands:`);
+  await print(getCommandsStr());
+  return null;
 }
 
 export async function clearCommand() {
@@ -673,12 +747,9 @@ export function isSameKey(a: Key, b: Key) {
 export async function printKeymaps() {
   await printNewline();
   await print.doing("Keymaps:");
-  await print(`- edit: ${JSON.stringify(getState().config.keymaps.edit)}`);
-  await print(
-    `- history: ${JSON.stringify(getState().config.keymaps.history)}`,
-  );
-  await print(`- paste: ${JSON.stringify(getState().config.keymaps.paste)}`);
-  await print(`- clear: ${JSON.stringify(getState().config.keymaps.clear)}`);
+  for (const [command, keymap] of Object.entries(getState().config.keymaps)) {
+    await print(`- ${command}: ${JSON.stringify(keymap)}`);
+  }
 }
 
 function getPrettyConfig(config: object) {

@@ -6,7 +6,7 @@ A minimal agent harness
 
 ## Features
 
-- **Minimal**: 3,300 lines of source code, 7,000 lines of tests
+- **Minimal**: 3,300 lines of source code, 6,900 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
@@ -109,12 +109,26 @@ contextWindowPerModel:
 
 ### Keymaps
 
-| Key       | Type  | Default                     | Description                                                                                         |
-| --------- | ----- | --------------------------- | --------------------------------------------------------------------------------------------------- |
-| `edit`    | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                             |
-| `paste`   | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in     |
-| `history` | `Key` | `{ name: "o", ctrl: true }` | Call `$AGENT_JS_PAGER_HISTORY` (fallback: `$AGENT_JS_PAGER`, `$PAGER`, `less`) to view chat history |
-| `clear`   | `Key` | `{ name: "x", ctrl: true }` | Clear conversation context                                                                          |
+Any builtin slash command can be bound to a key via the `keymaps` config, e.g.:
+
+```yaml
+keymaps:
+  history:
+    name: "o"
+    ctrl: true
+  clear:
+    name: "x"
+    ctrl: true
+```
+
+`edit` and `paste` have default keymaps:
+
+| Key     | Type  | Default                     | Description                                                                                     |
+| ------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `edit`  | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                         |
+| `paste` | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
+
+Pressing a bound key runs the command directly for `edit`/`paste` (editor) and pager commands (`history`, `config`, `context-str`, `commands-str`); other commands are typed into the prompt.
 
 The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
 
@@ -210,8 +224,8 @@ Slash commands are triggered with `/command` at the prompt.
 | Command         | Description                                                                |
 | --------------- | -------------------------------------------------------------------------- |
 | `/edit`         | Call the `edit` keymap                                                     |
-| `/clear`        | Call the `clear` keymap                                                    |
-| `/history`      | Call the `history` keymap                                                  |
+| `/clear`        | Clear conversation context                                                 |
+| `/history`      | View chat history in a pager                                               |
 | `/paste`        | Call the `paste` keymap                                                    |
 | `/model`        | Switch the model at runtime (e.g. `/model kimi-k2.6`)                      |
 | `/skills`       | List available skills                                                      |
@@ -390,9 +404,10 @@ vim.g.clipboard = {
 
 ## TODO (soon)
 
-- Command to rescan context, use the latest config
-- Tool for creating subagents
-- Support a pager for viewing config
+- [ ] Command to rescan context, use the latest config
+- [ ] Tool for creating subagents
+- [ ] Support a pager for viewing config
+- [ ] Validate that two slash commands don't share the same keymap
 
 ## TODO (later)
 

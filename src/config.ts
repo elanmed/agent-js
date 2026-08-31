@@ -66,18 +66,13 @@ const PricingPerModelSchema = z.record(z.string(), ModelPricingSchema);
 const ContextWindowPerModelSchema = z.record(z.string(), z.number());
 const CompactTriggerRatioSchema = z.number().min(0).max(1);
 const CompactTargetRatioSchema = z.number().min(0).max(1);
-const KeymapsSchema = z.object({
-  edit: KeySchema.optional(),
-  paste: KeySchema.optional(),
-  history: KeySchema.optional(),
-  clear: KeySchema.optional(),
-});
-const DefaultedKeymapsSchema = z.object({
-  edit: KeySchema,
-  paste: KeySchema,
-  history: KeySchema,
-  clear: KeySchema,
-});
+const KeymapsSchema = z.record(z.string(), KeySchema);
+const DefaultedKeymapsSchema = KeymapsSchema.and(
+  z.object({
+    edit: KeySchema,
+    paste: KeySchema,
+  }),
+);
 const CustomSlashCommandDirsSchema = z.array(z.string());
 const CustomSkillDirsSchema = z.array(z.string());
 const LoadingStateFrameDurationSchema = z.number();
@@ -149,14 +144,6 @@ export const defaultConfig: DefaultedConfig = {
     },
     paste: {
       name: "v",
-      ctrl: true,
-    },
-    history: {
-      name: "o",
-      ctrl: true,
-    },
-    clear: {
-      name: "x",
       ctrl: true,
     },
   },
@@ -249,26 +236,11 @@ export async function initStateFromConfig() {
       globalConfig.customSkillDirs ??
       defaultConfig.customSkillDirs,
   );
-  actions.setKeymapEditPrompt(
-    localConfig.keymaps?.edit ??
-      globalConfig.keymaps?.edit ??
-      defaultConfig.keymaps.edit,
-  );
-  actions.setKeymapPastePrompt(
-    localConfig.keymaps?.paste ??
-      globalConfig.keymaps?.paste ??
-      defaultConfig.keymaps.paste,
-  );
-  actions.setKeymapChatHistory(
-    localConfig.keymaps?.history ??
-      globalConfig.keymaps?.history ??
-      defaultConfig.keymaps.history,
-  );
-  actions.setKeymapClear(
-    localConfig.keymaps?.clear ??
-      globalConfig.keymaps?.clear ??
-      defaultConfig.keymaps.clear,
-  );
+  actions.setKeymaps({
+    ...defaultConfig.keymaps,
+    ...globalConfig.keymaps,
+    ...localConfig.keymaps,
+  });
   actions.setLoadingStateFrames(
     localConfig.loadingStateFrames ??
       globalConfig.loadingStateFrames ??
