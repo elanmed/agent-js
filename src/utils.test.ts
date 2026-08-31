@@ -179,15 +179,12 @@ describe("utils", () => {
 
     it("skips writing when write fails", () => {
       testFs._files.set("/source.txt", "content");
-      // TODO: avoid creating a singleton testFs
-      const originalWriteFileSync = testFs.writeFileSync;
-      testFs.writeFileSync = () => {
+      mock.method(fsDeps, "writeFileSync", () => {
         throw new Error("EIO");
-      };
+      });
       const result = getTempFileName({
         initialContentPath: "/source.txt",
       });
-      testFs.writeFileSync = originalWriteFileSync;
       assert.equal(result, "/tmp/agent-js-test-uuid.txt");
     });
   });
@@ -328,6 +325,21 @@ describe("utils", () => {
     });
 
     describe("createLockUtils", () => {
+      beforeEach(() => {
+        mock.method(
+          fsDeps,
+          "writeFileSync",
+          (path: string, content: string, options?: { flag?: string }) => {
+            if (options?.flag === "wx" && testFs._files.has(path)) {
+              const err = new Error(`EEXIST: ${path}`) as NodeJS.ErrnoException;
+              err.code = "EEXIST";
+              throw err;
+            }
+            testFs.writeFileSync(path, content);
+          },
+        );
+      });
+
       it("creates the lock file with the current pid", async () => {
         const lockUtils = createLockUtils("/lock");
         assert.equal(await lockUtils.createLock(), true);
@@ -379,6 +391,7 @@ describe("utils", () => {
         const lockUtils = createLockUtils("/lock");
         assert.equal(await lockUtils.createLock(), true);
         assert.equal(testFs._files.get("/lock"), String(process.pid));
+        mock.restoreAll();
       });
 
       it("returns false when the holder is alive but not ours (EPERM)", async () => {

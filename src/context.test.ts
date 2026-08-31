@@ -1,6 +1,7 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { testFs, setupTestContext } from "./test-helpers.ts";
+import { fsDeps } from "./deps.ts";
 import { getGlobalContextDir } from "./paths.ts";
 import {
   getContextStr,
@@ -448,12 +449,11 @@ would benefit from specialized instructions.
     });
 
     it("skips entries where globbySync throws", async () => {
-      const originalGlobSync = testFs.globbySync;
-      testFs.globbySync = (pattern: string) => {
+      mock.method(fsDeps, "globbySync", (pattern: string) => {
         if (pattern === "/test-cwd/.agent-js/skills/**/SKILL.md")
           throw new Error("glob failed");
-        return originalGlobSync(pattern);
-      };
+        return testFs.globbySync(pattern);
+      });
       testFs._globResults.set(
         "/fake-home/.config/agent-js/skills/**/SKILL.md",
         ["/fake-home/.config/agent-js/skills/ok/SKILL.md"],

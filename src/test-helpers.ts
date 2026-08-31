@@ -15,7 +15,7 @@ export interface FakeFsDeps {
   writeFileSync: (
     path: string,
     content: string,
-    options?: { signal?: AbortSignal; flag?: string },
+    options?: { signal?: AbortSignal },
   ) => void;
   existsSync: (path: string) => boolean;
   readdirSync: (path: string) => string[];
@@ -54,16 +54,7 @@ export function makeFakeFsDeps(
       if (content === undefined) throw new Error(`ENOENT: ${path}`);
       return Buffer.from(content);
     },
-    writeFileSync: (
-      path: string,
-      content: string,
-      options?: { flag?: string },
-    ) => {
-      if (options?.flag === "wx" && _files.has(path)) {
-        const err = new Error(`EEXIST: ${path}`) as NodeJS.ErrnoException;
-        err.code = "EEXIST";
-        throw err;
-      }
+    writeFileSync: (path: string, content: string) => {
       _files.set(path, content);
       _mtimes.set(path, ++_mtimeCounter);
     },
