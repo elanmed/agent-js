@@ -406,8 +406,8 @@ vim.g.clipboard = {
 
 - [ ] Command to rescan context, use the latest config
 - [ ] Tool for creating subagents
-- [ ] Support a pager for viewing config
 - [ ] Validate that two slash commands don't share the same keymap
+- [ ] Support additional user content after a slash command without args
 
 ## TODO (later)
 
