@@ -15,7 +15,7 @@ export interface FakeFsDeps {
   writeFileSync: (
     path: string,
     content: string,
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal; flag?: string },
   ) => void;
   existsSync: (path: string) => boolean;
   readdirSync: (path: string) => string[];
@@ -54,7 +54,16 @@ export function makeFakeFsDeps(
       if (content === undefined) throw new Error(`ENOENT: ${path}`);
       return Buffer.from(content);
     },
-    writeFileSync: (path: string, content: string) => {
+    writeFileSync: (
+      path: string,
+      content: string,
+      options?: { flag?: string },
+    ) => {
+      if (options?.flag === "wx" && _files.has(path)) {
+        const err = new Error(`EEXIST: ${path}`) as NodeJS.ErrnoException;
+        err.code = "EEXIST";
+        throw err;
+      }
       _files.set(path, content);
       _mtimes.set(path, ++_mtimeCounter);
     },
@@ -213,6 +222,15 @@ export function mockSetInterval() {
   mock.method(globalThis, "setInterval", (cb: () => void) => {
     callbacks.push(cb);
     return callbacks.length as unknown as ReturnType<typeof setInterval>;
+  });
+  return callbacks;
+}
+
+export function mockSetTimeout() {
+  const callbacks: (() => void)[] = [];
+  mock.method(globalThis, "setTimeout", (cb: () => void) => {
+    callbacks.push(cb);
+    return callbacks.length as unknown as ReturnType<typeof setTimeout>;
   });
   return callbacks;
 }
