@@ -78,6 +78,26 @@ describe("config", () => {
       assert.equal(getState().config.provider, "anthropic");
     });
 
+    it("uses minimal local config without model over the global config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          promptPrefix: ">>> ",
+        }),
+      );
+
+      await initState();
+
+      assert.equal(getState().config.model, testConfig.model);
+      assert.equal(getState().config.promptPrefix, ">>> ");
+    });
+
     it("merges pricingPerModel per model, local overriding global", async () => {
       testFs._files.set(
         getGlobalConfigPath(),

@@ -91,7 +91,7 @@ const LoadingStateFramesSchema = z
 const PromptPrefixSchema = z.string();
 
 export const ConfigSchema = z.strictObject({
-  model: ModelSchema,
+  model: ModelSchema.optional(),
   baseURL: BaseURLSchema.optional(),
   provider: ProviderSchema.optional(),
   pricingPerModel: PricingPerModelSchema.optional(),
