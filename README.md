@@ -386,9 +386,9 @@ vim.g.clipboard = {
 
 ## TODO (soon)
 
-- Command to rescan context?
-- Command to use the latest config?
-- Subagents?
+- Command to rescan context, use the latest config
+- Tool for creating subagents
+- Support a pager for viewing config, chat history
 
 ## TODO (later)
 
