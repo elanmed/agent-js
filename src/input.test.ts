@@ -447,35 +447,242 @@ l---
       assert.strictEqual(parseInputFromEditor(), null);
       assert.strictEqual(getState().app.editorInputValue, null);
     });
+
+    it("splits slash command lines into their own messages", () => {
+      actions.setSlashCommands([
+        {
+          name: "cwd",
+          filePath: "/test/.lasso/commands/cwd.md",
+          content: "cwd",
+        },
+      ]);
+      actions.setEditorInputValue(`message 2
+/cwd
+`);
+      assert.strictEqual(parseInputFromEditor(), "message 2\n");
+      assert.strictEqual(getState().app.editorInputValue, "/cwd\n");
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z  *user*
+
+---
+message 2
+
+`,
+      );
+    });
+
+    it("keeps the user's internal newlines when a command splits multi-line text", () => {
+      actions.setSlashCommands([
+        {
+          name: "cwd",
+          filePath: "/test/.lasso/commands/cwd.md",
+          content: "cwd",
+        },
+      ]);
+      actions.setEditorInputValue(`line one
+line two
+/cwd
+line three
+`);
+      assert.strictEqual(parseInputFromEditor(), "line one\nline two\n");
+      assert.strictEqual(
+        getState().app.editorInputValue,
+        `/cwd
+l---
+line three
+`,
+      );
+    });
+
+    it("keeps arguments on the slash command line intact", () => {
+      actions.setEditorInputValue(`context
+/model new-model
+`);
+      assert.strictEqual(parseInputFromEditor(), "context\n");
+      assert.strictEqual(getState().app.editorInputValue, "/model new-model\n");
+    });
+
+    it("returns the slash command when it is the first message", () => {
+      actions.setSlashCommands([
+        {
+          name: "cwd",
+          filePath: "/test/.lasso/commands/cwd.md",
+          content: "cwd",
+        },
+      ]);
+      actions.setEditorInputValue(`/cwd
+rest`);
+      assert.strictEqual(parseInputFromEditor(), "/cwd\n");
+      assert.strictEqual(getState().app.editorInputValue, "rest");
+    });
+
+    it("splits multiple slash commands within a single chunk", () => {
+      actions.setSlashCommands([
+        {
+          name: "cwd",
+          filePath: "/test/.lasso/commands/cwd.md",
+          content: "cwd",
+        },
+        {
+          name: "pwd",
+          filePath: "/test/.lasso/commands/pwd.md",
+          content: "pwd",
+        },
+      ]);
+      actions.setEditorInputValue(`first
+/cwd
+second
+/pwd
+`);
+      assert.strictEqual(parseInputFromEditor(), "first\n");
+      assert.strictEqual(
+        getState().app.editorInputValue,
+        `/cwd
+l---
+second
+l---
+/pwd
+`,
+      );
+    });
+
+    it("returns queued slash commands one per call until the queue is drained", () => {
+      actions.setSlashCommands([
+        {
+          name: "cwd",
+          filePath: "/test/.lasso/commands/cwd.md",
+          content: "cwd",
+        },
+        {
+          name: "pwd",
+          filePath: "/test/.lasso/commands/pwd.md",
+          content: "pwd",
+        },
+      ]);
+      actions.setEditorInputValue(`first
+l---
+/cwd
+l---
+/pwd
+`);
+      assert.strictEqual(parseInputFromEditor(), "first\n");
+      assert.strictEqual(parseInputFromEditor(), "/cwd\n");
+      assert.strictEqual(parseInputFromEditor(), "/pwd\n");
+      assert.strictEqual(getState().app.editorInputValue, null);
+    });
   });
 
   describe("shouldResolveSlashCommand", () => {
     it("returns false for null", () => {
-      assert.strictEqual(shouldResolveSlashCommand(null), false);
+      assert.strictEqual(
+        shouldResolveSlashCommand(null, { forceKnownCommand: false }),
+        false,
+      );
     });
 
     it("returns false for an empty string", () => {
-      assert.strictEqual(shouldResolveSlashCommand(""), false);
+      assert.strictEqual(
+        shouldResolveSlashCommand("", { forceKnownCommand: false }),
+        false,
+      );
     });
 
     it("returns false for plain text", () => {
-      assert.strictEqual(shouldResolveSlashCommand("hello there"), false);
+      assert.strictEqual(
+        shouldResolveSlashCommand("hello there", { forceKnownCommand: false }),
+        false,
+      );
     });
 
     it("returns false for multi-line input", () => {
-      assert.strictEqual(shouldResolveSlashCommand("/cwd\n/pwd"), false);
+      assert.strictEqual(
+        shouldResolveSlashCommand("/cwd\n/pwd", { forceKnownCommand: false }),
+        false,
+      );
     });
 
     it("returns true for a bare slash command", () => {
-      assert.strictEqual(shouldResolveSlashCommand("/cwd"), true);
+      assert.strictEqual(
+        shouldResolveSlashCommand("/cwd", { forceKnownCommand: false }),
+        true,
+      );
     });
 
     it("returns true for a slash command with args", () => {
-      assert.strictEqual(shouldResolveSlashCommand("/model new-model"), true);
+      assert.strictEqual(
+        shouldResolveSlashCommand("/model new-model", {
+          forceKnownCommand: false,
+        }),
+        true,
+      );
     });
 
     it("returns true for a slash command with surrounding whitespace", () => {
-      assert.strictEqual(shouldResolveSlashCommand("  /cwd  "), true);
+      assert.strictEqual(
+        shouldResolveSlashCommand("  /cwd  ", { forceKnownCommand: false }),
+        true,
+      );
+    });
+
+    it("returns true for a builtin slash command when forceKnownCommand is set", () => {
+      assert.strictEqual(
+        shouldResolveSlashCommand("/model", { forceKnownCommand: true }),
+        true,
+      );
+    });
+
+    it("returns true for a builtin slash command with args when forceKnownCommand is set", () => {
+      assert.strictEqual(
+        shouldResolveSlashCommand("/model new-model", {
+          forceKnownCommand: true,
+        }),
+        true,
+      );
+    });
+
+    it("returns true for a registered custom slash command when forceKnownCommand is set", () => {
+      actions.setSlashCommands([
+        {
+          name: "cwd",
+          filePath: "/test/.lasso/commands/cwd.md",
+          content: "cwd",
+        },
+      ]);
+      assert.strictEqual(
+        shouldResolveSlashCommand("/cwd", { forceKnownCommand: true }),
+        true,
+      );
+    });
+
+    it("returns true for a registered custom slash command with args when forceKnownCommand is set", () => {
+      actions.setSlashCommands([
+        {
+          name: "cwd",
+          filePath: "/test/.lasso/commands/cwd.md",
+          content: "cwd",
+        },
+      ]);
+      assert.strictEqual(
+        shouldResolveSlashCommand("/cwd /some/path", {
+          forceKnownCommand: true,
+        }),
+        true,
+      );
+    });
+
+    it("returns false for an unknown slash command when forceKnownCommand is set", () => {
+      assert.strictEqual(
+        shouldResolveSlashCommand("/unknowncmd", { forceKnownCommand: true }),
+        false,
+      );
+    });
+
+    it("returns false for a non-command path when forceKnownCommand is set", () => {
+      assert.strictEqual(
+        shouldResolveSlashCommand("/tmp/foo", { forceKnownCommand: true }),
+        false,
+      );
     });
   });
 

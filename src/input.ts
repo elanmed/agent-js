@@ -286,16 +286,44 @@ export function initSigInt() {
   });
 }
 
+function filterIfLength(str: string) {
+  return str.length > 0;
+}
+
 export function parseInputFromEditor() {
   const editorInputValue = getState().app.editorInputValue;
   assert(editorInputValue !== null);
-  const splitEditorInputValue = editorInputValue.split(
-    getState().config.messageQueueDelimiter,
-  );
-  const filteredEditorInputValue = splitEditorInputValue.filter(
-    (part) => part.length > 0,
-  );
-  const [firstMessage, ...rest] = filteredEditorInputValue;
+  const splitByDelimiterEditorInputValue = editorInputValue
+    .split(getState().config.messageQueueDelimiter)
+    .filter(filterIfLength);
+
+  const splitByCommandEditorInputValue =
+    splitByDelimiterEditorInputValue.flatMap((editorChunk) => {
+      const lineElements = editorChunk.split(/(?<=\n)/);
+
+      const smallerChunks: string[] = [];
+      let tempBuffer: string[] = [];
+
+      for (const lineElement of lineElements) {
+        if (
+          shouldResolveSlashCommand(lineElement, { forceKnownCommand: true })
+        ) {
+          if (tempBuffer.length > 0) {
+            smallerChunks.push(tempBuffer.join(""));
+            tempBuffer = [];
+          }
+
+          smallerChunks.push(lineElement);
+        } else {
+          tempBuffer.push(lineElement);
+        }
+      }
+      if (tempBuffer.length > 0) smallerChunks.push(tempBuffer.join(""));
+
+      return smallerChunks.filter(filterIfLength);
+    });
+
+  const [firstMessage, ...rest] = splitByCommandEditorInputValue;
 
   if (firstMessage === undefined) {
     actions.setEditorInputValue(null);
@@ -324,7 +352,10 @@ export async function resolveUserInput({
 
   if (getState().app.editorInputValue !== null) {
     const editorInput = parseInputFromEditor();
-    if (editorInput !== null && shouldResolveSlashCommand(editorInput)) {
+    if (
+      editorInput !== null &&
+      shouldResolveSlashCommand(editorInput, { forceKnownCommand: true })
+    ) {
       return await resolveSlashCommand(editorInput);
     }
     return editorInput;
@@ -353,7 +384,10 @@ export async function resolveUserInput({
     const abortedByEditor = getState().app.editorInputValue !== null;
     if (abortedByEditor) {
       const editorInput = parseInputFromEditor();
-      if (editorInput !== null && shouldResolveSlashCommand(editorInput)) {
+      if (
+        editorInput !== null &&
+        shouldResolveSlashCommand(editorInput, { forceKnownCommand: true })
+      ) {
         return await resolveSlashCommand(editorInput);
       }
       return editorInput;
@@ -369,20 +403,32 @@ export async function resolveUserInput({
   appendToChatHistory(inputResult.value, "user");
 
   const rawInput = inputResult.value;
-  if (shouldResolveSlashCommand(rawInput)) {
+  if (shouldResolveSlashCommand(rawInput, { forceKnownCommand: false })) {
     return await resolveSlashCommand(rawInput);
   }
 
   return rawInput.trim();
 }
 
-export function shouldResolveSlashCommand(rawInput: string | null): boolean {
+export function shouldResolveSlashCommand(
+  rawInput: string | null,
+  { forceKnownCommand }: { forceKnownCommand: boolean },
+): boolean {
   if (rawInput === null) return false;
 
   const trimmed = rawInput.trim();
   if (trimmed.includes("\n")) return false;
+  if (trimmed.at(0) !== "/") return false;
 
-  return trimmed.at(0) === "/";
+  const spaceIdx = trimmed.search(/\s+/);
+  if (forceKnownCommand) {
+    const command =
+      spaceIdx === -1 ? trimmed.slice(1) : trimmed.slice(1, spaceIdx);
+    const customSlashCommands = getState().app.slashCommands.map((c) => c.name);
+    return [...builtinSlashCommands, ...customSlashCommands].includes(command);
+  }
+
+  return true;
 }
 
 async function resolveExitConfirmation() {
