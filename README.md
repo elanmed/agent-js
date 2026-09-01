@@ -6,7 +6,7 @@ A minimal agent harness
 
 ## Features
 
-- **Minimal**: 3,500 lines of source code, 7,100 lines of tests
+- **Minimal**: 3,500 lines of source code, 7,000 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
