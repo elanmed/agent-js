@@ -6,4 +6,4 @@ if [[ $mode != "write" && $mode != "check" ]]; then
   exit 1
 fi
 
-npx prettier "--$mode" src/ scripts/ AGENTS.md eslint.config.mjs tsconfig.json .agent-js/ || exit 1
+npx prettier "--$mode" src/ scripts/ "!scripts/**/*.sh" AGENTS.md eslint.config.mjs tsconfig.json || exit 1

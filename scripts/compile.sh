@@ -16,7 +16,7 @@ mkdir -p dist || exit 1
 for target in "${targets[@]}"; do
   echo "Building $target..."
   bun build --compile --minify --sourcemap --target="bun-$target" \
-    ./src/index.ts --outfile "dist/agent-js-$target" || exit 1
+    ./src/index.ts --outfile "dist/lasso-$target" || exit 1
 done
 
 echo "Built all targets into dist/"

@@ -1,6 +1,6 @@
 node_modules
-.agent-js/debug.log
-.agent-js/editor.log
+.lasso/debug.log
+.lasso/editor.log
 dist
 .pnpm-store
 tags
