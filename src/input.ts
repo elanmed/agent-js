@@ -286,7 +286,7 @@ export function initSigInt() {
   });
 }
 
-export function parseUserInputFromEditor() {
+export function parseInputFromEditor() {
   const editorInputValue = getState().app.editorInputValue;
   assert(editorInputValue !== null);
   const splitEditorInputValue = editorInputValue.split(
@@ -323,7 +323,11 @@ export async function resolveUserInput({
   assert(rl !== null);
 
   if (getState().app.editorInputValue !== null) {
-    return parseUserInputFromEditor();
+    const editorInput = parseInputFromEditor();
+    if (editorInput !== null && shouldResolveSlashCommand(editorInput)) {
+      return await resolveSlashCommand(editorInput);
+    }
+    return editorInput;
   }
 
   if (!isFirstInput) {
@@ -348,7 +352,11 @@ export async function resolveUserInput({
 
     const abortedByEditor = getState().app.editorInputValue !== null;
     if (abortedByEditor) {
-      return parseUserInputFromEditor();
+      const editorInput = parseInputFromEditor();
+      if (editorInput !== null && shouldResolveSlashCommand(editorInput)) {
+        return await resolveSlashCommand(editorInput);
+      }
+      return editorInput;
     }
 
     await resolveExitConfirmation();
@@ -359,13 +367,22 @@ export async function resolveUserInput({
     `${getState().config.promptPrefix}${inputResult.value}\n`,
   );
   appendToChatHistory(inputResult.value, "user");
-  const rawInput = inputResult.value.trim();
 
-  if (rawInput.at(0) === "/") {
+  const rawInput = inputResult.value;
+  if (shouldResolveSlashCommand(rawInput)) {
     return await resolveSlashCommand(rawInput);
   }
 
-  return rawInput;
+  return rawInput.trim();
+}
+
+export function shouldResolveSlashCommand(rawInput: string | null): boolean {
+  if (rawInput === null) return false;
+
+  const trimmed = rawInput.trim();
+  if (trimmed.includes("\n")) return false;
+
+  return trimmed.at(0) === "/";
 }
 
 async function resolveExitConfirmation() {
@@ -589,7 +606,7 @@ ${commandContext}
 }
 
 export async function resolveSlashCommand(rawInput: string) {
-  const commandWithoutSlash = rawInput.slice(1);
+  const commandWithoutSlash = rawInput.trim().slice(1);
 
   const builtinSlashCommandOutcome = await resolveBuiltinSlashCommand(
     commandWithoutSlash as BuiltinSlashCommand,

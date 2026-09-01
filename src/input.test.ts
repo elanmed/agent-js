@@ -2,9 +2,10 @@ import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
 import {
-  parseUserInputFromEditor,
+  parseInputFromEditor,
   resolveSlashCommand,
   resolveUserInput,
+  shouldResolveSlashCommand,
   getModel,
   setModelCommand,
   isSameKey,
@@ -168,6 +169,25 @@ describe("input", () => {
 
 ---
 editor content
+
+`,
+      );
+    });
+
+    it("resolves slash commands from editor input", async () => {
+      actions.setChatHistoryPath("/tmp/test-history.log");
+      actions.setModel("old");
+      actions.setEditorInputValue("/model new-model");
+      const result = await resolveUserInput({ isFirstInput: false });
+      assert.strictEqual(result, null);
+      assert.strictEqual(getState().config.model, "new-model");
+      assert.strictEqual(getState().app.editorInputValue, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z  *user*
+
+---
+/model new-model
 
 `,
       );
@@ -349,14 +369,14 @@ second
     });
   });
 
-  describe("parseUserInputFromEditor", () => {
+  describe("parseInputFromEditor", () => {
     beforeEach(() => {
       actions.setChatHistoryPath("/tmp/test-history.log");
     });
 
     it("returns the whole editor value and clears it when no delimiter is present", () => {
       actions.setEditorInputValue("editor content");
-      const result = parseUserInputFromEditor();
+      const result = parseInputFromEditor();
       assert.strictEqual(result, "editor content");
       assert.strictEqual(getState().app.editorInputValue, null);
       assert.strictEqual(
@@ -377,7 +397,7 @@ second
 l---
 third
 `);
-      const result = parseUserInputFromEditor();
+      const result = parseInputFromEditor();
       assert.strictEqual(result, "first\n");
       assert.strictEqual(
         getState().app.editorInputValue,
@@ -404,9 +424,9 @@ second
 l---
 third
 `);
-      assert.strictEqual(parseUserInputFromEditor(), "first\n");
-      assert.strictEqual(parseUserInputFromEditor(), "second\n");
-      assert.strictEqual(parseUserInputFromEditor(), "third\n");
+      assert.strictEqual(parseInputFromEditor(), "first\n");
+      assert.strictEqual(parseInputFromEditor(), "second\n");
+      assert.strictEqual(parseInputFromEditor(), "third\n");
       assert.strictEqual(getState().app.editorInputValue, null);
     });
 
@@ -415,7 +435,7 @@ third
 msg
 l---
 `);
-      const result = parseUserInputFromEditor();
+      const result = parseInputFromEditor();
       assert.strictEqual(result, "msg\n");
       assert.strictEqual(getState().app.editorInputValue, null);
     });
@@ -424,8 +444,38 @@ l---
       actions.setEditorInputValue(`l---
 l---
 `);
-      assert.strictEqual(parseUserInputFromEditor(), null);
+      assert.strictEqual(parseInputFromEditor(), null);
       assert.strictEqual(getState().app.editorInputValue, null);
+    });
+  });
+
+  describe("shouldResolveSlashCommand", () => {
+    it("returns false for null", () => {
+      assert.strictEqual(shouldResolveSlashCommand(null), false);
+    });
+
+    it("returns false for an empty string", () => {
+      assert.strictEqual(shouldResolveSlashCommand(""), false);
+    });
+
+    it("returns false for plain text", () => {
+      assert.strictEqual(shouldResolveSlashCommand("hello there"), false);
+    });
+
+    it("returns false for multi-line input", () => {
+      assert.strictEqual(shouldResolveSlashCommand("/cwd\n/pwd"), false);
+    });
+
+    it("returns true for a bare slash command", () => {
+      assert.strictEqual(shouldResolveSlashCommand("/cwd"), true);
+    });
+
+    it("returns true for a slash command with args", () => {
+      assert.strictEqual(shouldResolveSlashCommand("/model new-model"), true);
+    });
+
+    it("returns true for a slash command with surrounding whitespace", () => {
+      assert.strictEqual(shouldResolveSlashCommand("  /cwd  "), true);
     });
   });
 
