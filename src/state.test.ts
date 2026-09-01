@@ -162,8 +162,8 @@ describe("state", () => {
 
   it("set-keymap", () => {
     assert.deepStrictEqual(
-      getState().config.keymaps.edit,
-      defaultConfig.keymaps.edit,
+      getState().config.keymaps["edit"],
+      defaultConfig.keymaps["edit"],
     );
     actions.setKeymap("edit", {
       name: "v",
@@ -171,7 +171,7 @@ describe("state", () => {
       meta: false,
       shift: false,
     });
-    assert.deepStrictEqual(getState().config.keymaps.edit, {
+    assert.deepStrictEqual(getState().config.keymaps["edit"], {
       name: "v",
       ctrl: false,
       meta: false,
@@ -202,7 +202,6 @@ describe("state", () => {
     });
     assert.deepStrictEqual(getState().config.keymaps, {
       edit: { name: "v", ctrl: false, meta: false, shift: false },
-      paste: defaultConfig.keymaps.paste,
       skills: { name: "s", ctrl: false, meta: false, shift: false },
     });
   });

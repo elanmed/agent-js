@@ -62,17 +62,17 @@ export type UsageLimit = z.infer<typeof UsageLimitSchema>;
 const ModelSchema = z.string();
 const BaseURLSchema = z.string();
 const ProviderSchema = z.enum(["anthropic", "openai-compatible"]);
-const PricingPerModelSchema = z.record(z.string(), ModelPricingSchema);
-const ContextWindowPerModelSchema = z.record(z.string(), z.number());
+const PricingPerModelSchema = z.record(
+  z.string(),
+  ModelPricingSchema.nullable(),
+);
+const ContextWindowPerModelSchema = z.record(z.string(), z.number().nullable());
+const DefaultedPricingPerModelSchema = z.record(z.string(), ModelPricingSchema);
+const DefaultedContextWindowPerModelSchema = z.record(z.string(), z.number());
 const CompactTriggerRatioSchema = z.number().min(0).max(1);
 const CompactTargetRatioSchema = z.number().min(0).max(1);
-const KeymapsSchema = z.record(z.string(), KeySchema);
-const DefaultedKeymapsSchema = KeymapsSchema.and(
-  z.object({
-    edit: KeySchema,
-    paste: KeySchema,
-  }),
-);
+const KeymapsSchema = z.record(z.string(), KeySchema.nullable());
+const DefaultedKeymapsSchema = z.record(z.string(), KeySchema);
 const CustomSlashCommandDirsSchema = z.array(z.string());
 const CustomSkillDirsSchema = z.array(z.string());
 const LoadingStateFrameDurationSchema = z.number();
@@ -115,8 +115,8 @@ export const DefaultedConfigSchema = z.strictObject({
   model: ModelSchema,
   baseURL: BaseURLSchema.optional(),
   provider: ProviderSchema,
-  pricingPerModel: PricingPerModelSchema,
-  contextWindowPerModel: ContextWindowPerModelSchema,
+  pricingPerModel: DefaultedPricingPerModelSchema,
+  contextWindowPerModel: DefaultedContextWindowPerModelSchema,
   compactTriggerRatio: CompactTriggerRatioSchema,
   compactTargetRatio: CompactTargetRatioSchema,
   keymaps: DefaultedKeymapsSchema,
@@ -178,6 +178,15 @@ export function readConfigFile(path: string): Partial<Config> {
   return ConfigSchema.parse(parseResult.value);
 }
 
+function filterNulls<T>(entries: Record<string, T | null>): Record<string, T> {
+  const filtered: Record<string, T> = {};
+  for (const [key, value] of Object.entries(entries)) {
+    if (value === null) continue;
+    filtered[key] = value;
+  }
+  return filtered;
+}
+
 export async function initStateFromConfig() {
   const globalConfig = readConfigFile(getGlobalConfigPath());
   const localConfig = readConfigFile(getLocalConfigPath());
@@ -210,17 +219,18 @@ export async function initStateFromConfig() {
   if (defaultedBaseURL !== undefined) actions.setBaseURL(defaultedBaseURL);
   actions.setProvider(defaultedProvider);
 
-  const defaultedPricingPerModel = {
+  const defaultedPricingPerModel = filterNulls({
     ...defaultConfig.pricingPerModel,
     ...globalConfig.pricingPerModel,
     ...localConfig.pricingPerModel,
-  };
+  });
   actions.setPricingPerModel(defaultedPricingPerModel);
-  actions.setContextWindowPerModel({
+  const defaultedContextWindowPerModel = filterNulls({
     ...defaultConfig.contextWindowPerModel,
     ...globalConfig.contextWindowPerModel,
     ...localConfig.contextWindowPerModel,
   });
+  actions.setContextWindowPerModel(defaultedContextWindowPerModel);
   const defaultedCompactTriggerRatio =
     localConfig.compactTriggerRatio ??
     globalConfig.compactTriggerRatio ??
@@ -247,11 +257,13 @@ export async function initStateFromConfig() {
       globalConfig.customSkillDirs ??
       defaultConfig.customSkillDirs,
   );
-  actions.setKeymaps({
+  const defaultedKeymaps = filterNulls({
     ...defaultConfig.keymaps,
     ...globalConfig.keymaps,
     ...localConfig.keymaps,
   });
+
+  actions.setKeymaps(defaultedKeymaps);
   actions.setLoadingStateFrames(
     localConfig.loadingStateFrames ??
       globalConfig.loadingStateFrames ??

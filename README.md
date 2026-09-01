@@ -1,6 +1,6 @@
 # `lasso`
 
-_A minimal agent harness to reign in your llm_
+_A minimal agent harness to rein in your llm_
 
 ![logo](./logo.png)
 
@@ -43,6 +43,13 @@ Settings live in `~/.config/lasso/settings.yaml` (global) and `./.lasso/settings
 | `promptPrefix`                  | `string`                               | optional | `"> "`                   | Prompt prefix string                               |
 | `suppressBatUnavailableWarning` | `boolean`                              | optional | `false`                  | Suppress the startup warning when `bat` is missing |
 | `usageLimit`                    | `object`                               | optional | `undefined`              | Dollar limit and tracking window                   |
+
+### Local Overwrite vs Extend
+
+The local config either overwrites or extends the global config per option:
+
+- **Overwrite**: scalar options (`model`, `provider`, `baseURL`, `compactTriggerRatio`, `compactTargetRatio`, `loadingStateFrameDuration`, `promptPrefix`, `usageLimit`) and arrays (`customSlashCommandDirs`, `customSkillDirs`, `loadingStateFrames`) replace the global value wholesale — arrays are not merged.
+- **Extend**: `keymaps`, `pricingPerModel`, and `contextWindowPerModel` merge entry-by-entry with the default and global entries, the local entry winning on conflicts. Setting an entry to `null` removes it entirely, cancelling the global or default entry (see the relevant sections below).
 
 ### Usage Limits
 
@@ -91,6 +98,8 @@ pricingPerModel:
     cacheWritePerMillion: 3.75
 ```
 
+Set a model's pricing to `null` to remove it, e.g. to cancel pricing inherited from the global config.
+
 ### Context Window Per Model
 
 Context window size in tokens per model, used to decide when to compact the conversation:
@@ -107,6 +116,8 @@ Example:
 contextWindowPerModel:
   claude-sonnet-4-6: 200000
 ```
+
+Set a model's context window to `null` to remove it, e.g. to cancel a window inherited from the global config.
 
 ### Keymaps
 
@@ -155,6 +166,8 @@ keymaps:
     name: v
     ctrl: true
 ```
+
+Set a keymap to `null` to remove a binding entirely, overriding a global config keymap or a default, e.g. `paste: null` unbinds paste:
 
 ### Example settings.yaml
 
@@ -410,7 +423,6 @@ vim.g.clipboard = {
 - [ ] Tool for creating subagents
 - [ ] Validate that two slash commands don't share the same keymap
 - [ ] Support additional user content after a slash command without args
-- [ ] Reload env variables in /reload
 - Improved message queue
   - [ ] Support a slash command as the first line of the editor content
   - [ ] Support delimiter between messages in the editor

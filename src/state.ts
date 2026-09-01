@@ -199,7 +199,7 @@ export const actions = {
 
   setKeymaps(keymaps: Record<string, Key>) {
     const before = structuredClone(state.config.keymaps);
-    state.config.keymaps = { ...defaultConfig.keymaps, ...keymaps };
+    state.config.keymaps = keymaps;
     logStateChange("set-keymaps", stringify(before), stringify(keymaps));
   },
 

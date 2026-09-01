@@ -152,6 +152,42 @@ describe("config", () => {
         },
       });
     });
+    it("removes pricingPerModel entries set to null in the local config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          pricingPerModel: {
+            "kept-model": {
+              inputPerMillion: 1,
+              outputPerMillion: 2,
+            },
+            "cancelled-model": {
+              inputPerMillion: 3,
+              outputPerMillion: 4,
+            },
+          },
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          pricingPerModel: {
+            "cancelled-model": null,
+          },
+        }),
+      );
+
+      await initState();
+
+      assert.deepEqual(getState().config.pricingPerModel, {
+        "kept-model": {
+          inputPerMillion: 1,
+          outputPerMillion: 2,
+        },
+      });
+    });
 
     it("merges contextWindowPerModel per model, local overriding global", async () => {
       testFs._files.set(
@@ -181,6 +217,34 @@ describe("config", () => {
         "global-model": 100_000,
         "shared-model": 400_000,
         "local-model": 300_000,
+      });
+    });
+
+    it("removes contextWindowPerModel entries set to null in the local config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          contextWindowPerModel: {
+            "kept-model": 100_000,
+            "cancelled-model": 200_000,
+          },
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          contextWindowPerModel: {
+            "cancelled-model": null,
+          },
+        }),
+      );
+
+      await initState();
+
+      assert.deepEqual(getState().config.contextWindowPerModel, {
+        "kept-model": 100_000,
       });
     });
 
@@ -255,13 +319,13 @@ describe("config", () => {
 
       await initState();
 
-      assert.deepEqual(getState().config.keymaps.edit, {
+      assert.deepEqual(getState().config.keymaps["edit"], {
         name: "e",
         ctrl: true,
         meta: false,
         shift: false,
       });
-      assert.deepEqual(getState().config.keymaps.paste, {
+      assert.deepEqual(getState().config.keymaps["paste"], {
         name: "t",
         ctrl: true,
         meta: false,
@@ -285,6 +349,41 @@ describe("config", () => {
         meta: false,
         shift: false,
       });
+    });
+
+    it("removes keymaps set to null in the local config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          keymaps: {
+            edit: { name: "e", ctrl: true, meta: false, shift: false },
+            paste: { name: "p", ctrl: true, meta: false, shift: false },
+            history: { name: "o", ctrl: false, meta: false, shift: false },
+          },
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          keymaps: {
+            paste: null,
+            history: null,
+          },
+        }),
+      );
+
+      await initState();
+
+      assert.deepEqual(getState().config.keymaps["edit"], {
+        name: "e",
+        ctrl: true,
+        meta: false,
+        shift: false,
+      });
+      assert.equal(getState().config.keymaps["paste"], undefined);
+      assert.equal(getState().config.keymaps["history"], undefined);
     });
 
     it("uses its customSlashCommandDirs over the global config, default config", async () => {
@@ -739,15 +838,15 @@ describe("config", () => {
 
       await initState();
 
-      assert.deepEqual(getState().config.keymaps.edit, {
+      assert.deepEqual(getState().config.keymaps["edit"], {
         name: "v",
         ctrl: false,
         meta: false,
         shift: false,
       });
       assert.deepEqual(
-        getState().config.keymaps.paste,
-        defaultConfig.keymaps.paste,
+        getState().config.keymaps["paste"],
+        defaultConfig.keymaps["paste"],
       );
       assert.strictEqual(getState().config.keymaps["history"], undefined);
       assert.strictEqual(getState().config.keymaps["clear"], undefined);
@@ -842,13 +941,13 @@ describe("config", () => {
 
         await initState();
 
-        assert.deepEqual(getState().config.keymaps.edit, {
+        assert.deepEqual(getState().config.keymaps["edit"], {
           name: "v",
           ctrl: false,
           meta: false,
           shift: false,
         });
-        assert.deepEqual(getState().config.keymaps.paste, {
+        assert.deepEqual(getState().config.keymaps["paste"], {
           name: "p",
           ctrl: false,
           meta: false,
