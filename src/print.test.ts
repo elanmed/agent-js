@@ -10,13 +10,14 @@ import {
   fencePrint,
   flushAndStopLoadingState,
   printSessionStartDate,
+  warnOnMissingBat,
 } from "./print.ts";
 import { actions, getState } from "./state.ts";
-import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import {
   stripAnsi,
   mockExec,
+  mockStdout,
   mockSetInterval,
   mockClearInterval,
   setupFakeDeps,
@@ -56,10 +57,8 @@ describe("print", () => {
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
       actions.setLoadingStateFrames(["a", "b", "c"]);
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+
+      const getCaptured = mockStdout();
 
       startLoadingState();
       callbacks.forEach((cb) => cb());
@@ -71,17 +70,15 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       await stopPromise;
 
-      assert.strictEqual(captured, "\ra\rb\rc\ra\rb\rc\ra\r \r");
+      assert.strictEqual(getCaptured(), "\ra\rb\rc\ra\rb\rc\ra\r \r");
     });
 
     it("uses default loadingStateFrames when none set", async () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+
+      const getCaptured = mockStdout();
 
       startLoadingState();
       callbacks.forEach((cb) => cb());
@@ -91,14 +88,14 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       await stopPromise;
 
-      assert.strictEqual(captured, "\r|\r/\r-\r\\\r|\r \r");
+      assert.strictEqual(getCaptured(), "\r|\r/\r-\r\\\r|\r \r");
     });
 
     it("stopLoadingState gracefully handles multiple calls", async () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
-      mock.method(processDeps.stdout, "write", () => undefined);
+      mockStdout();
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
       startLoadingState();
@@ -118,7 +115,7 @@ describe("print", () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
-      mock.method(processDeps.stdout, "write", () => undefined);
+      mockStdout();
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
       startLoadingState();
@@ -142,7 +139,7 @@ describe("print", () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
-      mock.method(processDeps.stdout, "write", () => undefined);
+      mockStdout();
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
       startLoadingState();
@@ -271,30 +268,21 @@ describe("print", () => {
     });
 
     it("formats markdown and outputs the content through bat when available", async () => {
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+      const getCaptured = mockStdout();
 
       await executeBat("# Hello\n");
 
-      assert.strictEqual(stripAnsi(captured), "# Hello\n\n");
+      assert.strictEqual(stripAnsi(getCaptured()), "# Hello\n\n");
     });
 
     it("falls back to plain text when bat is not available", async () => {
       mockExec({ stdout: "", error: new Error("not found") });
 
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+      const getCaptured = mockStdout();
 
       await executeBat("test content\n");
 
-      assert.strictEqual(
-        stripAnsi(captured),
-        `\`bat\` is not available, falling back to plain text rendering\ntest content\n\n`,
-      );
+      assert.strictEqual(stripAnsi(getCaptured()), "test content\n\n");
     });
 
     it("falls back to plain text when bat spawn fails", async () => {
@@ -302,15 +290,12 @@ describe("print", () => {
         throw new Error("spawn failed");
       });
 
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+      const getCaptured = mockStdout();
 
       await executeBat("test content\n");
 
       assert.strictEqual(
-        stripAnsi(captured),
+        stripAnsi(getCaptured()),
         `Falling back to plain text rendering, an error occurred when spawning \`bat\`: spawn failed
 test content
 
@@ -328,15 +313,12 @@ test content
         } as unknown as ReturnType<typeof childProcess.spawnSync>;
       });
 
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+      const getCaptured = mockStdout();
 
       await executeBat("test content\n");
 
       assert.strictEqual(
-        stripAnsi(captured),
+        stripAnsi(getCaptured()),
         `Falling back to plain text rendering, an error occurred when spawning \`bat\`: \`bat\` returned code 1
 test content
 
@@ -354,14 +336,11 @@ test content
         } as unknown as ReturnType<typeof childProcess.spawnSync>;
       });
 
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+      const getCaptured = mockStdout();
 
       await executeBat("test content\n");
 
-      assert.strictEqual(stripAnsi(captured), "bat-rendered\n\n");
+      assert.strictEqual(stripAnsi(getCaptured()), "bat-rendered\n\n");
     });
 
     it("prints bat stdout when stderr is empty", async () => {
@@ -374,14 +353,11 @@ test content
         } as unknown as ReturnType<typeof childProcess.spawnSync>;
       });
 
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+      const getCaptured = mockStdout();
 
       await executeBat("test content\n");
 
-      assert.strictEqual(stripAnsi(captured), "bat-rendered\n\n");
+      assert.strictEqual(stripAnsi(getCaptured()), "bat-rendered\n\n");
     });
 
     it("falls back to plain text when bat writes stderr", async () => {
@@ -394,20 +370,58 @@ test content
         } as unknown as ReturnType<typeof childProcess.spawnSync>;
       });
 
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        captured += out;
-      });
+      const getCaptured = mockStdout();
 
       await executeBat("test content\n");
 
       assert.strictEqual(
-        stripAnsi(captured),
+        stripAnsi(getCaptured()),
         `Falling back to plain text rendering, an error occurred when spawning \`bat\`: bat warning
 test content
 
 `,
       );
+    });
+  });
+
+  describe("warnOnMissingBat", () => {
+    beforeEach(() => {
+      mock.restoreAll();
+      actions.resetState();
+    });
+
+    it("warns when bat is not available", async () => {
+      mockExec({ stdout: "", error: new Error("not found") });
+
+      const getCaptured = mockStdout();
+
+      await warnOnMissingBat();
+
+      assert.match(
+        stripAnsi(getCaptured()),
+        /`bat` is not available, consider installing it to properly render markdown responses in the terminal\. Suppress this warning with `suppressBatUnavailableWarning: true` in /,
+      );
+    });
+
+    it("does not warn when bat is available", async () => {
+      mockExec({ stdout: "bat 0.25.0" });
+
+      const getCaptured = mockStdout();
+
+      await warnOnMissingBat();
+
+      assert.strictEqual(getCaptured(), "");
+    });
+
+    it("does not warn when suppressBatUnavailableWarning is set", async () => {
+      mockExec({ stdout: "", error: new Error("not found") });
+      actions.setSuppressBatUnavailableWarning(true);
+
+      const getCaptured = mockStdout();
+
+      await warnOnMissingBat();
+
+      assert.strictEqual(getCaptured(), "");
     });
   });
 

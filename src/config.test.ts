@@ -401,6 +401,30 @@ describe("config", () => {
       assert.strictEqual(getState().config.promptPrefix, "🤖 ");
     });
 
+    it("uses its suppressBatUnavailableWarning over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          suppressBatUnavailableWarning: true,
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          suppressBatUnavailableWarning: false,
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(
+        getState().config.suppressBatUnavailableWarning,
+        false,
+      );
+    });
+
     it("uses its usageLimit over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
@@ -584,6 +608,18 @@ describe("config", () => {
       );
 
       await assert.rejects(initState(), /Invalid input: expected number/);
+    });
+
+    it("rejects non-boolean suppressBatUnavailableWarning", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          suppressBatUnavailableWarning: "yes",
+        }),
+      );
+
+      await assert.rejects(initState(), /Invalid input: expected boolean/);
     });
 
     it("rejects compactTriggerRatio above 1", async () => {
@@ -877,6 +913,23 @@ describe("config", () => {
         await initState();
 
         assert.strictEqual(getState().config.promptPrefix, "❯ ");
+      });
+
+      it("uses its suppressBatUnavailableWarning over the default config", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({
+            ...testConfig,
+            suppressBatUnavailableWarning: true,
+          }),
+        );
+
+        await initState();
+
+        assert.strictEqual(
+          getState().config.suppressBatUnavailableWarning,
+          true,
+        );
       });
 
       it("uses its usageLimit over the default config", async () => {

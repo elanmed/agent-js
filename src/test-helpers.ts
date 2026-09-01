@@ -104,6 +104,14 @@ export function makeFakeFsDeps(
   };
 }
 
+export function mockStdout() {
+  let captured = "";
+  mock.method(processDeps.stdout, "write", (out: string) => {
+    captured += out;
+  });
+  return () => captured;
+}
+
 export function makeFakeProcessEnv() {
   const map = new Map<string, string>();
 
@@ -137,6 +145,8 @@ export const testFs = makeFakeFsDeps();
 export const testProcessEnv = makeFakeProcessEnv();
 export const testCwd = makeFakeCwd();
 
+const originalExec = childProcess.exec.bind(childProcess);
+
 const ANSI_ESCAPE_PATTERN =
   // eslint-disable-next-line no-control-regex
   /\x1b\[[0-9;]*m/g;
@@ -161,6 +171,17 @@ export function setupFakeDeps() {
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());
+  mock.method(
+    childProcess,
+    "exec",
+    (command: string, options: unknown, callback: ExecCallback) => {
+      if (command === "bat --version") {
+        callback(null, "bat 0.26.1\n", "");
+        return;
+      }
+      originalExec(command, options as never, callback);
+    },
+  );
 }
 
 export function makeFakeRl(overrides: object = {}) {

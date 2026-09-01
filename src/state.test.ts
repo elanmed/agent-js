@@ -459,6 +459,12 @@ line3
     assert.strictEqual(getState().config.promptPrefix, "🤖 ");
   });
 
+  it("set-suppress-bat-unavailable-warning", () => {
+    assert.strictEqual(getState().config.suppressBatUnavailableWarning, false);
+    actions.setSuppressBatUnavailableWarning(true);
+    assert.strictEqual(getState().config.suppressBatUnavailableWarning, true);
+  });
+
   it("set-usage-limit", () => {
     assert.strictEqual(getState().config.usageLimit, undefined);
     actions.setUsageLimit({ duration: "60m", dollarAmount: 5 });

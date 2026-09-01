@@ -6,6 +6,7 @@ import {
   fencePrint,
   printNewline,
   printSessionStartDate,
+  warnOnMissingBat,
 } from "./print.ts";
 import { initState } from "./config.ts";
 import {
@@ -24,6 +25,8 @@ async function main() {
   initReadline();
   initKeypress();
   initSigInt();
+
+  await warnOnMissingBat();
 
   let isFirstInput = true;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

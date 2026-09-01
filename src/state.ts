@@ -95,6 +95,7 @@ const initialState: State = {
     loadingStateFrameDuration: defaultConfig.loadingStateFrameDuration,
     loadingStateFrames: structuredClone(defaultConfig.loadingStateFrames),
     promptPrefix: defaultConfig.promptPrefix,
+    suppressBatUnavailableWarning: defaultConfig.suppressBatUnavailableWarning,
     usageLimit: undefined,
   },
   abortControllers: {
@@ -485,6 +486,16 @@ export const actions = {
     const before = state.config.promptPrefix;
     state.config.promptPrefix = promptPrefix;
     logStateChange("set-prompt-prefix", before, promptPrefix);
+  },
+
+  setSuppressBatUnavailableWarning(suppressBatUnavailableWarning: boolean) {
+    const before = state.config.suppressBatUnavailableWarning;
+    state.config.suppressBatUnavailableWarning = suppressBatUnavailableWarning;
+    logStateChange(
+      "set-suppress-bat-unavailable-warning",
+      String(before),
+      String(suppressBatUnavailableWarning),
+    );
   },
 
   setUsageLimit(usageLimit: UsageLimit | undefined) {

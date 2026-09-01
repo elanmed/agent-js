@@ -12,6 +12,7 @@ import { processDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import assert from "node:assert";
 import { getPrettyUsage } from "./usage.ts";
+import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
 
 const printQueue = createQueue();
 
@@ -153,6 +154,17 @@ export async function checkBat(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("bat --version"))).ok;
 }
 
+export async function warnOnMissingBat() {
+  if (getState().config.suppressBatUnavailableWarning) return;
+
+  const isBatAvailable = await checkBat();
+  if (!isBatAvailable) {
+    await print.warning(
+      `\`bat\` is not available, consider installing it to properly render markdown responses in the terminal. Suppress this warning with \`suppressBatUnavailableWarning: true\` in ${getGlobalConfigPath()} or ${getLocalConfigPath()}`,
+    );
+  }
+}
+
 export async function checkDelta(): Promise<boolean> {
   return (await tryCatchAsync(execPromise("delta --version"))).ok;
 }
@@ -189,17 +201,14 @@ export async function executeBat(content: string) {
   content = normalizeLine(content);
   const isBatAvailable = await checkBat();
 
+  if (!isBatAvailable) {
+    return await print(content);
+  }
+
   async function fallbackPrint(message: string) {
     await print.error(message);
     await print(content);
   }
-
-  if (!isBatAvailable) {
-    return await fallbackPrint(
-      "`bat` is not available, falling back to plain text rendering",
-    );
-  }
-
   const baseMessage =
     "Falling back to plain text rendering, an error occurred when spawning `bat`: ";
   const batResult = spawnBat(content);

@@ -26,22 +26,23 @@ Settings live in `~/.config/lasso/settings.yaml` (global) and `./.lasso/settings
 
 ### Config Options
 
-| Option                      | Type                                   | Required | Default                  | Description                                      |
-| --------------------------- | -------------------------------------- | -------- | ------------------------ | ------------------------------------------------ |
-| `model`                     | `string`                               | optional | —                        | Model name (required in the merged config)       |
-| `provider`                  | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                     |
-| `baseURL`                   | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)  |
-| `pricingPerModel`           | `object`                               | optional | `{}`                     | Token pricing per model per million              |
-| `contextWindowPerModel`     | `object`                               | optional | `{}`                     | Context window size in tokens per model          |
-| `compactTriggerRatio`       | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio    |
-| `compactTargetRatio`        | `number`                               | optional | `0.3`                    | Compact down to this context ratio               |
-| `keymaps`                   | `object`                               | optional | see below                | Custom keybindings                               |
-| `customSlashCommandDirs`    | `string[]`                             | optional | `[]`                     | Additional directories for custom slash commands |
-| `customSkillDirs`           | `string[]`                             | optional | `[]`                     | Additional directories for skills                |
-| `loadingStateFrames`        | `string[]`                             | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                            |
-| `loadingStateFrameDuration` | `number`                               | optional | `80`                     | Spinner frame interval in ms                     |
-| `promptPrefix`              | `string`                               | optional | `"> "`                   | Prompt prefix string                             |
-| `usageLimit`                | `object`                               | optional | `undefined`              | Dollar limit and tracking window                 |
+| Option                          | Type                                   | Required | Default                  | Description                                        |
+| ------------------------------- | -------------------------------------- | -------- | ------------------------ | -------------------------------------------------- |
+| `model`                         | `string`                               | optional | —                        | Model name (required in the merged config)         |
+| `provider`                      | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                       |
+| `baseURL`                       | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)    |
+| `pricingPerModel`               | `object`                               | optional | `{}`                     | Token pricing per model per million                |
+| `contextWindowPerModel`         | `object`                               | optional | `{}`                     | Context window size in tokens per model            |
+| `compactTriggerRatio`           | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio      |
+| `compactTargetRatio`            | `number`                               | optional | `0.3`                    | Compact down to this context ratio                 |
+| `keymaps`                       | `object`                               | optional | see below                | Custom keybindings                                 |
+| `customSlashCommandDirs`        | `string[]`                             | optional | `[]`                     | Additional directories for custom slash commands   |
+| `customSkillDirs`               | `string[]`                             | optional | `[]`                     | Additional directories for skills                  |
+| `loadingStateFrames`            | `string[]`                             | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                              |
+| `loadingStateFrameDuration`     | `number`                               | optional | `80`                     | Spinner frame interval in ms                       |
+| `promptPrefix`                  | `string`                               | optional | `"> "`                   | Prompt prefix string                               |
+| `suppressBatUnavailableWarning` | `boolean`                              | optional | `false`                  | Suppress the startup warning when `bat` is missing |
+| `usageLimit`                    | `object`                               | optional | `undefined`              | Dollar limit and tracking window                   |
 
 ### Usage Limits
 
