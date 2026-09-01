@@ -163,6 +163,7 @@ describe("input", () => {
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
+
 ---
 editor content
 
@@ -181,6 +182,7 @@ editor content
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
+
 ---
 hello
 
@@ -201,6 +203,7 @@ hello
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
+
 ---
 /model new-model
 
@@ -231,6 +234,7 @@ hello
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
+
 ---
 from editor
 
@@ -1062,6 +1066,7 @@ custom command content`,
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
+
 ---
 from editor
 
@@ -1080,6 +1085,7 @@ from editor
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
+
 ---
 pasted content
 

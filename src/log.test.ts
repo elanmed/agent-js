@@ -83,6 +83,7 @@ describe("log", () => {
       assert.equal(
         testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z  *user*
+
 ---
 test content
 
@@ -97,10 +98,12 @@ test content
       assert.equal(
         testFs._files.get("/test/editor.log"),
         `2023-11-14T22:13:20.000Z  *user*
+
 ---
 hello
 
 2023-11-14T22:13:20.000Z  *assistant*
+
 ---
 response
 

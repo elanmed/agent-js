@@ -38,6 +38,7 @@ export function appendToChatHistory(
     fsDeps.appendFileSync(
       path,
       `${new Date(Date.now()).toISOString()}  *${role}*
+
 ---
 ${normalizeLine(content)}
 `,
