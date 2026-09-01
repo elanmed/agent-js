@@ -415,23 +415,23 @@ describe("utils", () => {
     it("returns valid chat history files with absolute path and timestamp", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
         "",
       );
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-999990000000.txt",
+        "/fake-home/.config/lasso/history/chat-history-999990000000.md",
         "",
       );
 
       assert.deepStrictEqual(listChatHistoryFiles(), [
         {
           absolutePath:
-            "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+            "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
           timestampMs: 1234567890000,
         },
         {
           absolutePath:
-            "/fake-home/.config/lasso/history/chat-history-999990000000.txt",
+            "/fake-home/.config/lasso/history/chat-history-999990000000.md",
           timestampMs: 999990000000,
         },
       ]);
@@ -440,26 +440,26 @@ describe("utils", () => {
     it("skips directory entries", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._dirs.add(
-        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
       );
       assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
     it("skips files that do not match chat-history-<timestamp>", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
-      testFs._files.set("/fake-home/.config/lasso/history/random-file.txt", "");
+      testFs._files.set("/fake-home/.config/lasso/history/random-file.md", "");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-uuid-123.txt",
+        "/fake-home/.config/lasso/history/chat-history-uuid-123.md",
         "",
       );
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-notanumber.txt",
+        "/fake-home/.config/lasso/history/chat-history-notanumber.md",
         "",
       );
       assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
-    it("skips files with non-txt extension", () => {
+    it("skips files with non-md extension", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
         "/fake-home/.config/lasso/history/chat-history-123.log",

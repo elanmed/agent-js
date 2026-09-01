@@ -82,7 +82,7 @@ describe("log", () => {
       appendToChatHistory("test content", "user");
       assert.equal(
         testFs._files.get("/test/editor.log"),
-        `2023-11-14T22:13:20.000Z  [user]
+        `2023-11-14T22:13:20.000Z  *user*
 test content
 
 `,
@@ -95,10 +95,10 @@ test content
       appendToChatHistory("response", "assistant");
       assert.equal(
         testFs._files.get("/test/editor.log"),
-        `2023-11-14T22:13:20.000Z  [user]
+        `2023-11-14T22:13:20.000Z  *user*
 hello
 
-2023-11-14T22:13:20.000Z  [assistant]
+2023-11-14T22:13:20.000Z  *assistant*
 response
 
 `,
@@ -117,11 +117,11 @@ response
       assert.equal(testFs._dirs.has("/fake-home/.config/lasso/history"), true);
       assert.equal(
         getState().app.chatHistoryPath,
-        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
       );
       assert.equal(
         testFs._files.get(
-          "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+          "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
         ),
         "",
       );
@@ -140,11 +140,11 @@ response
       initPromptHistory();
       assert.equal(
         getState().app.chatHistoryPath,
-        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
       );
       assert.equal(
         testFs._files.get(
-          "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+          "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
         ),
         "",
       );
@@ -165,13 +165,13 @@ response
     it("deletes expired files older than 24 hours", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-999900000000.txt",
+        "/fake-home/.config/lasso/history/chat-history-999900000000.md",
         "old",
       );
       deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/lasso/history/chat-history-999900000000.txt",
+          "/fake-home/.config/lasso/history/chat-history-999900000000.md",
         ),
         false,
       );
@@ -180,13 +180,13 @@ response
     it("keeps files newer than 24 hours", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-999990000000.txt",
+        "/fake-home/.config/lasso/history/chat-history-999990000000.md",
         "new",
       );
       deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/lasso/history/chat-history-999990000000.txt",
+          "/fake-home/.config/lasso/history/chat-history-999990000000.md",
         ),
         true,
       );
@@ -225,13 +225,13 @@ response
     it("skips non-chat-history files with 4 parts", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-uuid-999997600000.txt",
+        "/fake-home/.config/lasso/history/chat-history-uuid-999997600000.md",
         "",
       );
       deleteExpiredPromptHistory();
       assert.equal(
         testFs._files.has(
-          "/fake-home/.config/lasso/history/chat-history-uuid-999997600000.txt",
+          "/fake-home/.config/lasso/history/chat-history-uuid-999997600000.md",
         ),
         true,
       );

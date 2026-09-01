@@ -37,7 +37,7 @@ export function appendToChatHistory(
   tryCatch(() =>
     fsDeps.appendFileSync(
       path,
-      `${new Date(Date.now()).toISOString()}  [${role}]
+      `${new Date(Date.now()).toISOString()}  *${role}*
 ${normalizeLine(content)}
 `,
     ),
@@ -55,7 +55,7 @@ export function initPromptHistory() {
 
   const chatHistorySessionPath = join(
     chatHistoryDir,
-    `chat-history-${getState().app.sessionStartDate.toString()}.txt`,
+    `chat-history-${getState().app.sessionStartDate.toString()}.md`,
   );
   actions.setChatHistoryPath(chatHistorySessionPath);
   tryCatch(() => fsDeps.writeFileSync(chatHistorySessionPath, ""));

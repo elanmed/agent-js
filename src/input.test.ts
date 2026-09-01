@@ -162,7 +162,7 @@ describe("input", () => {
       assert.strictEqual(getState().app.editorInputValue, null);
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
-        `1970-01-01T00:00:00.000Z  [user]
+        `1970-01-01T00:00:00.000Z  *user*
 editor content
 
 `,
@@ -179,7 +179,7 @@ editor content
       assert.strictEqual(stripAnsi(getState().app.stdout), ">   hello  \n");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
-        `1970-01-01T00:00:00.000Z  [user]
+        `1970-01-01T00:00:00.000Z  *user*
 hello
 
 `,
@@ -198,7 +198,7 @@ hello
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
-        `1970-01-01T00:00:00.000Z  [user]
+        `1970-01-01T00:00:00.000Z  *user*
 /model new-model
 
 `,
@@ -227,7 +227,7 @@ hello
       assert.strictEqual(getState().app.editorInputValue, null);
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
-        `1970-01-01T00:00:00.000Z  [user]
+        `1970-01-01T00:00:00.000Z  *user*
 from editor
 
 `,
@@ -441,7 +441,7 @@ Resume this session with /resume 42000
       actions.appendToMessageParams({ role: "user", content: "hello" });
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
         "transcript content",
       );
       const result = await resume("/resume 1234567890000");
@@ -462,7 +462,7 @@ transcript content
     it("prints error when no conversation is found", async () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-9999999999999.txt",
+        "/fake-home/.config/lasso/history/chat-history-9999999999999.md",
         "transcript content",
       );
       const result = await resume("/resume 1234567890000");
@@ -476,7 +476,7 @@ transcript content
     it("skips files that do not match the chat-history format", async () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/other-1234567890000.txt",
+        "/fake-home/.config/lasso/history/other-1234567890000.md",
         "other",
       );
       const result = await resume("/resume 1234567890000");
@@ -1057,7 +1057,7 @@ custom command content`,
       assert.strictEqual(result, "from editor\n");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
-        `1970-01-01T00:00:00.000Z  [user]
+        `1970-01-01T00:00:00.000Z  *user*
 from editor
 
 `,
@@ -1074,7 +1074,7 @@ from editor
       assert.strictEqual(result, "pasted content\n");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
-        `1970-01-01T00:00:00.000Z  [user]
+        `1970-01-01T00:00:00.000Z  *user*
 pasted content
 
 `,
@@ -1301,7 +1301,7 @@ Keymaps:
     it("handles /resume with a session start date", async () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
         "transcript content",
       );
       const result = await resolveSlashCommand("/resume 1234567890000");

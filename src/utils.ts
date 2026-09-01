@@ -207,7 +207,7 @@ export function listChatHistoryFiles() {
     const timestampMs = Number(parts[2]);
     if (Number.isNaN(timestampMs)) continue;
 
-    if (extname(name) !== ".txt") continue;
+    if (extname(name) !== ".md") continue;
 
     chatHistoryFiles.push({
       absolutePath: fullPath,
