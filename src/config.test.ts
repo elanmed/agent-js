@@ -1065,9 +1065,8 @@ describe("config", () => {
 
 # Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
-\`\`\`md
 hello
-\`\`\``,
+`,
     );
   });
 

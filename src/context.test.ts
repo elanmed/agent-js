@@ -37,9 +37,8 @@ describe("context", () => {
 
 # Path: /test-cwd/AGENTS.md
 ---
-\`\`\`md
 # Agent Instructions
-\`\`\``,
+`,
       );
     });
 
@@ -58,15 +57,13 @@ describe("context", () => {
 
 # Path: /test-cwd/AGENTS.md
 ---
-\`\`\`md
 Root content
-\`\`\`
+
 
 # Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
-\`\`\`md
 Global content
-\`\`\``,
+`,
       );
     });
 
@@ -84,9 +81,8 @@ Global content
 
 # Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
-\`\`\`md
 Global content
-\`\`\``,
+`,
       );
     });
 
@@ -107,9 +103,8 @@ Global content
 
 # Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
-\`\`\`md
 global content
-\`\`\``,
+`,
       );
     });
 
@@ -128,15 +123,13 @@ global content
 
 # Path: /test-cwd/AGENTS.md
 ---
-\`\`\`md
 local content
-\`\`\`
+
 
 # Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
-\`\`\`md
 global content
-\`\`\``,
+`,
       );
     });
   });

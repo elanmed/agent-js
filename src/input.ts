@@ -198,6 +198,7 @@ export function initKeypress() {
             await openWithPager({
               initialContentPath: getState().app.chatHistoryPath,
               pagerEnvKey: "LASSO_PAGER_HISTORY",
+              contentType: "markdown",
             });
             return;
           }
@@ -205,6 +206,7 @@ export function initKeypress() {
             await openWithPager({
               pagerEnvKey: "LASSO_PAGER_CONFIG",
               initialContentStr: getAllPrettyConfig(),
+              contentType: "markdown",
             });
 
             return;
@@ -217,6 +219,7 @@ export function initKeypress() {
             await openWithPager({
               pagerEnvKey: "LASSO_PAGER_COMMANDS",
               initialContentStr: getPrettySlashCommandsStr(),
+              contentType: "markdown",
             });
 
             return;
@@ -429,6 +432,7 @@ async function resolveBuiltinSlashCommand(
       await openWithPager({
         initialContentPath: getState().app.chatHistoryPath,
         pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "markdown",
       });
       return { handled: true, inputFromCommand: null };
     }
@@ -456,6 +460,7 @@ async function resolveBuiltinSlashCommand(
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_COMMANDS",
         initialContentStr: getPrettySlashCommandsStr(),
+        contentType: "markdown",
       });
 
       return { handled: true, inputFromCommand: null };
@@ -472,6 +477,7 @@ async function resolveBuiltinSlashCommand(
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_CONFIG",
         initialContentStr: getAllPrettyConfig(),
+        contentType: "markdown",
       });
 
       return { handled: true, inputFromCommand: null };
@@ -661,6 +667,7 @@ export async function pageContextFiles() {
   await openWithPager({
     pagerEnvKey: "LASSO_PAGER_CONTEXT",
     initialContentStr: getState().app.contextStr,
+    contentType: "markdown",
   });
 }
 
@@ -866,6 +873,7 @@ async function reload() {
   await openWithPager({
     pagerEnvKey: "LASSO_PAGER_RELOAD",
     initialContentStr: diffResult.value.stdout,
+    contentType: "diff",
   });
 }
 

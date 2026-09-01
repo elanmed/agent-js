@@ -5,7 +5,7 @@ import childProcess from "node:child_process";
 import { fsDeps, processDeps } from "./deps.ts";
 import { getPromptHistoryDir } from "./paths.ts";
 import assert from "node:assert";
-import { checkBat, batFlags } from "./print.ts";
+import { checkBat, baseBatFlags, markdownBatFlags } from "./print.ts";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
@@ -74,10 +74,12 @@ export async function openWithPager({
   pagerEnvKey,
   initialContentPath,
   initialContentStr,
+  contentType,
 }: {
   initialContentPath?: string;
   initialContentStr?: string;
   pagerEnvKey: string;
+  contentType: "diff" | "markdown";
 }) {
   assert(initialContentPath === undefined || initialContentStr === undefined);
 
@@ -101,7 +103,12 @@ export async function openWithPager({
 
     const isBatAvailable = await checkBat();
     if (isBatAvailable) {
-      return `bat ${batFlags.join(" ")} "${tempFile}"`;
+      const batFlags =
+        contentType === "diff"
+          ? baseBatFlags
+          : baseBatFlags.concat(markdownBatFlags);
+
+      return `bat ${batFlags.join(" ")} --paging=always "${tempFile}"`;
     }
 
     return `less "${tempFile}"`;

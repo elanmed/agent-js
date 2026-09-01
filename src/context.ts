@@ -25,9 +25,8 @@ export function getContextStr(contextEntries: ContextEntry[]) {
     .map(
       (entry) => `# Path: ${entry.filePath}
 ---
-\`\`\`md
 ${entry.content}
-\`\`\``,
+`,
     )
     .join("\n\n");
 

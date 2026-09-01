@@ -232,6 +232,7 @@ describe("utils", () => {
       testProcessEnv._set("LASSO_PAGER_HISTORY", "nano __FILE__");
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "markdown",
       });
       assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
@@ -240,6 +241,7 @@ describe("utils", () => {
       testProcessEnv._set("LASSO_PAGER", "bat __FILE__");
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "markdown",
       });
       assert.strictEqual(spawned[0], "bat /tmp/lasso-test-uuid.txt");
     });
@@ -248,6 +250,7 @@ describe("utils", () => {
       testProcessEnv._set("PAGER", "more");
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "markdown",
       });
       assert.strictEqual(spawned[0], `more "/tmp/lasso-test-uuid.txt"`);
     });
@@ -255,8 +258,20 @@ describe("utils", () => {
     it("falls back to bat", async () => {
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "markdown",
       });
       assert.strictEqual(spawned[0], batPagerCmd("/tmp/lasso-test-uuid.txt"));
+    });
+
+    it("uses base bat flags without markdown flags for diff contentType", async () => {
+      await openWithPager({
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "diff",
+      });
+      assert.strictEqual(
+        spawned[0],
+        batPagerCmd("/tmp/lasso-test-uuid.txt", "diff"),
+      );
     });
 
     it("copies initial content into the temp file", async () => {
@@ -264,6 +279,7 @@ describe("utils", () => {
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
         initialContentPath: "/source/file.txt",
+        contentType: "markdown",
       });
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
@@ -278,6 +294,7 @@ describe("utils", () => {
       });
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "markdown",
       });
       assert.deepStrictEqual(spawnArgs, [
         batPagerCmd("/tmp/lasso-test-uuid.txt"),
@@ -289,6 +306,7 @@ describe("utils", () => {
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
         initialContentStr: "string content",
+        contentType: "markdown",
       });
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
@@ -302,6 +320,7 @@ describe("utils", () => {
           pagerEnvKey: "LASSO_PAGER_HISTORY",
           initialContentPath: "/source/file.txt",
           initialContentStr: "string content",
+          contentType: "markdown",
         }),
         /falsy value/,
       );
@@ -311,6 +330,7 @@ describe("utils", () => {
       mockBatAvailable(false);
       await openWithPager({
         pagerEnvKey: "LASSO_PAGER_HISTORY",
+        contentType: "markdown",
       });
       assert.strictEqual(spawned[0], `less "/tmp/lasso-test-uuid.txt"`);
     });

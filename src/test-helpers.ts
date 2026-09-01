@@ -8,7 +8,7 @@ import { initKeypress } from "./input.ts";
 import type { Key } from "./config.ts";
 import readline from "node:readline/promises";
 import { stdin } from "node:process";
-import { batFlags } from "./print.ts";
+import { baseBatFlags, markdownBatFlags } from "./print.ts";
 
 export interface FakeFsDeps {
   _files: Map<string, string>;
@@ -236,8 +236,15 @@ export function mockBatAvailable(available: boolean) {
   }
 }
 
-export function batPagerCmd(tempFile: string) {
-  return `bat ${batFlags.join(" ")} "${tempFile}"`;
+export function batPagerCmd(
+  tempFile: string,
+  contentType: "diff" | "markdown" = "markdown",
+) {
+  const batFlags =
+    contentType === "diff"
+      ? baseBatFlags
+      : baseBatFlags.concat(markdownBatFlags);
+  return `bat ${batFlags.join(" ")} --paging=always "${tempFile}"`;
 }
 
 export function setupKeypressTests() {
