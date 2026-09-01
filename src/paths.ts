@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { processDeps } from "./deps.ts";
 
 export function getGlobalConfigDir() {
+  const configHome = processDeps.env.get("XDG_CONFIG_HOME");
+  if (configHome !== undefined) return join(configHome, "lasso");
   return join(os.homedir(), ".config", "lasso");
 }
 

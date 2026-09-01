@@ -343,7 +343,7 @@ Minimal runtime dependencies (9 total):
 | `@ai-sdk/anthropic`         | Anthropic provider                      |
 | `@ai-sdk/openai-compatible` | OpenAI-compatible provider              |
 | `zod`                       | Schema validation                       |
-| `jsdom`                     | DOM parsing for `web_fetch_html`        |
+| `happy-dom`                 | DOM parsing for `web_fetch_html`        |
 | `@mozilla/readability`      | Content extraction for `web_fetch_html` |
 | `prettier`                  | Markdown formatting                     |
 | `yaml`                      | Parsing Skill metadata                  |
@@ -409,7 +409,6 @@ vim.g.clipboard = {
 - [ ] Tool for creating subagents
 - [ ] Validate that two slash commands don't share the same keymap
 - [ ] Support additional user content after a slash command without args
-- [ ] Respect XDG vars
 - [ ] Reload env variables in /reload
 - Improved message queue
   - [ ] Support a slash command as the first line of the editor content
