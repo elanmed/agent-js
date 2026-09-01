@@ -6,7 +6,7 @@ _A minimal agent harness to rein in your llm_
 
 ## Features
 
-- **Minimal**: 3,500 lines of source code, 7,100 lines of tests
+- **Minimal**: 3,700 lines of source code, 7,400 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
   - A message queue lets you batch multiple prompts in the editor, sent one per turn
@@ -276,6 +276,7 @@ Running `/command` sends the command's markdown content as a message. Extra cont
 /home/me/my-commands/              # custom commands (via customSlashCommandDirs)
   custom.md
 ```
+
 ### Message Queue
 
 The editor input (`edit` keymap or `/edit`) supports queuing multiple messages in one go: separate them with a line containing exactly the `messageQueueDelimiter` (default `l---`). On save, the first message is sent immediately; the rest are sent automatically one per assistant turn, without re-prompting. Re-opening the editor while messages are queued prefills them, so you can keep appending.
