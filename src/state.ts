@@ -502,7 +502,11 @@ export const actions = {
   setMessageQueueDelimiter(messageQueueDelimiter: string) {
     const before = state.config.messageQueueDelimiter;
     state.config.messageQueueDelimiter = messageQueueDelimiter;
-    logStateChange("set-message-queue-delimiter", before, messageQueueDelimiter);
+    logStateChange(
+      "set-message-queue-delimiter",
+      before,
+      messageQueueDelimiter,
+    );
   },
 
   setUsageLimit(usageLimit: UsageLimit | undefined) {
