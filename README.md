@@ -450,7 +450,6 @@ vim.g.clipboard = {
 - [ ] Tool for creating subagents
 - Improved message queue
   - [ ] Support a slash command as the first line of the editor content
-  - [ ] Support delimiter between messages in the editor
 - Improved beginner experience
   - [ ] Allow missing model, warn when attemptin to call the API
   - [ ] Warn on missing API key
