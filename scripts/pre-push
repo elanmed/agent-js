@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# https://stackoverflow.com/a/44156933
 while read -r local_ref local_sha remote_ref remote_sha; do
   if [[ $local_ref == "refs/heads/master" ]]; then
     echo "Running CI checks..."
-    pnpm run pre-push || exit 1
+    export CI=true
+    pnpm run ci || exit 1
   fi
 done
