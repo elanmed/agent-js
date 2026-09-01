@@ -26,8 +26,8 @@ Write commit messages that:
 - Fit on a single line
 - Are descriptive but concise
 
-Before committing, present the proposed commit message(s) to the user and ask for confirmation.
+Commit immediately without asking for confirmation.
 
-If the user confirms the message is good, run `git commit -m "<message>"` for each commit.
+After committing, show the user what you did: the commit message(s) and a brief summary of the changes in each (e.g. `git show --stat`).
 
-If the user says the message is not good, ask them to provide a new commit message and use exactly what they provide.
+Offer to undo the commit(s) — `git reset --soft HEAD~<n>` keeps the changes staged, `git reset --mixed HEAD~<n>` unstages them — and wait for the user's decision.
