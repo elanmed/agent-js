@@ -4,6 +4,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   if [[ $local_ref == "refs/heads/master" ]]; then
     echo "Running CI checks..."
     export CI=true
+    export FORCE_COLOR=1
     pnpm run pre-push || exit 1
   fi
 done
