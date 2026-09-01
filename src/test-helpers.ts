@@ -169,7 +169,6 @@ export function setupFakeDeps() {
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());
-
 }
 
 export function makeFakeRl(overrides: object = {}) {
@@ -234,11 +233,13 @@ export interface SpawnSyncResult {
   stderr?: string;
 }
 
-export function mockSpawnSync(opts: {
-  result?: SpawnSyncResult;
-  error?: Error;
-  echoInput?: boolean;
-} = {}) {
+export function mockSpawnSync(
+  opts: {
+    result?: SpawnSyncResult;
+    error?: Error;
+    echoInput?: boolean;
+  } = {},
+) {
   const { result, error, echoInput } = opts;
   mock.method(
     childProcess,
