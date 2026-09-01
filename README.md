@@ -1,6 +1,6 @@
-# `agent-js`
+# `lasso`
 
-A minimal agent harness
+> A minimal agent harness
 
 <!-- a hack to get around github sanitizing styles from markdown -->
 <br>
