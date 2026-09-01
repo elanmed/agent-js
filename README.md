@@ -409,8 +409,15 @@ vim.g.clipboard = {
 - [ ] Tool for creating subagents
 - [ ] Validate that two slash commands don't share the same keymap
 - [ ] Support additional user content after a slash command without args
-- [ ] Support a slash command as the first line of the editor content
-- [ ] Page conversation history
+- [ ] Respect XDG vars
+- [ ] Reload env variables in /reload
+- Improved message queue
+  - [ ] Support a slash command as the first line of the editor content
+  - [ ] Support delimiter between messages in the editor
+- Improved beginner experience
+  - [ ] Allow missing model, warn when attemptin to call the API
+  - [ ] Warn on missing API key
+  - [ ] Slash command for creating a config file
 - [ ] Consolidate stdout state and chat history?
 
 ## TODO (later)
