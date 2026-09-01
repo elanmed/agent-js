@@ -585,15 +585,16 @@ export async function spawnAndReadEditorContent(opts?: {
   const tempFile = getTempFileName();
 
   const editCommand = (() => {
-    if (isExisty(processDeps.env.get("LASSO_EDIT"))) {
-      return processDeps.env.get("LASSO_EDIT")!.replace("__FILE__", tempFile);
+    const lassoEditEnvValue = processDeps.env.get("LASSO_EDIT");
+    if (isExisty(lassoEditEnvValue)) {
+      return lassoEditEnvValue.replace("__FILE__", tempFile);
     }
 
-    if (isExisty(processDeps.env.get("EDITOR"))) {
-      const editor = processDeps.env.get("EDITOR")!;
-      return editor.includes("__FILE__")
-        ? editor.replace("__FILE__", tempFile)
-        : `${editor} ${tempFile}`;
+    const editorEnvValue = processDeps.env.get("EDITOR");
+    if (isExisty(editorEnvValue)) {
+      return editorEnvValue.includes("__FILE__")
+        ? editorEnvValue.replace("__FILE__", tempFile)
+        : `${editorEnvValue} ${tempFile}`;
     }
 
     return `vi ${tempFile}`;
