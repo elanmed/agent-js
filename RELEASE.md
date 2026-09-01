@@ -15,7 +15,7 @@
 
    ```sh
    git add package.json CHANGELOG.md
-   git commit -m "misc: release v0.1.0"
+   git commit -m "release: v0.1.0"
    ```
 
 4. **Release**:
