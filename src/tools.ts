@@ -13,7 +13,7 @@ import {
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { getState } from "./state.ts";
-import { JSDOM } from "jsdom";
+import { Window } from "happy-dom";
 import { Readability } from "@mozilla/readability";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
@@ -414,8 +414,9 @@ export async function executeWebFetchHtmlTool(
   }
   const htmlStr = textResult.value;
 
-  const doc = new JSDOM(htmlStr);
-  const reader = new Readability(doc.window.document);
+  const window = new Window();
+  const doc = new window.DOMParser().parseFromString(htmlStr, "text/html");
+  const reader = new Readability(doc);
   const article = reader.parse();
   if (article === null) {
     const error = `Failed to parse article from ${href}`;
@@ -474,7 +475,7 @@ export async function executeWebFetchJsonTool(
   }
 
   cleanup();
-  const json = jsonResult.value as unknown;
+  const json = jsonResult.value;
   return {
     content: stringify(json),
   };

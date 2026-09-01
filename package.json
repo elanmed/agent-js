@@ -1,7 +1,7 @@
 {
   "name": "agent",
   "packageManager": "pnpm@11.1.0",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "",
   "module": "src/index.ts",
   "type": "module",
@@ -17,15 +17,15 @@
     "cloc-tests": "node scripts/cloc-code.ts tests",
     "cloc": "pnpm run cloc-source && pnpm run cloc-tests",
     "ci": "pnpm run test && pnpm run lint && pnpm run types && pnpm run prettier-format && pnpm run cloc",
-    "pre-push": "pnpm run test && pnpm run lint && pnpm run types && pnpm run prettier-check"
+    "pre-push": "pnpm run test && pnpm run lint && pnpm run types && pnpm run prettier-check",
+    "compile": "./scripts/compile.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "cloc": "^2.6.0-cloc",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.0",
-    "@types/jsdom": "^28.0.1"
+    "typescript-eslint": "^8.56.0"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.68",
@@ -33,7 +33,7 @@
     "@mozilla/readability": "^0.6.0",
     "ai": "^6.0.156",
     "globby": "^16.2.0",
-    "jsdom": "^29.0.2",
+    "happy-dom": "^20.12.0",
     "prettier": "^3.8.1",
     "yaml": "^2.8.4",
     "zod": "^4.3.6"
