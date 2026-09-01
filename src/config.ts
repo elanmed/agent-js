@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import { tryCatch } from "./utils.ts";
+import { stringify, tryCatch } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
 import {
   getContextEntries,
@@ -262,6 +262,22 @@ export async function initStateFromConfig() {
     ...globalConfig.keymaps,
     ...localConfig.keymaps,
   });
+  const hashableKeymaps = Object.entries(defaultedKeymaps).map(
+    ([command, keymap]) => ({
+      command,
+      keymapStr: stringify(keymap),
+    }),
+  );
+  const keymapCommandsByValue = new Map<string, string>();
+  for (const { command, keymapStr } of hashableKeymaps) {
+    const existingCommand = keymapCommandsByValue.get(keymapStr);
+    if (existingCommand !== undefined) {
+      throw new Error(
+        `keymaps must be unique: \`${existingCommand}\` and \`${command}\` are both bound to \`${keymapStr}\``,
+      );
+    }
+    keymapCommandsByValue.set(keymapStr, command);
+  }
 
   actions.setKeymaps(defaultedKeymaps);
   actions.setLoadingStateFrames(

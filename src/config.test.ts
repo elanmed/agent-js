@@ -851,6 +851,41 @@ describe("config", () => {
       assert.strictEqual(getState().config.keymaps["history"], undefined);
       assert.strictEqual(getState().config.keymaps["clear"], undefined);
     });
+
+    it("rejects keymap bindings shared with the default config", async () => {
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          keymaps: {
+            clear: { name: "g", ctrl: true },
+          },
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /keymaps must be unique: `edit` and `clear` are both bound to/,
+      );
+    });
+
+    it("rejects duplicate keymap bindings within the same config", async () => {
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          keymaps: {
+            clear: { name: "x", ctrl: true },
+            history: { name: "x", ctrl: true },
+          },
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /keymaps must be unique: `clear` and `history` are both bound to/,
+      );
+    });
   });
 
   describe("when local config does not exist", () => {

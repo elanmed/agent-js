@@ -423,7 +423,6 @@ vim.g.clipboard = {
 ## TODO (soon)
 
 - [ ] Tool for creating subagents
-- [ ] Validate that two slash commands don't share the same keymap
 - Improved message queue
   - [ ] Support a slash command as the first line of the editor content
   - [ ] Support delimiter between messages in the editor
