@@ -258,6 +258,8 @@ Slash commands are triggered with `/command` at the prompt.
 
 Create custom commands by adding markdown files (`.md`) to `./.lasso/commands/` (local), `~/.config/lasso/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Commands with the same filename are deduplicated with the first occurrence taking precedence, in this priority order: custom dirs → local → global.
 
+Running `/command` sends the command's markdown content as a message. Extra content can be passed after the command name: `/command <extra content>` sends the command's instructions followed by the extra content as context, letting you parameterize a command without editing its file, e.g. `/refactor extract the config parsing into a module`.
+
 #### Directory Structure
 
 ```
@@ -422,7 +424,6 @@ vim.g.clipboard = {
 
 - [ ] Tool for creating subagents
 - [ ] Validate that two slash commands don't share the same keymap
-- [ ] Support additional user content after a slash command without args
 - Improved message queue
   - [ ] Support a slash command as the first line of the editor content
   - [ ] Support delimiter between messages in the editor

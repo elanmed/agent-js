@@ -1396,6 +1396,60 @@ transcript content
       assert.strictEqual(result, "custom command content");
     });
 
+    it("appends context after custom slash command content", async () => {
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test-cwd/.lasso/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      const result = await resolveSlashCommand("/custom some task");
+      assert.strictEqual(
+        result,
+        `Follow the instructions below along with the provided context:
+## Instructions
+custom command content
+
+## Context
+some task
+  `,
+      );
+    });
+
+    it("trims leading whitespace and preserves internal spacing in custom slash command context", async () => {
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test-cwd/.lasso/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      const result = await resolveSlashCommand("/custom   some   task");
+      assert.strictEqual(
+        result,
+        `Follow the instructions below along with the provided context:
+## Instructions
+custom command content
+
+## Context
+some   task
+  `,
+      );
+    });
+
+    it("matches custom command with only trailing whitespace", async () => {
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test-cwd/.lasso/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      const result = await resolveSlashCommand("/custom   ");
+      assert.strictEqual(result, "custom command content");
+    });
+
     it("handles unknown slash command", async () => {
       actions.setSlashCommands([
         {

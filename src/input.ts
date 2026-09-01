@@ -500,7 +500,7 @@ async function resolveBuiltinSlashCommand(
 async function resolveParameterizedBuiltinSlashCommand(
   commandWithArgs: string,
 ): Promise<SlashCommandOutcome> {
-  const parts = commandWithArgs.trim().split(/\s+/);
+  const parts = commandWithArgs.split(/\s+/);
   const command = parts[0] as ParameterizedBuiltinSlashCommand | undefined;
   if (command === undefined) return { handled: false, inputFromCommand: null };
 
@@ -522,17 +522,48 @@ async function resolveParameterizedBuiltinSlashCommand(
 }
 
 async function resolveCustomSlashCommand(
-  command: string,
+  commandStr: string,
 ): Promise<SlashCommandOutcome> {
+  if (commandStr === "") {
+    return { handled: false, inputFromCommand: null };
+  }
+
+  const spaceIdx = commandStr.search(/\s+/);
+
+  const command = (() => {
+    if (spaceIdx === -1) {
+      return commandStr;
+    }
+    return commandStr.slice(0, spaceIdx);
+  })();
+
+  const commandContext = (() => {
+    if (spaceIdx === -1) return null;
+    return commandStr.slice(spaceIdx).trimStart();
+  })();
+
   const slashCommands = getState().app.slashCommands;
   const matchedCommand = slashCommands.find((c) => c.name === command);
 
-  if (matchedCommand !== undefined) {
-    await print.infoSubtle(`Executing slash command: ${command}`);
+  if (matchedCommand === undefined) {
+    return { handled: false, inputFromCommand: null };
+  }
+
+  await print.infoSubtle(`Executing slash command: ${command}`);
+
+  if (commandContext === null || commandContext === "") {
     return { handled: true, inputFromCommand: matchedCommand.content };
   }
 
-  return { handled: false, inputFromCommand: null };
+  const contentWithCommandContext = `Follow the instructions below along with the provided context:
+## Instructions
+${matchedCommand.content}
+
+## Context
+${commandContext}
+  `;
+
+  return { handled: true, inputFromCommand: contentWithCommandContext };
 }
 
 export async function resolveSlashCommand(rawInput: string) {
@@ -643,7 +674,7 @@ export async function getModel() {
 }
 
 export async function setModelCommand(rawInput: string) {
-  const parts = rawInput.trim().split(/\s+/);
+  const parts = rawInput.split(/\s+/);
 
   if (parts.length !== 2) {
     await print.error("Usage: /model [model]?");
@@ -719,7 +750,7 @@ export async function printContextFiles() {
 }
 
 export async function resume(rawInput: string) {
-  const parts = rawInput.trim().split(/\s+/);
+  const parts = rawInput.split(/\s+/);
 
   if (parts.length !== 2) {
     await print.error("Usage: /resume [session start date]");
