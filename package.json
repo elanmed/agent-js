@@ -11,11 +11,13 @@
     "test": "node --test src/**/*.test.ts",
     "lint": "eslint src scripts",
     "types": "tsc",
-    "format": "prettier --write src/ scripts/ AGENTS.md eslint.config.mjs tsconfig.json .agent-js/",
-    "cloc-source": "cloc src --not-match-f='\\.test\\.ts$' --json --quiet | node scripts/cloc-code.ts",
-    "cloc-tests": "cloc src --match-f='\\.test\\.ts$' --json --quiet | node scripts/cloc-code.ts",
+    "prettier-format": "./scripts/prettier.sh write",
+    "prettier-check": "./scripts/prettier.sh check",
+    "cloc-source": "node scripts/cloc-code.ts source",
+    "cloc-tests": "node scripts/cloc-code.ts tests",
     "cloc": "pnpm run cloc-source && pnpm run cloc-tests",
-    "ci": "pnpm run test && pnpm run lint && pnpm run types && pnpm run format && pnpm run cloc-source && pnpm run cloc-tests"
+    "ci": "pnpm run test && pnpm run lint && pnpm run types && pnpm run prettier-format && pnpm run cloc",
+    "pre-push": "pnpm run test && pnpm run lint && pnpm run types && pnpm run prettier-check"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
