@@ -9,6 +9,7 @@ _A minimal agent harness to rein in your llm_
 - **Minimal**: 3,500 lines of source code, 7,100 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
+  - A message queue lets you batch multiple prompts in the editor, sent one per turn
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
   - A `git diff` with `delta` is output whenever a tool changes a file
 - **Multiple providers**: Anthropic or OpenAI-compatible APIs
@@ -26,29 +27,30 @@ Settings live in `~/.config/lasso/settings.yaml` (global) and `./.lasso/settings
 
 ### Config Options
 
-| Option                          | Type                                   | Required | Default                  | Description                                        |
-| ------------------------------- | -------------------------------------- | -------- | ------------------------ | -------------------------------------------------- |
-| `model`                         | `string`                               | optional | —                        | Model name (required in the merged config)         |
-| `provider`                      | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                       |
-| `baseURL`                       | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)    |
-| `pricingPerModel`               | `object`                               | optional | `{}`                     | Token pricing per model per million                |
-| `contextWindowPerModel`         | `object`                               | optional | `{}`                     | Context window size in tokens per model            |
-| `compactTriggerRatio`           | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio      |
-| `compactTargetRatio`            | `number`                               | optional | `0.3`                    | Compact down to this context ratio                 |
-| `keymaps`                       | `object`                               | optional | see below                | Custom keybindings                                 |
-| `customSlashCommandDirs`        | `string[]`                             | optional | `[]`                     | Additional directories for custom slash commands   |
-| `customSkillDirs`               | `string[]`                             | optional | `[]`                     | Additional directories for skills                  |
-| `loadingStateFrames`            | `string[]`                             | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                              |
-| `loadingStateFrameDuration`     | `number`                               | optional | `80`                     | Spinner frame interval in ms                       |
-| `promptPrefix`                  | `string`                               | optional | `"> "`                   | Prompt prefix string                               |
-| `suppressBatUnavailableWarning` | `boolean`                              | optional | `false`                  | Suppress the startup warning when `bat` is missing |
-| `usageLimit`                    | `object`                               | optional | `undefined`              | Dollar limit and tracking window                   |
+| Option                          | Type                                   | Required | Default                  | Description                                                     |
+| ------------------------------- | -------------------------------------- | -------- | ------------------------ | --------------------------------------------------------------- |
+| `model`                         | `string`                               | optional | —                        | Model name (required in the merged config)                      |
+| `provider`                      | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                                    |
+| `baseURL`                       | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)                 |
+| `pricingPerModel`               | `object`                               | optional | `{}`                     | Token pricing per model per million                             |
+| `contextWindowPerModel`         | `object`                               | optional | `{}`                     | Context window size in tokens per model                         |
+| `compactTriggerRatio`           | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio                   |
+| `compactTargetRatio`            | `number`                               | optional | `0.3`                    | Compact down to this context ratio                              |
+| `keymaps`                       | `object`                               | optional | see below                | Custom keybindings                                              |
+| `customSlashCommandDirs`        | `string[]`                             | optional | `[]`                     | Additional directories for custom slash commands                |
+| `customSkillDirs`               | `string[]`                             | optional | `[]`                     | Additional directories for skills                               |
+| `loadingStateFrames`            | `string[]`                             | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                                           |
+| `loadingStateFrameDuration`     | `number`                               | optional | `80`                     | Spinner frame interval in ms                                    |
+| `promptPrefix`                  | `string`                               | optional | `"> "`                   | Prompt prefix string                                            |
+| `suppressBatUnavailableWarning` | `boolean`                              | optional | `false`                  | Suppress the startup warning when `bat` is missing              |
+| `messageQueueDelimiter`         | `string`                               | optional | `l---\n`                 | Delimiter line separating multiple messages in the editor input |
+| `usageLimit`                    | `object`                               | optional | `undefined`              | Dollar limit and tracking window                                |
 
 ### Local Overwrite vs Extend
 
 The local config either overwrites or extends the global config per option:
 
-- **Overwrite**: scalar options (`model`, `provider`, `baseURL`, `compactTriggerRatio`, `compactTargetRatio`, `loadingStateFrameDuration`, `promptPrefix`, `usageLimit`) and arrays (`customSlashCommandDirs`, `customSkillDirs`, `loadingStateFrames`) replace the global value wholesale — arrays are not merged.
+- **Overwrite**: scalar options (`model`, `provider`, `baseURL`, `compactTriggerRatio`, `compactTargetRatio`, `loadingStateFrameDuration`, `promptPrefix`, `suppressBatUnavailableWarning`, `messageQueueDelimiter`, `usageLimit`) and arrays (`customSlashCommandDirs`, `customSkillDirs`, `loadingStateFrames`) replace the global value wholesale — arrays are not merged.
 - **Extend**: `keymaps`, `pricingPerModel`, and `contextWindowPerModel` merge entry-by-entry with the default and global entries, the local entry winning on conflicts. Setting an entry to `null` removes it entirely, cancelling the global or default entry (see the relevant sections below).
 
 ### Usage Limits
@@ -142,6 +144,8 @@ keymaps:
 
 Pressing a bound key runs the command directly for `edit`/`paste` (editor) and pager commands (`history`, `config`, `context-str`, `commands-str`); all other commands, builtin or custom, are typed into the prompt. Custom command keymaps use the command's name (its filename without extension).
 
+Keymaps must be unique across the merged default, global, and local configs — two commands bound to the same key cause a startup validation error.
+
 The default keymaps are chosen as not to conflict with Node `readline`s [builtin](https://nodejs.org/api/readline.html#tty-keybindings) keybindings
 
 Each `Key` object has:
@@ -207,6 +211,7 @@ customSkillDirs:
 loadingStateFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 loadingStateFrameDuration: 100
 promptPrefix: "🤖 "
+messageQueueDelimiter: "l---\n"
 usageLimit:
   duration: "5h"
   dollarAmount: 10
@@ -270,6 +275,25 @@ Running `/command` sends the command's markdown content as a message. Extra cont
   status.md
 /home/me/my-commands/              # custom commands (via customSlashCommandDirs)
   custom.md
+```
+### Message Queue
+
+The editor input (`edit` keymap or `/edit`) supports queuing multiple messages in one go: separate them with a line containing exactly the `messageQueueDelimiter` (default `l---`). On save, the first message is sent immediately; the rest are sent automatically one per assistant turn, without re-prompting. Re-opening the editor while messages are queued prefills them, so you can keep appending.
+
+```text
+First prompt
+l---
+Second prompt
+l---
+Third prompt
+```
+
+The three messages above are sent one per turn, in order. Empty lines between messages are ignored. A delimiter line with nothing but the delimiter (or an empty file) sends nothing.
+
+Set a custom delimiter in `settings.yaml` (must end with a newline, so it occupies its own line):
+
+```yaml
+messageQueueDelimiter: "---"
 ```
 
 ## AGENTS.md Context

@@ -286,6 +286,34 @@ export function initSigInt() {
   });
 }
 
+export function parseUserInputFromEditor() {
+  const editorInputValue = getState().app.editorInputValue;
+  assert(editorInputValue !== null);
+  const splitEditorInputValue = editorInputValue.split(
+    getState().config.messageQueueDelimiter,
+  );
+  const filteredEditorInputValue = splitEditorInputValue.filter(
+    (part) => part.length > 0,
+  );
+  const [firstMessage, ...rest] = filteredEditorInputValue;
+
+  if (firstMessage === undefined) {
+    actions.setEditorInputValue(null);
+    return null;
+  }
+
+  if (rest.length === 0) {
+    actions.setEditorInputValue(null);
+  } else {
+    actions.setEditorInputValue(
+      rest.join(getState().config.messageQueueDelimiter),
+    );
+  }
+
+  appendToChatHistory(firstMessage, "user");
+  return firstMessage;
+}
+
 export async function resolveUserInput({
   isFirstInput,
 }: {
@@ -295,10 +323,7 @@ export async function resolveUserInput({
   assert(rl !== null);
 
   if (getState().app.editorInputValue !== null) {
-    const editorInputValue = getState().app.editorInputValue!;
-    appendToChatHistory(editorInputValue, "user");
-    actions.setEditorInputValue(null);
-    return editorInputValue;
+    return parseUserInputFromEditor();
   }
 
   if (!isFirstInput) {
@@ -323,10 +348,7 @@ export async function resolveUserInput({
 
     const abortedByEditor = getState().app.editorInputValue !== null;
     if (abortedByEditor) {
-      const editorInputValue = getState().app.editorInputValue!;
-      appendToChatHistory(editorInputValue, "user");
-      actions.setEditorInputValue(null);
-      return editorInputValue;
+      return parseUserInputFromEditor();
     }
 
     await resolveExitConfirmation();

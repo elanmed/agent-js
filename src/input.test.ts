@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
 import {
+  parseUserInputFromEditor,
   resolveSlashCommand,
   resolveUserInput,
   getModel,
@@ -311,6 +312,120 @@ from editor
 Resume this session with /resume 42000
 `,
       );
+    });
+
+    it("returns the first queued editor message and keeps the rest for the next iteration", async () => {
+      actions.setChatHistoryPath("/tmp/test-history.log");
+      actions.setEditorInputValue("first\nl---\nsecond\n");
+      const result = await resolveUserInput({ isFirstInput: false });
+      assert.strictEqual(result, "first\n");
+      assert.strictEqual(getState().app.editorInputValue, "second\n");
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z  *user*
+
+---
+first
+
+`,
+      );
+    });
+
+    it("drains queued editor messages across iterations", async () => {
+      actions.setChatHistoryPath("/tmp/test-history.log");
+      actions.setEditorInputValue(`first
+l---
+second
+`);
+      assert.strictEqual(
+        await resolveUserInput({ isFirstInput: false }),
+        "first\n",
+      );
+      assert.strictEqual(
+        await resolveUserInput({ isFirstInput: false }),
+        "second\n",
+      );
+      assert.strictEqual(getState().app.editorInputValue, null);
+    });
+  });
+
+  describe("parseUserInputFromEditor", () => {
+    beforeEach(() => {
+      actions.setChatHistoryPath("/tmp/test-history.log");
+    });
+
+    it("returns the whole editor value and clears it when no delimiter is present", () => {
+      actions.setEditorInputValue("editor content");
+      const result = parseUserInputFromEditor();
+      assert.strictEqual(result, "editor content");
+      assert.strictEqual(getState().app.editorInputValue, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z  *user*
+
+---
+editor content
+
+`,
+      );
+    });
+
+    it("splits on the delimiter, returns the first message, and keeps the rest", () => {
+      actions.setEditorInputValue(`first
+l---
+second
+l---
+third
+`);
+      const result = parseUserInputFromEditor();
+      assert.strictEqual(result, "first\n");
+      assert.strictEqual(
+        getState().app.editorInputValue,
+        `second
+l---
+third
+`,
+      );
+      assert.strictEqual(
+        testFs._files.get("/tmp/test-history.log"),
+        `1970-01-01T00:00:00.000Z  *user*
+
+---
+first
+
+`,
+      );
+    });
+
+    it("returns queued messages one per call until the queue is drained", () => {
+      actions.setEditorInputValue(`first
+l---
+second
+l---
+third
+`);
+      assert.strictEqual(parseUserInputFromEditor(), "first\n");
+      assert.strictEqual(parseUserInputFromEditor(), "second\n");
+      assert.strictEqual(parseUserInputFromEditor(), "third\n");
+      assert.strictEqual(getState().app.editorInputValue, null);
+    });
+
+    it("filters empty parts around the delimiter", () => {
+      actions.setEditorInputValue(`l---
+msg
+l---
+`);
+      const result = parseUserInputFromEditor();
+      assert.strictEqual(result, "msg\n");
+      assert.strictEqual(getState().app.editorInputValue, null);
+    });
+
+    it("returns null when the editor value is nothing but delimiters", () => {
+      actions.setEditorInputValue(`l---
+l---
+`);
+      assert.strictEqual(parseUserInputFromEditor(), null);
+      assert.strictEqual(getState().app.editorInputValue, null);
     });
   });
 

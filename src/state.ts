@@ -96,6 +96,7 @@ const initialState: State = {
     loadingStateFrames: structuredClone(defaultConfig.loadingStateFrames),
     promptPrefix: defaultConfig.promptPrefix,
     suppressBatUnavailableWarning: defaultConfig.suppressBatUnavailableWarning,
+    messageQueueDelimiter: defaultConfig.messageQueueDelimiter,
     usageLimit: undefined,
   },
   abortControllers: {
@@ -496,6 +497,12 @@ export const actions = {
       String(before),
       String(suppressBatUnavailableWarning),
     );
+  },
+
+  setMessageQueueDelimiter(messageQueueDelimiter: string) {
+    const before = state.config.messageQueueDelimiter;
+    state.config.messageQueueDelimiter = messageQueueDelimiter;
+    logStateChange("set-message-queue-delimiter", before, messageQueueDelimiter);
   },
 
   setUsageLimit(usageLimit: UsageLimit | undefined) {

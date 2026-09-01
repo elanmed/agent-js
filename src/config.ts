@@ -90,6 +90,7 @@ const LoadingStateFramesSchema = z
   });
 const PromptPrefixSchema = z.string();
 const SuppressBatUnavailableWarningSchema = z.boolean();
+const MessageQueueDelimiterSchema = z.string().endsWith("\n");
 
 export const ConfigSchema = z.strictObject({
   model: ModelSchema.optional(),
@@ -106,6 +107,7 @@ export const ConfigSchema = z.strictObject({
   loadingStateFrames: LoadingStateFramesSchema.optional(),
   promptPrefix: PromptPrefixSchema.optional(),
   suppressBatUnavailableWarning: SuppressBatUnavailableWarningSchema.optional(),
+  messageQueueDelimiter: MessageQueueDelimiterSchema.optional(),
   usageLimit: UsageLimitSchema.optional(),
 });
 
@@ -126,6 +128,7 @@ export const DefaultedConfigSchema = z.strictObject({
   loadingStateFrames: LoadingStateFramesSchema,
   promptPrefix: PromptPrefixSchema,
   suppressBatUnavailableWarning: SuppressBatUnavailableWarningSchema,
+  messageQueueDelimiter: MessageQueueDelimiterSchema,
   usageLimit: UsageLimitSchema.optional(),
 });
 
@@ -156,6 +159,7 @@ export const defaultConfig: DefaultedConfig = {
   loadingStateFrameDuration: 80,
   promptPrefix: "> ",
   suppressBatUnavailableWarning: false,
+  messageQueueDelimiter: "l---\n",
 };
 
 export function readConfigFileStr(path: string) {
@@ -299,6 +303,11 @@ export async function initStateFromConfig() {
     localConfig.suppressBatUnavailableWarning ??
       globalConfig.suppressBatUnavailableWarning ??
       defaultConfig.suppressBatUnavailableWarning,
+  );
+  actions.setMessageQueueDelimiter(
+    localConfig.messageQueueDelimiter ??
+      globalConfig.messageQueueDelimiter ??
+      defaultConfig.messageQueueDelimiter,
   );
 
   const defaultedUsageLimit = localConfig.usageLimit ?? globalConfig.usageLimit;

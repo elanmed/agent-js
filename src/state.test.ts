@@ -464,6 +464,12 @@ line3
     assert.strictEqual(getState().config.suppressBatUnavailableWarning, true);
   });
 
+  it("set-message-queue-delimiter", () => {
+    assert.strictEqual(getState().config.messageQueueDelimiter, "l---\n");
+    actions.setMessageQueueDelimiter("---");
+    assert.strictEqual(getState().config.messageQueueDelimiter, "---");
+  });
+
   it("set-usage-limit", () => {
     assert.strictEqual(getState().config.usageLimit, undefined);
     actions.setUsageLimit({ duration: "60m", dollarAmount: 5 });

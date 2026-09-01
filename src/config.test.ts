@@ -524,6 +524,69 @@ describe("config", () => {
       );
     });
 
+    it("uses its messageQueueDelimiter over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          messageQueueDelimiter: "g---\n",
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          messageQueueDelimiter: "L---\n",
+        }),
+      );
+
+      await initState();
+
+      assert.strictEqual(getState().config.messageQueueDelimiter, "L---\n");
+    });
+
+    it("rejects an empty messageQueueDelimiter", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          messageQueueDelimiter: "",
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /Invalid string: must end with \\"\\n\\"/,
+      );
+    });
+
+    it("rejects a messageQueueDelimiter not ending with a newline", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          messageQueueDelimiter: "g---",
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+        }),
+      );
+
+      await assert.rejects(
+        initState(),
+        /Invalid string: must end with \\"\\n\\"/,
+      );
+    });
+
     it("uses its usageLimit over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
