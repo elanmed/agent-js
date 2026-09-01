@@ -1,12 +1,8 @@
 # `lasso`
 
-_A minimal agent harness_
+_A minimal agent harness to reign in your llm_
 
-<!-- a hack to get around github sanitizing styles from markdown -->
-<br>
-<p align="center">
-    <img src="./logo.png" />
-</p>
+![logo](./logo.png)
 
 ## Features
 
@@ -26,7 +22,7 @@ _A minimal agent harness_
 
 ## Configuration
 
-Settings live in `~/.config/agent-js/settings.yaml` (global) and `./.agent-js/settings.yaml` (local overrides), parsed as YAML 1.2 (the `yaml` package default).
+Settings live in `~/.config/lasso/settings.yaml` (global) and `./.lasso/settings.yaml` (local overrides), parsed as YAML 1.2 (the `yaml` package default).
 
 ### Config Options
 
@@ -56,7 +52,7 @@ When `usageLimit` is set, the agent tracks the running dollar cost of usage with
 | `duration`     | `string` | required | Time window, e.g. `"5h"` (`[number][s,m,h,d]`) |
 | `dollarAmount` | `number` | required | Maximum dollar spend in the window             |
 
-Previous usages are loaded from `~/.config/agent-js/usage.json` on startup and entries older than `duration` are filtered out.
+Previous usages are loaded from `~/.config/lasso/usage.json` on startup and entries older than `duration` are filtered out.
 
 If the current model has no `pricingPerModel` entry, usage limiting is disabled for that model and a warning is printed at startup.
 
@@ -127,10 +123,10 @@ keymaps:
 
 `edit` and `paste` have default keymaps:
 
-| Key     | Type  | Default                     | Description                                                                                     |
-| ------- | ----- | --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `edit`  | `Key` | `{ name: "g", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                         |
-| `paste` | `Key` | `{ name: "v", ctrl: true }` | Call `$AGENT_JS_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
+| Key     | Type  | Default                     | Description                                                                                  |
+| ------- | ----- | --------------------------- | -------------------------------------------------------------------------------------------- |
+| `edit`  | `Key` | `{ name: "g", ctrl: true }` | Call `$LASSO_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                         |
+| `paste` | `Key` | `{ name: "v", ctrl: true }` | Call `$LASSO_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
 
 Pressing a bound key runs the command directly for `edit`/`paste` (editor) and pager commands (`history`, `config`, `context-str`, `commands-str`); all other commands, builtin or custom, are typed into the prompt. Custom command keymaps use the command's name (its filename without extension).
 
@@ -204,17 +200,17 @@ usageLimit:
 
 ## Environment Variables
 
-| Variable                   | Description                                                                                                            |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `AGENT_JS_API_KEY`         | API key for the configured provider (required)                                                                         |
-| `AGENT_JS_EDIT`            | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)                         |
-| `AGENT_JS_PAGER_HISTORY`   | Pager command with `__FILE__` placeholder for viewing chat history (fallback: `$AGENT_JS_PAGER`)                       |
-| `AGENT_JS_PAGER_CONFIG`    | Pager command with `__FILE__` placeholder for viewing config (fallback: `$AGENT_JS_PAGER`)                             |
-| `AGENT_JS_PAGER_CONTEXT`   | Pager command with `__FILE__` placeholder for viewing context (fallback: `$AGENT_JS_PAGER`)                            |
-| `AGENT_JS_PAGER_COMMANDS`  | Pager command with `__FILE__` placeholder for viewing custom commands (fallback: `$AGENT_JS_PAGER`)                    |
-| `AGENT_JS_PAGER_RELOAD`    | Pager command with `__FILE__` placeholder for viewing the reload config diff (fallback: `$AGENT_JS_PAGER`)             |
-| `AGENT_JS_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `bat`, then `less`)                        |
-| `AGENT_JS_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
+| Variable                | Description                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `LASSO_API_KEY`         | API key for the configured provider (required)                                                                         |
+| `LASSO_EDIT`            | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)                         |
+| `LASSO_PAGER_HISTORY`   | Pager command with `__FILE__` placeholder for viewing chat history (fallback: `$LASSO_PAGER`)                          |
+| `LASSO_PAGER_CONFIG`    | Pager command with `__FILE__` placeholder for viewing config (fallback: `$LASSO_PAGER`)                                |
+| `LASSO_PAGER_CONTEXT`   | Pager command with `__FILE__` placeholder for viewing context (fallback: `$LASSO_PAGER`)                               |
+| `LASSO_PAGER_COMMANDS`  | Pager command with `__FILE__` placeholder for viewing custom commands (fallback: `$LASSO_PAGER`)                       |
+| `LASSO_PAGER_RELOAD`    | Pager command with `__FILE__` placeholder for viewing the reload config diff (fallback: `$LASSO_PAGER`)                |
+| `LASSO_PAGER`           | Default pager command with `__FILE__` placeholder (fallback: `$PAGER`, then `bat`, then `less`)                        |
+| `LASSO_CLIPBOARD_PASTE` | Command used by `/paste` to read the clipboard (default: `pbpaste` on macOS, `xclip -selection clipboard -o` on Linux) |
 
 ## CLI Arguments
 
@@ -246,15 +242,15 @@ Slash commands are triggered with `/command` at the prompt.
 
 ### Custom Slash Commands
 
-Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands/` (local), `~/.config/agent-js/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Commands with the same filename are deduplicated with the first occurrence taking precedence, in this priority order: custom dirs → local → global.
+Create custom commands by adding markdown files (`.md`) to `./.lasso/commands/` (local), `~/.config/lasso/commands/` (global), or any directory specified in `customSlashCommandDirs`. Nested subdirectories are supported via `**/*.md` glob. Commands with the same filename are deduplicated with the first occurrence taking precedence, in this priority order: custom dirs → local → global.
 
 #### Directory Structure
 
 ```
-./.agent-js/commands/              # local commands
+./.lasso/commands/              # local commands
   help.md
   refactor.md
-~/.config/agent-js/commands/      # global commands
+~/.config/lasso/commands/      # global commands
   status.md
 /home/me/my-commands/              # custom commands (via customSlashCommandDirs)
   custom.md
@@ -271,13 +267,13 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
   AGENTS.md                        # always in context
   src/
     AGENTS.md                      # loaded as a skill on demand
-~/.config/agent-js/context/       # global context dir
+~/.config/lasso/context/       # global context dir
   AGENTS.md                        # always in context
 ```
 
 ### Discovery
 
-- **Root files** — `./AGENTS.md` and `~/.config/agent-js/context/AGENTS.md` are always included in the system prompt
+- **Root files** — `./AGENTS.md` and `~/.config/lasso/context/AGENTS.md` are always included in the system prompt
 - **Nested files** — all `*/**/AGENTS.md` files under the current working directory are registered as skills. The agent can call `load_skill` to progressively disclose their content when needed
 
 ## Skills
@@ -285,13 +281,13 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
 ### Directory Structure
 
 ```
-~/.config/agent-js/skills/   # global skills
+~/.config/lasso/skills/   # global skills
   my-skill/
     SKILL.md
   category/
     nested-skill/
       SKILL.md
-./.agent-js/skills/            # local skills
+./.lasso/skills/            # local skills
   project-skill/
     SKILL.md
 /custom/skills/                # custom skills (via customSkillDirs)
@@ -304,8 +300,8 @@ Create custom commands by adding markdown files (`.md`) to `./.agent-js/commands
 Skills are discovered via `**/SKILL.md` glob from three sources in priority order:
 
 1. **Custom skill dirs** — directories specified in `customSkillDirs`
-2. **Local skills** — `./.agent-js/skills/`
-3. **Global skills** — `~/.config/agent-js/skills/`
+2. **Local skills** — `./.lasso/skills/`
+3. **Global skills** — `~/.config/lasso/skills/`
 
 Skills with duplicate names are deduplicated, with the first occurrence taking precedence.
 
@@ -366,7 +362,7 @@ agent() {
   paste_fifo=$(mktemp -u /tmp/paste-fifo.XXXXXX)
   rm -f "$paste_fifo"
   mkfifo "$paste_fifo"
-  node "/path/to/agent-js/scripts/paste-server.ts" "$paste_cmd" >"$paste_fifo" &
+  node "/path/to/lasso/scripts/paste-server.ts" "$paste_cmd" >"$paste_fifo" &
   paste_server_pid="$!"
   read -r PASTE_PORT <"$paste_fifo"
   rm -f "$paste_fifo"
@@ -374,7 +370,7 @@ agent() {
   copy_fifo=$(mktemp -u /tmp/copy-fifo.XXXXXX)
   rm -f "$copy_fifo"
   mkfifo "$copy_fifo"
-  node "/path/to/agent-js/scripts/copy-server.ts" "$copy_cmd" >"$copy_fifo" &
+  node "/path/to/lasso/scripts/copy-server.ts" "$copy_cmd" >"$copy_fifo" &
   copy_server_pid="$!"
   read -r COPY_PORT <"$copy_fifo"
   rm -f "$copy_fifo"
@@ -382,9 +378,9 @@ agent() {
   trap "kill $paste_server_pid $copy_server_pid 2>/dev/null" EXIT INT TERM
 
   local podman_args=(
-    --env AGENT_JS_EDIT='nvim -c "normal! G$" -c startinsert! __FILE__'
-    --env AGENT_JS_PAGER_HISTORY='nvim -c "normal! G$" __FILE__'
-    --env AGENT_JS_CLIPBOARD_PASTE="nc --recv-only host.docker.internal $PASTE_PORT"
+    --env LASSO_EDIT='nvim -c "normal! G$" -c startinsert! __FILE__'
+    --env LASSO_PAGER_HISTORY='nvim -c "normal! G$" __FILE__'
+    --env LASSO_CLIPBOARD_PASTE="nc --recv-only host.docker.internal $PASTE_PORT"
     --env COPY_PORT="$COPY_PORT"
     --env PASTE_PORT="$PASTE_PORT"
   )
@@ -396,7 +392,7 @@ agent() {
 ```lua
 -- the vim config running in the container
 vim.g.clipboard = {
-  name = "agent-js-clipboard",
+  name = "lasso-clipboard",
   copy = {
     ["+"] = { "nc", "--send-only", "host.docker.internal", vim.env.COPY_PORT, },
     ["*"] = { "nc", "--send-only", "host.docker.internal", vim.env.COPY_PORT, },
