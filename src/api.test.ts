@@ -46,6 +46,7 @@ describe("api", () => {
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *assistant*
+---
 response text
 
 `,
