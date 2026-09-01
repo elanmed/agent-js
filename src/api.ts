@@ -22,7 +22,7 @@ import { aiDeps, fsDeps, processDeps } from "./deps.ts";
 import { appendToChatHistory } from "./log.ts";
 
 export function getLanguageModel() {
-  const apiKey = processDeps.env.get("AGENT_JS_API_KEY");
+  const apiKey = processDeps.env.get("LASSO_API_KEY");
   const apiOptions = (() => {
     if (apiKey === undefined) return {};
     return { apiKey };

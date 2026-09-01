@@ -189,9 +189,9 @@ response text
         return makeGenerateTextResult();
       });
       await resolveApiCall("edit file");
-      assert.ok(testFs._files.has("/tmp/agent-js-test-uuid.txt"));
+      assert.ok(testFs._files.has("/tmp/lasso-test-uuid.txt"));
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "original content",
       );
     });
@@ -212,7 +212,7 @@ response text
         return makeGenerateTextResult();
       });
       await resolveApiCall("edit file");
-      assert.ok(testFs._files.has("/tmp/agent-js-test-uuid.txt"));
+      assert.ok(testFs._files.has("/tmp/lasso-test-uuid.txt"));
     });
 
     it("does not create temp file for non-file tools", async () => {
@@ -230,10 +230,7 @@ response text
         return makeGenerateTextResult();
       });
       await resolveApiCall("run command");
-      assert.strictEqual(
-        testFs._files.has("/tmp/agent-js-test-uuid.txt"),
-        false,
-      );
+      assert.strictEqual(testFs._files.has("/tmp/lasso-test-uuid.txt"), false);
     });
 
     it("prints diff and cleans up on tool call finish success", async () => {
@@ -273,10 +270,7 @@ response text
         stripAnsi(getState().app.stdout),
         "\n━━ File change: /test/file.txt ━━\n+added line\n\n",
       );
-      assert.strictEqual(
-        testFs._files.has("/tmp/agent-js-test-uuid.txt"),
-        false,
-      );
+      assert.strictEqual(testFs._files.has("/tmp/lasso-test-uuid.txt"), false);
     });
 
     it("cleans up without printing diff on tool call finish failure", async () => {
@@ -310,10 +304,7 @@ response text
         },
       );
       await resolveApiCall("edit file");
-      assert.strictEqual(
-        testFs._files.has("/tmp/agent-js-test-uuid.txt"),
-        false,
-      );
+      assert.strictEqual(testFs._files.has("/tmp/lasso-test-uuid.txt"), false);
     });
 
     it("passes system content from context and skills", async () => {

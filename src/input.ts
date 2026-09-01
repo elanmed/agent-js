@@ -133,7 +133,7 @@ async function getEditorInitialContent(opts: {
     })();
 
     const pasteCmd =
-      processDeps.env.get("AGENT_JS_CLIPBOARD_PASTE") ?? defaultPasteCmd;
+      processDeps.env.get("LASSO_CLIPBOARD_PASTE") ?? defaultPasteCmd;
 
     const pasteResult = await tryCatchAsync(execPromise(pasteCmd));
     if (pasteResult.ok) {
@@ -197,13 +197,13 @@ export function initKeypress() {
           case "history": {
             await openWithPager({
               initialContentPath: getState().app.chatHistoryPath,
-              pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+              pagerEnvKey: "LASSO_PAGER_HISTORY",
             });
             return;
           }
           case "config": {
             await openWithPager({
-              pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
+              pagerEnvKey: "LASSO_PAGER_CONFIG",
               initialContentStr: getAllPrettyConfig(),
             });
 
@@ -215,7 +215,7 @@ export function initKeypress() {
           }
           case "commands-str": {
             await openWithPager({
-              pagerEnvKey: "AGENT_JS_PAGER_COMMANDS",
+              pagerEnvKey: "LASSO_PAGER_COMMANDS",
               initialContentStr: getPrettySlashCommandsStr(),
             });
 
@@ -428,7 +428,7 @@ async function resolveBuiltinSlashCommand(
     case "history": {
       await openWithPager({
         initialContentPath: getState().app.chatHistoryPath,
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
       });
       return { handled: true, inputFromCommand: null };
     }
@@ -454,7 +454,7 @@ async function resolveBuiltinSlashCommand(
     }
     case "commands-str": {
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_COMMANDS",
+        pagerEnvKey: "LASSO_PAGER_COMMANDS",
         initialContentStr: getPrettySlashCommandsStr(),
       });
 
@@ -470,7 +470,7 @@ async function resolveBuiltinSlashCommand(
     }
     case "config": {
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_CONFIG",
+        pagerEnvKey: "LASSO_PAGER_CONFIG",
         initialContentStr: getAllPrettyConfig(),
       });
 
@@ -579,10 +579,8 @@ export async function spawnAndReadEditorContent(opts?: {
   const tempFile = getTempFileName();
 
   const editCommand = (() => {
-    if (isExisty(processDeps.env.get("AGENT_JS_EDIT"))) {
-      return processDeps.env
-        .get("AGENT_JS_EDIT")!
-        .replace("__FILE__", tempFile);
+    if (isExisty(processDeps.env.get("LASSO_EDIT"))) {
+      return processDeps.env.get("LASSO_EDIT")!.replace("__FILE__", tempFile);
     }
 
     if (isExisty(processDeps.env.get("EDITOR"))) {
@@ -661,7 +659,7 @@ export async function pageContextFiles() {
   }
 
   await openWithPager({
-    pagerEnvKey: "AGENT_JS_PAGER_CONTEXT",
+    pagerEnvKey: "LASSO_PAGER_CONTEXT",
     initialContentStr: getState().app.contextStr,
   });
 }
@@ -866,7 +864,7 @@ async function reload() {
   }
 
   await openWithPager({
-    pagerEnvKey: "AGENT_JS_PAGER_RELOAD",
+    pagerEnvKey: "LASSO_PAGER_RELOAD",
     initialContentStr: diffResult.value.stdout,
   });
 }

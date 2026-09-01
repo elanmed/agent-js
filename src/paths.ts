@@ -3,11 +3,11 @@ import { join } from "node:path";
 import { processDeps } from "./deps.ts";
 
 export function getGlobalConfigDir() {
-  return join(os.homedir(), ".config", "agent-js");
+  return join(os.homedir(), ".config", "lasso");
 }
 
 export function getLocalConfigDir() {
-  return join(processDeps.cwd(), ".agent-js");
+  return join(processDeps.cwd(), ".lasso");
 }
 
 export function getGlobalConfigPath() {

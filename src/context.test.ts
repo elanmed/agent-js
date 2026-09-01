@@ -47,7 +47,7 @@ describe("context", () => {
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set("/test-cwd/AGENTS.md", "Root content");
       testFs._files.set(
-        "/fake-home/.config/agent-js/context/AGENTS.md",
+        "/fake-home/.config/lasso/context/AGENTS.md",
         "Global content",
       );
       const result = getContextStr(getContextEntries());
@@ -62,7 +62,7 @@ describe("context", () => {
 Root content
 \`\`\`
 
-# Path: /fake-home/.config/agent-js/context/AGENTS.md
+# Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
 \`\`\`md
 Global content
@@ -73,7 +73,7 @@ Global content
     it("skips files that fail to read", () => {
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set(
-        "/fake-home/.config/agent-js/context/AGENTS.md",
+        "/fake-home/.config/lasso/context/AGENTS.md",
         "Global content",
       );
       const result = getContextStr(getContextEntries());
@@ -82,7 +82,7 @@ Global content
         `# AGENTS.md context files
 ---
 
-# Path: /fake-home/.config/agent-js/context/AGENTS.md
+# Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
 \`\`\`md
 Global content
@@ -92,12 +92,11 @@ Global content
 
     it("includes global agents dir files", () => {
       testFs._dirs.add(getGlobalContextDir());
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/context/**/AGENTS.md",
-        ["/fake-home/.config/agent-js/context/AGENTS.md"],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/context/**/AGENTS.md", [
+        "/fake-home/.config/lasso/context/AGENTS.md",
+      ]);
       testFs._files.set(
-        "/fake-home/.config/agent-js/context/AGENTS.md",
+        "/fake-home/.config/lasso/context/AGENTS.md",
         "global content",
       );
       const result = getContextStr(getContextEntries());
@@ -106,7 +105,7 @@ Global content
         `# AGENTS.md context files
 ---
 
-# Path: /fake-home/.config/agent-js/context/AGENTS.md
+# Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
 \`\`\`md
 global content
@@ -117,7 +116,7 @@ global content
     it("combines cwd and global agents dir files", () => {
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set(
-        "/fake-home/.config/agent-js/context/AGENTS.md",
+        "/fake-home/.config/lasso/context/AGENTS.md",
         "global content",
       );
       testFs._files.set("/test-cwd/AGENTS.md", "local content");
@@ -133,7 +132,7 @@ global content
 local content
 \`\`\`
 
-# Path: /fake-home/.config/agent-js/context/AGENTS.md
+# Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
 \`\`\`md
 global content
@@ -149,12 +148,11 @@ global content
     });
 
     it("lists skills found in skill directories", async () => {
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/agent-js/skills/my-skill/SKILL.md"],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
+      ]);
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/my-skill/SKILL.md",
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
         `---
 name: my-skill
 description: A test skill
@@ -177,15 +175,14 @@ Available skills:
     });
 
     it("deduplicates by parsed name, keeping first occurrence", async () => {
-      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
-        "/test-cwd/.agent-js/skills/local-skill/SKILL.md",
+      testFs._globResults.set("/test-cwd/.lasso/skills/**/SKILL.md", [
+        "/test-cwd/.lasso/skills/local-skill/SKILL.md",
       ]);
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/agent-js/skills/global-skill/SKILL.md"],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/global-skill/SKILL.md",
+      ]);
       testFs._files.set(
-        "/test-cwd/.agent-js/skills/local-skill/SKILL.md",
+        "/test-cwd/.lasso/skills/local-skill/SKILL.md",
         `---
 name: deploy
 description: Local deploy
@@ -193,7 +190,7 @@ description: Local deploy
 # Local`,
       );
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/global-skill/SKILL.md",
+        "/fake-home/.config/lasso/skills/global-skill/SKILL.md",
         `---
 name: deploy
 description: Global deploy
@@ -216,15 +213,14 @@ Available skills:
     });
 
     it("does not return duplicate skills", async () => {
-      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
-        "/test-cwd/.agent-js/skills/a/SKILL.md",
+      testFs._globResults.set("/test-cwd/.lasso/skills/**/SKILL.md", [
+        "/test-cwd/.lasso/skills/a/SKILL.md",
       ]);
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/agent-js/skills/b/SKILL.md"],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/b/SKILL.md",
+      ]);
       testFs._files.set(
-        "/test-cwd/.agent-js/skills/a/SKILL.md",
+        "/test-cwd/.lasso/skills/a/SKILL.md",
         `---
 name: deploy
 description: First
@@ -232,7 +228,7 @@ description: First
 # A`,
       );
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/b/SKILL.md",
+        "/fake-home/.config/lasso/skills/b/SKILL.md",
         `---
 name: deploy
 description: Second
@@ -245,17 +241,17 @@ description: Second
         name: "deploy",
         description: "First",
         content: "# A",
-        dir: "/test-cwd/.agent-js/skills/a",
+        dir: "/test-cwd/.lasso/skills/a",
       });
     });
 
     it("includes skills with different names", async () => {
-      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
-        "/test-cwd/.agent-js/skills/a/SKILL.md",
-        "/test-cwd/.agent-js/skills/b/SKILL.md",
+      testFs._globResults.set("/test-cwd/.lasso/skills/**/SKILL.md", [
+        "/test-cwd/.lasso/skills/a/SKILL.md",
+        "/test-cwd/.lasso/skills/b/SKILL.md",
       ]);
       testFs._files.set(
-        "/test-cwd/.agent-js/skills/a/SKILL.md",
+        "/test-cwd/.lasso/skills/a/SKILL.md",
         `---
 name: skill-a
 description: First
@@ -263,7 +259,7 @@ description: First
 `,
       );
       testFs._files.set(
-        "/test-cwd/.agent-js/skills/b/SKILL.md",
+        "/test-cwd/.lasso/skills/b/SKILL.md",
         `---
 name: skill-b
 description: Second
@@ -287,12 +283,11 @@ Available skills:
     });
 
     it("skips non-existent skill directories", async () => {
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/agent-js/skills/my-skill/SKILL.md"],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
+      ]);
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/my-skill/SKILL.md",
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
         `---
 name: my-skill
 description: A test skill
@@ -315,19 +310,16 @@ Available skills:
     });
 
     it("skips malformed skill files", async () => {
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/skills/**/SKILL.md",
-        [
-          "/fake-home/.config/agent-js/skills/bad/SKILL.md",
-          "/fake-home/.config/agent-js/skills/good/SKILL.md",
-        ],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/bad/SKILL.md",
+        "/fake-home/.config/lasso/skills/good/SKILL.md",
+      ]);
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/bad/SKILL.md",
+        "/fake-home/.config/lasso/skills/bad/SKILL.md",
         "not front matter",
       );
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/good/SKILL.md",
+        "/fake-home/.config/lasso/skills/good/SKILL.md",
         `---
 name: good
 description: Valid
@@ -382,8 +374,8 @@ Available skills:
       testFs._globResults.set("/custom/skills/**/SKILL.md", [
         "/custom/skills/deploy/SKILL.md",
       ]);
-      testFs._globResults.set("/test-cwd/.agent-js/skills/**/SKILL.md", [
-        "/test-cwd/.agent-js/skills/deploy/SKILL.md",
+      testFs._globResults.set("/test-cwd/.lasso/skills/**/SKILL.md", [
+        "/test-cwd/.lasso/skills/deploy/SKILL.md",
       ]);
       testFs._files.set(
         "/custom/skills/deploy/SKILL.md",
@@ -394,7 +386,7 @@ description: Custom deploy
 `,
       );
       testFs._files.set(
-        "/test-cwd/.agent-js/skills/deploy/SKILL.md",
+        "/test-cwd/.lasso/skills/deploy/SKILL.md",
         `---
 name: deploy
 description: Local deploy
@@ -431,18 +423,17 @@ Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
 Available skills:
-- __agent-js-context-for-/test-cwd/src: Context relevant for /test-cwd/src
+- __lasso-context-for-/test-cwd/src: Context relevant for /test-cwd/src
 `,
       );
     });
 
     it("nested AGENTS.md skills do not collide with regular skills", async () => {
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/agent-js/skills/my-skill/SKILL.md"],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
+      ]);
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/my-skill/SKILL.md",
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
         `---
 name: my-skill
 description: A test skill
@@ -464,23 +455,22 @@ would benefit from specialized instructions.
 
 Available skills:
 - my-skill: A test skill
-- __agent-js-context-for-/test-cwd/src: Context relevant for /test-cwd/src
+- __lasso-context-for-/test-cwd/src: Context relevant for /test-cwd/src
 `,
       );
     });
 
     it("skips entries where globbySync throws", async () => {
       mock.method(fsDeps, "globbySync", (pattern: string) => {
-        if (pattern === "/test-cwd/.agent-js/skills/**/SKILL.md")
+        if (pattern === "/test-cwd/.lasso/skills/**/SKILL.md")
           throw new Error("glob failed");
         return testFs.globbySync(pattern);
       });
-      testFs._globResults.set(
-        "/fake-home/.config/agent-js/skills/**/SKILL.md",
-        ["/fake-home/.config/agent-js/skills/ok/SKILL.md"],
-      );
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/ok/SKILL.md",
+      ]);
       testFs._files.set(
-        "/fake-home/.config/agent-js/skills/ok/SKILL.md",
+        "/fake-home/.config/lasso/skills/ok/SKILL.md",
         `---
 name: ok
 description: Works

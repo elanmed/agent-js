@@ -164,7 +164,7 @@ describe("utils", () => {
   describe("getTempFileName", () => {
     it("returns temp file path without initial content", () => {
       const result = getTempFileName();
-      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(result, "/tmp/lasso-test-uuid.txt");
     });
 
     it("copies initial content when initialContentPath is provided", () => {
@@ -172,9 +172,9 @@ describe("utils", () => {
       const result = getTempFileName({
         initialContentPath: "/source/file.txt",
       });
-      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(result, "/tmp/lasso-test-uuid.txt");
       assert.equal(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "initial content",
       );
     });
@@ -183,8 +183,8 @@ describe("utils", () => {
       const result = getTempFileName({
         initialContentPath: "/missing/file.txt",
       });
-      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
-      assert.equal(testFs._files.has("/tmp/agent-js-test-uuid.txt"), false);
+      assert.equal(result, "/tmp/lasso-test-uuid.txt");
+      assert.equal(testFs._files.has("/tmp/lasso-test-uuid.txt"), false);
     });
 
     it("skips writing when write fails", () => {
@@ -195,16 +195,16 @@ describe("utils", () => {
       const result = getTempFileName({
         initialContentPath: "/source.txt",
       });
-      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(result, "/tmp/lasso-test-uuid.txt");
     });
 
     it("writes initialContentStr into the temp file", () => {
       const result = getTempFileName({
         initialContentStr: "string content",
       });
-      assert.equal(result, "/tmp/agent-js-test-uuid.txt");
+      assert.equal(result, "/tmp/lasso-test-uuid.txt");
       assert.equal(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "string content",
       );
     });
@@ -229,47 +229,44 @@ describe("utils", () => {
     });
 
     it("uses pagerEnvKey env var with __FILE__ replacement", async () => {
-      testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
+      testProcessEnv._set("LASSO_PAGER_HISTORY", "nano __FILE__");
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
       });
-      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
 
-    it("falls back to AGENT_JS_PAGER env var", async () => {
-      testProcessEnv._set("AGENT_JS_PAGER", "bat __FILE__");
+    it("falls back to LASSO_PAGER env var", async () => {
+      testProcessEnv._set("LASSO_PAGER", "bat __FILE__");
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
       });
-      assert.strictEqual(spawned[0], "bat /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "bat /tmp/lasso-test-uuid.txt");
     });
 
     it("falls back to PAGER env var with quoted temp file", async () => {
       testProcessEnv._set("PAGER", "more");
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
       });
-      assert.strictEqual(spawned[0], `more "/tmp/agent-js-test-uuid.txt"`);
+      assert.strictEqual(spawned[0], `more "/tmp/lasso-test-uuid.txt"`);
     });
 
     it("falls back to bat", async () => {
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
       });
-      assert.strictEqual(
-        spawned[0],
-        batPagerCmd("/tmp/agent-js-test-uuid.txt"),
-      );
+      assert.strictEqual(spawned[0], batPagerCmd("/tmp/lasso-test-uuid.txt"));
     });
 
     it("copies initial content into the temp file", async () => {
       testFs._files.set("/source/file.txt", "initial content");
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
         initialContentPath: "/source/file.txt",
       });
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "initial content",
       );
     });
@@ -280,21 +277,21 @@ describe("utils", () => {
         spawnArgs = args;
       });
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
       });
       assert.deepStrictEqual(spawnArgs, [
-        batPagerCmd("/tmp/agent-js-test-uuid.txt"),
+        batPagerCmd("/tmp/lasso-test-uuid.txt"),
         { shell: true, stdio: "inherit" },
       ]);
     });
 
     it("writes initialContentStr into the temp file", async () => {
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
         initialContentStr: "string content",
       });
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "string content",
       );
     });
@@ -302,7 +299,7 @@ describe("utils", () => {
     it("throws when both initialContentPath and initialContentStr are provided", async () => {
       await assert.rejects(
         openWithPager({
-          pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+          pagerEnvKey: "LASSO_PAGER_HISTORY",
           initialContentPath: "/source/file.txt",
           initialContentStr: "string content",
         }),
@@ -313,9 +310,9 @@ describe("utils", () => {
     it("falls back to less when bat is unavailable", async () => {
       mockBatAvailable(false);
       await openWithPager({
-        pagerEnvKey: "AGENT_JS_PAGER_HISTORY",
+        pagerEnvKey: "LASSO_PAGER_HISTORY",
       });
-      assert.strictEqual(spawned[0], `less "/tmp/agent-js-test-uuid.txt"`);
+      assert.strictEqual(spawned[0], `less "/tmp/lasso-test-uuid.txt"`);
     });
   });
 
@@ -391,64 +388,61 @@ describe("utils", () => {
     });
 
     it("returns an empty array when the directory has no files", () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
     it("returns valid chat history files with absolute path and timestamp", () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
         "",
       );
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-999990000000.txt",
+        "/fake-home/.config/lasso/history/chat-history-999990000000.txt",
         "",
       );
 
       assert.deepStrictEqual(listChatHistoryFiles(), [
         {
           absolutePath:
-            "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+            "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
           timestampMs: 1234567890000,
         },
         {
           absolutePath:
-            "/fake-home/.config/agent-js/history/chat-history-999990000000.txt",
+            "/fake-home/.config/lasso/history/chat-history-999990000000.txt",
           timestampMs: 999990000000,
         },
       ]);
     });
 
     it("skips directory entries", () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._dirs.add(
-        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
       );
       assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
     it("skips files that do not match chat-history-<timestamp>", () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
+      testFs._files.set("/fake-home/.config/lasso/history/random-file.txt", "");
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/random-file.txt",
+        "/fake-home/.config/lasso/history/chat-history-uuid-123.txt",
         "",
       );
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-uuid-123.txt",
-        "",
-      );
-      testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-notanumber.txt",
+        "/fake-home/.config/lasso/history/chat-history-notanumber.txt",
         "",
       );
       assert.deepStrictEqual(listChatHistoryFiles(), []);
     });
 
     it("skips files with non-txt extension", () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-123.log",
+        "/fake-home/.config/lasso/history/chat-history-123.log",
         "",
       );
       assert.deepStrictEqual(listChatHistoryFiles(), []);

@@ -59,22 +59,19 @@ describe("input", () => {
 
     it("returns null and cleans up when readFile fails", async () => {
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "modified");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "modified");
       });
       mock.method(fsDeps, "readFileSync", () => {
         throw new Error("read failed");
       });
       const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, null);
-      assert.strictEqual(
-        testFs._files.has("/tmp/agent-js-test-uuid.txt"),
-        false,
-      );
+      assert.strictEqual(testFs._files.has("/tmp/lasso-test-uuid.txt"), false);
     });
 
     it("returns null when editor returns empty content", async () => {
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "");
       });
       const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, null);
@@ -82,33 +79,33 @@ describe("input", () => {
 
     it("returns normalized content", async () => {
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "  hello  ");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "  hello  ");
       });
       const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, "hello\n");
     });
 
-    it("uses AGENT_JS_EDIT env var with __FILE__ when available", async () => {
-      testProcessEnv._set("AGENT_JS_EDIT", "nano __FILE__");
+    it("uses LASSO_EDIT env var with __FILE__ when available", async () => {
+      testProcessEnv._set("LASSO_EDIT", "nano __FILE__");
       await spawnAndReadEditorContent();
-      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
 
-    it("falls back to EDITOR env var when AGENT_JS_EDIT is not set", async () => {
+    it("falls back to EDITOR env var when LASSO_EDIT is not set", async () => {
       testProcessEnv._set("EDITOR", "vim");
       await spawnAndReadEditorContent();
-      assert.strictEqual(spawned[0], "vim /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "vim /tmp/lasso-test-uuid.txt");
     });
 
     it("falls back to vi when no editor env vars are set", async () => {
       await spawnAndReadEditorContent();
-      assert.strictEqual(spawned[0], "vi /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "vi /tmp/lasso-test-uuid.txt");
     });
 
     it("returns normalized content when editor saves unchanged content", async () => {
       actions.setRl(makeFakeRl({ line: "hello" }));
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "hello");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "hello");
       });
       const result = await spawnAndReadEditorContent();
       assert.strictEqual(result, "hello\n");
@@ -119,7 +116,7 @@ describe("input", () => {
       mockClipboardPaste("world");
       mock.method(childProcess, "spawnSync", () => {
         testFs.writeFileSync(
-          "/tmp/agent-js-test-uuid.txt",
+          "/tmp/lasso-test-uuid.txt",
           "  hello world modified  \n",
         );
       });
@@ -133,7 +130,7 @@ describe("input", () => {
       actions.setRl(makeFakeRl({ line: "query" }));
       mockClipboardPaste("clip");
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "queryclip");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "queryclip");
       });
       const result = await spawnAndReadEditorContent({
         includeClipboardSuffix: true,
@@ -442,9 +439,9 @@ Resume this session with /resume 42000
 
     it("returns transcript and resets message params when conversation is found", async () => {
       actions.appendToMessageParams({ role: "user", content: "hello" });
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
         "transcript content",
       );
       const result = await resume("/resume 1234567890000");
@@ -463,9 +460,9 @@ transcript content
     });
 
     it("prints error when no conversation is found", async () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-9999999999999.txt",
+        "/fake-home/.config/lasso/history/chat-history-9999999999999.txt",
         "transcript content",
       );
       const result = await resume("/resume 1234567890000");
@@ -477,9 +474,9 @@ transcript content
     });
 
     it("skips files that do not match the chat-history format", async () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/other-1234567890000.txt",
+        "/fake-home/.config/lasso/history/other-1234567890000.txt",
         "other",
       );
       const result = await resume("/resume 1234567890000");
@@ -507,15 +504,15 @@ No available context files
       );
     });
 
-    it("opens context string in a pager via AGENT_JS_PAGER_CONTEXT", async () => {
+    it("opens context string in a pager via LASSO_PAGER_CONTEXT", async () => {
       const { spawned } = mockPagerSpawn();
-      testProcessEnv._set("AGENT_JS_PAGER_CONTEXT", "nano __FILE__");
+      testProcessEnv._set("LASSO_PAGER_CONTEXT", "nano __FILE__");
       actions.setContextStr("context string content");
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
       await pageContextFiles();
-      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
 
     it("copies context string into the temp file", async () => {
@@ -525,7 +522,7 @@ No available context files
       ]);
       await pageContextFiles();
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "context string content",
       );
       assert.strictEqual(getState().app.stdout, "");
@@ -571,7 +568,7 @@ No available skills
     it("filters out context file skills", async () => {
       actions.setSkills([
         {
-          name: "__agent-js-context-for-/ctx",
+          name: "__lasso-context-for-/ctx",
           description: "Context for /ctx",
           dir: "/ctx",
           content: "context content",
@@ -631,7 +628,7 @@ No available context files
       ]);
       actions.setSkills([
         {
-          name: "__agent-js-context-for-/other",
+          name: "__lasso-context-for-/other",
           description: "Context for /other",
           dir: "/other",
           content: "other context",
@@ -665,7 +662,7 @@ Available context files:
       actions.setSlashCommands([
         {
           name: "custom.md",
-          filePath: "/test/.agent-js/commands/custom.md",
+          filePath: "/test/.lasso/commands/custom.md",
           content: "custom",
         },
       ]);
@@ -689,7 +686,7 @@ Available commands:
 - /resume
 - /config
 - /reload
-- /test/.agent-js/commands/custom.md
+- /test/.lasso/commands/custom.md
 `,
       );
     });
@@ -702,7 +699,7 @@ Available commands:
       actions.setSlashCommands([
         {
           name: "custom",
-          filePath: "/test/.agent-js/commands/custom.md",
+          filePath: "/test/.lasso/commands/custom.md",
           content: "custom command content",
         },
       ]);
@@ -737,7 +734,7 @@ Available commands:
 
     it("runs edit command when its keymap matches", async () => {
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "  edited  ");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "  edited  ");
       });
       harness.emitKey({ name: "g", ctrl: true });
       await harness.flush();
@@ -748,7 +745,7 @@ Available commands:
       mockClipboardPaste("world");
       mock.method(childProcess, "spawnSync", () => {
         testFs.writeFileSync(
-          "/tmp/agent-js-test-uuid.txt",
+          "/tmp/lasso-test-uuid.txt",
           "  hello world modified  \n",
         );
       });
@@ -768,12 +765,9 @@ Available commands:
       testFs._files.set("/tmp/editor.log", "log content");
       harness.emitKey({ name: "h", ctrl: true });
       await harness.flush();
+      assert.strictEqual(spawned[0], batPagerCmd("/tmp/lasso-test-uuid.txt"));
       assert.strictEqual(
-        spawned[0],
-        batPagerCmd("/tmp/agent-js-test-uuid.txt"),
-      );
-      assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "log content",
       );
       assert.strictEqual(getState().app.stdout, "");
@@ -784,7 +778,7 @@ Available commands:
       actions.setKeymap("config", { name: "q", ctrl: true });
       harness.emitKey({ name: "q", ctrl: true });
       assert.match(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt") ?? "",
+        testFs._files.get("/tmp/lasso-test-uuid.txt") ?? "",
         /# Applied config/,
       );
       assert.strictEqual(getState().app.stdout, "");
@@ -800,7 +794,7 @@ Available commands:
       harness.emitKey({ name: "d", ctrl: true });
       await harness.flush();
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "context string content",
       );
       assert.strictEqual(getState().app.stdout, "");
@@ -811,8 +805,8 @@ Available commands:
       actions.setKeymap("commands-str", { name: "m", ctrl: true });
       harness.emitKey({ name: "m", ctrl: true });
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        `# /test/.agent-js/commands/custom.md
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
+        `# /test/.lasso/commands/custom.md
 ---
 custom command content`,
       );
@@ -953,7 +947,7 @@ custom command content`,
     });
 
     it("returns empty array when glob returns empty", () => {
-      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", []);
+      testFs._globResults.set("/test-cwd/.lasso/commands/**/*.md", []);
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, []);
     });
@@ -975,52 +969,49 @@ custom command content`,
     });
 
     it("returns commands from local and global dirs", () => {
-      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
-        "/test-cwd/.agent-js/commands/help.md",
+      testFs._globResults.set("/test-cwd/.lasso/commands/**/*.md", [
+        "/test-cwd/.lasso/commands/help.md",
       ]);
-      testFs._globResults.set("/fake-home/.config/agent-js/commands/**/*.md", [
-        "/fake-home/.config/agent-js/commands/status.md",
+      testFs._globResults.set("/fake-home/.config/lasso/commands/**/*.md", [
+        "/fake-home/.config/lasso/commands/status.md",
       ]);
-      testFs._files.set("/test-cwd/.agent-js/commands/help.md", "help content");
+      testFs._files.set("/test-cwd/.lasso/commands/help.md", "help content");
       testFs._files.set(
-        "/fake-home/.config/agent-js/commands/status.md",
+        "/fake-home/.config/lasso/commands/status.md",
         "status content",
       );
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
           name: "help",
-          filePath: "/test-cwd/.agent-js/commands/help.md",
+          filePath: "/test-cwd/.lasso/commands/help.md",
           content: "help content",
         },
         {
           name: "status",
-          filePath: "/fake-home/.config/agent-js/commands/status.md",
+          filePath: "/fake-home/.config/lasso/commands/status.md",
           content: "status content",
         },
       ]);
     });
 
     it("deduplicates by name keeping first occurrence", () => {
-      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
-        "/test-cwd/.agent-js/commands/help.md",
+      testFs._globResults.set("/test-cwd/.lasso/commands/**/*.md", [
+        "/test-cwd/.lasso/commands/help.md",
       ]);
-      testFs._globResults.set("/fake-home/.config/agent-js/commands/**/*.md", [
-        "/fake-home/.config/agent-js/commands/help.md",
+      testFs._globResults.set("/fake-home/.config/lasso/commands/**/*.md", [
+        "/fake-home/.config/lasso/commands/help.md",
       ]);
+      testFs._files.set("/test-cwd/.lasso/commands/help.md", "local content");
       testFs._files.set(
-        "/test-cwd/.agent-js/commands/help.md",
-        "local content",
-      );
-      testFs._files.set(
-        "/fake-home/.config/agent-js/commands/help.md",
+        "/fake-home/.config/lasso/commands/help.md",
         "global content",
       );
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
           name: "help",
-          filePath: "/test-cwd/.agent-js/commands/help.md",
+          filePath: "/test-cwd/.lasso/commands/help.md",
           content: "local content",
         },
       ]);
@@ -1031,15 +1022,15 @@ custom command content`,
         if (path.includes("bad")) throw new Error("read failed");
         return Buffer.from("content");
       });
-      testFs._globResults.set("/test-cwd/.agent-js/commands/**/*.md", [
-        "/test-cwd/.agent-js/commands/good.md",
-        "/test-cwd/.agent-js/commands/bad.md",
+      testFs._globResults.set("/test-cwd/.lasso/commands/**/*.md", [
+        "/test-cwd/.lasso/commands/good.md",
+        "/test-cwd/.lasso/commands/bad.md",
       ]);
       const result = getAvailableSlashCommands();
       assert.deepStrictEqual(result, [
         {
           name: "good",
-          filePath: "/test-cwd/.agent-js/commands/good.md",
+          filePath: "/test-cwd/.lasso/commands/good.md",
           content: "content",
         },
       ]);
@@ -1060,7 +1051,7 @@ custom command content`,
     it("handles /edit command and logs editor content to chat history", async () => {
       actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "from editor");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "from editor");
       });
       const result = await resolveSlashCommand("/edit");
       assert.strictEqual(result, "from editor\n");
@@ -1077,7 +1068,7 @@ from editor
       actions.setChatHistoryPath("/tmp/test-history.log");
       mockClipboardPaste("clip");
       mock.method(childProcess, "spawnSync", () => {
-        testFs.writeFileSync("/tmp/agent-js-test-uuid.txt", "pasted content");
+        testFs.writeFileSync("/tmp/lasso-test-uuid.txt", "pasted content");
       });
       const result = await resolveSlashCommand("/paste");
       assert.strictEqual(result, "pasted content\n");
@@ -1096,13 +1087,13 @@ pasted content
     });
 
     it("handles /history command by opening chat history in a pager", async () => {
-      testProcessEnv._set("AGENT_JS_PAGER_HISTORY", "nano __FILE__");
+      testProcessEnv._set("LASSO_PAGER_HISTORY", "nano __FILE__");
       actions.setChatHistoryPath("/tmp/test-history.log");
       testFs._files.set("/tmp/test-history.log", "log content");
       const result = await resolveSlashCommand("/history");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "log content",
       );
     });
@@ -1179,44 +1170,44 @@ Available commands:
     });
 
     it("handles /commands-str command by opening custom commands in a pager", async () => {
-      testProcessEnv._set("AGENT_JS_PAGER_COMMANDS", "nano __FILE__");
+      testProcessEnv._set("LASSO_PAGER_COMMANDS", "nano __FILE__");
       actions.setSlashCommands([
         {
           name: "custom",
-          filePath: "/test/.agent-js/commands/custom.md",
+          filePath: "/test/.lasso/commands/custom.md",
           content: "custom command content",
         },
       ]);
       const result = await resolveSlashCommand("/commands-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
-        `# /test/.agent-js/commands/custom.md
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
+        `# /test/.lasso/commands/custom.md
 ---
 custom command content`,
       );
     });
 
-    it("uses AGENT_JS_PAGER_COMMANDS for the commands-str pager", async () => {
+    it("uses LASSO_PAGER_COMMANDS for the commands-str pager", async () => {
       const { spawned } = mockPagerSpawn();
-      testProcessEnv._set("AGENT_JS_PAGER_COMMANDS", "nano __FILE__");
+      testProcessEnv._set("LASSO_PAGER_COMMANDS", "nano __FILE__");
       actions.setSlashCommands([
         {
           name: "custom",
-          filePath: "/test/.agent-js/commands/custom.md",
+          filePath: "/test/.lasso/commands/custom.md",
           content: "custom command content",
         },
       ]);
       const result = await resolveSlashCommand("/commands-str");
       assert.strictEqual(result, null);
-      assert.strictEqual(spawned[0], "nano /tmp/agent-js-test-uuid.txt");
+      assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
 
     it("writes empty temp file for commands-str when there are no custom commands", async () => {
       mockBatAvailable(true);
       const result = await resolveSlashCommand("/commands-str");
       assert.strictEqual(result, null);
-      assert.strictEqual(testFs._files.get("/tmp/agent-js-test-uuid.txt"), "");
+      assert.strictEqual(testFs._files.get("/tmp/lasso-test-uuid.txt"), "");
     });
 
     it("handles /context-str command with no context files", async () => {
@@ -1232,7 +1223,7 @@ No available context files
     });
 
     it("handles /context-str command by opening context in a pager", async () => {
-      testProcessEnv._set("AGENT_JS_PAGER_CONTEXT", "nano __FILE__");
+      testProcessEnv._set("LASSO_PAGER_CONTEXT", "nano __FILE__");
       actions.setContextStr("context string content");
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
@@ -1240,18 +1231,18 @@ No available context files
       const result = await resolveSlashCommand("/context-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "context string content",
       );
     });
 
     it("handles /config command by opening combined config in a pager", async () => {
-      testProcessEnv._set("AGENT_JS_PAGER_CONFIG", "nano __FILE__");
+      testProcessEnv._set("LASSO_PAGER_CONFIG", "nano __FILE__");
       actions.resetStdout();
       const result = await resolveSlashCommand("/config");
       assert.strictEqual(result, null);
       assert.strictEqual(stripAnsi(getState().app.stdout), "");
-      const tempContent = testFs._files.get("/tmp/agent-js-test-uuid.txt");
+      const tempContent = testFs._files.get("/tmp/lasso-test-uuid.txt");
       assert.ok(tempContent !== undefined);
       assert.match(tempContent, /^# Global config from path: /);
       assert.match(tempContent, /\n# Local config from path: /);
@@ -1308,9 +1299,9 @@ Keymaps:
     });
 
     it("handles /resume with a session start date", async () => {
-      testFs._dirs.add("/fake-home/.config/agent-js/history");
+      testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
-        "/fake-home/.config/agent-js/history/chat-history-1234567890000.txt",
+        "/fake-home/.config/lasso/history/chat-history-1234567890000.txt",
         "transcript content",
       );
       const result = await resolveSlashCommand("/resume 1234567890000");
@@ -1335,7 +1326,7 @@ transcript content
       const result = await resolveSlashCommand("/reload");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        testFs._files.get("/tmp/agent-js-test-uuid.txt"),
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "config diff content",
       );
     });
@@ -1349,10 +1340,7 @@ transcript content
         }),
       );
       testFs._dirs.add(getGlobalContextDir());
-      testFs._files.set(
-        "/fake-home/.config/agent-js/context/AGENTS.md",
-        "hello",
-      );
+      testFs._files.set("/fake-home/.config/lasso/context/AGENTS.md", "hello");
 
       const snapshots: string[] = [];
       mock.method(
@@ -1360,9 +1348,7 @@ transcript content
         "exec",
         (cmd: string, _opts: unknown, cb: unknown) => {
           if (cmd.includes("git diff")) {
-            snapshots.push(
-              testFs._files.get("/tmp/agent-js-test-uuid.txt") ?? "",
-            );
+            snapshots.push(testFs._files.get("/tmp/lasso-test-uuid.txt") ?? "");
           }
           (cb as (error: Error | null, stdout: string, stderr: string) => void)(
             null,
@@ -1381,7 +1367,7 @@ transcript content
       assert.match(snapshots[0], /Skills:/);
       assert.match(
         snapshots[0],
-        /Path: \/fake-home\/.config\/agent-js\/context\/AGENTS.md/,
+        /Path: \/fake-home\/.config\/lasso\/context\/AGENTS.md/,
       );
     });
 
@@ -1389,7 +1375,7 @@ transcript content
       actions.setSlashCommands([
         {
           name: "custom",
-          filePath: "/test-cwd/.agent-js/commands/custom.md",
+          filePath: "/test-cwd/.lasso/commands/custom.md",
           content: "custom command content",
         },
       ]);
@@ -1401,7 +1387,7 @@ transcript content
       actions.setSlashCommands([
         {
           name: "known",
-          filePath: "/test-cwd/.agent-js/commands/known.md",
+          filePath: "/test-cwd/.lasso/commands/known.md",
           content: "known content",
         },
       ]);
@@ -1427,7 +1413,7 @@ Invalid command: /unknown, valid commands:
 - /resume
 - /config
 - /reload
-- /test-cwd/.agent-js/commands/known.md
+- /test-cwd/.lasso/commands/known.md
 `,
       );
     });

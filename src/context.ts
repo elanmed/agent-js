@@ -16,7 +16,7 @@ export interface ContextEntry {
   content: string;
 }
 
-export const contextFileSkillNamePrefix = "__agent-js-context-for";
+export const contextFileSkillNamePrefix = "__lasso-context-for";
 
 export function getContextStr(contextEntries: ContextEntry[]) {
   if (contextEntries.length === 0) return "";

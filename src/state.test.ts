@@ -235,10 +235,10 @@ describe("state", () => {
 
   it("set-debug-log-path", () => {
     assert.equal(getState().app.debugLogPath, "");
-    actions.setDebugLogPath("/fake-home/.config/agent-js/debug-test-uuid.log");
+    actions.setDebugLogPath("/fake-home/.config/lasso/debug-test-uuid.log");
     assert.equal(
       getState().app.debugLogPath,
-      "/fake-home/.config/agent-js/debug-test-uuid.log",
+      "/fake-home/.config/lasso/debug-test-uuid.log",
     );
   });
 

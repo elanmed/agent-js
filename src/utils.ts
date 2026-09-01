@@ -52,7 +52,7 @@ export function getTempFileName(args?: {
   const { initialContentPath, initialContentStr } = args ?? {};
   assert(initialContentPath === undefined || initialContentStr === undefined);
 
-  const tempFile = join(os.tmpdir(), `agent-js-${crypto.randomUUID()}.txt`);
+  const tempFile = join(os.tmpdir(), `lasso-${crypto.randomUUID()}.txt`);
 
   if (initialContentPath !== undefined) {
     const readResult = tryCatch(() =>
@@ -89,9 +89,9 @@ export async function openWithPager({
       return pagerEnvValue.replace("__FILE__", tempFile);
     }
 
-    const agentJsDefaultPagerEnvValue = processDeps.env.get("AGENT_JS_PAGER");
-    if (isExisty(agentJsDefaultPagerEnvValue)) {
-      return agentJsDefaultPagerEnvValue.replace("__FILE__", tempFile);
+    const lassoDefaultPagerEnvValue = processDeps.env.get("LASSO_PAGER");
+    if (isExisty(lassoDefaultPagerEnvValue)) {
+      return lassoDefaultPagerEnvValue.replace("__FILE__", tempFile);
     }
 
     const defaultPagerEnvValue = processDeps.env.get("PAGER");

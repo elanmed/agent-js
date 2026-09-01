@@ -1014,7 +1014,7 @@ describe("config", () => {
 
     await assert.rejects(
       initState(),
-      /Failed to parse config at \/fake-home\/\.config\/agent-js\/settings\.yaml as YAML/,
+      /Failed to parse config at \/fake-home\/\.config\/lasso\/settings\.yaml as YAML/,
     );
   });
 
@@ -1023,7 +1023,7 @@ describe("config", () => {
 
     await assert.rejects(
       initState(),
-      /Failed to parse config at \/test-cwd\/\.agent-js\/settings\.yaml as YAML/,
+      /Failed to parse config at \/test-cwd\/\.lasso\/settings\.yaml as YAML/,
     );
   });
 
@@ -1046,11 +1046,10 @@ describe("config", () => {
 
   it("sets contextStr from dep", async () => {
     testFs._dirs.add(getGlobalContextDir());
-    testFs._globResults.set(
-      "/fake-home/.config/agent-js/context/**/AGENTS.md",
-      ["/fake-home/.config/agent-js/context/AGENTS.md"],
-    );
-    testFs._files.set("/fake-home/.config/agent-js/context/AGENTS.md", "hello");
+    testFs._globResults.set("/fake-home/.config/lasso/context/**/AGENTS.md", [
+      "/fake-home/.config/lasso/context/AGENTS.md",
+    ]);
+    testFs._files.set("/fake-home/.config/lasso/context/AGENTS.md", "hello");
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -1064,7 +1063,7 @@ describe("config", () => {
       `# AGENTS.md context files
 ---
 
-# Path: /fake-home/.config/agent-js/context/AGENTS.md
+# Path: /fake-home/.config/lasso/context/AGENTS.md
 ---
 \`\`\`md
 hello
@@ -1198,7 +1197,7 @@ hello
     await initState();
     assert.strictEqual(
       getState().app.debugLogPath,
-      "/fake-home/.config/agent-js/debug/debug-test-uuid.log",
+      "/fake-home/.config/lasso/debug/debug-test-uuid.log",
     );
   });
 
