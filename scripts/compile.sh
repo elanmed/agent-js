@@ -11,6 +11,7 @@ targets=(
   "linux-arm64-musl"
 )
 
+rm -rf dist || exit 1
 mkdir -p dist || exit 1
 
 for target in "${targets[@]}"; do

@@ -8,7 +8,8 @@ Update CHANGELOG.md with the changes since the last release.
    - Strip the conventional-commit type prefix (`add:`, `fix:`, `refactor:`, etc.)
    - Capitalize the first word, write each bullet as a concise human-readable sentence
    - Group related commits into a single bullet
-   - Skip internal churn (logo tweaks, test-only commits) unless user-facing
+   - Reference config options and env variables by their exact names (e.g. `` `messageQueueDelimiter` ``, `` `suppressBatUnavailableWarning` ``)
+   - Skip internal churn (logo tweaks, test-only commits, `docs:` commits like README changes, and changes to the `.lasso` directory) unless user-facing
 
 6. Insert the new section at the top of CHANGELOG.md, directly after the `# Changelog` header line, leaving the rest of the file untouched.
 7. Show the user the proposed entry for approval before writing it to the file.
