@@ -5,7 +5,7 @@ A minimal agent harness
 <!-- a hack to get around github sanitizing styles from markdown -->
 <br>
 <p align="center">
-    <img src="./logo.png" width="500px" />
+    <img src="./logo.png" width="300px" />
 </p>
 
 ## Features
