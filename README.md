@@ -411,6 +411,7 @@ vim.g.clipboard = {
 - [ ] Support additional user content after a slash command without args
 - [ ] Support a slash command as the first line of the editor content
 - [ ] Page conversation history
+- [ ] Consolidate stdout state and chat history?
 
 ## TODO (later)
 
