@@ -1,6 +1,6 @@
 # `lasso`
 
-> A minimal agent harness
+_A minimal agent harness_
 
 <!-- a hack to get around github sanitizing styles from markdown -->
 <br>
