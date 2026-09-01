@@ -2,7 +2,7 @@
 
 A minimal agent harness
 
-![demo](./demo.png)
+![logo](./logo.png)
 
 ## Features
 
