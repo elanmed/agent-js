@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 const kind = process.argv[2];
 if (kind !== "source" && kind !== "tests") {
-  console.error("Usage: node scripts/cloc-code.ts <source|tests>");
+  console.error("Usage: node scripts/cloc.ts <source|tests>");
   process.exit(1);
 }
 
