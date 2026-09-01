@@ -145,8 +145,6 @@ export const testFs = makeFakeFsDeps();
 export const testProcessEnv = makeFakeProcessEnv();
 export const testCwd = makeFakeCwd();
 
-const originalExec = childProcess.exec.bind(childProcess);
-
 const ANSI_ESCAPE_PATTERN =
   // eslint-disable-next-line no-control-regex
   /\x1b\[[0-9;]*m/g;
@@ -171,17 +169,7 @@ export function setupFakeDeps() {
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
   mock.method(processDeps.stdout, "write", () => undefined);
   mock.method(processDeps, "cwd", () => testCwd.get());
-  mock.method(
-    childProcess,
-    "exec",
-    (command: string, options: unknown, callback: ExecCallback) => {
-      if (command === "bat --version") {
-        callback(null, "bat 0.26.1\n", "");
-        return;
-      }
-      originalExec(command, options as never, callback);
-    },
-  );
+
 }
 
 export function makeFakeRl(overrides: object = {}) {
@@ -239,6 +227,36 @@ export function mockExec(opts: {
 export function mockClipboardPaste(stdout: string) {
   mock.method(os, "platform", () => "linux");
   mockExec({ stdout });
+}
+export interface SpawnSyncResult {
+  status: number | null;
+  stdout?: string;
+  stderr?: string;
+}
+
+export function mockSpawnSync(opts: {
+  result?: SpawnSyncResult;
+  error?: Error;
+  echoInput?: boolean;
+} = {}) {
+  const { result, error, echoInput } = opts;
+  mock.method(
+    childProcess,
+    "spawnSync",
+    (_cmd: string, _args: readonly string[], options: { input?: string }) => {
+      if (error !== undefined) {
+        throw error;
+      }
+      if (echoInput === true) {
+        return {
+          status: 0,
+          stdout: options.input ?? "",
+          stderr: "",
+        };
+      }
+      return result;
+    },
+  );
 }
 
 export function mockPagerSpawn() {

@@ -13,10 +13,10 @@ import {
   warnOnMissingBat,
 } from "./print.ts";
 import { actions, getState } from "./state.ts";
-import childProcess from "node:child_process";
 import {
   stripAnsi,
   mockExec,
+  mockSpawnSync,
   mockStdout,
   mockSetInterval,
   mockClearInterval,
@@ -268,6 +268,9 @@ describe("print", () => {
     });
 
     it("formats markdown and outputs the content through bat when available", async () => {
+      mockExec({ stdout: "bat 0.26.1\n" });
+      mockSpawnSync({ echoInput: true });
+
       const getCaptured = mockStdout();
 
       await executeBat("# Hello\n");
@@ -286,9 +289,7 @@ describe("print", () => {
     });
 
     it("falls back to plain text when bat spawn fails", async () => {
-      mock.method(childProcess, "spawnSync", () => {
-        throw new Error("spawn failed");
-      });
+      mockSpawnSync({ error: new Error("spawn failed") });
 
       const getCaptured = mockStdout();
 
@@ -305,12 +306,8 @@ test content
 
     it("falls back to plain text when bat exits with non-zero status", async () => {
       mockExec({ stdout: "bat 0.25.0" });
-      mock.method(childProcess, "spawnSync", () => {
-        return {
-          status: 1,
-          stdout: "bat-rendered\n",
-          stderr: "bat error",
-        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      mockSpawnSync({
+        result: { status: 1, stdout: "bat-rendered\n", stderr: "bat error" },
       });
 
       const getCaptured = mockStdout();
@@ -328,12 +325,8 @@ test content
 
     it("prints bat stdout when status is null", async () => {
       mockExec({ stdout: "bat 0.25.0" });
-      mock.method(childProcess, "spawnSync", () => {
-        return {
-          status: null,
-          stdout: "bat-rendered\n",
-          stderr: "",
-        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      mockSpawnSync({
+        result: { status: null, stdout: "bat-rendered\n", stderr: "" },
       });
 
       const getCaptured = mockStdout();
@@ -345,12 +338,8 @@ test content
 
     it("prints bat stdout when stderr is empty", async () => {
       mockExec({ stdout: "bat 0.25.0" });
-      mock.method(childProcess, "spawnSync", () => {
-        return {
-          status: 0,
-          stdout: "bat-rendered\n",
-          stderr: "",
-        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      mockSpawnSync({
+        result: { status: 0, stdout: "bat-rendered\n", stderr: "" },
       });
 
       const getCaptured = mockStdout();
@@ -362,12 +351,8 @@ test content
 
     it("falls back to plain text when bat writes stderr", async () => {
       mockExec({ stdout: "bat 0.25.0" });
-      mock.method(childProcess, "spawnSync", () => {
-        return {
-          status: 0,
-          stdout: "bat-rendered\n",
-          stderr: "bat warning",
-        } as unknown as ReturnType<typeof childProcess.spawnSync>;
+      mockSpawnSync({
+        result: { status: 0, stdout: "bat-rendered\n", stderr: "bat warning" },
       });
 
       const getCaptured = mockStdout();

@@ -24,6 +24,7 @@ import {
   makeFakeRl,
   mockClipboardPaste,
   mockExec,
+  mockSpawnSync,
   mockPagerSpawn,
   mockBatAvailable,
   batPagerCmd,
@@ -782,7 +783,7 @@ Available commands:
     });
 
     it("opens config in a pager when config keymap matches", () => {
-      mock.method(childProcess, "spawnSync", () => undefined);
+      mockSpawnSync();
       actions.setKeymap("config", { name: "q", ctrl: true });
       harness.emitKey({ name: "q", ctrl: true });
       assert.match(
@@ -793,7 +794,7 @@ Available commands:
     });
 
     it("opens context in a pager when context-str keymap matches", async () => {
-      mock.method(childProcess, "spawnSync", () => undefined);
+      mockSpawnSync();
       actions.setKeymap("context-str", { name: "d", ctrl: true });
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
@@ -809,7 +810,7 @@ Available commands:
     });
 
     it("opens custom commands in a pager when commands-str keymap matches", () => {
-      mock.method(childProcess, "spawnSync", () => undefined);
+      mockSpawnSync();
       actions.setKeymap("commands-str", { name: "m", ctrl: true });
       harness.emitKey({ name: "m", ctrl: true });
       assert.strictEqual(
@@ -1048,7 +1049,7 @@ custom command content`,
   describe("resolveSlashCommand", () => {
     beforeEach(() => {
       actions.setRl(makeFakeRl({ line: "" }));
-      mock.method(childProcess, "spawnSync", () => undefined);
+      mockSpawnSync();
     });
 
     it("handles /edit command", async () => {
