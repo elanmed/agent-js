@@ -409,6 +409,8 @@ vim.g.clipboard = {
 - [ ] Tool for creating subagents
 - [ ] Validate that two slash commands don't share the same keymap
 - [ ] Support additional user content after a slash command without args
+- [ ] Support a slash command as the first line of the editor content
+- [ ] Page conversation history
 
 ## TODO (later)
 
