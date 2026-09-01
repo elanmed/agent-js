@@ -11,23 +11,19 @@ fi
 
 git push origin "$version" || exit 1
 
-notes_file=$(mktemp) || exit 1
-awk -v ver="$version" '
-  $1 == "##" && $2 == ver { capture = 1; next }
-  capture && /^## / { exit }
-  capture { print }
-' CHANGELOG.md > "$notes_file"
-
-notes_arg="--generate-notes"
-if [[ -s "$notes_file" ]]; then
-  notes_arg="--notes-file $notes_file"
-fi
+# extract the first changelog section for the release notes
+#   /^## /  - match a `## ` section heading
+#   c++     - count headings seen
+#   c > 1   - second heading means the first section is over
+#   exit    - stop reading
+#   next    - skip the heading line itself
+#   c       - print lines while the counter is 1
+notes="$(awk '/^## / { c++; if (c > 1) exit; next } c' CHANGELOG.md)" || exit 1
 
 if gh release view "$version" >/dev/null 2>&1; then
   echo "Release $version already exists"
 else
-  gh release create "$version" dist/* --title "$version" $notes_arg || exit 1
+  gh release create "$version" dist/* --title "$version" --notes "$notes" || exit 1
 fi
 
-rm -f "$notes_file"
 echo "Published $version"
