@@ -212,16 +212,11 @@ export function initKeypress() {
             return;
           }
           case "context-str": {
-            await pageContextFiles();
+            await pageContextStr();
             return;
           }
           case "commands-str": {
-            await openWithPager({
-              pagerEnvKey: "LASSO_PAGER_COMMANDS",
-              initialContentStr: getPrettyCustomSlashCommandsStr(),
-              contentType: "markdown",
-            });
-
+            await pageCustomSlashCommandsStr();
             return;
           }
           case "reload": {
@@ -534,23 +529,19 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "context": {
-      await printContextFiles();
+      await printAvailableContextFiles();
       return { handled: true, inputFromCommand: null };
     }
     case "context-str": {
-      await pageContextFiles();
+      await pageContextStr();
       return { handled: true, inputFromCommand: null };
     }
     case "commands": {
-      await printCommands();
+      await printAvailableCommandsStr();
       return { handled: true, inputFromCommand: null };
     }
     case "commands-str": {
-      await openWithPager({
-        pagerEnvKey: "LASSO_PAGER_COMMANDS",
-        initialContentStr: getPrettyCustomSlashCommandsStr(),
-        contentType: "markdown",
-      });
+      await pageCustomSlashCommandsStr();
 
       return { handled: true, inputFromCommand: null };
     }
@@ -687,7 +678,7 @@ export async function resolveSlashCommand(rawInput: string) {
 
   await printNewline();
   await print.error(`Invalid command: ${rawInput}, valid commands:`);
-  await print(getCommandsStr());
+  await print(getAvailableCommandsStr());
   return null;
 }
 
@@ -786,7 +777,13 @@ export async function setModelCommand(rawInput: string) {
   actions.setMessageParamTokensStale(true);
 }
 
-export async function pageContextFiles() {
+function getContextStr() {
+  return `# Context files:
+
+${getState().app.contextStr}`;
+}
+
+export async function pageContextStr() {
   if (getState().app.contextEntries.length === 0) {
     await printNewline();
     await print.doing("No available context files");
@@ -795,7 +792,26 @@ export async function pageContextFiles() {
 
   await openWithPager({
     pagerEnvKey: "LASSO_PAGER_CONTEXT",
-    initialContentStr: getState().app.contextStr,
+    initialContentStr: getContextStr(),
+    contentType: "markdown",
+  });
+}
+export async function printAvailableCommandsStr() {
+  await printNewline();
+  await print.doing("Available commands:");
+  await print(getAvailableCommandsStr());
+}
+
+export async function pageCustomSlashCommandsStr() {
+  if (getState().app.slashCommands.length === 0) {
+    await printNewline();
+    await print.doing("No available custom slash commands");
+    return;
+  }
+
+  await openWithPager({
+    pagerEnvKey: "LASSO_PAGER_COMMANDS",
+    initialContentStr: getCustomSlashCommandsStr(),
     contentType: "markdown",
   });
 }
@@ -822,7 +838,7 @@ export async function printSkills() {
   await print(skillsList);
 }
 
-export async function printContextFiles() {
+export async function printAvailableContextFiles() {
   if (getState().app.contextEntries.length === 0) {
     await printNewline();
     await print.doing("No available context files");
@@ -884,7 +900,7 @@ ${readResult.value}
   return null;
 }
 
-function getCommandsStr() {
+function getAvailableCommandsStr() {
   const customCommandsFormatted = getState().app.slashCommands.map(
     (command) => `- ${command.filePath}`,
   );
@@ -894,12 +910,6 @@ function getCommandsStr() {
   );
 
   return builtinCommandsFormatted.concat(customCommandsFormatted).join("\n");
-}
-
-export async function printCommands() {
-  await printNewline();
-  await print.doing("Available commands:");
-  await print(getCommandsStr());
 }
 
 export function isSameKey(a: Key, b: Key) {
@@ -930,42 +940,44 @@ function getAllPrettyConfig() {
   const localConfigTitle = `Local config from path: ${getLocalConfigPath()}`;
 
   return `# ${globalConfigTitle}
----
+
 ${markdownFence("yaml", getState().app.globalConfigStr)}
 
 # ${localConfigTitle}
----
+
 ${markdownFence("yaml", getState().app.localConfigStr)}
 
 # Applied config
----
+
 ${markdownFence("json", stringify(getState().config))}`;
 }
 
-function getPrettyCustomSlashCommandsStr() {
-  return getState()
+function getCustomSlashCommandsStr() {
+  const contents = getState()
     .app.slashCommands.map(
-      ({ content, filePath }) => `# ${filePath}
----
+      ({ content, filePath }) => `## ${filePath}
+
 ${content}`,
     )
     .join("\n\n");
+
+  return `# Slash commands:
+
+${contents}`;
 }
 
 function getPrettyReloadStr() {
   return `${getAllPrettyConfig()}
 
 # Context files:
----
+
 ${getState().app.contextStr}
 
 # Skills:
----
+
 ${getState().app.skillsStr}
 
-# Slash commands:
----
-${getPrettyCustomSlashCommandsStr()}
+${getCustomSlashCommandsStr()}
 `;
 }
 

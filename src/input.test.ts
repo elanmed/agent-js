@@ -12,9 +12,9 @@ import {
   getAvailableSlashCommands,
   clearCommand,
   printSkills,
-  printContextFiles,
-  printCommands,
-  pageContextFiles,
+  printAvailableContextFiles,
+  pageContextStr,
+  pageCustomSlashCommandsStr,
   spawnAndReadEditorContent,
   resume,
   initLocalConfig,
@@ -871,14 +871,14 @@ transcript content
     });
   });
 
-  describe("pageContextFiles", () => {
+  describe("pageContextStr", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
     });
 
     it("prints no available context files when entries list is empty", async () => {
-      await pageContextFiles();
+      await pageContextStr();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -894,7 +894,7 @@ No available context files
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      await pageContextFiles();
+      await pageContextStr();
       assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
 
@@ -903,12 +903,45 @@ No available context files
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      await pageContextFiles();
+      await pageContextStr();
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        "context string content",
+        `# Context files:
+
+context string content`,
       );
       assert.strictEqual(getState().app.stdout, "");
+    });
+  });
+
+  describe("pageCustomSlashCommandsStr", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints no available custom slash commands when list is empty", async () => {
+      await pageCustomSlashCommandsStr();
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+No available custom slash commands
+`,
+      );
+    });
+
+    it("opens custom commands in a pager via LASSO_PAGER_COMMANDS", async () => {
+      const { spawned } = mockPagerSpawn();
+      testProcessEnv._set("LASSO_PAGER_COMMANDS", "nano __FILE__");
+      actions.setSlashCommands([
+        {
+          name: "custom",
+          filePath: "/test/.lasso/commands/custom.md",
+          content: "custom command content",
+        },
+      ]);
+      await pageCustomSlashCommandsStr();
+      assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
   });
 
@@ -975,7 +1008,7 @@ Available skills:
     });
   });
 
-  describe("printContextFiles", () => {
+  describe("printAvailableContextFiles", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
@@ -985,7 +1018,7 @@ Available skills:
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      await printContextFiles();
+      await printAvailableContextFiles();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -996,7 +1029,7 @@ Available context files:
     });
 
     it("prints no available context files when entries list is empty", async () => {
-      await printContextFiles();
+      await printAvailableContextFiles();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -1023,7 +1056,7 @@ No available context files
           content: "skill content",
         },
       ]);
-      await printContextFiles();
+      await printAvailableContextFiles();
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -1035,7 +1068,7 @@ Available context files:
     });
   });
 
-  describe("printCommands", () => {
+  describe("printAvailableCommandsStr", () => {
     beforeEach(() => {
       actions.resetState();
       actions.resetStdout();
@@ -1049,7 +1082,7 @@ Available context files:
           content: "custom",
         },
       ]);
-      await printCommands();
+      await resolveSlashCommand("/commands");
       assert.strictEqual(
         stripAnsi(getState().app.stdout),
         `
@@ -1180,7 +1213,9 @@ Available commands:
       await harness.flush();
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        "context string content",
+        `# Context files:
+
+context string content`,
       );
       assert.strictEqual(getState().app.stdout, "");
     });
@@ -1191,8 +1226,10 @@ Available commands:
       harness.emitKey({ name: "m", ctrl: true });
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `# /test/.lasso/commands/custom.md
----
+        `# Slash commands:
+
+## /test/.lasso/commands/custom.md
+
 custom command content`,
       );
       assert.strictEqual(getState().app.stdout, "");
@@ -1531,7 +1568,7 @@ No available context files
       );
     });
 
-    it("handles /commands command", async () => {
+    it("handles /commands command by printing commands", async () => {
       actions.resetStdout();
       const result = await resolveSlashCommand("/commands");
       assert.strictEqual(result, null);
@@ -1573,8 +1610,10 @@ Available commands:
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `# /test/.lasso/commands/custom.md
----
+        `# Slash commands:
+
+## /test/.lasso/commands/custom.md
+
 custom command content`,
       );
     });
@@ -1594,11 +1633,16 @@ custom command content`,
       assert.strictEqual(spawned[0], "nano /tmp/lasso-test-uuid.txt");
     });
 
-    it("writes empty temp file for commands-str when there are no custom commands", async () => {
-      mockBatAvailable(true);
+    it("prints message for commands-str when there are no custom commands", async () => {
+      actions.resetStdout();
       const result = await resolveSlashCommand("/commands-str");
       assert.strictEqual(result, null);
-      assert.strictEqual(testFs._files.get("/tmp/lasso-test-uuid.txt"), "");
+      assert.strictEqual(
+        stripAnsi(getState().app.stdout),
+        `
+No available custom slash commands
+`,
+      );
     });
 
     it("handles /context-str command with no context files", async () => {
@@ -1623,7 +1667,9 @@ No available context files
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        "context string content",
+        `# Context files:
+
+context string content`,
       );
     });
 
