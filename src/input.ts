@@ -777,12 +777,6 @@ export async function setModelCommand(rawInput: string) {
   actions.setMessageParamTokensStale(true);
 }
 
-function getContextStr() {
-  return `# Context files:
-
-${getState().app.contextStr}`;
-}
-
 export async function pageContextStr() {
   if (getState().app.contextEntries.length === 0) {
     await printNewline();
@@ -792,7 +786,7 @@ export async function pageContextStr() {
 
   await openWithPager({
     pagerEnvKey: "LASSO_PAGER_CONTEXT",
-    initialContentStr: getContextStr(),
+    initialContentStr: getState().app.contextStr,
     contentType: "markdown",
   });
 }
@@ -969,11 +963,7 @@ ${contents}`;
 function getPrettyReloadStr() {
   return `${getAllPrettyConfig()}
 
-# Context files:
-
 ${getState().app.contextStr}
-
-# Skills:
 
 ${getState().app.skillsStr}
 

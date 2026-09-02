@@ -906,9 +906,7 @@ No available context files
       await pageContextStr();
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `# Context files:
-
-context string content`,
+        `context string content`,
       );
       assert.strictEqual(getState().app.stdout, "");
     });
@@ -1213,9 +1211,7 @@ Available commands:
       await harness.flush();
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `# Context files:
-
-context string content`,
+        `context string content`,
       );
       assert.strictEqual(getState().app.stdout, "");
     });
@@ -1667,9 +1663,7 @@ No available context files
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `# Context files:
-
-context string content`,
+        `context string content`,
       );
     });
 
@@ -1778,6 +1772,17 @@ transcript content
       );
       testFs._dirs.add(getGlobalContextDir());
       testFs._files.set("/fake-home/.config/lasso/context/AGENTS.md", "hello");
+      testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
+      ]);
+      testFs._files.set(
+        "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
+        `---
+name: my-skill
+description: A test skill
+---
+# Body`,
+      );
 
       const snapshots: string[] = [];
       mock.method(
@@ -1800,11 +1805,11 @@ transcript content
       assert.strictEqual(snapshots.length, 1);
       assert.ok(snapshots[0] !== undefined);
       assert.match(snapshots[0], /# Applied config/);
-      assert.match(snapshots[0], /Context files:/);
-      assert.match(snapshots[0], /Skills:/);
+      assert.match(snapshots[0], /# AGENTS\.md context files/);
+      assert.match(snapshots[0], /# Skills/);
       assert.match(
         snapshots[0],
-        /Path: \/fake-home\/.config\/lasso\/context\/AGENTS.md/,
+        /## Path: \/fake-home\/.config\/lasso\/context\/AGENTS.md/,
       );
     });
 
