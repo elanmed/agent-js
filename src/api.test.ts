@@ -5,6 +5,7 @@ import { maybeCompactMessageParams, resolveApiCall } from "./api.ts";
 import {
   setupTestContext,
   testFs,
+  testProcessEnv,
   mockExec,
   stripAnsi,
 } from "./test-helpers.ts";
@@ -28,6 +29,7 @@ function makeGenerateTextResult(overrides: Record<string, unknown> = {}) {
 describe("api", () => {
   beforeEach(() => {
     setupTestContext();
+    testProcessEnv._set("LASSO_API_KEY", "api-key");
     actions.setProvider("anthropic");
     actions.setModel("claude-sonnet-4-20250514");
     actions.setBaseURL("https://api.anthropic.com");

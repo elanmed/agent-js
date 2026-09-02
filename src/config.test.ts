@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
-import { getState } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import {
   initState,
   initStateForDebug,
@@ -8,14 +8,22 @@ import {
   defaultConfig,
   ConfigSchema,
   DefaultedConfigSchema,
+  blockOnMissingConfig,
 } from "./config.ts";
+import { MISSING } from "./deps.ts";
 import {
   getGlobalConfigPath,
   getLocalConfigPath,
   getGlobalContextDir,
   getUsageLogPath,
 } from "./paths.ts";
-import { testFs, setupTestContext } from "./test-helpers.ts";
+import {
+  testFs,
+  testProcessEnv,
+  setupTestContext,
+  mockStdout,
+  stripAnsi,
+} from "./test-helpers.ts";
 import { parseCliArgsDeps } from "./args.ts";
 import { dirname } from "node:path";
 
@@ -1177,11 +1185,13 @@ describe("config", () => {
     });
 
     describe("when the global config does not exist", () => {
-      it("throws when model is not configured", async () => {
-        await assert.rejects(
-          initState(),
-          /Invalid input: expected string, received undefined/,
+      it("defaults to MISSING when not configured", async () => {
+        testFs._files.set(
+          getGlobalConfigPath(),
+          JSON.stringify({ baseURL: "https://api.example.com" }),
         );
+        await initState();
+        assert.strictEqual(getState().config.model, MISSING);
       });
 
       it("throws when baseURL is not configured for openai-compatible provider", async () => {
@@ -1507,6 +1517,49 @@ hello
 
       assert.strictEqual(getState().app.sessionStartDate, 0);
       assert.strictEqual(getState().app.debugLogPath, "");
+    });
+  });
+
+  describe("blockOnMissingConfig", () => {
+    beforeEach(() => {
+      testProcessEnv._set("LASSO_API_KEY", "api-key");
+      actions.setBaseURL("https://api.anthropic.com");
+      actions.setModel("claude-sonnet-4-20250514");
+    });
+
+    it("returns false when api key, baseURL, and model are set", async () => {
+      const getCaptured = mockStdout();
+      assert.strictEqual(await blockOnMissingConfig(), false);
+      assert.strictEqual(getCaptured(), "");
+    });
+
+    it("returns true and suggests the init slash commands when nothing is set", async () => {
+      actions.resetState();
+      testProcessEnv._clear();
+      const getCaptured = mockStdout();
+      assert.strictEqual(await blockOnMissingConfig(), true);
+      assert.strictEqual(
+        stripAnsi(getCaptured()),
+        `Warning! You're missing required configuration options.
+- Set the \`LASSO_API_KEY\` environment variable, e.g. \`export LASSO_API_KEY=...\`
+- Set \`baseURL\` in \`.lasso/settings.yaml\` or \`~/.config/lasso/settings.yaml\` (required when \`provider=openai-compatible\`)
+- Set \`model\` in \`.lasso/settings.yaml\` or \`~/.config/lasso/settings.yaml\`
+
+Run /init-local or /init-global to generate a sample config.
+`,
+      );
+    });
+
+    it("only mentions the missing api key when baseURL and model are set", async () => {
+      testProcessEnv._clear();
+      const getCaptured = mockStdout();
+      assert.strictEqual(await blockOnMissingConfig(), true);
+      assert.strictEqual(
+        stripAnsi(getCaptured()),
+        `Warning! You're missing required configuration options.
+- Set the \`LASSO_API_KEY\` environment variable, e.g. \`export LASSO_API_KEY=...\`
+`,
+      );
     });
   });
 });

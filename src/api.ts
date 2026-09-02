@@ -18,29 +18,26 @@ import {
   type ToolName,
 } from "./tools.ts";
 import assert from "node:assert";
-import { aiDeps, fsDeps, processDeps } from "./deps.ts";
+import { aiDeps, fsDeps, processDeps, MISSING } from "./deps.ts";
 import { appendToChatHistory } from "./log.ts";
 
 export function getLanguageModel() {
   const apiKey = processDeps.env.get("LASSO_API_KEY");
-  const apiOptions = (() => {
-    if (apiKey === undefined) return {};
-    return { apiKey };
-  })();
+  const baseURL = getState().config.baseURL;
+
+  assert(apiKey !== undefined);
+  assert(baseURL !== undefined);
 
   if (getState().config.provider === "anthropic") {
     return createAnthropic({
-      ...apiOptions,
+      apiKey,
     })(getState().config.model);
   }
-
-  const baseURL = getState().config.baseURL;
-  assert(baseURL !== undefined);
 
   return createOpenAICompatible({
     name: "openai-compatible",
     baseURL: baseURL,
-    ...apiOptions,
+    apiKey,
   })(getState().config.model);
 }
 
@@ -160,6 +157,8 @@ export async function resolveApiCall(userInput: string) {
 
 export async function maybeCompactMessageParams(userInput: string) {
   const { model } = getState().config;
+  if (model === MISSING) return;
+
   const contextWindow = getState().config.contextWindowPerModel[model];
   if (contextWindow === undefined) return;
 

@@ -2,6 +2,7 @@ import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
 import { defaultConfig } from "./config.ts";
+import { MISSING } from "./deps.ts";
 import { makeFakeRl } from "./test-helpers.ts";
 
 describe("state", () => {
@@ -111,7 +112,7 @@ describe("state", () => {
   });
 
   it("set-model", () => {
-    assert.equal(getState().config.model, "");
+    assert.equal(getState().config.model, MISSING);
     actions.setModel("claude-haiku-4-5");
     assert.equal(getState().config.model, "claude-haiku-4-5");
   });

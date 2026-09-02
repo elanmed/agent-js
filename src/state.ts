@@ -9,6 +9,7 @@ import {
   type Provider,
   type UsageLimit,
 } from "./config.ts";
+import { MISSING } from "./deps.ts";
 import { stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import type { ModelUsage } from "./usage.ts";
@@ -80,7 +81,7 @@ const initialState: State = {
     sessionStartDate: 0,
   },
   config: {
-    model: "",
+    model: MISSING,
     baseURL: undefined,
     provider: defaultConfig.provider,
     pricingPerModel: structuredClone(defaultConfig.pricingPerModel),

@@ -8,9 +8,9 @@ import {
   getSkillsStr,
   getSkills,
 } from "./context.ts";
-import { actions } from "./state.ts";
+import { actions, getState } from "./state.ts";
 import { parseCliArgs } from "./args.ts";
-import { fsDeps } from "./deps.ts";
+import { fsDeps, processDeps, MISSING } from "./deps.ts";
 import {
   getDebugLogDir,
   getGlobalConfigPath,
@@ -137,7 +137,7 @@ export type DefaultedConfig = z.infer<typeof DefaultedConfigSchema>;
 export type Key = z.infer<typeof KeySchema>;
 
 export const defaultConfig: DefaultedConfig = {
-  model: "",
+  model: MISSING,
   provider: "openai-compatible" as const,
   pricingPerModel: {},
   contextWindowPerModel: {},
@@ -182,6 +182,54 @@ export function readConfigFile(path: string): Partial<Config> {
   return ConfigSchema.parse(parseResult.value);
 }
 
+export async function blockOnMissingConfig() {
+  const apiKey = processDeps.env.get("LASSO_API_KEY");
+
+  const warningMessages = [];
+  let includeConfigCommand = false;
+
+  if (apiKey === undefined) {
+    warningMessages.push(
+      "Set the `LASSO_API_KEY` environment variable, e.g. `export LASSO_API_KEY=...`",
+    );
+  }
+
+  const baseURL = getState().config.baseURL;
+  if (baseURL === undefined) {
+    includeConfigCommand = true;
+    warningMessages.push(
+      "Set `baseURL` in `.lasso/settings.yaml` or `~/.config/lasso/settings.yaml` (required when `provider=openai-compatible`)",
+    );
+  }
+
+  if (getState().config.model === MISSING) {
+    includeConfigCommand = true;
+    warningMessages.push(
+      "Set `model` in `.lasso/settings.yaml` or `~/.config/lasso/settings.yaml`",
+    );
+  }
+
+  if (warningMessages.length > 0) {
+    let formattedMessages = warningMessages
+      .map((message) => `- ${message}`)
+      .join("\n");
+
+    if (includeConfigCommand) {
+      formattedMessages = formattedMessages.concat(
+        "\n\nRun /init-local or /init-global to generate a sample config.",
+      );
+    }
+
+    const warning = `Warning! You're missing required configuration options.
+${formattedMessages}`;
+
+    await print.warning(warning);
+    return true;
+  }
+
+  return false;
+}
+
 function filterNulls<T>(entries: Record<string, T | null>): Record<string, T> {
   const filtered: Record<string, T> = {};
   for (const [key, value] of Object.entries(entries)) {
@@ -197,9 +245,8 @@ export async function initStateFromConfig() {
   actions.setGlobalConfigStr(readConfigFileStr(getGlobalConfigPath()));
   actions.setLocalConfigStr(readConfigFileStr(getLocalConfigPath()));
 
-  const defaultedModel = ModelSchema.parse(
-    localConfig.model ?? globalConfig.model,
-  );
+  const defaultedModel =
+    localConfig.model ?? globalConfig.model ?? defaultConfig.model;
 
   const defaultedProvider =
     localConfig.provider ?? globalConfig.provider ?? defaultConfig.provider;

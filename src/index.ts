@@ -16,6 +16,7 @@ import {
   resolveUserInput,
 } from "./input.ts";
 import { resolveApiCall, maybeCompactMessageParams } from "./api.ts";
+import { blockOnMissingConfig } from "./config.ts";
 import { initLogs } from "./log.ts";
 
 async function main() {
@@ -39,6 +40,9 @@ async function main() {
       await print.warning("Empty input");
       continue;
     }
+
+    const missingConfig = await blockOnMissingConfig();
+    if (missingConfig) continue;
 
     const text = await resolveApiCall(userInput);
     if (text === null) continue;
