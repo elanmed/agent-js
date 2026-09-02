@@ -4,7 +4,7 @@ import { testFs, setupTestContext } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import { getGlobalContextDir } from "./paths.ts";
 import {
-  getContextStr,
+  getContextFilesStr,
   getContextEntries,
   getSkillsStr,
   getSkills,
@@ -18,9 +18,9 @@ describe("context", () => {
     setupTestContext();
   });
 
-  describe("getContextStr", () => {
+  describe("getContextFilesStr", () => {
     it("returns empty string when no AGENTS.md files found", () => {
-      const result = getContextStr(getContextEntries());
+      const result = getContextFilesStr(getContextEntries());
       assert.equal(result, "");
     });
 
@@ -29,14 +29,13 @@ describe("context", () => {
         "/test-cwd/AGENTS.md",
       ]);
       testFs._files.set("/test-cwd/AGENTS.md", "# Agent Instructions");
-      const result = getContextStr(getContextEntries());
+      const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
         `# AGENTS.md context files
----
 
-# Path: /test-cwd/AGENTS.md
----
+## Path: /test-cwd/AGENTS.md
+
 # Agent Instructions
 `,
       );
@@ -49,19 +48,18 @@ describe("context", () => {
         "/fake-home/.config/lasso/context/AGENTS.md",
         "Global content",
       );
-      const result = getContextStr(getContextEntries());
+      const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
         `# AGENTS.md context files
----
 
-# Path: /test-cwd/AGENTS.md
----
+## Path: /test-cwd/AGENTS.md
+
 Root content
 
 
-# Path: /fake-home/.config/lasso/context/AGENTS.md
----
+## Path: /fake-home/.config/lasso/context/AGENTS.md
+
 Global content
 `,
       );
@@ -73,14 +71,13 @@ Global content
         "/fake-home/.config/lasso/context/AGENTS.md",
         "Global content",
       );
-      const result = getContextStr(getContextEntries());
+      const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
         `# AGENTS.md context files
----
 
-# Path: /fake-home/.config/lasso/context/AGENTS.md
----
+## Path: /fake-home/.config/lasso/context/AGENTS.md
+
 Global content
 `,
       );
@@ -95,14 +92,13 @@ Global content
         "/fake-home/.config/lasso/context/AGENTS.md",
         "global content",
       );
-      const result = getContextStr(getContextEntries());
+      const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
         `# AGENTS.md context files
----
 
-# Path: /fake-home/.config/lasso/context/AGENTS.md
----
+## Path: /fake-home/.config/lasso/context/AGENTS.md
+
 global content
 `,
       );
@@ -115,19 +111,18 @@ global content
         "global content",
       );
       testFs._files.set("/test-cwd/AGENTS.md", "local content");
-      const result = getContextStr(getContextEntries());
+      const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
         `# AGENTS.md context files
----
 
-# Path: /test-cwd/AGENTS.md
----
+## Path: /test-cwd/AGENTS.md
+
 local content
 
 
-# Path: /fake-home/.config/lasso/context/AGENTS.md
----
+## Path: /fake-home/.config/lasso/context/AGENTS.md
+
 global content
 `,
       );
@@ -156,12 +151,12 @@ description: A test skill
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - my-skill: A test skill
 `,
       );
@@ -194,12 +189,12 @@ description: Global deploy
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - deploy: Local deploy
 `,
       );
@@ -263,12 +258,12 @@ description: Second
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - skill-a: First
 - skill-b: Second
 `,
@@ -291,12 +286,12 @@ description: A test skill
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - my-skill: A test skill
 `,
       );
@@ -323,12 +318,12 @@ description: Valid
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - good: Valid
 `,
       );
@@ -351,12 +346,12 @@ description: From custom dir
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - custom-skill: From custom dir
 `,
       );
@@ -390,12 +385,12 @@ description: Local deploy
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - deploy: Custom deploy
 `,
       );
@@ -410,12 +405,12 @@ Available skills:
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - __lasso-context-for-/test-cwd/src: Context relevant for /test-cwd/src
 `,
       );
@@ -441,12 +436,12 @@ description: A test skill
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - my-skill: A test skill
 - __lasso-context-for-/test-cwd/src: Context relevant for /test-cwd/src
 `,
@@ -474,12 +469,12 @@ description: Works
       assert.equal(
         result,
         `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 - ok: Works
 `,
       );

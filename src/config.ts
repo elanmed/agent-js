@@ -4,7 +4,7 @@ import { stringify, tryCatch } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
 import {
   getContextEntries,
-  getContextStr,
+  getContextFilesStr,
   getSkillsStr,
   getSkills,
 } from "./context.ts";
@@ -376,7 +376,7 @@ export async function initStateFromFs() {
 
   const contextEntries = getContextEntries();
   actions.setContextEntries(contextEntries);
-  actions.setContextStr(getContextStr(contextEntries));
+  actions.setContextStr(getContextFilesStr(contextEntries));
 
   const skills = await getSkills();
   actions.setSkills(skills);

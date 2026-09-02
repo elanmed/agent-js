@@ -18,20 +18,19 @@ export interface ContextEntry {
 
 export const contextFileSkillNamePrefix = "__lasso-context-for";
 
-export function getContextStr(contextEntries: ContextEntry[]) {
+export function getContextFilesStr(contextEntries: ContextEntry[]) {
   if (contextEntries.length === 0) return "";
 
   const contextFilesList = contextEntries
     .map(
-      (entry) => `# Path: ${entry.filePath}
----
+      (entry) => `## Path: ${entry.filePath}
+
 ${entry.content}
 `,
     )
     .join("\n\n");
 
   return `# AGENTS.md context files
----
 
 ${contextFilesList}`;
 }
@@ -70,12 +69,12 @@ export function getSkillsStr(skills: Skill[]) {
     .join("\n");
 
   return `# Skills
----
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
 
-Available skills:
+## Available skills:
+
 ${skillsFormatted}
 `;
 }

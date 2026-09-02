@@ -1321,10 +1321,9 @@ describe("config", () => {
     assert.equal(
       getState().app.contextStr,
       `# AGENTS.md context files
----
 
-# Path: /fake-home/.config/lasso/context/AGENTS.md
----
+## Path: /fake-home/.config/lasso/context/AGENTS.md
+
 hello
 `,
     );
