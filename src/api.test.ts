@@ -1,7 +1,11 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
-import { maybeCompactMessageParams, resolveApiCall } from "./api.ts";
+import {
+  getHeaders,
+  maybeCompactMessageParams,
+  resolveApiCall,
+} from "./api.ts";
 import {
   setupTestContext,
   testFs,
@@ -349,6 +353,19 @@ SKILLS: available skills`,
       assert.deepStrictEqual(capturedMessages[2], {
         role: "user",
         content: "hello",
+      });
+    });
+  });
+  describe("getHeaders", () => {
+    it("returns no headers when gateway is not opencode", () => {
+      assert.deepStrictEqual(getHeaders(), {});
+    });
+
+    it("returns session and client headers when gateway is opencode", () => {
+      actions.setGateway("opencode");
+      assert.deepStrictEqual(getHeaders(), {
+        "x-opencode-session": "test-uuid",
+        "x-opencode-client": "lasso",
       });
     });
   });
