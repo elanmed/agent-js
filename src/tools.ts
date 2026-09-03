@@ -646,7 +646,9 @@ export async function createSubagentTool(
   }
 
   return {
-    isError: results.some((result) => result.status === "rejected"),
+    isError: results.some(
+      (result) => result.status === "rejected" || result.value.isError === true,
+    ),
     content: stringify(
       results.map((result, idx) => {
         if (result.status === "rejected") {
