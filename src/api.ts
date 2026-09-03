@@ -21,6 +21,15 @@ import assert from "node:assert";
 import { aiDeps, fsDeps, processDeps, MISSING } from "./deps.ts";
 import { appendToChatHistory } from "./log.ts";
 
+export function getHeaders() {
+  const headers: Record<string, string> = {};
+  if (getState().config.gateway === "opencode") {
+    headers["x-opencode-session"] = getState().app.sessionId;
+    headers["x-opencode-client"] = "lasso";
+  }
+  return headers;
+}
+
 export function getLanguageModel() {
   const apiKey = processDeps.env.get("LASSO_API_KEY");
   const baseURL = getState().config.baseURL;
@@ -28,9 +37,12 @@ export function getLanguageModel() {
   assert(apiKey !== undefined);
   assert(baseURL !== undefined);
 
+  const headers = getHeaders();
+
   if (getState().config.sdkProvider === "anthropic") {
     return createAnthropic({
       apiKey,
+      headers,
     })(getState().config.model);
   }
 
@@ -38,6 +50,7 @@ export function getLanguageModel() {
     name: "openai-compatible",
     baseURL: baseURL,
     apiKey,
+    headers,
   })(getState().config.model);
 }
 

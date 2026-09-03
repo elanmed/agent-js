@@ -3,11 +3,11 @@ import assert from "node:assert";
 import { actions, getState } from "./state.ts";
 import { defaultConfig } from "./config.ts";
 import { MISSING } from "./deps.ts";
-import { makeFakeRl } from "./test-helpers.ts";
+import { makeFakeRl, setupTestContext } from "./test-helpers.ts";
 
 describe("state", () => {
   beforeEach(() => {
-    actions.resetState();
+    setupTestContext();
   });
 
   it("resetState restores initial state after mutations", () => {
@@ -35,6 +35,7 @@ describe("state", () => {
     assert.equal(getState().app.apiStartTime, null);
     assert.equal(getState().app.apiEndTime, null);
     assert.equal(getState().app.sessionStartDate, 0);
+    assert.equal(getState().app.sessionId, "test-uuid");
     assert.equal(getState().app.chatHistoryPath, "");
   });
 
@@ -51,6 +52,7 @@ describe("state", () => {
     assert.equal(getState().app.apiStartTime, null);
     assert.equal(getState().app.apiEndTime, null);
     assert.equal(getState().app.sessionStartDate, 0);
+    assert.equal(getState().app.sessionId, "test-uuid");
     assert.equal(getState().app.chatHistoryPath, "");
   });
 

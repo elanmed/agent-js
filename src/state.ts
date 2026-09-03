@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-base-to-string */
+import crypto from "node:crypto";
 import type readline from "node:readline/promises";
 import type { ModelMessage } from "ai";
 import {
@@ -48,6 +49,7 @@ interface State {
     modelUsageForLimitWindow: Record<string, ModelUsage[]>;
     modelUsageForSession: Record<string, ModelUsage[]>;
     sessionStartDate: number;
+    sessionId: string;
   };
   config: DefaultedConfig;
   abortControllers: {
@@ -56,7 +58,7 @@ interface State {
   };
 }
 
-const initialState: State = {
+const createInitialState = (): State => ({
   app: {
     messageParams: { tokens: 0, tokensStale: false, messages: [] },
     editorInputValue: null,
@@ -79,6 +81,7 @@ const initialState: State = {
     modelUsageForLimitWindow: {},
     modelUsageForSession: {},
     sessionStartDate: 0,
+    sessionId: crypto.randomUUID(),
   },
   config: {
     model: MISSING,
@@ -105,9 +108,9 @@ const initialState: State = {
     question: null,
     apiStream: null,
   },
-};
+});
 
-let state: State = structuredClone(initialState);
+let state: State = createInitialState();
 
 export const getState = () => state;
 
@@ -446,7 +449,7 @@ export const actions = {
   },
 
   resetState() {
-    state = structuredClone(initialState);
+    state = createInitialState();
     logStateChange("reset-state", "[truncating]", stringify(state));
   },
 
