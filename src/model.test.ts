@@ -2,13 +2,12 @@ import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import { actions } from "./state.ts";
 import { getHeaders, getLanguageModel } from "./model.ts";
-import { setupTestContext, testProcessEnv } from "./test-helpers.ts";
+import { setupApiCallState, setupTestContext } from "./test-helpers.ts";
 
 describe("model", () => {
   beforeEach(() => {
     setupTestContext();
-    testProcessEnv._set("LASSO_API_KEY", "api-key");
-    actions.setSdkProvider("anthropic");
+    setupApiCallState();
     actions.setModel("claude-sonnet-4-20250514");
     actions.setBaseURL("https://api.anthropic.com");
   });

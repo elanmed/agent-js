@@ -4,8 +4,8 @@ import { actions, getState } from "./state.ts";
 import { maybeCompactMessageParams, resolveApiCall } from "./api.ts";
 import {
   setupTestContext,
+  setupApiCallState,
   testFs,
-  testProcessEnv,
   mockExec,
   stripAnsi,
   makeGenerateTextResult,
@@ -17,8 +17,7 @@ import type { ModelMessage } from "ai";
 describe("api", () => {
   beforeEach(() => {
     setupTestContext();
-    testProcessEnv._set("LASSO_API_KEY", "api-key");
-    actions.setSdkProvider("anthropic");
+    setupApiCallState();
     actions.setModel("claude-sonnet-4-20250514");
     actions.setBaseURL("https://api.anthropic.com");
     actions.setContextStr("");

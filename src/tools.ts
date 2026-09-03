@@ -20,6 +20,7 @@ import { Readability } from "@mozilla/readability";
 import { aiDeps, fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import { appendModelUsage } from "./usage.ts";
+
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -541,6 +542,7 @@ export async function loadSkillTool({
 
 const createSubagentTaskSchema = z.object({
   prompt: z.string(),
+  // TODO: read-write with diff
   access: z.enum(["read-only"]),
   model: z.string().optional(),
   timeout: z.number().optional(),
@@ -549,11 +551,20 @@ const createSubagentToolSchema = z.object({
   tasks: z.array(createSubagentTaskSchema),
 });
 export type CreateSubagentTool = z.infer<typeof createSubagentToolSchema>;
+export type CreateSubagentTask = z.infer<typeof createSubagentTaskSchema>;
 
 type SubagentResult = {
   model?: string;
   prompt: string;
 } & ToolResult;
+
+export function getSubagentModel(subagentSchema: CreateSubagentTask) {
+  if (subagentSchema.model === undefined || subagentSchema.model.length === 0) {
+    return getState().config.model;
+  }
+
+  return subagentSchema.model;
+}
 
 export async function createSubagentTool(
   { tasks }: CreateSubagentTool,
@@ -568,7 +579,6 @@ export async function createSubagentTool(
     .filter((content) => content.length > 0)
     .join("\n");
 
-  // TODO: read-write with diff
   const subagentPromises = tasks.map(
     async (subagentSchema): Promise<SubagentResult> => {
       const timeout = subagentSchema.timeout ?? SUBAGENT_TIMEOUT_MS;
@@ -578,16 +588,7 @@ export async function createSubagentTool(
         timeout,
       );
 
-      const model = (() => {
-        if (
-          subagentSchema.model === undefined ||
-          subagentSchema.model.length === 0
-        ) {
-          return getState().config.model;
-        }
-
-        return subagentSchema.model;
-      })();
+      const model = getSubagentModel(subagentSchema);
 
       const message = `[${model}] ${subagentSchema.prompt}`;
       await toolPrint("   create_subagent", message);
@@ -635,33 +636,33 @@ export async function createSubagentTool(
     },
   );
 
-  const promiseAllResult = await tryCatchAsync(
-    Promise.allSettled(subagentPromises),
-  );
-  if (!promiseAllResult.ok) {
-    if (isAbortError(promiseAllResult.error)) {
-      throw promiseAllResult.error;
-    }
+  const results = await Promise.allSettled(subagentPromises);
 
-    return {
-      isError: true,
-      content: getMessageFromError(promiseAllResult.error),
-    };
-  }
-
-  const results = promiseAllResult.value;
   const abortResult = results.find(
     (result) => result.status === "rejected" && isAbortError(result.reason),
   );
-  if (abortResult?.status === "rejected") {
-    throw abortResult.reason;
+  if (abortResult !== undefined) {
+    throw (abortResult as PromiseRejectedResult).reason;
   }
 
   return {
-    isError: results.some(
-      (result) => result.status === "rejected" || result.value.isError === true,
+    isError: results.some((result) => result.status === "rejected"),
+    content: stringify(
+      results.map((result, idx) => {
+        if (result.status === "rejected") {
+          const task = tasks[idx]!;
+          const model = getSubagentModel(task);
+
+          return {
+            model,
+            prompt: task.prompt,
+            isError: true,
+            content: getMessageFromError(result.reason),
+          } satisfies SubagentResult;
+        }
+        return result.value;
+      }),
     ),
-    content: stringify(results),
   };
 }
 

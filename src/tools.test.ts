@@ -1,7 +1,6 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { getEventListeners } from "node:events";
-import childProcess from "node:child_process";
 import {
   executeBashTool,
   executeCreateFileTool,
@@ -19,12 +18,14 @@ import {
 import {
   testFs,
   setupTestContext,
+  setupApiCallState,
   mockExec,
+  mockExecCalls,
+  mockGenerateText,
   stripAnsi,
-  testProcessEnv,
   makeGenerateTextResult,
 } from "./test-helpers.ts";
-import { aiDeps, fsDeps } from "./deps.ts";
+import { fsDeps } from "./deps.ts";
 import { actions, getState } from "./state.ts";
 
 describe("tools", () => {
@@ -666,20 +667,14 @@ bottom`,
 
   describe("createSubagentTool", () => {
     it("runs read-only subagents in parallel and returns structured results", async () => {
-      testProcessEnv._set("LASSO_API_KEY", "api-key");
-      actions.setSdkProvider("anthropic");
-      actions.setModel("main-model");
+      setupApiCallState();
       const calls: Record<string, unknown>[] = [];
-      mock.method(
-        aiDeps,
-        "generateText",
-        (options: Record<string, unknown>) => {
-          calls.push(options);
-          return makeGenerateTextResult({
-            text: `result-${String(calls.length)}`,
-          });
-        },
-      );
+      mockGenerateText((options: Record<string, unknown>) => {
+        calls.push(options);
+        return makeGenerateTextResult({
+          text: `result-${String(calls.length)}`,
+        });
+      });
 
       const result = await createSubagentTool({
         tasks: [
@@ -713,17 +708,11 @@ bottom`,
     });
 
     it("uses the configured model when a task model is omitted", async () => {
-      testProcessEnv._set("LASSO_API_KEY", "api-key");
-      actions.setSdkProvider("anthropic");
-      actions.setModel("main-model");
-      mock.method(
-        aiDeps,
-        "generateText",
-        (options: { model: { modelId: string } }) => {
-          assert.strictEqual(options.model.modelId, "main-model");
-          return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
-        },
-      );
+      setupApiCallState();
+      mockGenerateText((options: { model: { modelId: string } }) => {
+        assert.strictEqual(options.model.modelId, "main-model");
+        return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
+      });
 
       const result = await createSubagentTool({
         tasks: [{ prompt: "inspect", access: "read-only" }],
@@ -735,17 +724,11 @@ bottom`,
     });
 
     it("uses the configured model when a task model is empty", async () => {
-      testProcessEnv._set("LASSO_API_KEY", "api-key");
-      actions.setSdkProvider("anthropic");
-      actions.setModel("main-model");
-      mock.method(
-        aiDeps,
-        "generateText",
-        (options: { model: { modelId: string } }) => {
-          assert.strictEqual(options.model.modelId, "main-model");
-          return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
-        },
-      );
+      setupApiCallState();
+      mockGenerateText((options: { model: { modelId: string } }) => {
+        assert.strictEqual(options.model.modelId, "main-model");
+        return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
+      });
 
       const result = await createSubagentTool({
         tasks: [{ prompt: "inspect", access: "read-only", model: "" }],
@@ -757,19 +740,13 @@ bottom`,
     });
 
     it("returns errors for failed subagents without hiding successful results", async () => {
-      testProcessEnv._set("LASSO_API_KEY", "api-key");
-      actions.setSdkProvider("anthropic");
-      actions.setModel("main-model");
-      mock.method(
-        aiDeps,
-        "generateText",
-        (options: { model: { modelId: string } }) => {
-          if (options.model.modelId === "bad-model") {
-            return Promise.reject(new Error("subagent failed"));
-          }
-          return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
-        },
-      );
+      setupApiCallState();
+      mockGenerateText((options: { model: { modelId: string } }) => {
+        if (options.model.modelId === "bad-model") {
+          return Promise.reject(new Error("subagent failed"));
+        }
+        return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
+      });
 
       const result = await createSubagentTool({
         tasks: [
@@ -789,25 +766,54 @@ bottom`,
         { model: "good-model", prompt: "good", content: "ok" },
       ]);
     });
+
+    it("returns a timeout error with subagent metadata", async () => {
+      setupApiCallState();
+      mock.timers.enable({ apis: ["setTimeout"] });
+      let onGenerateTextCalled: () => void = () => undefined;
+      const generateTextCalledPromise = new Promise<void>((resolve) => {
+        onGenerateTextCalled = resolve;
+      });
+      mockGenerateText((options: { abortSignal?: AbortSignal }) => {
+        onGenerateTextCalled();
+        return new Promise((_resolve, reject) => {
+          options.abortSignal?.addEventListener("abort", () => {
+            reject(
+              new DOMException("This operation was aborted", "AbortError"),
+            );
+          });
+        });
+      });
+
+      try {
+        const resultPromise = createSubagentTool({
+          tasks: [
+            {
+              prompt: "inspect timeout",
+              access: "read-only",
+              model: "slow-model",
+              timeout: 1_000,
+            },
+          ],
+        });
+        await generateTextCalledPromise;
+        mock.timers.tick(1_000);
+        const result = await resultPromise;
+        assert.deepStrictEqual(JSON.parse(result.content), [
+          {
+            model: "slow-model",
+            prompt: "inspect timeout",
+            isError: true,
+            content: "Subagent timed out after 1s",
+          },
+        ]);
+      } finally {
+        mock.timers.reset();
+      }
+    });
   });
 
   describe("execGitDiff", () => {
-    function mockExecCalls(results: { stdout: string; error?: Error }[]) {
-      const queue = [...results];
-      mock.method(
-        childProcess,
-        "exec",
-        (
-          _cmd: string,
-          _opts: unknown,
-          cb: (error: Error | null, stdout: string, stderr: string) => void,
-        ) => {
-          const { stdout, error } = queue.shift()!;
-          cb(error ?? null, stdout, "");
-        },
-      );
-    }
-
     it("uses delta when available and resolves with stdout", async () => {
       mockExecCalls([{ stdout: "delta 0.18.2" }, { stdout: "diff output" }]);
       const result = await execGitDiff({

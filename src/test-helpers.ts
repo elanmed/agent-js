@@ -2,7 +2,7 @@ import os from "node:os";
 import crypto from "node:crypto";
 import childProcess from "node:child_process";
 import { mock } from "node:test";
-import { fsDeps, processDeps } from "./deps.ts";
+import { aiDeps, fsDeps, processDeps } from "./deps.ts";
 import { actions } from "./state.ts";
 import { initKeypress } from "./input.ts";
 import type { Key } from "./config.ts";
@@ -202,6 +202,12 @@ export function setupTestContext() {
   actions.resetState();
 }
 
+export function setupApiCallState() {
+  testProcessEnv._set("LASSO_API_KEY", "api-key");
+  actions.setSdkProvider("anthropic");
+  actions.setModel("main-model");
+}
+
 export function makeGenerateTextResult(
   overrides: Record<string, unknown> = {},
 ) {
@@ -236,6 +242,22 @@ export function mockExec(opts: {
   if (once === true) {
     m.mock.mockImplementationOnce(impl);
   }
+}
+
+export function mockExecCalls(calls: { stdout: string; error?: Error }[]) {
+  const queue = [...calls];
+  mock.method(
+    childProcess,
+    "exec",
+    (_cmd: string, _opts: unknown, cb: ExecCallback) => {
+      const { stdout, error } = queue.shift()!;
+      cb(error ?? null, stdout, "");
+    },
+  );
+}
+
+export function mockGenerateText(implementation: unknown) {
+  mock.method(aiDeps, "generateText", implementation as never);
 }
 
 export function mockClipboardPaste(stdout: string) {
