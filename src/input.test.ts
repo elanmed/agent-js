@@ -1222,7 +1222,7 @@ Available commands:
       harness.emitKey({ name: "m", ctrl: true });
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `# Slash commands:
+        `# [lasso] Slash commands:
 
 ## /test/.lasso/commands/custom.md
 
@@ -1606,7 +1606,7 @@ Available commands:
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `# Slash commands:
+        `# [lasso] Slash commands:
 
 ## /test/.lasso/commands/custom.md
 
@@ -1805,8 +1805,8 @@ description: A test skill
       assert.strictEqual(snapshots.length, 1);
       assert.ok(snapshots[0] !== undefined);
       assert.match(snapshots[0], /# Applied config/);
-      assert.match(snapshots[0], /# AGENTS\.md context files/);
-      assert.match(snapshots[0], /# Skills/);
+      assert.match(snapshots[0], /# \[lasso\] AGENTS\.md context files/);
+      assert.match(snapshots[0], /# \[lasso\] Skills/);
       assert.match(
         snapshots[0],
         /## Path: \/fake-home\/.config\/lasso\/context\/AGENTS.md/,
@@ -1837,10 +1837,10 @@ description: A test skill
       assert.strictEqual(
         result,
         `Follow the instructions below along with the provided context:
-## Instructions
+## [lasso] Instructions
 custom command content
 
-## Context
+## [lasso] Context
 some task
   `,
       );
@@ -1858,10 +1858,10 @@ some task
       assert.strictEqual(
         result,
         `Follow the instructions below along with the provided context:
-## Instructions
+## [lasso] Instructions
 custom command content
 
-## Context
+## [lasso] Context
 some   task
   `,
       );

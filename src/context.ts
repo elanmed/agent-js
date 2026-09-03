@@ -30,7 +30,7 @@ ${entry.content}
     )
     .join("\n\n");
 
-  return `# AGENTS.md context files
+  return `# [lasso] AGENTS.md context files
 
 ${contextFilesList}`;
 }
@@ -68,7 +68,7 @@ export function getSkillsStr(skills: Skill[]) {
     .map((skill) => `- ${skill.name}: ${skill.description}`)
     .join("\n");
 
-  return `# Skills
+  return `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.

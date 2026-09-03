@@ -32,7 +32,7 @@ describe("context", () => {
       const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
-        `# AGENTS.md context files
+        `# [lasso] AGENTS.md context files
 
 ## Path: /test-cwd/AGENTS.md
 
@@ -51,7 +51,7 @@ describe("context", () => {
       const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
-        `# AGENTS.md context files
+        `# [lasso] AGENTS.md context files
 
 ## Path: /test-cwd/AGENTS.md
 
@@ -74,7 +74,7 @@ Global content
       const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
-        `# AGENTS.md context files
+        `# [lasso] AGENTS.md context files
 
 ## Path: /fake-home/.config/lasso/context/AGENTS.md
 
@@ -95,7 +95,7 @@ Global content
       const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
-        `# AGENTS.md context files
+        `# [lasso] AGENTS.md context files
 
 ## Path: /fake-home/.config/lasso/context/AGENTS.md
 
@@ -114,7 +114,7 @@ global content
       const result = getContextFilesStr(getContextEntries());
       assert.equal(
         result,
-        `# AGENTS.md context files
+        `# [lasso] AGENTS.md context files
 
 ## Path: /test-cwd/AGENTS.md
 
@@ -150,7 +150,7 @@ description: A test skill
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -188,7 +188,7 @@ description: Global deploy
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -257,7 +257,7 @@ description: Second
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -285,7 +285,7 @@ description: A test skill
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -317,7 +317,7 @@ description: Valid
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -345,7 +345,7 @@ description: From custom dir
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -384,7 +384,7 @@ description: Local deploy
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -404,7 +404,7 @@ would benefit from specialized instructions.
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -435,7 +435,7 @@ description: A test skill
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.
@@ -468,7 +468,7 @@ description: Works
       const result = getSkillsStr(await getSkills());
       assert.equal(
         result,
-        `# Skills
+        `# [lasso] Skills
 
 Use the \`load_skill\` tool to load a skill when the user's request
 would benefit from specialized instructions.

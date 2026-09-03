@@ -644,10 +644,10 @@ async function resolveCustomSlashCommand(
   }
 
   const contentWithCommandContext = `Follow the instructions below along with the provided context:
-## Instructions
+## [lasso] Instructions
 ${matchedCommand.content}
 
-## Context
+## [lasso] Context
 ${commandContext}
   `;
 
@@ -955,7 +955,7 @@ ${content}`,
     )
     .join("\n\n");
 
-  return `# Slash commands:
+  return `# [lasso] Slash commands:
 
 ${contents}`;
 }
