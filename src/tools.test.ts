@@ -22,6 +22,7 @@ import {
   mockExec,
   stripAnsi,
   testProcessEnv,
+  makeGenerateTextResult,
 } from "./test-helpers.ts";
 import { aiDeps, fsDeps } from "./deps.ts";
 import { actions, getState } from "./state.ts";
@@ -674,14 +675,9 @@ bottom`,
         "generateText",
         (options: Record<string, unknown>) => {
           calls.push(options);
-          return {
+          return makeGenerateTextResult({
             text: `result-${String(calls.length)}`,
-            totalUsage: {
-              inputTokens: 1,
-              outputTokens: 2,
-              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
-            },
-          };
+          });
         },
       );
 
@@ -725,14 +721,7 @@ bottom`,
           if (options.model.modelId === "bad-model") {
             return Promise.reject(new Error("subagent failed"));
           }
-          return Promise.resolve({
-            text: "ok",
-            totalUsage: {
-              inputTokens: 1,
-              outputTokens: 2,
-              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
-            },
-          });
+          return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
         },
       );
 

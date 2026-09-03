@@ -202,6 +202,21 @@ export function setupTestContext() {
   actions.resetState();
 }
 
+export function makeGenerateTextResult(
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    text: "response text",
+    totalUsage: {
+      inputTokens: 10,
+      outputTokens: 5,
+      inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
+    },
+    response: { messages: [] },
+    ...overrides,
+  };
+}
+
 type ExecCallback = (
   error: Error | null,
   stdout: string,

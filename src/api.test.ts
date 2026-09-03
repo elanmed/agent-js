@@ -8,23 +8,11 @@ import {
   testProcessEnv,
   mockExec,
   stripAnsi,
+  makeGenerateTextResult,
 } from "./test-helpers.ts";
 import { aiDeps } from "./deps.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import type { ModelMessage } from "ai";
-
-function makeGenerateTextResult(overrides: Record<string, unknown> = {}) {
-  return {
-    text: "response text",
-    totalUsage: {
-      inputTokens: 10,
-      outputTokens: 5,
-      inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
-    },
-    response: { messages: [] },
-    ...overrides,
-  };
-}
 
 describe("api", () => {
   beforeEach(() => {
