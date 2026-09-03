@@ -185,6 +185,14 @@ export function initKeypress() {
             }
             return;
           }
+          case "edit-str": {
+            await openWithPager({
+              initialContentStr: getState().app.editorInputValue ?? "",
+              pagerEnvKey: "LASSO_PAGER_EDIT",
+              contentType: "markdown",
+            });
+            return;
+          }
           case "paste": {
             const editorContent = await spawnAndReadEditorContent({
               includeClipboardSuffix: true,
@@ -466,6 +474,7 @@ async function resolveExitConfirmation() {
 
 const builtinSlashCommands = [
   "edit",
+  "edit-str",
   "history",
   "clear",
   "paste",
@@ -500,6 +509,14 @@ async function resolveBuiltinSlashCommand(
       const content = await spawnAndReadEditorContent();
       if (content !== null) appendToChatHistory(content, "user");
       return { handled: true, inputFromCommand: content };
+    }
+    case "edit-str": {
+      await openWithPager({
+        initialContentStr: getState().app.editorInputValue ?? "",
+        pagerEnvKey: "LASSO_PAGER_EDIT",
+        contentType: "markdown",
+      });
+      return { handled: true, inputFromCommand: null };
     }
     case "paste": {
       const content = await spawnAndReadEditorContent({

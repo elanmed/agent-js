@@ -145,7 +145,7 @@ keymaps:
 | `edit`  | `Key` | `{ name: "g", ctrl: true }` | Call `$LASSO_EDIT` or `$EDITOR __FILE__` to input multi-line prompts                         |
 | `paste` | `Key` | `{ name: "v", ctrl: true }` | Call `$LASSO_EDIT` or `$EDITOR __FILE__` with the current line + clipboard content pasted in |
 
-Pressing a bound key runs the command directly for `edit`/`paste` (editor) and pager commands (`history`, `config`, `context-str`, `commands-str`); all other commands, builtin or custom, are typed into the prompt. Custom command keymaps use the command's name (its filename without extension).
+Pressing a bound key runs the command directly for `edit`/`paste` (editor) and pager commands (`edit-str`, `history`, `config`, `context-str`, `commands-str`); all other commands, builtin or custom, are typed into the prompt. Custom command keymaps use the command's name (its filename without extension).
 
 Keymaps must be unique across the merged default, global, and local configs — two commands bound to the same key cause a startup validation error.
 
@@ -227,6 +227,7 @@ usageLimit:
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `LASSO_API_KEY`         | API key for the configured provider (required)                                                                         |
 | `LASSO_EDIT`            | Editor command with `__FILE__` placeholder for multi-line input (fallback: `$EDITOR __FILE__`)                         |
+| `LASSO_PAGER_EDIT`      | Pager command with `__FILE__` placeholder for viewing the current editor input (fallback: `$LASSO_PAGER`)              |
 | `LASSO_PAGER_HISTORY`   | Pager command with `__FILE__` placeholder for viewing chat history (fallback: `$LASSO_PAGER`)                          |
 | `LASSO_PAGER_CONFIG`    | Pager command with `__FILE__` placeholder for viewing config (fallback: `$LASSO_PAGER`)                                |
 | `LASSO_PAGER_CONTEXT`   | Pager command with `__FILE__` placeholder for viewing context (fallback: `$LASSO_PAGER`)                               |
@@ -248,6 +249,7 @@ Slash commands are triggered with `/command` at the prompt.
 | Command         | Description                                                                |
 | --------------- | -------------------------------------------------------------------------- |
 | `/edit`         | Call the `edit` keymap                                                     |
+| `/edit-str`     | View the current editor input in a pager                                   |
 | `/clear`        | Clear conversation context                                                 |
 | `/history`      | View chat history in a pager                                               |
 | `/paste`        | Call the `paste` keymap                                                    |

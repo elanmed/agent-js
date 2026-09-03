@@ -1087,6 +1087,7 @@ Available context files:
         `
 Available commands:
 - /edit
+- /edit-str
 - /history
 - /clear
 - /paste
@@ -1186,6 +1187,19 @@ Available commands:
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "log content",
+      );
+      assert.strictEqual(getCapturedAppStdout(), "");
+    });
+
+    it("opens editor input in a pager when edit-str keymap matches", async () => {
+      mockSpawnSync();
+      actions.setKeymap("edit-str", { name: "e", ctrl: true });
+      actions.setEditorInputValue("editor input");
+      harness.emitKey({ name: "e", ctrl: true });
+      await harness.flush();
+      assert.strictEqual(
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
+        "editor input",
       );
       assert.strictEqual(getCapturedAppStdout(), "");
     });
@@ -1467,6 +1481,17 @@ custom command content`,
       assert.strictEqual(result, null);
     });
 
+    it("handles /edit-str command by opening the current editor input in a pager", async () => {
+      testProcessEnv._set("LASSO_PAGER_EDIT", "nano __FILE__");
+      actions.setEditorInputValue("editor input");
+      const result = await resolveSlashCommand("/edit-str");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
+        "editor input",
+      );
+    });
+
     it("handles /edit command and logs editor content to chat history", async () => {
       actions.setChatHistoryPath("/tmp/test-history.log");
       mock.method(childProcess, "spawnSync", () => {
@@ -1574,6 +1599,7 @@ No available context files
         `
 Available commands:
 - /edit
+- /edit-str
 - /history
 - /clear
 - /paste
@@ -1896,6 +1922,7 @@ some   task
         `
 Invalid command: /unknown, valid commands:
 - /edit
+- /edit-str
 - /history
 - /clear
 - /paste
