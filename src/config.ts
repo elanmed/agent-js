@@ -57,7 +57,12 @@ export const UsageLimitSchema = z.strictObject({
 
 export type UsageLimit = z.infer<typeof UsageLimitSchema>;
 
-const SdkProviderSchema = z.enum(["anthropic", "openai-compatible", MISSING]);
+const SdkProviderSchema = z.enum([
+  "anthropic",
+  "openai-compatible",
+  "openai",
+  MISSING,
+]);
 export type SdkProvider = z.infer<typeof SdkProviderSchema>;
 
 const ModelSchema = z.string();

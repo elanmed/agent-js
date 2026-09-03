@@ -1,6 +1,7 @@
 import type { ModelMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createOpenAI } from "@ai-sdk/openai";
 import { actions, getState } from "./state.ts";
 import {
   isAbortError,
@@ -32,26 +33,48 @@ export function getHeaders() {
 
 export function getLanguageModel() {
   const apiKey = processDeps.env.get("LASSO_API_KEY");
-  const baseURL = getState().config.baseURL;
+  const sdkProvider = getState().config.sdkProvider;
 
   assert(apiKey !== undefined);
-  assert(baseURL !== undefined);
+  assert(sdkProvider !== MISSING);
+
+  const baseURLOpts = (() => {
+    const baseURL = getState().config.baseURL;
+    if (baseURL === undefined) return {};
+    return { baseURL };
+  })();
 
   const headers = getHeaders();
 
-  if (getState().config.sdkProvider === "anthropic") {
-    return createAnthropic({
-      apiKey,
-      headers,
-    })(getState().config.model);
+  switch (sdkProvider) {
+    case "openai-compatible": {
+      const baseURL = getState().config.baseURL;
+      assert(baseURL !== undefined);
+      return createOpenAICompatible({
+        baseURL,
+        name: "openai-compatible",
+        headers,
+      }).chatModel(getState().config.model);
+    }
+    case "anthropic": {
+      return createAnthropic({
+        apiKey,
+        headers,
+        ...baseURLOpts,
+      })(getState().config.model);
+    }
+    case "openai": {
+      return createOpenAI({
+        apiKey,
+        headers,
+        ...baseURLOpts,
+      })(getState().config.model);
+    }
+    default: {
+      sdkProvider satisfies never;
+      throw new Error("Unhandled sdkProvider");
+    }
   }
-
-  return createOpenAICompatible({
-    name: "openai-compatible",
-    baseURL: baseURL,
-    apiKey,
-    headers,
-  })(getState().config.model);
 }
 
 export async function resolveApiCall(userInput: string) {
