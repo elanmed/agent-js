@@ -12,7 +12,7 @@ _A minimal agent harness to rein in your llm_
   - A message queue lets you batch multiple prompts in the editor, sent one per turn
 - **Tools**: 8 tools to execute bash, fetch from the web, and edit files
   - A `git diff` with `delta` is output whenever a tool changes a file
-- **Multiple providers**: Anthropic or OpenAI-compatible APIs
+- **Multiple providers**: Anthropic, OpenAI, or OpenAI-compatible APIs
 - **AGENTS.md support**: The root file is included in context, nested files are internally represented as skills
 - **Slash commands**: Change agent settings or execute reusable prompts
 - **Token usage tracking**: Track spending per model within a configurable time window
@@ -29,25 +29,25 @@ If `model`, `baseURL`, or `LASSO_API_KEY` are missing at startup, lasso warns an
 
 ### Config Options
 
-| Option                          | Type                                   | Required | Default                  | Description                                                     |
-| ------------------------------- | -------------------------------------- | -------- | ------------------------ | --------------------------------------------------------------- |
-| `model`                         | `string`                               | optional | —                        | Model name (required in the merged config)                      |
-| `sdkProvider`                   | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                                    |
-| `gateway`                       | `"opencode"`                           | optional | —                        | Used to append gateway-specific headers                         |
-| `baseURL`                       | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)                 |
-| `pricingPerModel`               | `object`                               | optional | `{}`                     | Token pricing per model per million                             |
-| `contextWindowPerModel`         | `object`                               | optional | `{}`                     | Context window size in tokens per model                         |
-| `compactTriggerRatio`           | `number`                               | optional | `0.7`                    | Compact when context usage exceeds this ratio                   |
-| `compactTargetRatio`            | `number`                               | optional | `0.3`                    | Compact down to this context ratio                              |
-| `keymaps`                       | `object`                               | optional | see below                | Custom keybindings                                              |
-| `customSlashCommandDirs`        | `string[]`                             | optional | `[]`                     | Additional directories for custom slash commands                |
-| `customSkillDirs`               | `string[]`                             | optional | `[]`                     | Additional directories for skills                               |
-| `loadingStateFrames`            | `string[]`                             | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                                           |
-| `loadingStateFrameDuration`     | `number`                               | optional | `80`                     | Spinner frame interval in ms                                    |
-| `promptPrefix`                  | `string`                               | optional | `"> "`                   | Prompt prefix string                                            |
-| `suppressBatUnavailableWarning` | `boolean`                              | optional | `false`                  | Suppress the startup warning when `bat` is missing              |
-| `messageQueueDelimiter`         | `string`                               | optional | `l---\n`                 | Delimiter line separating multiple messages in the editor input |
-| `usageLimit`                    | `object`                               | optional | `undefined`              | Dollar limit and tracking window                                |
+| Option                          | Type                                                 | Required | Default                  | Description                                                     |
+| ------------------------------- | ---------------------------------------------------- | -------- | ------------------------ | --------------------------------------------------------------- |
+| `model`                         | `string`                                             | optional | —                        | Model name (required in the merged config)                      |
+| `sdkProvider`                   | `"anthropic"` \| `"openai"` \| `"openai-compatible"` | optional | `openai-compatible`      | AI SDK provider                                                 |
+| `gateway`                       | `"opencode"`                                         | optional | —                        | Used to append gateway-specific headers                         |
+| `baseURL`                       | `string`                                             | optional | `null`                   | API base URL (required for `openai-compatible`)                 |
+| `pricingPerModel`               | `object`                                             | optional | `{}`                     | Token pricing per model per million                             |
+| `contextWindowPerModel`         | `object`                                             | optional | `{}`                     | Context window size in tokens per model                         |
+| `compactTriggerRatio`           | `number`                                             | optional | `0.7`                    | Compact when context usage exceeds this ratio                   |
+| `compactTargetRatio`            | `number`                                             | optional | `0.3`                    | Compact down to this context ratio                              |
+| `keymaps`                       | `object`                                             | optional | see below                | Custom keybindings                                              |
+| `customSlashCommandDirs`        | `string[]`                                           | optional | `[]`                     | Additional directories for custom slash commands                |
+| `customSkillDirs`               | `string[]`                                           | optional | `[]`                     | Additional directories for skills                               |
+| `loadingStateFrames`            | `string[]`                                           | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                                           |
+| `loadingStateFrameDuration`     | `number`                                             | optional | `80`                     | Spinner frame interval in ms                                    |
+| `promptPrefix`                  | `string`                                             | optional | `"> "`                   | Prompt prefix string                                            |
+| `suppressBatUnavailableWarning` | `boolean`                                            | optional | `false`                  | Suppress the startup warning when `bat` is missing              |
+| `messageQueueDelimiter`         | `string`                                             | optional | `l---\n`                 | Delimiter line separating multiple messages in the editor input |
+| `usageLimit`                    | `object`                                             | optional | `undefined`              | Dollar limit and tracking window                                |
 
 ### Local Overwrite vs Extend
 
@@ -382,12 +382,13 @@ Available skills are listed in the system prompt, the LLM can use the `load_skil
 
 ## Dependencies
 
-Minimal runtime dependencies (9 total):
+Minimal runtime dependencies (10 total):
 
 | Package                     | Purpose                                 |
 | --------------------------- | --------------------------------------- |
 | `ai`                        | AI SDK core                             |
 | `@ai-sdk/anthropic`         | Anthropic provider                      |
+| `@ai-sdk/openai`            | OpenAI provider                         |
 | `@ai-sdk/openai-compatible` | OpenAI-compatible provider              |
 | `zod`                       | Schema validation                       |
 | `happy-dom`                 | DOM parsing for `web_fetch_html`        |
