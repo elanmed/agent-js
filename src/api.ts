@@ -15,7 +15,7 @@ import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import {
   objectWithPathSchema,
   printGitDiff,
-  TOOLS,
+  tools,
   type ToolName,
 } from "./tools.ts";
 import assert from "node:assert";
@@ -31,7 +31,7 @@ export function getHeaders() {
   return headers;
 }
 
-export function getLanguageModel() {
+export function getLanguageModel(model: string) {
   const apiKey = processDeps.env.get("LASSO_API_KEY");
   const sdkProvider = getState().config.sdkProvider;
 
@@ -54,21 +54,21 @@ export function getLanguageModel() {
         baseURL,
         name: "openai-compatible",
         headers,
-      }).chatModel(getState().config.model);
+      }).chatModel(model);
     }
     case "anthropic": {
       return createAnthropic({
         apiKey,
         headers,
         ...baseURLOpts,
-      })(getState().config.model);
+      })(model);
     }
     case "openai": {
       return createOpenAI({
         apiKey,
         headers,
         ...baseURLOpts,
-      })(getState().config.model);
+      })(model);
     }
     default: {
       sdkProvider satisfies never;
@@ -96,10 +96,10 @@ export async function resolveApiCall(userInput: string) {
   startLoadingState();
   const generateTextResult = await tryCatchAsync(
     aiDeps.generateText({
-      model: getLanguageModel(),
+      model: getLanguageModel(getState().config.model),
       system: systemContent,
       messages: [...getState().app.messageParams.messages, inputMessageParam],
-      tools: TOOLS,
+      tools,
       stopWhen: aiDeps.isLoopFinished(),
       abortSignal: getState().abortControllers.apiStream!.signal,
       experimental_onToolCallStart: ({ toolCall }) => {
@@ -218,7 +218,7 @@ ${JSON.stringify(getState().app.messageParams.messages)}
   startLoadingState();
   const generateTextResult = await tryCatchAsync(
     aiDeps.generateText({
-      model: getLanguageModel(),
+      model: getLanguageModel(getState().config.model),
       messages: [{ content: compactMessageParam, role: "user" }],
       stopWhen: aiDeps.isLoopFinished(),
       abortSignal: getState().abortControllers.apiStream!.signal,

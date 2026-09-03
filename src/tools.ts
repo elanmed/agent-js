@@ -1,4 +1,4 @@
-import { tool } from "ai";
+import { tool, type ModelMessage } from "ai";
 import { z } from "zod";
 import os from "node:os";
 import {
@@ -15,8 +15,11 @@ import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { getState } from "./state.ts";
 import { Window } from "happy-dom";
 import { Readability } from "@mozilla/readability";
-import { fsDeps } from "./deps.ts";
+import { aiDeps, fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
+import { getLanguageModel } from "./api.ts";
+import { appendModelUsage } from "./usage.ts";
+import { appendToChatHistory } from "./log.ts";
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -480,6 +483,7 @@ export async function executeWebFetchJsonTool(
     content: stringify(json),
   };
 }
+
 const loadSkillToolSchema = z.object({
   name: z.string(),
 });
@@ -502,23 +506,102 @@ export async function loadSkillTool({
   };
 }
 
-export const TOOLS = {
-  bash: tool({
-    description: "Execute a bash command and return its output.",
-    inputSchema: bashToolInputSchema,
-    execute: (args, opts) => executeBashTool(args, opts.abortSignal),
+const createSubagentToolSchema = z.array(
+  z.object({
+    prompt: z.string(),
+    access: z.enum(["read-only"]),
+    model: z.string(),
   }),
-  create_file: tool({
+);
+export type CreateSubagentTool = z.infer<typeof createSubagentToolSchema>;
+
+export async function createSubagentTool(
+  subagentSchemas: CreateSubagentTool,
+  signal?: AbortSignal,
+): Promise<ToolResult> {
+  const subagentPromises = subagentSchemas.map(async (subagentSchema) => {
+    const inputMessageParam: ModelMessage = {
+      role: "system",
+      content: subagentSchema.prompt,
+    };
+
+    const systemContent = "You are a subagent, TODO";
+
+    const generateTextResult = await tryCatchAsync(
+      aiDeps.generateText({
+        model: getLanguageModel(subagentSchema.model),
+        system: systemContent,
+        messages: [inputMessageParam],
+        tools: readTools,
+        stopWhen: aiDeps.isLoopFinished(),
+        abortSignal: signal!,
+      }),
+    );
+
+    if (!generateTextResult.ok) {
+      if (isAbortError(generateTextResult.error)) {
+        await print.error("Interrupted");
+        return "Interrupted";
+      }
+
+      return "getMessageFromError(generateTextResult.error)";
+    }
+
+    const { totalUsage, text } = generateTextResult.value;
+
+    await appendModelUsage(totalUsage);
+
+    // TODO: keep this?
+    // appendToChatHistory(text, "assistant");
+
+    return text;
+  });
+
+  const promiseAllResult = await tryCatchAsync(Promise.all(subagentPromises));
+  if (!promiseAllResult.ok) {
+    return {
+      isError: true,
+      content: getMessageFromError(promiseAllResult.error),
+    };
+  }
+  return {
+    isError: false,
+    content: promiseAllResult.value,
+  };
+}
+
+const readTools = {
+  web_fetch_html: tool({
     description:
-      "Create a new file with the given content. Fails if the file already exists.",
-    inputSchema: createFileToolSchema,
-    execute: (args, opts) => executeCreateFileTool(args, opts.abortSignal),
+      "Fetch a web page by URL and return its readable content, parsed to extract the main article.",
+    inputSchema: webFetchToolSchema,
+    execute: (args, opts) => executeWebFetchHtmlTool(args, opts.abortSignal),
+  }),
+  web_fetch_json: tool({
+    description:
+      "Fetch a JSON API endpoint by URL and return the parsed JSON response.",
+    inputSchema: webFetchToolSchema,
+    execute: (args, opts) => executeWebFetchJsonTool(args, opts.abortSignal),
   }),
   view_file: tool({
     description:
       "View the contents of a file or list a directory. File contents are returned with line numbers. Optional start_line and end_line are 1-based and inclusive; end_line -1 (or omitted) reads to end of file.",
     inputSchema: viewFileToolInputSchema,
     execute: (args) => executeViewFileTool(args),
+  }),
+  load_skill: tool({
+    description: "Load a skill to get specialized instructions",
+    inputSchema: loadSkillToolSchema,
+    execute: (args) => loadSkillTool(args),
+  }),
+};
+
+const writeTools = {
+  create_file: tool({
+    description:
+      "Create a new file with the given content. Fails if the file already exists.",
+    inputSchema: createFileToolSchema,
+    execute: (args, opts) => executeCreateFileTool(args, opts.abortSignal),
   }),
   str_replace: tool({
     description:
@@ -532,26 +615,28 @@ export const TOOLS = {
     inputSchema: insertLinesToolInputSchema,
     execute: (args, opts) => executeInsertLinesTool(args, opts.abortSignal),
   }),
-  web_fetch_html: tool({
-    description:
-      "Fetch a web page by URL and return its readable content, parsed to extract the main article.",
-    inputSchema: webFetchToolSchema,
-    execute: (args, opts) => executeWebFetchHtmlTool(args, opts.abortSignal),
-  }),
-  web_fetch_json: tool({
-    description:
-      "Fetch a JSON API endpoint by URL and return the parsed JSON response.",
-    inputSchema: webFetchToolSchema,
-    execute: (args, opts) => executeWebFetchJsonTool(args, opts.abortSignal),
-  }),
-  load_skill: tool({
-    description: "Load a skill to get specialized instructions",
-    inputSchema: loadSkillToolSchema,
-    execute: (args) => loadSkillTool(args),
+  bash: tool({
+    description: "Execute a bash command and return its output.",
+    inputSchema: bashToolInputSchema,
+    execute: (args, opts) => executeBashTool(args, opts.abortSignal),
   }),
 };
 
-export type ToolName = keyof typeof TOOLS;
+const baseAgentTools = {
+  create_subagent: tool({
+    description: "",
+    inputSchema: createSubagentToolSchema,
+    execute: (args, opts) => createSubagentTool(args, opts.abortSignal),
+  }),
+};
+
+export const tools = {
+  ...readTools,
+  ...writeTools,
+  ...baseAgentTools,
+};
+
+export type ToolName = keyof typeof tools;
 
 export async function printGitDiff({
   path,
