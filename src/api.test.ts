@@ -8,6 +8,7 @@ import {
   testFs,
   mockExec,
   stripAnsi,
+  getCapturedAppStdout,
   makeGenerateTextResult,
 } from "./test-helpers.ts";
 import { aiDeps } from "./deps.ts";
@@ -258,7 +259,7 @@ response text
       mockExec({ stdout: "+added line" });
       await resolveApiCall("edit file");
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "\n━━ File change: /test/file.txt ━━\n+added line\n\n",
       );
       assert.strictEqual(testFs._files.has("/tmp/lasso-test-uuid.txt"), false);
@@ -478,7 +479,7 @@ SKILLS: available skills`,
         messages: [{ role: "assistant", content: "compacted summary" }],
       });
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `Compacting…
 Compacted to 30,000, 5,000 over the target.
 `,
@@ -514,7 +515,7 @@ Compacted to 30,000, 5,000 over the target.
         messages: [{ role: "user", content: "hi" }],
       });
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `Compacting…
 Interrupted compaction
 `,

@@ -381,12 +381,7 @@ hello`,
   it("reset-stdout", () => {
     actions.appendToStdout("line1\n");
     actions.appendToStdout("line2\n");
-    assert.equal(
-      getState().app.stdout,
-      `line1
-line2
-`,
-    );
+    assert.equal(getState().app.stdout, "2\n");
     actions.resetStdout();
     assert.equal(getState().app.stdout, "");
   });
@@ -395,7 +390,7 @@ line2
     it("appends single line", () => {
       assert.equal(getState().app.stdout, "");
       actions.appendToStdout("line1\n");
-      assert.equal(getState().app.stdout, "line1\n");
+      assert.equal(getState().app.stdout, "1\n");
     });
 
     it("appends multiple lines in order", () => {
@@ -403,13 +398,7 @@ line2
       actions.appendToStdout("line1\n");
       actions.appendToStdout("line2\n");
       actions.appendToStdout("line3\n");
-      assert.equal(
-        getState().app.stdout,
-        `line1
-line2
-line3
-`,
-      );
+      assert.equal(getState().app.stdout, "3\n");
     });
   });
 

@@ -15,6 +15,7 @@ import {
 import { actions, getState } from "./state.ts";
 import {
   stripAnsi,
+  getCapturedAppStdout,
   mockExec,
   mockSpawnSync,
   mockStdout,
@@ -24,6 +25,10 @@ import {
 } from "./test-helpers.ts";
 
 describe("print", () => {
+  beforeEach(() => {
+    setupFakeDeps();
+  });
+
   describe("formatMarkdown", () => {
     it("formats markdown tables with aligned columns", async () => {
       const unaligned = `|a|b|
@@ -45,7 +50,7 @@ describe("print", () => {
       const result = await formatMarkdown(invalid);
       assert.equal(result, invalid);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Outputting raw content, markdown formatting failed: Cannot read properties of null (reading 'length')\n",
       );
     });
@@ -132,7 +137,7 @@ describe("print", () => {
 
       await Promise.all([p1, p2, p3]);
 
-      assert.strictEqual(getState().app.stdout, "X\nY\nZ\n");
+      assert.strictEqual(getCapturedAppStdout(), "X\nY\nZ\n");
     });
 
     it("flushAndStopLoadingState drains queue then stops spinner", async () => {
@@ -157,7 +162,7 @@ describe("print", () => {
 
       assert.strictEqual(getState().app.loadingStateTimeout, null);
       assert.strictEqual(getState().app.loadingStateFrameIdx, 0);
-      assert.strictEqual(getState().app.stdout, "X\n");
+      assert.strictEqual(getCapturedAppStdout(), "X\n");
     });
   });
 
@@ -171,7 +176,7 @@ describe("print", () => {
     it("prints the text in a fence without session info", async () => {
       await fencePrint("Output");
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "\u2501\u2501 Output \u2501\u2501\n",
       );
     });
@@ -185,7 +190,7 @@ describe("print", () => {
       await fencePrint("Output", { showSessionInfo: true });
 
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "\u2501\u2501 Output (500ms) (0 tokens in session) \u2501\u2501\n",
       );
     });
@@ -203,7 +208,7 @@ describe("print", () => {
       await fencePrint("Output", { showSessionInfo: true });
 
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "\u2501\u2501 Output (500ms) (0 tokens in session, 50% of context window) \u2501\u2501\n",
       );
     });
@@ -422,7 +427,7 @@ test content
       actions.setSessionStartDate();
       await printSessionStartDate();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Resume this session with /resume 42000\n",
       );
     });

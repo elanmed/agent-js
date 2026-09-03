@@ -33,6 +33,7 @@ import {
   mockBatAvailable,
   batPagerCmd,
   stripAnsi,
+  getCapturedAppStdout,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
@@ -202,7 +203,7 @@ editor content
       actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
-      assert.strictEqual(stripAnsi(getState().app.stdout), ">   hello  \n");
+      assert.strictEqual(stripAnsi(getCapturedAppStdout()), ">   hello  \n");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
@@ -241,7 +242,7 @@ hello
       );
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "read failed\n");
+      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "read failed\n");
     });
 
     it("returns editor value when aborted by editor", async () => {
@@ -329,7 +330,7 @@ from editor
         /process.exit called/,
       );
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `> yes
 Resume this session with /resume 42000
 `,
@@ -699,7 +700,7 @@ l---
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(getState().app.messageParams.tokensStale, true);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Model updated from `old-model` to `new-model`\n",
       );
     });
@@ -709,7 +710,7 @@ l---
       await setModelCommand("/model new-model extra");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Usage: /model [model]?\n",
       );
     });
@@ -719,7 +720,7 @@ l---
       await setModelCommand("/model");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Usage: /model [model]?\n",
       );
     });
@@ -729,7 +730,7 @@ l---
       await setModelCommand("/model provider/new-model");
       assert.strictEqual(getState().config.model, "provider/new-model");
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Model updated from `old` to `provider/new-model`\n",
       );
     });
@@ -755,7 +756,7 @@ l---
     it("prints current model", async () => {
       actions.setModel("gpt-4");
       await getModel();
-      assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
+      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "gpt-4\n");
     });
   });
 
@@ -773,7 +774,7 @@ l---
         messages: [],
       });
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Context cleared (0 tokens in session)\n",
       );
     });
@@ -788,7 +789,7 @@ l---
       const result = await resume("/resume");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -797,7 +798,7 @@ l---
       const result = await resume("/resume 123 456");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -806,7 +807,7 @@ l---
       const result = await resume("/resume abc");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -815,7 +816,7 @@ l---
       const result = await resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "No conversation found with session start date: 1234567890000\n",
       );
     });
@@ -851,7 +852,7 @@ transcript content
       const result = await resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "No conversation found with session start date: 1234567890000\n",
       );
     });
@@ -865,7 +866,7 @@ transcript content
       const result = await resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "No conversation found with session start date: 1234567890000\n",
       );
     });
@@ -880,7 +881,7 @@ transcript content
     it("prints no available context files when entries list is empty", async () => {
       await pageContextStr();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available context files
 `,
@@ -908,7 +909,7 @@ No available context files
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         `context string content`,
       );
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
     });
   });
 
@@ -921,7 +922,7 @@ No available context files
     it("prints no available custom slash commands when list is empty", async () => {
       await pageCustomSlashCommandsStr();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available custom slash commands
 `,
@@ -960,7 +961,7 @@ No available custom slash commands
       ]);
       await printSkills();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Available skills:
 - test-skill: A test skill
@@ -972,7 +973,7 @@ Available skills:
     it("prints no available skills when skills list is empty", async () => {
       await printSkills();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available skills
 `,
@@ -996,7 +997,7 @@ No available skills
       ]);
       await printSkills();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Available skills:
 - real-skill: A real skill
@@ -1018,7 +1019,7 @@ Available skills:
       ]);
       await printAvailableContextFiles();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Available context files:
 - /project/AGENTS.md
@@ -1029,7 +1030,7 @@ Available context files:
     it("prints no available context files when entries list is empty", async () => {
       await printAvailableContextFiles();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available context files
 `,
@@ -1056,7 +1057,7 @@ No available context files
       ]);
       await printAvailableContextFiles();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Available context files:
 - /project/AGENTS.md
@@ -1082,7 +1083,7 @@ Available context files:
       ]);
       await resolveSlashCommand("/commands");
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Available commands:
 - /edit
@@ -1129,7 +1130,7 @@ Available commands:
 
     it("types custom slash command into the prompt when its keymap matches", () => {
       harness.emitKey({ name: "c", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "/custom\n");
+      assert.strictEqual(getCapturedAppStdout(), "/custom\n");
       assert.deepStrictEqual(harness.writes, [
         { chunk: "/custom\n", key: undefined },
       ]);
@@ -1138,13 +1139,13 @@ Available commands:
     it("does not type custom slash command when no question is pending", () => {
       actions.setQuestionAbortController(null);
       harness.emitKey({ name: "c", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
       assert.deepStrictEqual(harness.writes, []);
     });
 
     it("does nothing on unmatched keys", () => {
       harness.emitKey({ name: "x", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
       assert.deepStrictEqual(harness.writes, []);
     });
 
@@ -1186,7 +1187,7 @@ Available commands:
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "log content",
       );
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
     });
 
     it("opens config in a pager when config keymap matches", () => {
@@ -1197,7 +1198,7 @@ Available commands:
         testFs._files.get("/tmp/lasso-test-uuid.txt") ?? "",
         /# Applied config/,
       );
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
     });
 
     it("opens context in a pager when context-str keymap matches", async () => {
@@ -1213,7 +1214,7 @@ Available commands:
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         `context string content`,
       );
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
     });
 
     it("opens custom commands in a pager when commands-str keymap matches", () => {
@@ -1228,7 +1229,7 @@ Available commands:
 
 custom command content`,
       );
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
     });
 
     for (const [command, keyName] of [
@@ -1244,7 +1245,7 @@ custom command content`,
       it(`types /${command} into the prompt when its keymap matches`, () => {
         actions.setKeymap(command, { name: keyName, ctrl: true });
         harness.emitKey({ name: keyName, ctrl: true });
-        assert.strictEqual(getState().app.stdout, `/${command}\n`);
+        assert.strictEqual(getCapturedAppStdout(), `/${command}\n`);
         assert.deepStrictEqual(harness.writes, [
           { chunk: `/${command}\n`, key: undefined },
         ]);
@@ -1255,7 +1256,7 @@ custom command content`,
       actions.setKeymap("clear", { name: "k", ctrl: true });
       actions.setQuestionAbortController(null);
       harness.emitKey({ name: "k", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
       assert.deepStrictEqual(harness.writes, []);
     });
 
@@ -1263,13 +1264,13 @@ custom command content`,
       actions.setKeymap("clear", { name: "x", ctrl: true });
       actions.setKeymap("skills", { name: "x", ctrl: true });
       harness.emitKey({ name: "x", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "/clear\n");
+      assert.strictEqual(getCapturedAppStdout(), "/clear\n");
     });
 
     it("prefers builtin commands over custom commands on the same key", () => {
       actions.setKeymap("clear", { name: "c", ctrl: true });
       harness.emitKey({ name: "c", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "/clear\n");
+      assert.strictEqual(getCapturedAppStdout(), "/clear\n");
     });
 
     it("clears the line on unmatched keys during loading", () => {
@@ -1278,14 +1279,14 @@ custom command content`,
       assert.deepStrictEqual(harness.writes, [
         { chunk: null, key: { ctrl: true, name: "u" } },
       ]);
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
     });
 
     it("types keymap command while loading when a question is pending", () => {
       actions.setKeymap("clear", { name: "k", ctrl: true });
       actions.setLoadingStateTimeout({} as NodeJS.Timeout);
       harness.emitKey({ name: "k", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "/clear\n");
+      assert.strictEqual(getCapturedAppStdout(), "/clear\n");
     });
 
     it("does not clear the line for matched keys during loading", () => {
@@ -1293,7 +1294,7 @@ custom command content`,
       actions.setQuestionAbortController(null);
       actions.setLoadingStateTimeout({} as NodeJS.Timeout);
       harness.emitKey({ name: "k", ctrl: true });
-      assert.strictEqual(getState().app.stdout, "");
+      assert.strictEqual(getCapturedAppStdout(), "");
       assert.deepStrictEqual(harness.writes, []);
     });
   });
@@ -1527,7 +1528,7 @@ pasted content
       assert.strictEqual(result, null);
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Model updated from `old` to `new-model`\n",
       );
     });
@@ -1537,7 +1538,7 @@ pasted content
       actions.resetStdout();
       const result = await resolveSlashCommand("/model");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "gpt-4\n");
+      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "gpt-4\n");
     });
 
     it("handles /skills command", async () => {
@@ -1545,7 +1546,7 @@ pasted content
       const result = await resolveSlashCommand("/skills");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available skills
 `,
@@ -1557,7 +1558,7 @@ No available skills
       const result = await resolveSlashCommand("/context");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available context files
 `,
@@ -1569,7 +1570,7 @@ No available context files
       const result = await resolveSlashCommand("/commands");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Available commands:
 - /edit
@@ -1634,7 +1635,7 @@ custom command content`,
       const result = await resolveSlashCommand("/commands-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available custom slash commands
 `,
@@ -1646,7 +1647,7 @@ No available custom slash commands
       const result = await resolveSlashCommand("/context-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 No available context files
 `,
@@ -1672,7 +1673,7 @@ No available context files
       actions.resetStdout();
       const result = await resolveSlashCommand("/config");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "");
       const tempContent = testFs._files.get("/tmp/lasso-test-uuid.txt");
       assert.ok(tempContent !== undefined);
       assert.match(tempContent, /^# Global config from path: /);
@@ -1685,7 +1686,7 @@ No available context files
       const result = await resolveSlashCommand("/keymaps");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Keymaps:
 - edit: {"name":"g","ctrl":true}
@@ -1700,7 +1701,7 @@ Keymaps:
       const result = await resolveSlashCommand("/usage");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "0 tokens in session\n",
       );
     });
@@ -1714,7 +1715,7 @@ Keymaps:
       const result = await resolveSlashCommand("/usage");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "0 tokens in session, 50% of context window\n",
       );
     });
@@ -1724,7 +1725,7 @@ Keymaps:
       const result = await resolveSlashCommand("/resume");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -1891,7 +1892,7 @@ some   task
       const result = await resolveSlashCommand("/unknown");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 Invalid command: /unknown, valid commands:
 - /edit
@@ -1922,7 +1923,7 @@ Invalid command: /unknown, valid commands:
       actions.resetStdout();
       await initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Created the local config at /test-cwd/.lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -1940,7 +1941,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       await initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "The local config already exists at /test-cwd/.lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -1956,7 +1957,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       await initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Failed to write the config to /test-cwd/.lasso/settings.yaml\n",
       );
     });
@@ -1965,7 +1966,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       await initGlobalConfig();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Created the global config at /fake-home/.config/lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -1986,7 +1987,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       await initGlobalConfig();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "The global config already exists at /fake-home/.config/lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -2002,7 +2003,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       await initGlobalConfig();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Failed to write the config to /fake-home/.config/lasso/settings.yaml\n",
       );
     });
@@ -2014,7 +2015,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       await initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "Failed to create the directory: /test-cwd/.lasso\n",
       );
     });

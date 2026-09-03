@@ -288,6 +288,7 @@ export const actions = {
   appendToStdout(line: string) {
     const before = state.app.stdout;
     state.app.stdout += line;
+    state.app.stdout = state.app.stdout.slice(-2);
     logStateChange(
       "append-to-stdout",
       String(before.length),

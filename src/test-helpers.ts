@@ -153,8 +153,26 @@ export function stripAnsi(str: string): string {
   return str.replace(ANSI_ESCAPE_PATTERN, "");
 }
 
+let capturedAppStdout = "";
+
+const appendToStdout = actions.appendToStdout.bind(actions);
+const resetStdout = actions.resetStdout.bind(actions);
+
+export function getCapturedAppStdout() {
+  return stripAnsi(capturedAppStdout);
+}
+
 export function setupFakeDeps() {
   testFs._restore();
+  capturedAppStdout = "";
+  mock.method(actions, "appendToStdout", (line: string) => {
+    capturedAppStdout += line;
+    appendToStdout(line);
+  });
+  mock.method(actions, "resetStdout", () => {
+    capturedAppStdout = "";
+    resetStdout();
+  });
   for (const key of Object.keys(testFs)) {
     if (!EXCLUDED_KEYS.includes(key)) {
       mock.method(

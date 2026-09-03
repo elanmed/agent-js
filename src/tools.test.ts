@@ -23,10 +23,11 @@ import {
   mockExecCalls,
   mockGenerateText,
   stripAnsi,
+  getCapturedAppStdout,
   makeGenerateTextResult,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
-import { actions, getState } from "./state.ts";
+import { actions } from "./state.ts";
 
 describe("tools", () => {
   beforeEach(() => {
@@ -935,7 +936,7 @@ bottom`,
         path: "/test/file.txt",
       });
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         `
 ━━ File change: /test/file.txt ━━
 +added line
@@ -954,7 +955,7 @@ bottom`,
         path: "/test/file.txt",
       });
       assert.strictEqual(
-        stripAnsi(getState().app.stdout),
+        stripAnsi(getCapturedAppStdout()),
         "An error occurred when getting the diff for /test/file.txt: fatal\n",
       );
     });
@@ -966,7 +967,7 @@ bottom`,
         tempFileAfterPath: "/tmp/after",
         path: "/test/file.txt",
       });
-      assert.strictEqual(stripAnsi(getState().app.stdout), "");
+      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "");
     });
   });
 });
