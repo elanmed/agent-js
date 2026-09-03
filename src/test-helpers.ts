@@ -165,6 +165,7 @@ export function getCapturedAppStdout() {
 export function setupFakeDeps() {
   testFs._restore();
   capturedAppStdout = "";
+  // TODO: find a better way to track stdout
   mock.method(actions, "appendToStdout", (line: string) => {
     capturedAppStdout += line;
     appendToStdout(line);
