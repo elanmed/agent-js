@@ -681,10 +681,12 @@ bottom`,
         },
       );
 
-      const result = await createSubagentTool([
-        { prompt: "inspect one", access: "read-only", model: "model-one" },
-        { prompt: "inspect two", access: "read-only", model: "model-two" },
-      ]);
+      const result = await createSubagentTool({
+        tasks: [
+          { prompt: "inspect one", access: "read-only", model: "model-one" },
+          { prompt: "inspect two", access: "read-only", model: "model-two" },
+        ],
+      });
 
       assert.deepStrictEqual(JSON.parse(result.content), [
         {
@@ -710,6 +712,50 @@ bottom`,
       );
     });
 
+    it("uses the configured model when a task model is omitted", async () => {
+      testProcessEnv._set("LASSO_API_KEY", "api-key");
+      actions.setSdkProvider("anthropic");
+      actions.setModel("main-model");
+      mock.method(
+        aiDeps,
+        "generateText",
+        (options: { model: { modelId: string } }) => {
+          assert.strictEqual(options.model.modelId, "main-model");
+          return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
+        },
+      );
+
+      const result = await createSubagentTool({
+        tasks: [{ prompt: "inspect", access: "read-only" }],
+      });
+
+      assert.deepStrictEqual(JSON.parse(result.content), [
+        { model: "main-model", prompt: "inspect", content: "ok" },
+      ]);
+    });
+
+    it("uses the configured model when a task model is empty", async () => {
+      testProcessEnv._set("LASSO_API_KEY", "api-key");
+      actions.setSdkProvider("anthropic");
+      actions.setModel("main-model");
+      mock.method(
+        aiDeps,
+        "generateText",
+        (options: { model: { modelId: string } }) => {
+          assert.strictEqual(options.model.modelId, "main-model");
+          return Promise.resolve(makeGenerateTextResult({ text: "ok" }));
+        },
+      );
+
+      const result = await createSubagentTool({
+        tasks: [{ prompt: "inspect", access: "read-only", model: "" }],
+      });
+
+      assert.deepStrictEqual(JSON.parse(result.content), [
+        { model: "main-model", prompt: "inspect", content: "ok" },
+      ]);
+    });
+
     it("returns errors for failed subagents without hiding successful results", async () => {
       testProcessEnv._set("LASSO_API_KEY", "api-key");
       actions.setSdkProvider("anthropic");
@@ -725,10 +771,12 @@ bottom`,
         },
       );
 
-      const result = await createSubagentTool([
-        { prompt: "bad", access: "read-only", model: "bad-model" },
-        { prompt: "good", access: "read-only", model: "good-model" },
-      ]);
+      const result = await createSubagentTool({
+        tasks: [
+          { prompt: "bad", access: "read-only", model: "bad-model" },
+          { prompt: "good", access: "read-only", model: "good-model" },
+        ],
+      });
 
       assert.strictEqual(result.isError, true);
       assert.deepStrictEqual(JSON.parse(result.content), [

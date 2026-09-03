@@ -506,35 +506,52 @@ export async function loadSkillTool({
   };
 }
 
-const createSubagentToolSchema = z.array(
-  z.object({
-    prompt: z.string(),
-    access: z.enum(["read-only"]),
-    model: z.string(),
-  }),
-);
+const createSubagentTaskSchema = z.object({
+  prompt: z.string(),
+  access: z.enum(["read-only"]),
+  model: z.string().optional(),
+});
+const createSubagentToolSchema = z.object({
+  tasks: z.array(createSubagentTaskSchema),
+});
 export type CreateSubagentTool = z.infer<typeof createSubagentToolSchema>;
 
 type SubagentResult = {
-  model: string;
+  model?: string;
   prompt: string;
 } & ToolResult;
 
 export async function createSubagentTool(
-  subagentSchemas: CreateSubagentTool,
+  { tasks }: CreateSubagentTool,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   const systemContent = [
     BASE_SYSTEM_PROMPT,
     getState().app.contextStr,
     getState().app.skillsStr,
-    "You are a read-only subagent. Investigate the requested task and report findings without modifying files or executing commands.",
+    "You are a read-only subagent. Investigate the requested task and report findings.",
   ]
     .filter((content) => content.length > 0)
     .join("\n");
 
-  const subagentPromises = subagentSchemas.map(
+  // TODO: timeout
+  // TODO: read-write with diff
+  const subagentPromises = tasks.map(
     async (subagentSchema): Promise<SubagentResult> => {
+      const model = (() => {
+        if (
+          subagentSchema.model === undefined ||
+          subagentSchema.model.length === 0
+        ) {
+          return getState().config.model;
+        }
+
+        return subagentSchema.model;
+      })();
+
+      const message = `[${model}] ${subagentSchema.prompt}`;
+      await toolPrint("   create_subagent", message);
+
       const inputMessageParam: ModelMessage = {
         role: "user",
         content: subagentSchema.prompt,
@@ -542,7 +559,7 @@ export async function createSubagentTool(
 
       const generateTextResult = await tryCatchAsync(
         aiDeps.generateText({
-          model: getLanguageModel(subagentSchema.model),
+          model: getLanguageModel(model),
           system: systemContent,
           messages: [inputMessageParam],
           tools: readTools,
@@ -557,7 +574,7 @@ export async function createSubagentTool(
         }
 
         return {
-          model: subagentSchema.model,
+          model,
           prompt: subagentSchema.prompt,
           isError: true,
           content: getMessageFromError(generateTextResult.error),
@@ -565,17 +582,19 @@ export async function createSubagentTool(
       }
 
       const { totalUsage, text } = generateTextResult.value;
-      await appendModelUsage(totalUsage, subagentSchema.model);
+      await appendModelUsage(totalUsage, model);
 
       return {
-        model: subagentSchema.model,
+        model,
         prompt: subagentSchema.prompt,
         content: text,
       };
     },
   );
 
-  const promiseAllResult = await tryCatchAsync(Promise.all(subagentPromises));
+  const promiseAllResult = await tryCatchAsync(
+    Promise.allSettled(subagentPromises),
+  );
   if (!promiseAllResult.ok) {
     if (isAbortError(promiseAllResult.error)) {
       throw promiseAllResult.error;
