@@ -608,7 +608,9 @@ export async function createSubagentTool(
 
   const results = promiseAllResult.value;
   return {
-    isError: results.some((result) => result.isError === true),
+    isError: results.some(
+      (result) => result.status === "rejected" || result.value.isError === true,
+    ),
     content: stringify(results),
   };
 }
