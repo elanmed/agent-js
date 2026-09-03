@@ -37,30 +37,30 @@ async function main() {
     if (userInput === null) continue;
 
     if (userInput === "") {
-      await print.warning("Empty input");
+      print.warning("Empty input");
       continue;
     }
 
-    const missingConfig = await blockOnMissingConfig();
+    const missingConfig = blockOnMissingConfig();
     if (missingConfig) continue;
 
     const text = await resolveApiCall(userInput);
     if (text === null) continue;
 
     await maybeCompactMessageParams(userInput);
-    await printNewline();
-    await fencePrint("Output", {
+    printNewline();
+    fencePrint("Output", {
       showSessionInfo: true,
     });
     await executeBat(text);
-    await printNewline();
+    printNewline();
   }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch(async (error: unknown) => {
-    await print.error(getMessageFromError(error));
-    await printSessionStartDate();
+  main().catch((error: unknown) => {
+    print.error(getMessageFromError(error));
+    printSessionStartDate();
     process.exit(1);
   });
 }

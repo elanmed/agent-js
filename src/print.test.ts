@@ -8,11 +8,10 @@ import {
   stopLoadingState,
   colorPrint,
   fencePrint,
-  flushAndStopLoadingState,
   printSessionStartDate,
   warnOnMissingBat,
 } from "./print.ts";
-import { actions, getState } from "./state.ts";
+import { actions } from "./state.ts";
 import {
   stripAnsi,
   getCapturedAppStdout,
@@ -57,7 +56,7 @@ describe("print", () => {
   });
 
   describe("startLoadingState", () => {
-    it("writes loadingStateFrames cyclically", async () => {
+    it("writes loadingStateFrames cyclically", () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
@@ -70,15 +69,12 @@ describe("print", () => {
       callbacks.forEach((cb) => cb());
       callbacks.forEach((cb) => cb());
       callbacks.forEach((cb) => cb());
-      const stopPromise = stopLoadingState();
-      callbacks.forEach((cb) => cb());
-      callbacks.forEach((cb) => cb());
-      await stopPromise;
+      stopLoadingState();
 
-      assert.strictEqual(getCaptured(), "\ra\rb\rc\ra\rb\rc\ra\r \r");
+      assert.strictEqual(getCaptured(), "\ra\rb\rc\ra\rb\r \r");
     });
 
-    it("uses default loadingStateFrames when none set", async () => {
+    it("uses default loadingStateFrames when none set", () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
@@ -88,15 +84,12 @@ describe("print", () => {
       startLoadingState();
       callbacks.forEach((cb) => cb());
       callbacks.forEach((cb) => cb());
-      const stopPromise = stopLoadingState();
-      callbacks.forEach((cb) => cb());
-      callbacks.forEach((cb) => cb());
-      await stopPromise;
+      stopLoadingState();
 
-      assert.strictEqual(getCaptured(), "\r|\r/\r-\r\\\r|\r \r");
+      assert.strictEqual(getCaptured(), "\r|\r/\r-\r \r");
     });
 
-    it("stopLoadingState gracefully handles multiple calls", async () => {
+    it("stopLoadingState gracefully handles multiple calls", () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
@@ -109,11 +102,6 @@ describe("print", () => {
       const stop1 = stopLoadingState();
       const stop2 = stopLoadingState();
       assert.strictEqual(stop1, stop2);
-
-      callbacks.forEach((cb) => cb());
-      callbacks.forEach((cb) => cb());
-      await stop1;
-      await stop2;
     });
 
     it("serializes concurrent colorPrint calls", async () => {
@@ -126,43 +114,13 @@ describe("print", () => {
       startLoadingState();
       callbacks.forEach((cb) => cb());
 
-      const p1 = colorPrint("X");
-      const p2 = colorPrint("Y");
-      const p3 = colorPrint("Z");
+      colorPrint("X");
+      colorPrint("Y");
+      colorPrint("Z");
 
-      await new Promise((r) => setTimeout(r, 0));
-
-      callbacks.forEach((cb) => cb());
-      callbacks.forEach((cb) => cb());
-
-      await Promise.all([p1, p2, p3]);
+      await Promise.resolve();
 
       assert.strictEqual(getCapturedAppStdout(), "X\nY\nZ\n");
-    });
-
-    it("flushAndStopLoadingState drains queue then stops spinner", async () => {
-      actions.resetState();
-      const callbacks = mockSetInterval();
-      mockClearInterval(callbacks);
-      mockStdout();
-      actions.setLoadingStateFrames(["a", "b", "c"]);
-
-      startLoadingState();
-      callbacks.forEach((cb) => cb());
-
-      const printPromise = colorPrint("X");
-      const flushPromise = flushAndStopLoadingState();
-
-      await new Promise((r) => setTimeout(r, 0));
-
-      callbacks.forEach((cb) => cb());
-      callbacks.forEach((cb) => cb());
-
-      await Promise.all([printPromise, flushPromise]);
-
-      assert.strictEqual(getState().app.loadingStateTimeout, null);
-      assert.strictEqual(getState().app.loadingStateFrameIdx, 0);
-      assert.strictEqual(getCapturedAppStdout(), "X\n");
     });
   });
 
@@ -173,21 +131,21 @@ describe("print", () => {
       actions.resetStdout();
     });
 
-    it("prints the text in a fence without session info", async () => {
-      await fencePrint("Output");
+    it("prints the text in a fence without session info", () => {
+      fencePrint("Output");
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "\u2501\u2501 Output \u2501\u2501\n",
       );
     });
 
-    it("prints duration and token usage when showSessionInfo is set", async () => {
+    it("prints duration and token usage when showSessionInfo is set", () => {
       mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
       mock.method(performance, "now", () => 1_500);
       actions.setApiEndTime();
 
-      await fencePrint("Output", { showSessionInfo: true });
+      fencePrint("Output", { showSessionInfo: true });
 
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -195,7 +153,7 @@ describe("print", () => {
       );
     });
 
-    it("includes context window usage when configured", async () => {
+    it("includes context window usage when configured", () => {
       mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
       mock.method(performance, "now", () => 1_500);
@@ -205,7 +163,7 @@ describe("print", () => {
       actions.appendToMessageParams({ role: "user", content: "hi" });
       actions.setMessageParamTokens(5_000);
 
-      await fencePrint("Output", { showSessionInfo: true });
+      fencePrint("Output", { showSessionInfo: true });
 
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -422,10 +380,10 @@ test content
       actions.resetStdout();
     });
 
-    it("prints the session start date", async () => {
+    it("prints the session start date", () => {
       mock.method(Date, "now", () => 42_000);
       actions.setSessionStartDate();
-      await printSessionStartDate();
+      printSessionStartDate();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "Resume this session with /resume 42000\n",

@@ -367,9 +367,9 @@ export async function resolveUserInput({
   }
 
   if (!isFirstInput) {
-    await printNewline();
+    printNewline();
   }
-  await fencePrint("Input", { color: "yellow" });
+  fencePrint("Input", { color: "yellow" });
   actions.resetStdout();
 
   actions.setQuestionAbortController(new AbortController());
@@ -382,7 +382,7 @@ export async function resolveUserInput({
 
   if (!inputResult.ok) {
     if (!isAbortError(inputResult.error)) {
-      await print.error(getMessageFromError(inputResult.error));
+      print.error(getMessageFromError(inputResult.error));
       return null;
     }
 
@@ -451,11 +451,11 @@ async function resolveExitConfirmation() {
   if (!exitResult.ok) {
     if (isAbortError(exitResult.error)) {
       rl.close();
-      await printSessionStartDate();
+      printSessionStartDate();
       process.exit(0);
     }
 
-    await print.error(getMessageFromError(exitResult.error));
+    print.error(getMessageFromError(exitResult.error));
     return;
   }
 
@@ -465,7 +465,7 @@ async function resolveExitConfirmation() {
     );
 
     rl.close();
-    await printSessionStartDate();
+    printSessionStartDate();
     process.exit(0);
   }
 
@@ -526,7 +526,7 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: content };
     }
     case "clear": {
-      await clearCommand();
+      clearCommand();
       return { handled: true, inputFromCommand: null };
     }
     case "history": {
@@ -538,15 +538,15 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "model": {
-      await getModel();
+      getModel();
       return { handled: true, inputFromCommand: null };
     }
     case "skills": {
-      await printSkills();
+      printSkills();
       return { handled: true, inputFromCommand: null };
     }
     case "context": {
-      await printAvailableContextFiles();
+      printAvailableContextFiles();
       return { handled: true, inputFromCommand: null };
     }
     case "context-str": {
@@ -554,7 +554,7 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "commands": {
-      await printAvailableCommandsStr();
+      printAvailableCommandsStr();
       return { handled: true, inputFromCommand: null };
     }
     case "commands-str": {
@@ -563,11 +563,11 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "keymaps": {
-      await printKeymaps();
+      printKeymaps();
       return { handled: true, inputFromCommand: null };
     }
     case "usage": {
-      await printUsage();
+      printUsage();
       return { handled: true, inputFromCommand: null };
     }
     case "config": {
@@ -580,7 +580,7 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "resume": {
-      await print.error("Usage: /resume [session start date]");
+      print.error("Usage: /resume [session start date]");
       return { handled: true, inputFromCommand: null };
     }
     case "reload": {
@@ -588,11 +588,11 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: null };
     }
     case "init-local": {
-      await initLocalConfig();
+      initLocalConfig();
       return { handled: true, inputFromCommand: null };
     }
     case "init-global": {
-      await initGlobalConfig();
+      initGlobalConfig();
       return { handled: true, inputFromCommand: null };
     }
     default: {
@@ -602,20 +602,20 @@ async function resolveBuiltinSlashCommand(
   }
 }
 
-async function resolveParameterizedBuiltinSlashCommand(
+function resolveParameterizedBuiltinSlashCommand(
   commandWithArgs: string,
-): Promise<SlashCommandOutcome> {
+): SlashCommandOutcome {
   const parts = commandWithArgs.split(/\s+/);
   const command = parts[0] as ParameterizedBuiltinSlashCommand | undefined;
   if (command === undefined) return { handled: false, inputFromCommand: null };
 
   switch (command) {
     case "model": {
-      await setModelCommand(commandWithArgs);
+      setModelCommand(commandWithArgs);
       return { handled: true, inputFromCommand: null };
     }
     case "resume": {
-      const content = await resume(commandWithArgs);
+      const content = resume(commandWithArgs);
       if (content !== null) appendToChatHistory(content, "user");
       return { handled: true, inputFromCommand: content };
     }
@@ -626,9 +626,7 @@ async function resolveParameterizedBuiltinSlashCommand(
   }
 }
 
-async function resolveCustomSlashCommand(
-  commandStr: string,
-): Promise<SlashCommandOutcome> {
+function resolveCustomSlashCommand(commandStr: string): SlashCommandOutcome {
   if (commandStr === "") {
     return { handled: false, inputFromCommand: null };
   }
@@ -654,7 +652,7 @@ async function resolveCustomSlashCommand(
     return { handled: false, inputFromCommand: null };
   }
 
-  await print.infoSubtle(`Executing slash command: ${command}`);
+  print.infoSubtle(`Executing slash command: ${command}`);
 
   if (commandContext === null || commandContext === "") {
     return { handled: true, inputFromCommand: matchedCommand.content };
@@ -682,31 +680,31 @@ export async function resolveSlashCommand(rawInput: string) {
   }
 
   const parameterizedBuiltinSlashCommandOutcome =
-    await resolveParameterizedBuiltinSlashCommand(commandWithoutSlash);
+    resolveParameterizedBuiltinSlashCommand(commandWithoutSlash);
   if (parameterizedBuiltinSlashCommandOutcome.handled) {
     return parameterizedBuiltinSlashCommandOutcome.inputFromCommand;
   }
 
   const customSlashCommandOutcome =
-    await resolveCustomSlashCommand(commandWithoutSlash);
+    resolveCustomSlashCommand(commandWithoutSlash);
   if (customSlashCommandOutcome.handled) {
     return customSlashCommandOutcome.inputFromCommand;
   }
 
-  await printNewline();
-  await print.error(`Invalid command: ${rawInput}, valid commands:`);
-  await print(getAvailableCommandsStr());
+  printNewline();
+  print.error(`Invalid command: ${rawInput}, valid commands:`);
+  print(getAvailableCommandsStr());
   return null;
 }
 
-export async function clearCommand() {
-  await print.infoSubtle(`Context cleared (${getPrettyTokenUsage()})`);
+export function clearCommand() {
+  print.infoSubtle(`Context cleared (${getPrettyTokenUsage()})`);
   actions.resetMessageParams();
   actions.setModelUsageForSession({});
 }
 
-export async function printUsage() {
-  await print.doing(getPrettyUsage());
+export function printUsage() {
+  print.doing(getPrettyUsage());
 }
 
 export async function spawnAndReadEditorContent(opts?: {
@@ -740,7 +738,7 @@ export async function spawnAndReadEditorContent(opts?: {
     fsDeps.writeFileSync(tempFile, initialContent),
   );
   if (!writeResult.ok) {
-    await print.error("Failed to write to temp file");
+    print.error("Failed to write to temp file");
     return null;
   }
 
@@ -755,7 +753,7 @@ export async function spawnAndReadEditorContent(opts?: {
 
   const readResult = tryCatch(() => fsDeps.readFileSync(tempFile).toString());
   if (!readResult.ok) {
-    await print.error("Failed to read from temp file");
+    print.error("Failed to read from temp file");
     tryCatch(() => fsDeps.unlinkSync(tempFile));
     return null;
   }
@@ -773,16 +771,16 @@ export async function spawnAndReadEditorContent(opts?: {
   return normalizeLine(readResult.value);
 }
 
-export async function getModel() {
-  await print.doing(getState().config.model);
+export function getModel() {
+  print.doing(getState().config.model);
   return;
 }
 
-export async function setModelCommand(rawInput: string) {
+export function setModelCommand(rawInput: string) {
   const parts = rawInput.split(/\s+/);
 
   if (parts.length !== 2) {
-    await print.error("Usage: /model [model]?");
+    print.error("Usage: /model [model]?");
     return;
   }
   const model = parts[1];
@@ -790,14 +788,14 @@ export async function setModelCommand(rawInput: string) {
 
   const prevModel = getState().config.model;
   actions.setModel(model);
-  await print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
+  print.doing(`Model updated from \`${prevModel}\` to \`${model}\``);
   actions.setMessageParamTokensStale(true);
 }
 
 export async function pageContextStr() {
   if (getState().app.contextEntries.length === 0) {
-    await printNewline();
-    await print.doing("No available context files");
+    printNewline();
+    print.doing("No available context files");
     return;
   }
 
@@ -807,16 +805,16 @@ export async function pageContextStr() {
     contentType: "markdown",
   });
 }
-export async function printAvailableCommandsStr() {
-  await printNewline();
-  await print.doing("Available commands:");
-  await print(getAvailableCommandsStr());
+export function printAvailableCommandsStr() {
+  printNewline();
+  print.doing("Available commands:");
+  print(getAvailableCommandsStr());
 }
 
 export async function pageCustomSlashCommandsStr() {
   if (getState().app.slashCommands.length === 0) {
-    await printNewline();
-    await print.doing("No available custom slash commands");
+    printNewline();
+    print.doing("No available custom slash commands");
     return;
   }
 
@@ -827,10 +825,10 @@ export async function pageCustomSlashCommandsStr() {
   });
 }
 
-export async function printSkills() {
+export function printSkills() {
   if (getState().app.skills.length === 0) {
-    await printNewline();
-    await print.doing("No available skills");
+    printNewline();
+    print.doing("No available skills");
     return;
   }
 
@@ -844,15 +842,15 @@ export async function printSkills() {
     )
     .join("\n");
 
-  await printNewline();
-  await print.doing("Available skills:");
-  await print(skillsList);
+  printNewline();
+  print.doing("Available skills:");
+  print(skillsList);
 }
 
-export async function printAvailableContextFiles() {
+export function printAvailableContextFiles() {
   if (getState().app.contextEntries.length === 0) {
-    await printNewline();
-    await print.doing("No available context files");
+    printNewline();
+    print.doing("No available context files");
     return;
   }
 
@@ -868,23 +866,23 @@ export async function printAvailableContextFiles() {
 
   const formatted = contextFiles.concat(contextSkillFiles).join("\n");
 
-  await printNewline();
-  await print.doing("Available context files:");
-  await print(formatted);
+  printNewline();
+  print.doing("Available context files:");
+  print(formatted);
 }
 
-export async function resume(rawInput: string) {
+export function resume(rawInput: string) {
   const parts = rawInput.split(/\s+/);
 
   if (parts.length !== 2) {
-    await print.error("Usage: /resume [session start date]");
+    print.error("Usage: /resume [session start date]");
     return null;
   }
   const sessionStartDate = parts[1];
   assert(sessionStartDate !== undefined);
 
   if (Number.isNaN(Number(sessionStartDate))) {
-    await print.error("Usage: /resume [session start date]");
+    print.error("Usage: /resume [session start date]");
     return null;
   }
 
@@ -905,7 +903,7 @@ ${readResult.value}
     `;
   }
 
-  await print.error(
+  print.error(
     `No conversation found with session start date: ${sessionStartDate}`,
   );
   return null;
@@ -932,11 +930,11 @@ export function isSameKey(a: Key, b: Key) {
   );
 }
 
-export async function printKeymaps() {
-  await printNewline();
-  await print.doing("Keymaps:");
+export function printKeymaps() {
+  printNewline();
+  print.doing("Keymaps:");
   for (const [command, keymap] of Object.entries(getState().config.keymaps)) {
-    await print(`- ${command}: ${JSON.stringify(keymap)}`);
+    print(`- ${command}: ${JSON.stringify(keymap)}`);
   }
 }
 
@@ -1008,13 +1006,13 @@ async function reload() {
   fsDeps.unlinkSync(tempFileAfter);
 
   if (!diffResult.ok) {
-    await print.error(
+    print.error(
       `An error occurred when getting the diff: ${getMessageFromError(diffResult.error)}`,
     );
     return;
   }
   if (diffResult.value.stdout.length === 0) {
-    await print.info("No diff from reload");
+    print.info("No diff from reload");
     return;
   }
 
@@ -1032,11 +1030,11 @@ model: deepseek-v4-pro
 baseURL: https://opencode.ai/zen/v1
 `;
 
-export async function initLocalConfig() {
+export function initLocalConfig() {
   const path = getLocalConfigPath();
 
   if (fsDeps.existsSync(path)) {
-    await print.warning(`The local config already exists at ${path}`);
+    print.warning(`The local config already exists at ${path}`);
     return;
   }
 
@@ -1046,7 +1044,7 @@ export async function initLocalConfig() {
       fsDeps.mkdirSync(dir, { recursive: true }),
     );
     if (!mkdirResult.ok) {
-      await print.warning(`Failed to create the directory: ${dir}`);
+      print.warning(`Failed to create the directory: ${dir}`);
       return;
     }
   }
@@ -1055,17 +1053,17 @@ export async function initLocalConfig() {
     fsDeps.writeFileSync(path, getDefaultConfig("init-local")),
   );
   if (!writeResult.ok) {
-    await print.warning(`Failed to write the config to ${path}`);
+    print.warning(`Failed to write the config to ${path}`);
     return;
   }
-  await print.info(`Created the local config at ${path}`);
+  print.info(`Created the local config at ${path}`);
 }
 
-export async function initGlobalConfig() {
+export function initGlobalConfig() {
   const path = getGlobalConfigPath();
 
   if (fsDeps.existsSync(path)) {
-    await print.warning(`The global config already exists at ${path}`);
+    print.warning(`The global config already exists at ${path}`);
     return;
   }
 
@@ -1075,7 +1073,7 @@ export async function initGlobalConfig() {
       fsDeps.mkdirSync(dir, { recursive: true }),
     );
     if (!mkdirResult.ok) {
-      await print.warning(`Failed to create the directory: ${dir}`);
+      print.warning(`Failed to create the directory: ${dir}`);
       return;
     }
   }
@@ -1084,10 +1082,10 @@ export async function initGlobalConfig() {
     fsDeps.writeFileSync(path, getDefaultConfig("init-global")),
   );
   if (!writeResult.ok) {
-    await print.warning(`Failed to write the config to ${path}`);
+    print.warning(`Failed to write the config to ${path}`);
     return;
   }
-  await print.info(`Created the global config at ${path}`);
+  print.info(`Created the global config at ${path}`);
 }
 
 export function clearRlLine(): readline.Interface | null {

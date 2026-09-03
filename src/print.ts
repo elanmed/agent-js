@@ -5,7 +5,6 @@ import {
   tryCatchAsync,
   normalizeLine,
   execPromise,
-  createQueue,
   getMessageFromError,
 } from "./utils.ts";
 import { processDeps } from "./deps.ts";
@@ -13,12 +12,6 @@ import childProcess from "node:child_process";
 import assert from "node:assert";
 import { getPrettyUsage } from "./usage.ts";
 import { getGlobalConfigPath, getLocalConfigPath } from "./paths.ts";
-
-const printQueue = createQueue();
-
-export function flushAndStopLoadingState(): Promise<void> {
-  return printQueue.enqueue(() => stopLoadingState());
-}
 
 const COLORS = {
   red: "\x1b[31m",
@@ -43,7 +36,7 @@ export const print = Object.assign(
   },
 );
 
-export async function colorPrint(text: Uint8Array | string, color?: Color) {
+export function colorPrint(text: Uint8Array | string, color?: Color) {
   const reset = "\x1b[0m";
   const out = (() => {
     if (color !== undefined) {
@@ -54,18 +47,16 @@ export async function colorPrint(text: Uint8Array | string, color?: Color) {
     }
   })();
 
-  return printQueue.enqueue(async () => {
-    const wasSpinnerActive = getState().app.loadingStateTimeout !== null;
-    await stopLoadingState();
-    processDeps.stdout.write(out);
-    if (wasSpinnerActive) startLoadingState();
-    actions.appendToStdout(out);
-  });
+  const wasSpinnerActive = getState().app.loadingStateTimeout !== null;
+  stopLoadingState();
+  processDeps.stdout.write(out);
+  if (wasSpinnerActive) startLoadingState();
+  actions.appendToStdout(out);
 }
 
-export async function printNewline() {
+export function printNewline() {
   if (getState().app.stdout.endsWith("\n\n")) return;
-  await colorPrint("");
+  colorPrint("");
 }
 
 interface FencePrintOpts {
@@ -73,7 +64,7 @@ interface FencePrintOpts {
   color?: Color;
 }
 
-export async function fencePrint(text: string, opts: FencePrintOpts = {}) {
+export function fencePrint(text: string, opts: FencePrintOpts = {}) {
   const showSessionInfo = opts.showSessionInfo ?? false;
 
   const line = (() => {
@@ -82,7 +73,7 @@ export async function fencePrint(text: string, opts: FencePrintOpts = {}) {
     return `━━ ${text} (${getPrettyApiDuration()}) (${getPrettyUsage()}) ━━`;
   })();
 
-  await colorPrint(line, opts.color ?? "grey");
+  colorPrint(line, opts.color ?? "grey");
 }
 
 export function startLoadingState() {
@@ -94,20 +85,6 @@ export function startLoadingState() {
   actions.setLoadingStateTimeout(timeout);
 }
 
-function pauseLoadingState() {
-  const { loadingStateTimeout } = getState().app;
-  assert(loadingStateTimeout !== null);
-  clearInterval(loadingStateTimeout);
-  actions.setLoadingStateTimeout(null);
-}
-
-function eraseLoadingState() {
-  processDeps.stdout.write(
-    `\r${" ".repeat(getState().config.loadingStateFrames[0]?.length ?? 0)}\r`,
-  );
-  actions.resetLoadingStateFrameIdx();
-}
-
 function writeLoadingStateFrame() {
   const { loadingStateFrames } = getState().config;
   processDeps.stdout.write(
@@ -116,38 +93,17 @@ function writeLoadingStateFrame() {
   actions.incrementLoadingStateFrameIdx();
 }
 
-let stoppingPromise: Promise<void> | null = null;
+export function stopLoadingState() {
+  const { loadingStateTimeout } = getState().app;
+  if (loadingStateTimeout === null) return;
 
-export function stopLoadingState(): Promise<void> {
-  if (stoppingPromise !== null) return stoppingPromise;
-  if (getState().app.loadingStateTimeout === null) {
-    return Promise.resolve();
-  }
-  pauseLoadingState();
+  clearInterval(loadingStateTimeout);
+  actions.setLoadingStateTimeout(null);
 
-  const { loadingStateFrames } = getState().config;
-  if (getState().app.loadingStateFrameIdx % loadingStateFrames.length === 1) {
-    eraseLoadingState();
-    return Promise.resolve();
-  }
-
-  stoppingPromise = new Promise((resolve) => {
-    const timeout = setInterval(() => {
-      writeLoadingStateFrame();
-
-      if (
-        getState().app.loadingStateFrameIdx % loadingStateFrames.length ===
-        1
-      ) {
-        pauseLoadingState();
-        eraseLoadingState();
-        stoppingPromise = null;
-        resolve();
-      }
-    }, getState().config.loadingStateFrameDuration);
-    actions.setLoadingStateTimeout(timeout);
-  });
-  return stoppingPromise;
+  processDeps.stdout.write(
+    `\r${" ".repeat(getState().config.loadingStateFrames[0]?.length ?? 0)}\r`,
+  );
+  actions.resetLoadingStateFrameIdx();
 }
 
 export async function checkBat(): Promise<boolean> {
@@ -159,7 +115,7 @@ export async function warnOnMissingBat() {
 
   const isBatAvailable = await checkBat();
   if (!isBatAvailable) {
-    await print.warning(
+    print.warning(
       `\`bat\` is not available, consider installing it to properly render markdown responses in the terminal. Suppress this warning with \`suppressBatUnavailableWarning: true\` in ${getGlobalConfigPath()} or ${getLocalConfigPath()}`,
     );
   }
@@ -190,7 +146,7 @@ export async function formatMarkdown(content: string): Promise<string> {
     format(content, { parser: "markdown" }),
   );
   if (formatResult.ok) return formatResult.value;
-  await print.warning(
+  print.warning(
     `Outputting raw content, markdown formatting failed: ${getMessageFromError(formatResult.error)}`,
   );
   return content;
@@ -202,32 +158,32 @@ export async function executeBat(content: string) {
   const isBatAvailable = await checkBat();
 
   if (!isBatAvailable) {
-    return await print(content);
+    return print(content);
   }
 
-  async function fallbackPrint(message: string) {
-    await print.error(message);
-    await print(content);
+  function fallbackPrint(message: string) {
+    print.error(message);
+    print(content);
   }
   const baseMessage =
     "Falling back to plain text rendering, an error occurred when spawning `bat`: ";
   const batResult = spawnBat(content);
   if (!batResult.ok) {
-    return await fallbackPrint(
+    return fallbackPrint(
       baseMessage.concat(getMessageFromError(batResult.error)),
     );
   }
   if (batResult.value.status !== null && batResult.value.status !== 0) {
-    return await fallbackPrint(
+    return fallbackPrint(
       baseMessage.concat(
         `\`bat\` returned code ${String(batResult.value.status)}`,
       ),
     );
   }
   if (batResult.value.stderr.length !== 0) {
-    return await fallbackPrint(baseMessage.concat(batResult.value.stderr));
+    return fallbackPrint(baseMessage.concat(batResult.value.stderr));
   }
-  await print(batResult.value.stdout);
+  print(batResult.value.stdout);
 }
 
 export function getPrettyApiDuration() {
@@ -263,8 +219,8 @@ export function getPrettyApiDuration() {
   return `${prettyMin}${prettySec}${prettyMs}`;
 }
 
-export async function printSessionStartDate() {
-  await print.info(
+export function printSessionStartDate() {
+  print.info(
     `Resume this session with /resume ${String(getState().app.sessionStartDate)}`,
   );
 }

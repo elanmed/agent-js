@@ -99,7 +99,7 @@ export async function syncInitialModelUsageForLimitWindow() {
   const lockUtils = createLockUtils(getUsageLogLockPath());
   const created = await lockUtils.createLock();
   if (!created) {
-    return await print.warning(
+    return print.warning(
       `Failed to acquire a lock for ${getUsageLogLockPath()}`,
     );
   }
@@ -142,7 +142,7 @@ export async function syncNewModelUsageForLimitWindow(
   const lockUtils = createLockUtils(getUsageLogLockPath());
   const created = await lockUtils.createLock();
   if (!created) {
-    return await print.warning(
+    return print.warning(
       `Failed to acquire a lock for ${getUsageLogLockPath()}`,
     );
   }

@@ -135,7 +135,7 @@ global content
       assert.equal(result, "");
     });
 
-    it("lists skills found in skill directories", async () => {
+    it("lists skills found in skill directories", () => {
       testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
         "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
       ]);
@@ -147,7 +147,7 @@ description: A test skill
 ---
 # Body`,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -162,7 +162,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("deduplicates by parsed name, keeping first occurrence", async () => {
+    it("deduplicates by parsed name, keeping first occurrence", () => {
       testFs._globResults.set("/test-cwd/.lasso/skills/**/SKILL.md", [
         "/test-cwd/.lasso/skills/local-skill/SKILL.md",
       ]);
@@ -185,7 +185,7 @@ description: Global deploy
 ---
 # Global`,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -200,7 +200,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("does not return duplicate skills", async () => {
+    it("does not return duplicate skills", () => {
       testFs._globResults.set("/test-cwd/.lasso/skills/**/SKILL.md", [
         "/test-cwd/.lasso/skills/a/SKILL.md",
       ]);
@@ -223,7 +223,7 @@ description: Second
 ---
 # B`,
       );
-      const result = await getSkills();
+      const result = getSkills();
       assert.equal(result.length, 1);
       assert.deepStrictEqual(result[0], {
         name: "deploy",
@@ -233,7 +233,7 @@ description: Second
       });
     });
 
-    it("includes skills with different names", async () => {
+    it("includes skills with different names", () => {
       testFs._globResults.set("/test-cwd/.lasso/skills/**/SKILL.md", [
         "/test-cwd/.lasso/skills/a/SKILL.md",
         "/test-cwd/.lasso/skills/b/SKILL.md",
@@ -254,7 +254,7 @@ description: Second
 ---
 `,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -270,7 +270,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("skips non-existent skill directories", async () => {
+    it("skips non-existent skill directories", () => {
       testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
         "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
       ]);
@@ -282,7 +282,7 @@ description: A test skill
 ---
 # Body`,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -297,7 +297,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("skips malformed skill files", async () => {
+    it("skips malformed skill files", () => {
       testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
         "/fake-home/.config/lasso/skills/bad/SKILL.md",
         "/fake-home/.config/lasso/skills/good/SKILL.md",
@@ -314,7 +314,7 @@ description: Valid
 ---
 `,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -329,7 +329,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("includes skills from custom skill dirs", async () => {
+    it("includes skills from custom skill dirs", () => {
       actions.setCustomSkillDirs(["/custom/skills"]);
       testFs._globResults.set("/custom/skills/**/SKILL.md", [
         "/custom/skills/custom-skill/SKILL.md",
@@ -342,7 +342,7 @@ description: From custom dir
 ---
 `,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -357,7 +357,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("prioritizes custom skill dirs over local and global", async () => {
+    it("prioritizes custom skill dirs over local and global", () => {
       actions.setCustomSkillDirs(["/custom/skills"]);
       testFs._globResults.set("/custom/skills/**/SKILL.md", [
         "/custom/skills/deploy/SKILL.md",
@@ -381,7 +381,7 @@ description: Local deploy
 ---
 `,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -396,12 +396,12 @@ would benefit from specialized instructions.
       );
     });
 
-    it("includes nested AGENTS.md files as context skills", async () => {
+    it("includes nested AGENTS.md files as context skills", () => {
       testFs._globResults.set("/test-cwd/*/**/AGENTS.md", [
         "/test-cwd/src/AGENTS.md",
       ]);
       testFs._files.set("/test-cwd/src/AGENTS.md", "nested content");
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -416,7 +416,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("nested AGENTS.md skills do not collide with regular skills", async () => {
+    it("nested AGENTS.md skills do not collide with regular skills", () => {
       testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
         "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
       ]);
@@ -432,7 +432,7 @@ description: A test skill
         "/test-cwd/src/AGENTS.md",
       ]);
       testFs._files.set("/test-cwd/src/AGENTS.md", "nested content");
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -448,7 +448,7 @@ would benefit from specialized instructions.
       );
     });
 
-    it("skips entries where globbySync throws", async () => {
+    it("skips entries where globbySync throws", () => {
       mock.method(fsDeps, "globbySync", (pattern: string) => {
         if (pattern === "/test-cwd/.lasso/skills/**/SKILL.md")
           throw new Error("glob failed");
@@ -465,7 +465,7 @@ description: Works
 ---
 `,
       );
-      const result = getSkillsStr(await getSkills());
+      const result = getSkillsStr(getSkills());
       assert.equal(
         result,
         `# [lasso] Skills
@@ -482,12 +482,12 @@ would benefit from specialized instructions.
   });
 
   describe("getSkillJSON", () => {
-    it("returns null when file does not exist", async () => {
-      const result = await getSkillJSON("/some/dir/SKILL.md");
+    it("returns null when file does not exist", () => {
+      const result = getSkillJSON("/some/dir/SKILL.md");
       assert.equal(result, null);
     });
 
-    it("parses valid SKILL.md front matter", async () => {
+    it("parses valid SKILL.md front matter", () => {
       testFs._files.set(
         "/skill-dir/SKILL.md",
         `---
@@ -496,7 +496,7 @@ description: Deploy the app
 ---
 # Deploy`,
       );
-      const result = await getSkillJSON("/skill-dir/SKILL.md");
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.deepStrictEqual(result, {
         name: "deploy",
         description: "Deploy the app",
@@ -505,7 +505,7 @@ description: Deploy the app
       });
     });
 
-    it("returns null when front matter is missing name", async () => {
+    it("returns null when front matter is missing name", () => {
       testFs._files.set(
         "/skill-dir/SKILL.md",
         `---
@@ -513,11 +513,11 @@ description: No name here
 ---
 `,
       );
-      const result = await getSkillJSON("/skill-dir/SKILL.md");
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
 
-    it("returns null when front matter is missing description", async () => {
+    it("returns null when front matter is missing description", () => {
       testFs._files.set(
         "/skill-dir/SKILL.md",
         `---
@@ -525,18 +525,18 @@ name: deploy
 ---
 `,
       );
-      const result = await getSkillJSON("/skill-dir/SKILL.md");
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
 
-    it("returns null when path is a directory", async () => {
+    it("returns null when path is a directory", () => {
       testFs._dirs.add("/skill-dir");
-      const result = await getSkillJSON("/skill-dir");
+      const result = getSkillJSON("/skill-dir");
       assert.equal(result, null);
     });
 
-    it("returns null when readFileSync fails", async () => {
-      const result = await getSkillJSON("/skill-dir/SKILL.md");
+    it("returns null when readFileSync fails", () => {
+      const result = getSkillJSON("/skill-dir/SKILL.md");
       assert.equal(result, null);
     });
   });

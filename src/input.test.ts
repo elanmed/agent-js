@@ -694,9 +694,9 @@ l---
       actions.resetStdout();
     });
 
-    it("sets model and prints blue confirmation when input is valid", async () => {
+    it("sets model and prints blue confirmation when input is valid", () => {
       actions.setModel("old-model");
-      await setModelCommand("/model new-model");
+      setModelCommand("/model new-model");
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(getState().app.messageParams.tokensStale, true);
       assert.strictEqual(
@@ -705,9 +705,9 @@ l---
       );
     });
 
-    it("prints red error when input has too many parts", async () => {
+    it("prints red error when input has too many parts", () => {
       actions.setModel("old-model");
-      await setModelCommand("/model new-model extra");
+      setModelCommand("/model new-model extra");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -715,9 +715,9 @@ l---
       );
     });
 
-    it("prints red error when input has only the command", async () => {
+    it("prints red error when input has only the command", () => {
       actions.setModel("old-model");
-      await setModelCommand("/model");
+      setModelCommand("/model");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -725,9 +725,9 @@ l---
       );
     });
 
-    it("handles model name with slashes", async () => {
+    it("handles model name with slashes", () => {
       actions.setModel("old");
-      await setModelCommand("/model provider/new-model");
+      setModelCommand("/model provider/new-model");
       assert.strictEqual(getState().config.model, "provider/new-model");
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -735,15 +735,15 @@ l---
       );
     });
 
-    it("handles input with multiple spaces", async () => {
+    it("handles input with multiple spaces", () => {
       actions.setModel("old");
-      await setModelCommand("/model   new-model");
+      setModelCommand("/model   new-model");
       assert.strictEqual(getState().config.model, "new-model");
     });
 
-    it("handles input with tabs", async () => {
+    it("handles input with tabs", () => {
       actions.setModel("old");
-      await setModelCommand("/model\tnew-model");
+      setModelCommand("/model\tnew-model");
       assert.strictEqual(getState().config.model, "new-model");
     });
   });
@@ -753,9 +753,9 @@ l---
       actions.resetStdout();
     });
 
-    it("prints current model", async () => {
+    it("prints current model", () => {
       actions.setModel("gpt-4");
-      await getModel();
+      getModel();
       assert.strictEqual(stripAnsi(getCapturedAppStdout()), "gpt-4\n");
     });
   });
@@ -765,9 +765,9 @@ l---
       actions.resetStdout();
     });
 
-    it("resets params", async () => {
+    it("resets params", () => {
       actions.appendToMessageParams({ role: "user", content: "hello" });
-      await clearCommand();
+      clearCommand();
       assert.deepStrictEqual(getState().app.messageParams, {
         tokens: 0,
         tokensStale: false,
@@ -785,8 +785,8 @@ l---
       actions.resetStdout();
     });
 
-    it("prints usage error when no session start date is provided", async () => {
-      const result = await resume("/resume");
+    it("prints usage error when no session start date is provided", () => {
+      const result = resume("/resume");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -794,8 +794,8 @@ l---
       );
     });
 
-    it("prints usage error when too many parts are provided", async () => {
-      const result = await resume("/resume 123 456");
+    it("prints usage error when too many parts are provided", () => {
+      const result = resume("/resume 123 456");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -803,8 +803,8 @@ l---
       );
     });
 
-    it("prints usage error when session start date is not a number", async () => {
-      const result = await resume("/resume abc");
+    it("prints usage error when session start date is not a number", () => {
+      const result = resume("/resume abc");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -812,8 +812,8 @@ l---
       );
     });
 
-    it("prints error when history directory does not exist", async () => {
-      const result = await resume("/resume 1234567890000");
+    it("prints error when history directory does not exist", () => {
+      const result = resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -821,14 +821,14 @@ l---
       );
     });
 
-    it("returns transcript and resets message params when conversation is found", async () => {
+    it("returns transcript and resets message params when conversation is found", () => {
       actions.appendToMessageParams({ role: "user", content: "hello" });
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
         "/fake-home/.config/lasso/history/chat-history-1234567890000.md",
         "transcript content",
       );
-      const result = await resume("/resume 1234567890000");
+      const result = resume("/resume 1234567890000");
       assert.strictEqual(
         result,
         `Continue the conversation recorded in the transcript below. Respond to this message with "Ready to continue chatting."
@@ -843,13 +843,13 @@ transcript content
       });
     });
 
-    it("prints error when no conversation is found", async () => {
+    it("prints error when no conversation is found", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
         "/fake-home/.config/lasso/history/chat-history-9999999999999.md",
         "transcript content",
       );
-      const result = await resume("/resume 1234567890000");
+      const result = resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -857,13 +857,13 @@ transcript content
       );
     });
 
-    it("skips files that do not match the chat-history format", async () => {
+    it("skips files that do not match the chat-history format", () => {
       testFs._dirs.add("/fake-home/.config/lasso/history");
       testFs._files.set(
         "/fake-home/.config/lasso/history/other-1234567890000.md",
         "other",
       );
-      const result = await resume("/resume 1234567890000");
+      const result = resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
@@ -950,7 +950,7 @@ No available custom slash commands
       actions.resetStdout();
     });
 
-    it("prints available skills", async () => {
+    it("prints available skills", () => {
       actions.setSkills([
         {
           name: "test-skill",
@@ -959,7 +959,7 @@ No available custom slash commands
           content: "skill content",
         },
       ]);
-      await printSkills();
+      printSkills();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         `
@@ -970,8 +970,8 @@ Available skills:
       );
     });
 
-    it("prints no available skills when skills list is empty", async () => {
-      await printSkills();
+    it("prints no available skills when skills list is empty", () => {
+      printSkills();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         `
@@ -980,7 +980,7 @@ No available skills
       );
     });
 
-    it("filters out context file skills", async () => {
+    it("filters out context file skills", () => {
       actions.setSkills([
         {
           name: "__lasso-context-for-/ctx",
@@ -995,7 +995,7 @@ No available skills
           content: "skill content",
         },
       ]);
-      await printSkills();
+      printSkills();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         `
@@ -1013,11 +1013,11 @@ Available skills:
       actions.resetStdout();
     });
 
-    it("prints available context files", async () => {
+    it("prints available context files", () => {
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
-      await printAvailableContextFiles();
+      printAvailableContextFiles();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         `
@@ -1027,8 +1027,8 @@ Available context files:
       );
     });
 
-    it("prints no available context files when entries list is empty", async () => {
-      await printAvailableContextFiles();
+    it("prints no available context files when entries list is empty", () => {
+      printAvailableContextFiles();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         `
@@ -1037,7 +1037,7 @@ No available context files
       );
     });
 
-    it("includes context file skills", async () => {
+    it("includes context file skills", () => {
       actions.setContextEntries([
         { filePath: "/project/AGENTS.md", content: "context" },
       ]);
@@ -1055,7 +1055,7 @@ No available context files
           content: "skill content",
         },
       ]);
-      await printAvailableContextFiles();
+      printAvailableContextFiles();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         `
@@ -1946,9 +1946,9 @@ Invalid command: /unknown, valid commands:
   });
 
   describe("initLocalConfig and initGlobalConfig", () => {
-    it("creates the local config in .lasso/settings.yaml", async () => {
+    it("creates the local config in .lasso/settings.yaml", () => {
       actions.resetStdout();
-      await initLocalConfig();
+      initLocalConfig();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "Created the local config at /test-cwd/.lasso/settings.yaml\n",
@@ -1963,10 +1963,10 @@ baseURL: https://opencode.ai/zen/v1
       assert.ok(testFs._dirs.has("/test-cwd/.lasso"));
     });
 
-    it("warns and does not overwrite when the local config already exists", async () => {
+    it("warns and does not overwrite when the local config already exists", () => {
       testFs._files.set("/test-cwd/.lasso/settings.yaml", "existing config");
       actions.resetStdout();
-      await initLocalConfig();
+      initLocalConfig();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "The local config already exists at /test-cwd/.lasso/settings.yaml\n",
@@ -1977,21 +1977,21 @@ baseURL: https://opencode.ai/zen/v1
       );
     });
 
-    it("warns when writing the local config fails", async () => {
+    it("warns when writing the local config fails", () => {
       mock.method(fsDeps, "writeFileSync", () => {
         throw new Error("write failed");
       });
       actions.resetStdout();
-      await initLocalConfig();
+      initLocalConfig();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "Failed to write the config to /test-cwd/.lasso/settings.yaml\n",
       );
     });
 
-    it("creates the global config in ~/.config/lasso/settings.yaml", async () => {
+    it("creates the global config in ~/.config/lasso/settings.yaml", () => {
       actions.resetStdout();
-      await initGlobalConfig();
+      initGlobalConfig();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "Created the global config at /fake-home/.config/lasso/settings.yaml\n",
@@ -2006,13 +2006,13 @@ baseURL: https://opencode.ai/zen/v1
       assert.ok(testFs._dirs.has("/fake-home/.config/lasso"));
     });
 
-    it("warns and does not overwrite when the global config already exists", async () => {
+    it("warns and does not overwrite when the global config already exists", () => {
       testFs._files.set(
         "/fake-home/.config/lasso/settings.yaml",
         "existing config",
       );
       actions.resetStdout();
-      await initGlobalConfig();
+      initGlobalConfig();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "The global config already exists at /fake-home/.config/lasso/settings.yaml\n",
@@ -2023,24 +2023,24 @@ baseURL: https://opencode.ai/zen/v1
       );
     });
 
-    it("warns when writing the global config fails", async () => {
+    it("warns when writing the global config fails", () => {
       mock.method(fsDeps, "writeFileSync", () => {
         throw new Error("write failed");
       });
       actions.resetStdout();
-      await initGlobalConfig();
+      initGlobalConfig();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "Failed to write the config to /fake-home/.config/lasso/settings.yaml\n",
       );
     });
 
-    it("warns when the config directory cannot be created", async () => {
+    it("warns when the config directory cannot be created", () => {
       mock.method(fsDeps, "mkdirSync", () => {
         throw new Error("mkdir failed");
       });
       actions.resetStdout();
-      await initLocalConfig();
+      initLocalConfig();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),
         "Failed to create the directory: /test-cwd/.lasso\n",

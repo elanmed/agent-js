@@ -1554,17 +1554,17 @@ hello
       actions.setModel("claude-sonnet-4-20250514");
     });
 
-    it("returns false when api key, baseURL, and model are set", async () => {
+    it("returns false when api key, baseURL, and model are set", () => {
       const getCaptured = mockStdout();
-      assert.strictEqual(await blockOnMissingConfig(), false);
+      assert.strictEqual(blockOnMissingConfig(), false);
       assert.strictEqual(getCaptured(), "");
     });
 
-    it("returns true and suggests the init slash commands when nothing is set", async () => {
+    it("returns true and suggests the init slash commands when nothing is set", () => {
       actions.resetState();
       testProcessEnv._clear();
       const getCaptured = mockStdout();
-      assert.strictEqual(await blockOnMissingConfig(), true);
+      assert.strictEqual(blockOnMissingConfig(), true);
       assert.strictEqual(
         stripAnsi(getCaptured()),
         `Warning! You're missing required configuration options.
@@ -1577,10 +1577,10 @@ Run /init-local or /init-global to generate a sample config in \`./.lasso\` or \
       );
     });
 
-    it("only mentions the missing api key when baseURL and model are set", async () => {
+    it("only mentions the missing api key when baseURL and model are set", () => {
       testProcessEnv._clear();
       const getCaptured = mockStdout();
-      assert.strictEqual(await blockOnMissingConfig(), true);
+      assert.strictEqual(blockOnMissingConfig(), true);
       assert.strictEqual(
         stripAnsi(getCaptured()),
         `Warning! You're missing required configuration options.

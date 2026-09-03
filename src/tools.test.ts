@@ -63,8 +63,8 @@ describe("tools", () => {
   });
 
   describe("executeCreateFileTool", () => {
-    it("creates a new file and returns success", async () => {
-      const result = await executeCreateFileTool(
+    it("creates a new file and returns success", () => {
+      const result = executeCreateFileTool(
         { content: "hello world", path: "/test/new.txt" },
         undefined,
       );
@@ -74,9 +74,9 @@ describe("tools", () => {
       assert.equal(testFs._files.get("/test/new.txt"), "hello world");
     });
 
-    it("returns isError when the file already exists", async () => {
+    it("returns isError when the file already exists", () => {
       testFs._files.set("/test/existing.txt", "already here");
-      const result = await executeCreateFileTool(
+      const result = executeCreateFileTool(
         { content: "new content", path: "/test/existing.txt" },
         undefined,
       );
@@ -86,11 +86,11 @@ describe("tools", () => {
       });
     });
 
-    it("returns isError when write fails", async () => {
+    it("returns isError when write fails", () => {
       mock.method(fsDeps, "writeFileSync", () => {
         throw new Error("EIO");
       });
-      const result = await executeCreateFileTool(
+      const result = executeCreateFileTool(
         { content: "x", path: "/test/file.txt" },
         undefined,
       );
@@ -102,9 +102,9 @@ describe("tools", () => {
   });
 
   describe("executeViewFileTool", () => {
-    it("returns file contents with line numbers", async () => {
+    it("returns file contents with line numbers", () => {
       testFs._files.set("/test/lines.txt", "aaa\nbbb\nccc");
-      const result = await executeViewFileTool({ path: "/test/lines.txt" });
+      const result = executeViewFileTool({ path: "/test/lines.txt" });
       assert.deepStrictEqual(result, {
         content: `1\taaa
 2\tbbb
@@ -112,9 +112,9 @@ describe("tools", () => {
       });
     });
 
-    it("returns a slice when start_line and end_line are specified", async () => {
+    it("returns a slice when start_line and end_line are specified", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3\nline4\nline5");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         start_line: 2,
         end_line: 4,
@@ -126,9 +126,9 @@ describe("tools", () => {
       });
     });
 
-    it("treats end_line=-1 as end of file", async () => {
+    it("treats end_line=-1 as end of file", () => {
       testFs._files.set("/test/lines.txt", "a\nb\nc");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         start_line: 2,
         end_line: -1,
@@ -139,19 +139,19 @@ describe("tools", () => {
       });
     });
 
-    it("lists directory contents for a directory path", async () => {
+    it("lists directory contents for a directory path", () => {
       testFs._dirs.add("/test/dir");
       testFs._files.set("/test/dir/alpha.txt", "");
       testFs._files.set("/test/dir/beta.txt", "");
-      const result = await executeViewFileTool({ path: "/test/dir" });
+      const result = executeViewFileTool({ path: "/test/dir" });
       assert.deepStrictEqual(result, {
         content: `alpha.txt
 beta.txt`,
       });
     });
 
-    it("returns isError for a nonexistent path", async () => {
-      const result = await executeViewFileTool({
+    it("returns isError for a nonexistent path", () => {
+      const result = executeViewFileTool({
         path: "/no/such/path/file.txt",
       });
       assert.deepStrictEqual(result, {
@@ -160,9 +160,9 @@ beta.txt`,
       });
     });
 
-    it("returns isError when start_line is less than 1", async () => {
+    it("returns isError when start_line is less than 1", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         start_line: 0,
       });
@@ -172,9 +172,9 @@ beta.txt`,
       });
     });
 
-    it("returns isError when end_line is less than 1 (and not -1)", async () => {
+    it("returns isError when end_line is less than 1 (and not -1)", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         end_line: 0,
       });
@@ -184,9 +184,9 @@ beta.txt`,
       });
     });
 
-    it("returns isError when start_line is past end of file", async () => {
+    it("returns isError when start_line is past end of file", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         start_line: 5,
       });
@@ -196,9 +196,9 @@ beta.txt`,
       });
     });
 
-    it("returns isError when end_line is past end of file", async () => {
+    it("returns isError when end_line is past end of file", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         end_line: 10,
       });
@@ -208,9 +208,9 @@ beta.txt`,
       });
     });
 
-    it("returns isError when start_line is greater than or equal to end_line", async () => {
+    it("returns isError when start_line is greater than or equal to end_line", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         start_line: 3,
         end_line: 2,
@@ -221,9 +221,9 @@ beta.txt`,
       });
     });
 
-    it("returns single line when start_line equals end_line", async () => {
+    it("returns single line when start_line equals end_line", () => {
       testFs._files.set("/test/lines.txt", "line1\nline2\nline3");
-      const result = await executeViewFileTool({
+      const result = executeViewFileTool({
         path: "/test/lines.txt",
         start_line: 2,
         end_line: 2,
@@ -235,9 +235,9 @@ beta.txt`,
   });
 
   describe("executeStrReplaceTool", () => {
-    it("replaces old_str with new_str when exactly one match exists", async () => {
+    it("replaces old_str with new_str when exactly one match exists", () => {
       testFs._files.set("/test/file.txt", "foo bar baz");
-      const result = await executeStrReplaceTool(
+      const result = executeStrReplaceTool(
         { path: "/test/file.txt", old_str: "bar", new_str: "qux" },
         undefined,
       );
@@ -247,9 +247,9 @@ beta.txt`,
       assert.equal(testFs._files.get("/test/file.txt"), "foo qux baz");
     });
 
-    it("returns isError when old_str is not found", async () => {
+    it("returns isError when old_str is not found", () => {
       testFs._files.set("/test/file.txt", "foo bar baz");
-      const result = await executeStrReplaceTool(
+      const result = executeStrReplaceTool(
         { path: "/test/file.txt", old_str: "missing", new_str: "x" },
         undefined,
       );
@@ -259,9 +259,9 @@ beta.txt`,
       });
     });
 
-    it("returns isError when old_str matches more than once", async () => {
+    it("returns isError when old_str matches more than once", () => {
       testFs._files.set("/test/file.txt", "aaa bbb aaa");
-      const result = await executeStrReplaceTool(
+      const result = executeStrReplaceTool(
         { path: "/test/file.txt", old_str: "aaa", new_str: "x" },
         undefined,
       );
@@ -271,8 +271,8 @@ beta.txt`,
       });
     });
 
-    it("returns isError when the file does not exist", async () => {
-      const result = await executeStrReplaceTool(
+    it("returns isError when the file does not exist", () => {
+      const result = executeStrReplaceTool(
         { path: "/no/such/path/file.txt", old_str: "a", new_str: "b" },
         undefined,
       );
@@ -284,9 +284,9 @@ beta.txt`,
   });
 
   describe("executeInsertLinesTool", () => {
-    it("inserts text after a specific line", async () => {
+    it("inserts text after a specific line", () => {
       testFs._files.set("/test/file.txt", "line1\nline2\nline3");
-      const result = await executeInsertLinesTool(
+      const result = executeInsertLinesTool(
         { path: "/test/file.txt", after_line: 2, content: "inserted" },
         undefined,
       );
@@ -302,9 +302,9 @@ line3`,
       );
     });
 
-    it("inserts at the beginning when after_line is 0", async () => {
+    it("inserts at the beginning when after_line is 0", () => {
       testFs._files.set("/test/file.txt", "line1\nline2");
-      const result = await executeInsertLinesTool(
+      const result = executeInsertLinesTool(
         { path: "/test/file.txt", after_line: 0, content: "top" },
         undefined,
       );
@@ -319,9 +319,9 @@ line2`,
       );
     });
 
-    it("inserts at the end when after_line equals the number of lines", async () => {
+    it("inserts at the end when after_line equals the number of lines", () => {
       testFs._files.set("/test/file.txt", "line1\nline2");
-      const result = await executeInsertLinesTool(
+      const result = executeInsertLinesTool(
         { path: "/test/file.txt", after_line: 2, content: "bottom" },
         undefined,
       );
@@ -336,9 +336,9 @@ bottom`,
       );
     });
 
-    it("returns isError when after_line is out of range (negative)", async () => {
+    it("returns isError when after_line is out of range (negative)", () => {
       testFs._files.set("/test/file.txt", "line1");
-      const result = await executeInsertLinesTool(
+      const result = executeInsertLinesTool(
         { path: "/test/file.txt", after_line: -1, content: "x" },
         undefined,
       );
@@ -348,9 +348,9 @@ bottom`,
       });
     });
 
-    it("returns isError when after_line is out of range (too large)", async () => {
+    it("returns isError when after_line is out of range (too large)", () => {
       testFs._files.set("/test/file.txt", "line1");
-      const result = await executeInsertLinesTool(
+      const result = executeInsertLinesTool(
         { path: "/test/file.txt", after_line: 5, content: "x" },
         undefined,
       );
@@ -360,8 +360,8 @@ bottom`,
       });
     });
 
-    it("returns isError when the file does not exist", async () => {
-      const result = await executeInsertLinesTool(
+    it("returns isError when the file does not exist", () => {
+      const result = executeInsertLinesTool(
         { path: "/no/such/path/file.txt", after_line: 0, content: "x" },
         undefined,
       );
@@ -608,7 +608,7 @@ bottom`,
       actions.resetState();
     });
 
-    it("returns loaded skill content when skill exists in state", async () => {
+    it("returns loaded skill content when skill exists in state", () => {
       actions.setSkills([
         {
           name: "deploy",
@@ -617,7 +617,7 @@ bottom`,
           content: "# Deploy instructions",
         },
       ]);
-      const result = await loadSkillTool({ name: "deploy" });
+      const result = loadSkillTool({ name: "deploy" });
       assert.deepStrictEqual(result, {
         content: JSON.stringify(
           {
@@ -632,7 +632,7 @@ bottom`,
       });
     });
 
-    it("finds the correct skill when multiple skills are stored", async () => {
+    it("finds the correct skill when multiple skills are stored", () => {
       actions.setSkills([
         {
           name: "skill-a",
@@ -647,21 +647,21 @@ bottom`,
           content: "content b",
         },
       ]);
-      const result = await loadSkillTool({ name: "skill-b" });
+      const result = loadSkillTool({ name: "skill-b" });
       const parsed = JSON.parse(result.content) as Record<string, unknown>;
       assert.equal(parsed["name"], "skill-b");
     });
 
-    it("returns isError when skill is not found", async () => {
-      const result = await loadSkillTool({ name: "nonexistent" });
+    it("returns isError when skill is not found", () => {
+      const result = loadSkillTool({ name: "nonexistent" });
       assert.deepStrictEqual(result, {
         isError: true,
         content: "Could not find a skill with name: nonexistent",
       });
     });
 
-    it("returns isError when no skills are loaded", async () => {
-      const result = await loadSkillTool({ name: "any" });
+    it("returns isError when no skills are loaded", () => {
+      const result = loadSkillTool({ name: "any" });
       assert.strictEqual(result.isError, true);
     });
   });

@@ -24,8 +24,8 @@ import { appendModelUsage } from "./usage.ts";
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
-async function toolPrint(label: string, detail: string) {
-  await print.doing(`${label}: ${truncate(detail)}`);
+function toolPrint(label: string, detail: string) {
+  print.doing(`${label}: ${truncate(detail)}`);
 }
 
 export type ToolPrint = typeof toolPrint;
@@ -42,7 +42,7 @@ export async function executeBashTool(
   { command: bashCommand }: BashToolInput,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  await toolPrint("bash", bashCommand);
+  toolPrint("bash", bashCommand);
 
   const bashResult = await tryCatchAsync(
     execPromise(bashCommand, signal === undefined ? undefined : { signal }),
@@ -73,11 +73,11 @@ const createFileToolSchema = z.object({
 });
 export type CreateFileTool = z.infer<typeof createFileToolSchema>;
 
-export async function executeCreateFileTool(
+export function executeCreateFileTool(
   { content, path }: CreateFileTool,
   signal?: AbortSignal,
-): Promise<ToolResult> {
-  await toolPrint("create_file", path);
+): ToolResult {
+  toolPrint("create_file", path);
 
   if (fsDeps.existsSync(path)) {
     return {
@@ -112,12 +112,12 @@ const viewFileToolInputSchema = z.object({
 });
 export type ViewFileToolInput = z.infer<typeof viewFileToolInputSchema>;
 
-export async function executeViewFileTool({
+export function executeViewFileTool({
   path,
   start_line,
   end_line,
-}: ViewFileToolInput): Promise<ToolResult> {
-  await toolPrint("view_file", path);
+}: ViewFileToolInput): ToolResult {
+  toolPrint("view_file", path);
 
   const statResult = tryCatch(() => fsDeps.statSync(path));
   if (!statResult.ok) {
@@ -214,11 +214,11 @@ export const strReplaceToolInputSchema = z.object({
 });
 export type StrReplaceToolInput = z.infer<typeof strReplaceToolInputSchema>;
 
-export async function executeStrReplaceTool(
+export function executeStrReplaceTool(
   { path, old_str, new_str }: StrReplaceToolInput,
   signal?: AbortSignal,
-): Promise<ToolResult> {
-  await toolPrint("str_replace", path);
+): ToolResult {
+  toolPrint("str_replace", path);
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
@@ -274,11 +274,11 @@ const insertLinesToolInputSchema = z.object({
 });
 export type InsertLinesToolInput = z.infer<typeof insertLinesToolInputSchema>;
 
-export async function executeInsertLinesTool(
+export function executeInsertLinesTool(
   { path, after_line, content }: InsertLinesToolInput,
   signal?: AbortSignal,
-): Promise<ToolResult> {
-  await toolPrint("insert_lines", path);
+): ToolResult {
+  toolPrint("insert_lines", path);
 
   const readResult = tryCatch(() => fsDeps.readFileSync(path));
   if (!readResult.ok) {
@@ -392,7 +392,7 @@ export async function executeWebFetchHtmlTool(
   { href }: WebFetchTool,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  await toolPrint("web_fetch_html", href);
+  toolPrint("web_fetch_html", href);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "text/html");
@@ -422,7 +422,7 @@ export async function executeWebFetchHtmlTool(
   if (!response.ok) {
     cleanup();
     const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-    await print.warning(error);
+    print.warning(error);
     return {
       isError: true,
       content: error,
@@ -446,7 +446,7 @@ export async function executeWebFetchHtmlTool(
   const article = reader.parse();
   if (article === null) {
     const error = `Failed to parse article from ${href}`;
-    await print.warning(error);
+    print.warning(error);
     cleanup();
     return {
       isError: true,
@@ -464,7 +464,7 @@ export async function executeWebFetchJsonTool(
   { href }: WebFetchTool,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  await toolPrint("web_fetch_json", href);
+  toolPrint("web_fetch_json", href);
   const headers = new Headers();
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "application/json");
@@ -494,7 +494,7 @@ export async function executeWebFetchJsonTool(
   if (!response.ok) {
     cleanup();
     const error = `HTTP ${String(response.status)}: ${response.statusText}`;
-    await print.warning(error);
+    print.warning(error);
     return {
       isError: true,
       content: error,
@@ -523,10 +523,8 @@ const loadSkillToolSchema = z.object({
 });
 export type LoadSkillTool = z.infer<typeof loadSkillToolSchema>;
 
-export async function loadSkillTool({
-  name,
-}: LoadSkillTool): Promise<ToolResult> {
-  await toolPrint("load_skill", name);
+export function loadSkillTool({ name }: LoadSkillTool): ToolResult {
+  toolPrint("load_skill", name);
   const foundSkill = getState().app.skills.find((skill) => skill.name === name);
   if (foundSkill === undefined) {
     return {
@@ -591,7 +589,7 @@ export async function createSubagentTool(
       const model = getSubagentModel(subagentSchema);
 
       const message = `[${model}] ${subagentSchema.prompt}`;
-      await toolPrint("   create_subagent", message);
+      toolPrint("   create_subagent", message);
 
       const inputMessageParam: ModelMessage = {
         role: "user",
@@ -754,17 +752,17 @@ export async function printGitDiff({
   );
 
   if (!diffResult.ok) {
-    await print.error(
+    print.error(
       `An error occurred when getting the diff for ${path}: ${getMessageFromError(diffResult.error)}`,
     );
     return;
   }
 
   if (diffResult.value.stdout.length > 0) {
-    await printNewline();
-    await fencePrint(`File change: ${path}`);
-    await print(normalizeLine(diffResult.value.stdout));
-    await printNewline();
+    printNewline();
+    fencePrint(`File change: ${path}`);
+    print(normalizeLine(diffResult.value.stdout));
+    printNewline();
   }
 }
 

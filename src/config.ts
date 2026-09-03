@@ -192,7 +192,7 @@ export function readConfigFile(path: string): Partial<Config> {
   return ConfigSchema.parse(parseResult.value);
 }
 
-export async function blockOnMissingConfig() {
+export function blockOnMissingConfig() {
   const apiKey = processDeps.env.get("LASSO_API_KEY");
 
   const warningMessages: string[] = [];
@@ -230,7 +230,7 @@ export async function blockOnMissingConfig() {
     const warning = `Warning! You're missing required configuration options.
 ${formattedMessages}`;
 
-    await print.warning(warning);
+    print.warning(warning);
     return true;
   }
 
@@ -246,7 +246,7 @@ function filterNulls<T>(entries: Record<string, T | null>): Record<string, T> {
   return filtered;
 }
 
-export async function initStateFromConfig() {
+export function initStateFromConfig() {
   const globalConfig = readConfigFile(getGlobalConfigPath());
   const localConfig = readConfigFile(getLocalConfigPath());
   actions.setGlobalConfigStr(readConfigFileStr(getGlobalConfigPath()));
@@ -273,7 +273,7 @@ export async function initStateFromConfig() {
   }
 
   if (defaultedBaseURL !== undefined && defaultedSdkProvider === "anthropic") {
-    await print.warning(
+    print.warning(
       `The \`baseURL\` option is not used when \`sdkProvider=anthropic\``,
     );
   }
@@ -376,7 +376,7 @@ export async function initStateFromConfig() {
     defaultedUsageLimit !== undefined &&
     defaultedPricingPerModel[defaultedModel] === undefined
   ) {
-    await print.warning(
+    print.warning(
       `usage limit disabled: no \`pricingPerModel\` entry for the current model \`${defaultedModel}\``,
     );
   }
@@ -391,7 +391,7 @@ export async function initStateFromFs() {
   actions.setContextEntries(contextEntries);
   actions.setContextStr(getContextFilesStr(contextEntries));
 
-  const skills = await getSkills();
+  const skills = getSkills();
   actions.setSkills(skills);
   actions.setSkillsStr(getSkillsStr(skills));
 
@@ -406,7 +406,7 @@ export function initStateForDebug() {
 
 export async function initStateRepeatable() {
   initStateForDebug();
-  await initStateFromConfig();
+  initStateFromConfig();
   await initStateFromFs();
 }
 
@@ -418,7 +418,7 @@ export async function initState() {
   );
   actions.setDebugLogPath(debugLogPath);
 
-  await initStateFromConfig();
+  initStateFromConfig();
   await initStateFromFs();
   actions.setSessionStartDate();
 }

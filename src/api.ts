@@ -6,7 +6,7 @@ import {
   getMessageFromError,
   getTempFileName,
 } from "./utils.ts";
-import { print, startLoadingState, flushAndStopLoadingState } from "./print.ts";
+import { print, startLoadingState, stopLoadingState } from "./print.ts";
 import { appendModelUsage } from "./usage.ts";
 import { BASE_SYSTEM_PROMPT } from "./context.ts";
 import {
@@ -99,7 +99,7 @@ export async function resolveApiCall(userInput: string) {
       },
     }),
   );
-  await flushAndStopLoadingState();
+  stopLoadingState();
   actions.setApiStreamAbortController(null);
   actions.setApiEndTime();
 
@@ -109,11 +109,11 @@ export async function resolveApiCall(userInput: string) {
     }
 
     if (isAbortError(generateTextResult.error)) {
-      await print.error("Interrupted");
+      print.error("Interrupted");
       return null;
     }
 
-    await print.error(getMessageFromError(generateTextResult.error));
+    print.error(getMessageFromError(generateTextResult.error));
     return null;
   }
 
@@ -151,7 +151,7 @@ export async function maybeCompactMessageParams(userInput: string) {
 
   const currRatio = nextApiTokens / contextWindow;
   if (currRatio <= getState().config.compactTriggerRatio) return;
-  await print.doing("Compacting…");
+  print.doing("Compacting…");
 
   const targetTokens = getState().config.compactTargetRatio * contextWindow;
 
@@ -169,16 +169,16 @@ ${JSON.stringify(getState().app.messageParams.messages)}
       abortSignal: getState().abortControllers.apiStream!.signal,
     }),
   );
-  await flushAndStopLoadingState();
+  stopLoadingState();
   actions.setApiStreamAbortController(null);
 
   if (!generateTextResult.ok) {
     if (isAbortError(generateTextResult.error)) {
-      await print.error("Interrupted compaction");
+      print.error("Interrupted compaction");
       return;
     }
 
-    await print.error(getMessageFromError(generateTextResult.error));
+    print.error(getMessageFromError(generateTextResult.error));
     return;
   }
 
@@ -190,7 +190,7 @@ ${JSON.stringify(getState().app.messageParams.messages)}
   actions.appendToMessageParams({ content: text, role: "assistant" });
   actions.setMessageParamTokens(afterCompactionTokens);
   if (afterCompactionTokens >= targetTokens) {
-    await print.warning(
+    print.warning(
       `Compacted to ${afterCompactionTokens.toLocaleString()}, ${(afterCompactionTokens - targetTokens).toLocaleString()} over the target.`,
     );
   }
