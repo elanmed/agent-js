@@ -84,7 +84,7 @@ describe("config", () => {
 
       await initState();
 
-      assert.equal(getState().sdkProvider, "anthropic");
+      assert.equal(getState().config.sdkProvider, "anthropic");
     });
 
     it("uses its gateway over the default config", async () => {
@@ -98,7 +98,7 @@ describe("config", () => {
 
       await initState();
 
-      assert.equal(getState().gateway, "opencode");
+      assert.equal(getState().config.gateway, "opencode");
     });
 
     it("leaves gateway undefined when not configured", async () => {
@@ -106,7 +106,7 @@ describe("config", () => {
 
       await initState();
 
-      assert.equal(getState().gateway, undefined);
+      assert.equal(getState().config.gateway, undefined);
     });
 
     it("uses minimal local config without model over the global config", async () => {
@@ -1006,10 +1006,10 @@ describe("config", () => {
         );
 
         await initState();
-        assert.equal(getState().sdkProvider, "anthropic");
+        assert.equal(getState().config.sdkProvider, "anthropic");
       });
 
-      it("throws when baseURL is provided with anthropic sdkProvider", async () => {
+      it("warns when baseURL is provided with anthropic sdkProvider", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
@@ -1019,9 +1019,11 @@ describe("config", () => {
           }),
         );
 
-        await assert.rejects(
-          initState(),
-          /A `baseURL` cannot be provided when `sdkProvider=anthropic`/,
+        const getCaptured = mockStdout();
+        await initState();
+        assert.strictEqual(
+          stripAnsi(getCaptured()),
+          "The `baseURL` option is not used when `sdkProvider=anthropic`\n",
         );
       });
 
@@ -1219,7 +1221,10 @@ describe("config", () => {
       it("throws when baseURL is not configured for openai-compatible sdkProvider", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
-          JSON.stringify({ model: "some-model" }),
+          JSON.stringify({
+            model: "some-model",
+            sdkProvider: "openai-compatible",
+          }),
         );
         await assert.rejects(
           initState(),
@@ -1546,6 +1551,7 @@ hello
       testProcessEnv._set("LASSO_API_KEY", "api-key");
       actions.setBaseURL("https://api.anthropic.com");
       actions.setModel("claude-sonnet-4-20250514");
+      actions.setSdkProvider("anthropic");
     });
 
     it("returns false when api key, baseURL, and model are set", async () => {
@@ -1563,10 +1569,10 @@ hello
         stripAnsi(getCaptured()),
         `Warning! You're missing required configuration options.
 - Set the \`LASSO_API_KEY\` environment variable, e.g. \`export LASSO_API_KEY=...\`
-- Set \`baseURL\` in \`.lasso/settings.yaml\` or \`~/.config/lasso/settings.yaml\` (required when \`sdkProvider=openai-compatible\`)
-- Set \`model\` in \`.lasso/settings.yaml\` or \`~/.config/lasso/settings.yaml\`
+- Set \`sdkProvider\` in your config file (\`openai-compatible\` or \`anthropic\`)
+- Set \`model\` in your config file
 
-Run /init-local or /init-global to generate a sample config.
+Run /init-local or /init-global to generate a sample config in \`./.lasso\` or \`~/.local/config/lasso\` respectively.
 `,
       );
     });

@@ -57,7 +57,7 @@ export const UsageLimitSchema = z.strictObject({
 
 export type UsageLimit = z.infer<typeof UsageLimitSchema>;
 
-const SdkProviderSchema = z.enum(["anthropic", "openai-compatible"]);
+const SdkProviderSchema = z.enum(["anthropic", "openai-compatible", MISSING]);
 export type SdkProvider = z.infer<typeof SdkProviderSchema>;
 
 const ModelSchema = z.string();
@@ -141,7 +141,7 @@ export type Key = z.infer<typeof KeySchema>;
 
 export const defaultConfig: DefaultedConfig = {
   model: MISSING,
-  sdkProvider: "openai-compatible" as const,
+  sdkProvider: MISSING,
   gateway: undefined,
   pricingPerModel: {},
   contextWindowPerModel: {},
@@ -190,7 +190,7 @@ export function readConfigFile(path: string): Partial<Config> {
 export async function blockOnMissingConfig() {
   const apiKey = processDeps.env.get("LASSO_API_KEY");
 
-  const warningMessages = [];
+  const warningMessages: string[] = [];
   let includeConfigCommand = false;
 
   if (apiKey === undefined) {
@@ -199,19 +199,16 @@ export async function blockOnMissingConfig() {
     );
   }
 
-  const baseURL = getState().config.baseURL;
-  if (baseURL === undefined) {
+  if (getState().config.sdkProvider === MISSING) {
     includeConfigCommand = true;
     warningMessages.push(
-      "Set `baseURL` in `.lasso/settings.yaml` or `~/.config/lasso/settings.yaml` (required when `sdkProvider=openai-compatible`)",
+      "Set `sdkProvider` in your config file (`openai-compatible` or `anthropic`)",
     );
   }
 
   if (getState().config.model === MISSING) {
     includeConfigCommand = true;
-    warningMessages.push(
-      "Set `model` in `.lasso/settings.yaml` or `~/.config/lasso/settings.yaml`",
-    );
+    warningMessages.push("Set `model` in your config file");
   }
 
   if (warningMessages.length > 0) {
@@ -221,7 +218,7 @@ export async function blockOnMissingConfig() {
 
     if (includeConfigCommand) {
       formattedMessages = formattedMessages.concat(
-        "\n\nRun /init-local or /init-global to generate a sample config.",
+        "\n\nRun /init-local or /init-global to generate a sample config in `./.lasso` or `~/.local/config/lasso` respectively.",
       );
     }
 
@@ -261,7 +258,6 @@ export async function initStateFromConfig() {
     localConfig.gateway ?? globalConfig.gateway ?? defaultConfig.gateway;
   const defaultedBaseURL = localConfig.baseURL ?? globalConfig.baseURL;
 
-  // TODO: don't throw here
   if (
     defaultedBaseURL === undefined &&
     defaultedSdkProvider === "openai-compatible"
@@ -272,8 +268,8 @@ export async function initStateFromConfig() {
   }
 
   if (defaultedBaseURL !== undefined && defaultedSdkProvider === "anthropic") {
-    throw new Error(
-      `A \`baseURL\` cannot be provided when \`sdkProvider=anthropic\` in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
+    await print.warning(
+      `The \`baseURL\` option is not used when \`sdkProvider=anthropic\``,
     );
   }
 

@@ -28,7 +28,7 @@ export function getLanguageModel() {
   assert(apiKey !== undefined);
   assert(baseURL !== undefined);
 
-  if (getState().sdkProvider === "anthropic") {
+  if (getState().config.sdkProvider === "anthropic") {
     return createAnthropic({
       apiKey,
     })(getState().config.model);

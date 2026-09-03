@@ -118,17 +118,17 @@ describe("state", () => {
   });
 
   it("set-sdk-provider", () => {
-    assert.equal(getState().sdkProvider, "openai-compatible");
+    assert.equal(getState().config.sdkProvider, MISSING);
     actions.setSdkProvider("anthropic");
-    assert.equal(getState().sdkProvider, "anthropic");
+    assert.equal(getState().config.sdkProvider, "anthropic");
   });
 
   it("set-gateway", () => {
-    assert.equal(getState().gateway, undefined);
+    assert.equal(getState().config.gateway, undefined);
     actions.setGateway("opencode");
-    assert.equal(getState().gateway, "opencode");
+    assert.equal(getState().config.gateway, "opencode");
     actions.setGateway(undefined);
-    assert.equal(getState().gateway, undefined);
+    assert.equal(getState().config.gateway, undefined);
   });
 
   it("set-base-url", () => {
