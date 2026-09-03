@@ -6,11 +6,11 @@ _A minimal agent harness to rein in your llm_
 
 ## Features
 
-- **Minimal**: 3,900 lines of source code, 7,800 lines of tests
+- **Minimal**: 4,000 lines of source code, 8,000 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
   - A message queue lets you batch multiple prompts in the editor, sent one per turn
-- **Tools**: 8 tools to execute bash, fetch from the web, and edit files
+- **Tools**: 9 tools to execute bash, fetch from the web, edit files, and launch read-only subagents
   - A `git diff` with `delta` is output whenever a tool changes a file
 - **Multiple providers**: Anthropic, OpenAI, or OpenAI-compatible APIs
 - **AGENTS.md support**: The root file is included in context, nested files are internally represented as skills
@@ -379,6 +379,7 @@ Available skills are listed in the system prompt, the LLM can use the `load_skil
 - `web_fetch_html` — fetch a URL and return extracted article content
 - `web_fetch_json` — fetch a JSON API endpoint and return parsed data
 - `load_skill` — load a skill to get specialized instructions
+- `create_subagent` — launch parallel read-only subagents for independent investigation
 
 ## Dependencies
 
