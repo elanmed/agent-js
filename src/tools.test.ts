@@ -799,6 +799,7 @@ bottom`,
         await generateTextCalledPromise;
         mock.timers.tick(1_000);
         const result = await resultPromise;
+        assert.strictEqual(result.isError, true);
         assert.deepStrictEqual(JSON.parse(result.content), [
           {
             model: "slow-model",
@@ -810,6 +811,37 @@ bottom`,
       } finally {
         mock.timers.reset();
       }
+    });
+
+    it("rethrows when aborted by the caller and removes the abort listener", async () => {
+      setupApiCallState();
+      const controller = new AbortController();
+      let onGenerateTextCalled: () => void = () => undefined;
+      const generateTextCalledPromise = new Promise<void>((resolve) => {
+        onGenerateTextCalled = resolve;
+      });
+      mockGenerateText((options: { abortSignal?: AbortSignal }) => {
+        onGenerateTextCalled();
+        return new Promise((_resolve, reject) => {
+          options.abortSignal?.addEventListener("abort", () => {
+            reject(
+              new DOMException("This operation was aborted", "AbortError"),
+            );
+          });
+        });
+      });
+
+      const resultPromise = createSubagentTool(
+        {
+          tasks: [{ prompt: "inspect abort", access: "read-only" }],
+        },
+        controller.signal,
+      );
+      await generateTextCalledPromise;
+      controller.abort();
+
+      await assert.rejects(resultPromise, { name: "AbortError" });
+      assert.deepStrictEqual(getEventListeners(controller.signal, "abort"), []);
     });
   });
 
