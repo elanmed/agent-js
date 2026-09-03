@@ -325,16 +325,20 @@ const webFetchToolSchema = z.object({
 });
 export type WebFetchTool = z.infer<typeof webFetchToolSchema>;
 
-const FETCH_TIMEOUT_MS = 10_000;
+const FETCH_TIMEOUT_MS = 10 * 1_000;
+const SUBAGENT_TIMEOUT_MS = 2 * 60 * 1_000;
 
-function createFetchTimeout(signal?: AbortSignal) {
+function createTimeoutController(
+  signal: AbortSignal | undefined,
+  timeout: number,
+) {
   const controller = new AbortController();
 
   let timedOut = false;
   const timeoutId = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, FETCH_TIMEOUT_MS);
+  }, timeout);
 
   const onExternalAbort = () => {
     controller.abort();
@@ -358,15 +362,22 @@ function createFetchTimeout(signal?: AbortSignal) {
   };
 }
 
-function resolveFetchError(
-  error: unknown,
-  href: string,
-  isTimedOut: () => boolean,
-): ToolResult {
+const getFetchTimeoutContent = (href: string) =>
+  `Request to ${href} timed out after ${String(FETCH_TIMEOUT_MS / 1_000)}s`;
+
+function resolveTimeoutError({
+  error,
+  content,
+  isTimedOut,
+}: {
+  error: unknown;
+  content: string;
+  isTimedOut: () => boolean;
+}): ToolResult {
   if (isTimedOut()) {
     return {
       isError: true,
-      content: `Request to ${href} timed out after ${String(FETCH_TIMEOUT_MS / 1_000)}s`,
+      content,
     };
   }
   if (isAbortError(error)) throw error;
@@ -385,7 +396,10 @@ export async function executeWebFetchHtmlTool(
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "text/html");
 
-  const { controller, isTimedOut, cleanup } = createFetchTimeout(signal);
+  const { controller, isTimedOut, cleanup } = createTimeoutController(
+    signal,
+    FETCH_TIMEOUT_MS,
+  );
 
   const fetchResult = await tryCatchAsync(
     fetch(href, {
@@ -396,7 +410,11 @@ export async function executeWebFetchHtmlTool(
 
   if (!fetchResult.ok) {
     cleanup();
-    return resolveFetchError(fetchResult.error, href, isTimedOut);
+    return resolveTimeoutError({
+      error: fetchResult.error,
+      content: getFetchTimeoutContent(href),
+      isTimedOut,
+    });
   }
 
   const response = fetchResult.value;
@@ -413,7 +431,11 @@ export async function executeWebFetchHtmlTool(
   const textResult = await tryCatchAsync(response.text());
   if (!textResult.ok) {
     cleanup();
-    return resolveFetchError(textResult.error, href, isTimedOut);
+    return resolveTimeoutError({
+      error: textResult.error,
+      content: getFetchTimeoutContent(href),
+      isTimedOut,
+    });
   }
   const htmlStr = textResult.value;
 
@@ -446,7 +468,10 @@ export async function executeWebFetchJsonTool(
   headers.append("User-Agent", userAgent);
   headers.append("Accept", "application/json");
 
-  const { controller, isTimedOut, cleanup } = createFetchTimeout(signal);
+  const { controller, isTimedOut, cleanup } = createTimeoutController(
+    signal,
+    FETCH_TIMEOUT_MS,
+  );
 
   const fetchResult = await tryCatchAsync(
     fetch(href, {
@@ -457,7 +482,11 @@ export async function executeWebFetchJsonTool(
 
   if (!fetchResult.ok) {
     cleanup();
-    return resolveFetchError(fetchResult.error, href, isTimedOut);
+    return resolveTimeoutError({
+      error: fetchResult.error,
+      content: getFetchTimeoutContent(href),
+      isTimedOut,
+    });
   }
 
   const response = fetchResult.value;
@@ -474,7 +503,11 @@ export async function executeWebFetchJsonTool(
   const jsonResult = await tryCatchAsync(response.json());
   if (!jsonResult.ok) {
     cleanup();
-    return resolveFetchError(jsonResult.error, href, isTimedOut);
+    return resolveTimeoutError({
+      error: jsonResult.error,
+      content: getFetchTimeoutContent(href),
+      isTimedOut,
+    });
   }
 
   cleanup();
@@ -510,6 +543,7 @@ const createSubagentTaskSchema = z.object({
   prompt: z.string(),
   access: z.enum(["read-only"]),
   model: z.string().optional(),
+  timeout: z.number().optional(),
 });
 const createSubagentToolSchema = z.object({
   tasks: z.array(createSubagentTaskSchema),
@@ -534,10 +568,16 @@ export async function createSubagentTool(
     .filter((content) => content.length > 0)
     .join("\n");
 
-  // TODO: timeout
   // TODO: read-write with diff
   const subagentPromises = tasks.map(
     async (subagentSchema): Promise<SubagentResult> => {
+      const timeout = subagentSchema.timeout ?? SUBAGENT_TIMEOUT_MS;
+
+      const { controller, isTimedOut, cleanup } = createTimeoutController(
+        signal,
+        timeout,
+      );
+
       const model = (() => {
         if (
           subagentSchema.model === undefined ||
@@ -564,25 +604,28 @@ export async function createSubagentTool(
           messages: [inputMessageParam],
           tools: readTools,
           stopWhen: aiDeps.isLoopFinished(),
-          ...(signal === undefined ? {} : { abortSignal: signal }),
+          abortSignal: controller.signal,
         }),
       );
 
       if (!generateTextResult.ok) {
-        if (isAbortError(generateTextResult.error)) {
-          throw generateTextResult.error;
-        }
+        cleanup();
+        const timeoutResult = resolveTimeoutError({
+          error: generateTextResult.error,
+          content: `Subagent timed out after ${String(timeout / 1_000)}s`,
+          isTimedOut,
+        });
 
         return {
+          ...timeoutResult,
           model,
           prompt: subagentSchema.prompt,
-          isError: true,
-          content: getMessageFromError(generateTextResult.error),
         };
       }
 
       const { totalUsage, text } = generateTextResult.value;
       await appendModelUsage(totalUsage, model);
+      cleanup();
 
       return {
         model,
@@ -607,6 +650,13 @@ export async function createSubagentTool(
   }
 
   const results = promiseAllResult.value;
+  const abortResult = results.find(
+    (result) => result.status === "rejected" && isAbortError(result.reason),
+  );
+  if (abortResult?.status === "rejected") {
+    throw abortResult.reason;
+  }
+
   return {
     isError: results.some(
       (result) => result.status === "rejected" || result.value.isError === true,
