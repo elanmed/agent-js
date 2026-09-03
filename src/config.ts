@@ -21,8 +21,6 @@ import { print } from "./print.ts";
 import { join } from "node:path";
 import * as YAML from "yaml";
 
-export type Provider = "anthropic" | "openai-compatible";
-
 const KeySchema = z.object({
   name: z.string().length(1),
   ctrl: z.boolean().optional(),
@@ -59,9 +57,12 @@ export const UsageLimitSchema = z.strictObject({
 
 export type UsageLimit = z.infer<typeof UsageLimitSchema>;
 
+const SdkProviderSchema = z.enum(["anthropic", "openai-compatible"]);
+export type SdkProvider = z.infer<typeof SdkProviderSchema>;
+
 const ModelSchema = z.string();
 const BaseURLSchema = z.string();
-const ProviderSchema = z.enum(["anthropic", "openai-compatible"]);
+const GatewaySchema = z.enum(["opencode"]);
 const PricingPerModelSchema = z.record(
   z.string(),
   ModelPricingSchema.nullable(),
@@ -95,7 +96,8 @@ const MessageQueueDelimiterSchema = z.string().endsWith("\n");
 export const ConfigSchema = z.strictObject({
   model: ModelSchema.optional(),
   baseURL: BaseURLSchema.optional(),
-  provider: ProviderSchema.optional(),
+  sdkProvider: SdkProviderSchema.optional(),
+  gateway: GatewaySchema.optional(),
   pricingPerModel: PricingPerModelSchema.optional(),
   contextWindowPerModel: ContextWindowPerModelSchema.optional(),
   compactTriggerRatio: CompactTriggerRatioSchema.optional(),
@@ -116,7 +118,8 @@ export type Config = z.infer<typeof ConfigSchema>;
 export const DefaultedConfigSchema = z.strictObject({
   model: ModelSchema,
   baseURL: BaseURLSchema.optional(),
-  provider: ProviderSchema,
+  sdkProvider: SdkProviderSchema,
+  gateway: GatewaySchema.optional(),
   pricingPerModel: DefaultedPricingPerModelSchema,
   contextWindowPerModel: DefaultedContextWindowPerModelSchema,
   compactTriggerRatio: CompactTriggerRatioSchema,
@@ -138,7 +141,8 @@ export type Key = z.infer<typeof KeySchema>;
 
 export const defaultConfig: DefaultedConfig = {
   model: MISSING,
-  provider: "openai-compatible" as const,
+  sdkProvider: "openai-compatible" as const,
+  gateway: undefined,
   pricingPerModel: {},
   contextWindowPerModel: {},
   compactTriggerRatio: 0.7,
@@ -155,11 +159,12 @@ export const defaultConfig: DefaultedConfig = {
   },
   customSlashCommandDirs: [],
   customSkillDirs: [],
-  loadingStateFrames: ["|", "/", "-", "\\"],
   loadingStateFrameDuration: 80,
+  loadingStateFrames: ["|", "/", "-", "\\"],
   promptPrefix: "> ",
   suppressBatUnavailableWarning: false,
   messageQueueDelimiter: "l---\n",
+  usageLimit: undefined,
 };
 
 export function readConfigFileStr(path: string) {
@@ -198,7 +203,7 @@ export async function blockOnMissingConfig() {
   if (baseURL === undefined) {
     includeConfigCommand = true;
     warningMessages.push(
-      "Set `baseURL` in `.lasso/settings.yaml` or `~/.config/lasso/settings.yaml` (required when `provider=openai-compatible`)",
+      "Set `baseURL` in `.lasso/settings.yaml` or `~/.config/lasso/settings.yaml` (required when `sdkProvider=openai-compatible`)",
     );
   }
 
@@ -248,27 +253,34 @@ export async function initStateFromConfig() {
   const defaultedModel =
     localConfig.model ?? globalConfig.model ?? defaultConfig.model;
 
-  const defaultedProvider =
-    localConfig.provider ?? globalConfig.provider ?? defaultConfig.provider;
+  const defaultedSdkProvider =
+    localConfig.sdkProvider ??
+    globalConfig.sdkProvider ??
+    defaultConfig.sdkProvider;
+  const defaultedGateway =
+    localConfig.gateway ?? globalConfig.gateway ?? defaultConfig.gateway;
   const defaultedBaseURL = localConfig.baseURL ?? globalConfig.baseURL;
+
+  // TODO: don't throw here
   if (
     defaultedBaseURL === undefined &&
-    defaultedProvider === "openai-compatible"
+    defaultedSdkProvider === "openai-compatible"
   ) {
     throw new Error(
-      `A \`baseURL\` is required when \`provider=openai-compatible\` in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
+      `A \`baseURL\` is required when \`sdkProvider=openai-compatible\` in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
     );
   }
 
-  if (defaultedBaseURL !== undefined && defaultedProvider === "anthropic") {
+  if (defaultedBaseURL !== undefined && defaultedSdkProvider === "anthropic") {
     throw new Error(
-      `A \`baseURL\` cannot be provided when \`provider=anthropic\` in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
+      `A \`baseURL\` cannot be provided when \`sdkProvider=anthropic\` in either ${getLocalConfigPath()} or ${getGlobalConfigPath()}`,
     );
   }
 
   actions.setModel(defaultedModel);
   if (defaultedBaseURL !== undefined) actions.setBaseURL(defaultedBaseURL);
-  actions.setProvider(defaultedProvider);
+  actions.setSdkProvider(defaultedSdkProvider);
+  actions.setGateway(defaultedGateway);
 
   const defaultedPricingPerModel = filterNulls({
     ...defaultConfig.pricingPerModel,

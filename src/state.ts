@@ -6,7 +6,7 @@ import {
   type DefaultedConfig,
   type Key,
   type ModelPricing,
-  type Provider,
+  type SdkProvider,
   type UsageLimit,
 } from "./config.ts";
 import { MISSING } from "./deps.ts";
@@ -49,7 +49,9 @@ interface State {
     modelUsageForSession: Record<string, ModelUsage[]>;
     sessionStartDate: number;
   };
-  config: DefaultedConfig;
+  config: Omit<DefaultedConfig, "sdkProvider" | "gateway">;
+  sdkProvider: SdkProvider;
+  gateway: "opencode" | undefined;
   abortControllers: {
     question: AbortController | null;
     apiStream: AbortController | null;
@@ -83,7 +85,6 @@ const initialState: State = {
   config: {
     model: MISSING,
     baseURL: undefined,
-    provider: defaultConfig.provider,
     pricingPerModel: structuredClone(defaultConfig.pricingPerModel),
     contextWindowPerModel: structuredClone(defaultConfig.contextWindowPerModel),
     compactTriggerRatio: defaultConfig.compactTriggerRatio,
@@ -100,6 +101,8 @@ const initialState: State = {
     messageQueueDelimiter: defaultConfig.messageQueueDelimiter,
     usageLimit: undefined,
   },
+  sdkProvider: defaultConfig.sdkProvider,
+  gateway: defaultConfig.gateway,
   abortControllers: {
     question: null,
     apiStream: null,
@@ -147,10 +150,16 @@ export const actions = {
     logStateChange("set-model", before, model);
   },
 
-  setProvider(provider: Provider) {
-    const before = state.config.provider;
-    state.config.provider = provider;
-    logStateChange("set-provider", before, provider);
+  setSdkProvider(sdkProvider: SdkProvider) {
+    const before = state.sdkProvider;
+    state.sdkProvider = sdkProvider;
+    logStateChange("set-sdk-provider", before, sdkProvider);
+  },
+
+  setGateway(gateway: "opencode" | undefined) {
+    const before = state.gateway;
+    state.gateway = gateway;
+    logStateChange("set-gateway", String(before), String(gateway));
   },
 
   setBaseURL(baseURL: string) {

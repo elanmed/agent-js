@@ -30,7 +30,7 @@ describe("api", () => {
   beforeEach(() => {
     setupTestContext();
     testProcessEnv._set("LASSO_API_KEY", "api-key");
-    actions.setProvider("anthropic");
+    actions.setSdkProvider("anthropic");
     actions.setModel("claude-sonnet-4-20250514");
     actions.setBaseURL("https://api.anthropic.com");
     actions.setContextStr("");

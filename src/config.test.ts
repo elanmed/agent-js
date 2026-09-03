@@ -66,25 +66,47 @@ describe("config", () => {
       assert.equal(getState().config.model, "claude-haiku-4-5");
     });
 
-    it("uses its provider over the global config, default config", async () => {
+    it("uses its sdkProvider over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
           model: testConfig.model,
-          provider: "openai-compatible",
+          sdkProvider: "openai-compatible",
         }),
       );
       testFs._files.set(
         getLocalConfigPath(),
         JSON.stringify({
           model: testConfig.model,
-          provider: "anthropic",
+          sdkProvider: "anthropic",
         }),
       );
 
       await initState();
 
-      assert.equal(getState().config.provider, "anthropic");
+      assert.equal(getState().sdkProvider, "anthropic");
+    });
+
+    it("uses its gateway over the default config", async () => {
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          gateway: "opencode",
+        }),
+      );
+
+      await initState();
+
+      assert.equal(getState().gateway, "opencode");
+    });
+
+    it("leaves gateway undefined when not configured", async () => {
+      testFs._files.set(getLocalConfigPath(), JSON.stringify(testConfig));
+
+      await initState();
+
+      assert.equal(getState().gateway, undefined);
     });
 
     it("uses minimal local config without model over the global config", async () => {
@@ -974,32 +996,32 @@ describe("config", () => {
         assert.equal(getState().config.model, "claude-haiku-4-5");
       });
 
-      it("uses its provider over the default config", async () => {
+      it("uses its sdkProvider over the default config", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
             model: testConfig.model,
-            provider: "anthropic",
+            sdkProvider: "anthropic",
           }),
         );
 
         await initState();
-        assert.equal(getState().config.provider, "anthropic");
+        assert.equal(getState().sdkProvider, "anthropic");
       });
 
-      it("throws when baseURL is provided with anthropic provider", async () => {
+      it("throws when baseURL is provided with anthropic sdkProvider", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({
             model: testConfig.model,
-            provider: "anthropic",
+            sdkProvider: "anthropic",
             baseURL: "https://api.example.com",
           }),
         );
 
         await assert.rejects(
           initState(),
-          /A `baseURL` cannot be provided when `provider=anthropic`/,
+          /A `baseURL` cannot be provided when `sdkProvider=anthropic`/,
         );
       });
 
@@ -1194,14 +1216,14 @@ describe("config", () => {
         assert.strictEqual(getState().config.model, MISSING);
       });
 
-      it("throws when baseURL is not configured for openai-compatible provider", async () => {
+      it("throws when baseURL is not configured for openai-compatible sdkProvider", async () => {
         testFs._files.set(
           getGlobalConfigPath(),
           JSON.stringify({ model: "some-model" }),
         );
         await assert.rejects(
           initState(),
-          /A `baseURL` is required when `provider=openai-compatible`/,
+          /A `baseURL` is required when `sdkProvider=openai-compatible`/,
         );
       });
     });
@@ -1336,7 +1358,7 @@ hello
     );
     testFs._files.set(
       getLocalConfigPath(),
-      JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
+      JSON.stringify({ model: "gpt-4", sdkProvider: "anthropic" }),
     );
 
     await initState();
@@ -1346,7 +1368,7 @@ hello
     );
     assert.equal(
       getState().app.localConfigStr,
-      JSON.stringify({ model: "gpt-4", provider: "anthropic" }),
+      JSON.stringify({ model: "gpt-4", sdkProvider: "anthropic" }),
     );
   });
 
@@ -1541,7 +1563,7 @@ hello
         stripAnsi(getCaptured()),
         `Warning! You're missing required configuration options.
 - Set the \`LASSO_API_KEY\` environment variable, e.g. \`export LASSO_API_KEY=...\`
-- Set \`baseURL\` in \`.lasso/settings.yaml\` or \`~/.config/lasso/settings.yaml\` (required when \`provider=openai-compatible\`)
+- Set \`baseURL\` in \`.lasso/settings.yaml\` or \`~/.config/lasso/settings.yaml\` (required when \`sdkProvider=openai-compatible\`)
 - Set \`model\` in \`.lasso/settings.yaml\` or \`~/.config/lasso/settings.yaml\`
 
 Run /init-local or /init-global to generate a sample config.

@@ -117,10 +117,18 @@ describe("state", () => {
     assert.equal(getState().config.model, "claude-haiku-4-5");
   });
 
-  it("set-provider", () => {
-    assert.equal(getState().config.provider, "openai-compatible");
-    actions.setProvider("anthropic");
-    assert.equal(getState().config.provider, "anthropic");
+  it("set-sdk-provider", () => {
+    assert.equal(getState().sdkProvider, "openai-compatible");
+    actions.setSdkProvider("anthropic");
+    assert.equal(getState().sdkProvider, "anthropic");
+  });
+
+  it("set-gateway", () => {
+    assert.equal(getState().gateway, undefined);
+    actions.setGateway("opencode");
+    assert.equal(getState().gateway, "opencode");
+    actions.setGateway(undefined);
+    assert.equal(getState().gateway, undefined);
   });
 
   it("set-base-url", () => {

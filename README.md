@@ -32,7 +32,8 @@ If `model`, `baseURL`, or `LASSO_API_KEY` are missing at startup, lasso warns an
 | Option                          | Type                                   | Required | Default                  | Description                                                     |
 | ------------------------------- | -------------------------------------- | -------- | ------------------------ | --------------------------------------------------------------- |
 | `model`                         | `string`                               | optional | —                        | Model name (required in the merged config)                      |
-| `provider`                      | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                                    |
+| `sdkProvider`                   | `"anthropic"` \| `"openai-compatible"` | optional | `openai-compatible`      | API provider                                                    |
+| `gateway`                       | `"opencode"`                           | optional | —                        | Used to append gateway-specific headers                         |
 | `baseURL`                       | `string`                               | optional | `null`                   | API base URL (required for `openai-compatible`)                 |
 | `pricingPerModel`               | `object`                               | optional | `{}`                     | Token pricing per model per million                             |
 | `contextWindowPerModel`         | `object`                               | optional | `{}`                     | Context window size in tokens per model                         |
@@ -52,7 +53,7 @@ If `model`, `baseURL`, or `LASSO_API_KEY` are missing at startup, lasso warns an
 
 The local config either overwrites or extends the global config per option:
 
-- **Overwrite**: scalar options (`model`, `provider`, `baseURL`, `compactTriggerRatio`, `compactTargetRatio`, `loadingStateFrameDuration`, `promptPrefix`, `suppressBatUnavailableWarning`, `messageQueueDelimiter`, `usageLimit`) and arrays (`customSlashCommandDirs`, `customSkillDirs`, `loadingStateFrames`) replace the global value wholesale — arrays are not merged.
+- **Overwrite**: scalar options (`model`, `sdkProvider`, `gateway`, `baseURL`, `compactTriggerRatio`, `compactTargetRatio`, `loadingStateFrameDuration`, `promptPrefix`, `suppressBatUnavailableWarning`, `messageQueueDelimiter`, `usageLimit`) and arrays (`customSlashCommandDirs`, `customSkillDirs`, `loadingStateFrames`) replace the global value wholesale — arrays are not merged.
 - **Extend**: `keymaps`, `pricingPerModel`, and `contextWindowPerModel` merge entry-by-entry with the default and global entries, the local entry winning on conflicts. Setting an entry to `null` removes it entirely, cancelling the global or default entry (see the relevant sections below).
 
 ### Usage Limits
@@ -181,7 +182,8 @@ A complete example including every option:
 
 ```yaml
 model: claude-sonnet-4-6
-provider: openai-compatible
+sdkProvider: openai-compatible
+gateway: opencode
 baseURL: https://api.example.com/v1
 compactTriggerRatio: 0.7
 compactTargetRatio: 0.3
