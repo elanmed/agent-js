@@ -1,12 +1,7 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { actions, getState } from "./state.ts";
-import {
-  getHeaders,
-  getLanguageModel,
-  maybeCompactMessageParams,
-  resolveApiCall,
-} from "./api.ts";
+import { maybeCompactMessageParams, resolveApiCall } from "./api.ts";
 import {
   setupTestContext,
   testFs,
@@ -43,37 +38,6 @@ describe("api", () => {
     mock.method(aiDeps, "generateText", () =>
       Promise.resolve(makeGenerateTextResult()),
     );
-  });
-
-  describe("getLanguageModel", () => {
-    it("creates an Anthropic language model", () => {
-      const model = getLanguageModel();
-      assert.deepStrictEqual(
-        { modelId: model.modelId, provider: model.provider },
-        { modelId: "claude-sonnet-4-20250514", provider: "anthropic.messages" },
-      );
-    });
-
-    it("creates an OpenAI-compatible language model", () => {
-      actions.setSdkProvider("openai-compatible");
-      const model = getLanguageModel();
-      assert.deepStrictEqual(
-        { modelId: model.modelId, provider: model.provider },
-        {
-          modelId: "claude-sonnet-4-20250514",
-          provider: "openai-compatible.chat",
-        },
-      );
-    });
-
-    it("creates an OpenAI language model", () => {
-      actions.setSdkProvider("openai");
-      const model = getLanguageModel();
-      assert.deepStrictEqual(
-        { modelId: model.modelId, provider: model.provider },
-        { modelId: "claude-sonnet-4-20250514", provider: "openai.responses" },
-      );
-    });
   });
 
   describe("resolveApiCall", () => {
@@ -385,19 +349,6 @@ SKILLS: available skills`,
       assert.deepStrictEqual(capturedMessages[2], {
         role: "user",
         content: "hello",
-      });
-    });
-  });
-  describe("getHeaders", () => {
-    it("returns no headers when gateway is not opencode", () => {
-      assert.deepStrictEqual(getHeaders(), {});
-    });
-
-    it("returns session and client headers when gateway is opencode", () => {
-      actions.setGateway("opencode");
-      assert.deepStrictEqual(getHeaders(), {
-        "x-opencode-session": "test-uuid",
-        "x-opencode-client": "lasso",
       });
     });
   });

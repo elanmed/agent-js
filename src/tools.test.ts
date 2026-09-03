@@ -11,17 +11,19 @@ import {
   executeWebFetchHtmlTool,
   executeWebFetchJsonTool,
   loadSkillTool,
+  createSubagentTool,
   printGitDiff,
   execGitDiff,
-  TOOLS,
+  tools,
 } from "./tools.ts";
 import {
   testFs,
   setupTestContext,
   mockExec,
   stripAnsi,
+  testProcessEnv,
 } from "./test-helpers.ts";
-import { fsDeps } from "./deps.ts";
+import { aiDeps, fsDeps } from "./deps.ts";
 import { actions, getState } from "./state.ts";
 
 describe("tools", () => {
@@ -584,15 +586,16 @@ bottom`,
 
   describe("TOOLS", () => {
     it("registers tools under the names referenced by the system prompt", () => {
-      assert.deepStrictEqual(Object.keys(TOOLS), [
-        "bash",
-        "create_file",
-        "view_file",
-        "str_replace",
-        "insert_lines",
+      assert.deepStrictEqual(Object.keys(tools), [
         "web_fetch_html",
         "web_fetch_json",
+        "view_file",
         "load_skill",
+        "create_file",
+        "str_replace",
+        "insert_lines",
+        "bash",
+        "create_subagent",
       ]);
     });
   });
@@ -657,6 +660,97 @@ bottom`,
     it("returns isError when no skills are loaded", async () => {
       const result = await loadSkillTool({ name: "any" });
       assert.strictEqual(result.isError, true);
+    });
+  });
+
+  describe("createSubagentTool", () => {
+    it("runs read-only subagents in parallel and returns structured results", async () => {
+      testProcessEnv._set("LASSO_API_KEY", "api-key");
+      actions.setSdkProvider("anthropic");
+      actions.setModel("main-model");
+      const calls: Record<string, unknown>[] = [];
+      mock.method(
+        aiDeps,
+        "generateText",
+        (options: Record<string, unknown>) => {
+          calls.push(options);
+          return {
+            text: `result-${String(calls.length)}`,
+            totalUsage: {
+              inputTokens: 1,
+              outputTokens: 2,
+              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
+            },
+          };
+        },
+      );
+
+      const result = await createSubagentTool([
+        { prompt: "inspect one", access: "read-only", model: "model-one" },
+        { prompt: "inspect two", access: "read-only", model: "model-two" },
+      ]);
+
+      assert.deepStrictEqual(JSON.parse(result.content), [
+        {
+          model: "model-one",
+          prompt: "inspect one",
+          content: "result-1",
+        },
+        {
+          model: "model-two",
+          prompt: "inspect two",
+          content: "result-2",
+        },
+      ]);
+      assert.deepStrictEqual(Object.keys(calls[0]!["tools"]!), [
+        "web_fetch_html",
+        "web_fetch_json",
+        "view_file",
+        "load_skill",
+      ]);
+      assert.strictEqual(
+        (calls[0]!["messages"] as { role: string }[])[0]!.role,
+        "user",
+      );
+    });
+
+    it("returns errors for failed subagents without hiding successful results", async () => {
+      testProcessEnv._set("LASSO_API_KEY", "api-key");
+      actions.setSdkProvider("anthropic");
+      actions.setModel("main-model");
+      mock.method(
+        aiDeps,
+        "generateText",
+        (options: { model: { modelId: string } }) => {
+          if (options.model.modelId === "bad-model") {
+            return Promise.reject(new Error("subagent failed"));
+          }
+          return Promise.resolve({
+            text: "ok",
+            totalUsage: {
+              inputTokens: 1,
+              outputTokens: 2,
+              inputTokenDetails: { cacheReadTokens: 0, cacheWriteTokens: 0 },
+            },
+          });
+        },
+      );
+
+      const result = await createSubagentTool([
+        { prompt: "bad", access: "read-only", model: "bad-model" },
+        { prompt: "good", access: "read-only", model: "good-model" },
+      ]);
+
+      assert.strictEqual(result.isError, true);
+      assert.deepStrictEqual(JSON.parse(result.content), [
+        {
+          model: "bad-model",
+          prompt: "bad",
+          isError: true,
+          content: "subagent failed",
+        },
+        { model: "good-model", prompt: "good", content: "ok" },
+      ]);
     });
   });
 

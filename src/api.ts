@@ -1,7 +1,4 @@
 import type { ModelMessage } from "ai";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createOpenAI } from "@ai-sdk/openai";
 import { actions, getState } from "./state.ts";
 import {
   isAbortError,
@@ -19,63 +16,11 @@ import {
   type ToolName,
 } from "./tools.ts";
 import assert from "node:assert";
-import { aiDeps, fsDeps, processDeps, MISSING } from "./deps.ts";
+import { aiDeps, fsDeps, MISSING } from "./deps.ts";
 import { appendToChatHistory } from "./log.ts";
+import { getLanguageModel } from "./model.ts";
 
-export function getHeaders() {
-  const headers: Record<string, string> = {};
-  if (getState().config.gateway === "opencode") {
-    headers["x-opencode-session"] = getState().app.sessionId;
-    headers["x-opencode-client"] = "lasso";
-  }
-  return headers;
-}
-
-export function getLanguageModel(model: string) {
-  const apiKey = processDeps.env.get("LASSO_API_KEY");
-  const sdkProvider = getState().config.sdkProvider;
-
-  assert(apiKey !== undefined);
-  assert(sdkProvider !== MISSING);
-
-  const baseURLOpts = (() => {
-    const baseURL = getState().config.baseURL;
-    if (baseURL === undefined) return {};
-    return { baseURL };
-  })();
-
-  const headers = getHeaders();
-
-  switch (sdkProvider) {
-    case "openai-compatible": {
-      const baseURL = getState().config.baseURL;
-      assert(baseURL !== undefined);
-      return createOpenAICompatible({
-        baseURL,
-        name: "openai-compatible",
-        headers,
-      }).chatModel(model);
-    }
-    case "anthropic": {
-      return createAnthropic({
-        apiKey,
-        headers,
-        ...baseURLOpts,
-      })(model);
-    }
-    case "openai": {
-      return createOpenAI({
-        apiKey,
-        headers,
-        ...baseURLOpts,
-      })(model);
-    }
-    default: {
-      sdkProvider satisfies never;
-      throw new Error("Unhandled sdkProvider");
-    }
-  }
-}
+export { getHeaders, getLanguageModel } from "./model.ts";
 
 export async function resolveApiCall(userInput: string) {
   const toolCallIdToTempFile = new Map<string, string>();

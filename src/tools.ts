@@ -13,13 +13,13 @@ import {
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { getState } from "./state.ts";
+import { BASE_SYSTEM_PROMPT } from "./context.ts";
+import { getLanguageModel } from "./model.ts";
 import { Window } from "happy-dom";
 import { Readability } from "@mozilla/readability";
 import { aiDeps, fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
-import { getLanguageModel } from "./api.ts";
 import { appendModelUsage } from "./usage.ts";
-import { appendToChatHistory } from "./log.ts";
 const userAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -515,58 +515,82 @@ const createSubagentToolSchema = z.array(
 );
 export type CreateSubagentTool = z.infer<typeof createSubagentToolSchema>;
 
+type SubagentResult = {
+  model: string;
+  prompt: string;
+} & ToolResult;
+
 export async function createSubagentTool(
   subagentSchemas: CreateSubagentTool,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  const subagentPromises = subagentSchemas.map(async (subagentSchema) => {
-    const inputMessageParam: ModelMessage = {
-      role: "system",
-      content: subagentSchema.prompt,
-    };
+  const systemContent = [
+    BASE_SYSTEM_PROMPT,
+    getState().app.contextStr,
+    getState().app.skillsStr,
+    "You are a read-only subagent. Investigate the requested task and report findings without modifying files or executing commands.",
+  ]
+    .filter((content) => content.length > 0)
+    .join("\n");
 
-    const systemContent = "You are a subagent, TODO";
+  const subagentPromises = subagentSchemas.map(
+    async (subagentSchema): Promise<SubagentResult> => {
+      const inputMessageParam: ModelMessage = {
+        role: "user",
+        content: subagentSchema.prompt,
+      };
 
-    const generateTextResult = await tryCatchAsync(
-      aiDeps.generateText({
-        model: getLanguageModel(subagentSchema.model),
-        system: systemContent,
-        messages: [inputMessageParam],
-        tools: readTools,
-        stopWhen: aiDeps.isLoopFinished(),
-        abortSignal: signal!,
-      }),
-    );
+      const generateTextResult = await tryCatchAsync(
+        aiDeps.generateText({
+          model: getLanguageModel(subagentSchema.model),
+          system: systemContent,
+          messages: [inputMessageParam],
+          tools: readTools,
+          stopWhen: aiDeps.isLoopFinished(),
+          ...(signal === undefined ? {} : { abortSignal: signal }),
+        }),
+      );
 
-    if (!generateTextResult.ok) {
-      if (isAbortError(generateTextResult.error)) {
-        await print.error("Interrupted");
-        return "Interrupted";
+      if (!generateTextResult.ok) {
+        if (isAbortError(generateTextResult.error)) {
+          throw generateTextResult.error;
+        }
+
+        return {
+          model: subagentSchema.model,
+          prompt: subagentSchema.prompt,
+          isError: true,
+          content: getMessageFromError(generateTextResult.error),
+        };
       }
 
-      return "getMessageFromError(generateTextResult.error)";
-    }
+      const { totalUsage, text } = generateTextResult.value;
+      await appendModelUsage(totalUsage, subagentSchema.model);
 
-    const { totalUsage, text } = generateTextResult.value;
-
-    await appendModelUsage(totalUsage);
-
-    // TODO: keep this?
-    // appendToChatHistory(text, "assistant");
-
-    return text;
-  });
+      return {
+        model: subagentSchema.model,
+        prompt: subagentSchema.prompt,
+        content: text,
+      };
+    },
+  );
 
   const promiseAllResult = await tryCatchAsync(Promise.all(subagentPromises));
   if (!promiseAllResult.ok) {
+    if (isAbortError(promiseAllResult.error)) {
+      throw promiseAllResult.error;
+    }
+
     return {
       isError: true,
       content: getMessageFromError(promiseAllResult.error),
     };
   }
+
+  const results = promiseAllResult.value;
   return {
-    isError: false,
-    content: promiseAllResult.value,
+    isError: results.some((result) => result.isError === true),
+    content: stringify(results),
   };
 }
 
@@ -624,7 +648,8 @@ const writeTools = {
 
 const baseAgentTools = {
   create_subagent: tool({
-    description: "",
+    description:
+      "Launch parallel read-only subagents for independent investigation. Each subagent can fetch web content, inspect files, and load skills, but cannot modify files or execute commands.",
     inputSchema: createSubagentToolSchema,
     execute: (args, opts) => createSubagentTool(args, opts.abortSignal),
   }),

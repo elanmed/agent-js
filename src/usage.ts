@@ -28,8 +28,10 @@ export interface TokenUsage {
 
 const DOLLARS_PER_MILLION = 1_000_000;
 
-export async function appendModelUsage(usage: LanguageModelUsage) {
-  const { model } = getState().config;
+export async function appendModelUsage(
+  usage: LanguageModelUsage,
+  model = getState().config.model,
+) {
   const now = Date.now();
 
   const defaultedUsage: ModelUsage = {
