@@ -29,6 +29,7 @@ import {
   makeFakeRl,
   mockClipboardPaste,
   mockExec,
+  mockExecCalls,
   mockSpawnSync,
   mockPagerSpawn,
   mockBatAvailable,
@@ -1809,12 +1810,17 @@ transcript content
           baseURL: "https://api.example.com",
         }),
       );
-      mockExec({ stdout: "config diff content" });
+      mockExecCalls([
+        { stdout: "delta 0.18.2" },
+        { stdout: "global diff\n" },
+        { stdout: "local diff\n" },
+        { stdout: "applied diff\n" },
+      ]);
       const result = await resolveSlashCommand("/reload");
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        "config diff content",
+        "global diff\nlocal diff\napplied diff\n",
       );
     });
 
@@ -1840,13 +1846,20 @@ description: A test skill
 # Body`,
       );
 
-      const snapshots: string[] = [];
+      const snapshots = new Map<string, string>();
       mock.method(
         childProcess,
         "exec",
         (cmd: string, _opts: unknown, cb: unknown) => {
-          if (cmd.includes("git diff")) {
-            snapshots.push(testFs._files.get("/tmp/lasso-test-uuid.txt") ?? "");
+          for (const prefix of ["global", "local", "applied"]) {
+            if (cmd.includes(`lasso-${prefix}-before`)) {
+              snapshots.set(
+                prefix,
+                testFs._files.get(
+                  `/tmp/lasso-${prefix}-before-test-uuid.txt`,
+                ) ?? "",
+              );
+            }
           }
           (cb as (error: Error | null, stdout: string, stderr: string) => void)(
             null,
@@ -1858,15 +1871,22 @@ description: A test skill
 
       const result = await resolveSlashCommand("/reload");
       assert.strictEqual(result, null);
-      assert.strictEqual(snapshots.length, 1);
-      assert.ok(snapshots[0] !== undefined);
-      assert.match(snapshots[0], /# Applied config/);
-      assert.match(snapshots[0], /# \[lasso\] AGENTS\.md context files/);
-      assert.match(snapshots[0], /# \[lasso\] Skills/);
+      assert.deepStrictEqual(
+        [...snapshots.keys()],
+        ["global", "local", "applied"],
+      );
+      assert.match(snapshots.get("applied")!, /# Applied config/);
       assert.match(
-        snapshots[0],
+        snapshots.get("applied")!,
+        /# \[lasso\] AGENTS\.md context files/,
+      );
+      assert.match(snapshots.get("applied")!, /# \[lasso\] Skills/);
+      assert.match(
+        snapshots.get("applied")!,
         /## Path: \/fake-home\/.config\/lasso\/context\/AGENTS.md/,
       );
+      assert.match(snapshots.get("global")!, /# Global config from path: /);
+      assert.match(snapshots.get("local")!, /# Local config from path: /);
     });
 
     it("handles custom slash command successfully", async () => {

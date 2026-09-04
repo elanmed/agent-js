@@ -209,6 +209,18 @@ describe("utils", () => {
       );
     });
 
+    it("uses the path prefix in the temp file path", () => {
+      const result = getTempFileName({
+        pathPrefix: "lasso-local",
+        initialContentStr: "local content",
+      });
+      assert.equal(result, "/tmp/lasso-local-test-uuid.txt");
+      assert.equal(
+        testFs._files.get("/tmp/lasso-local-test-uuid.txt"),
+        "local content",
+      );
+    });
+
     it("throws when both initialContentPath and initialContentStr are provided", () => {
       assert.throws(
         () =>

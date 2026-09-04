@@ -46,13 +46,17 @@ export function normalizeLine(content: string): string {
 }
 
 export function getTempFileName(args?: {
+  pathPrefix?: string | undefined;
   initialContentPath?: string | undefined;
   initialContentStr?: string | undefined;
 }) {
-  const { initialContentPath, initialContentStr } = args ?? {};
+  const { pathPrefix, initialContentPath, initialContentStr } = args ?? {};
   assert(initialContentPath === undefined || initialContentStr === undefined);
 
-  const tempFile = join(os.tmpdir(), `lasso-${crypto.randomUUID()}.txt`);
+  const tempFile = join(
+    os.tmpdir(),
+    `${pathPrefix ?? "lasso"}-${crypto.randomUUID()}.txt`,
+  );
 
   if (initialContentPath !== undefined) {
     const readResult = tryCatch(() =>

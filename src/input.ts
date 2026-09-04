@@ -983,51 +983,78 @@ ${content}`,
 ${contents}`;
 }
 
-function getPrettyReloadStr() {
-  return `${getAllPrettyConfig()}
+function getPrettyReloadStrs() {
+  return {
+    global: `# Global config from path: ${getGlobalConfigPath()}
+
+${markdownFence("yaml", getState().app.globalConfigStr)}`,
+    local: `# Local config from path: ${getLocalConfigPath()}
+
+${markdownFence("yaml", getState().app.localConfigStr)}`,
+    applied: `# Applied config
+
+${markdownFence("json", stringify(getState().config))}
 
 ${getState().app.contextStr}
 
 ${getState().app.skillsStr}
 
 ${getCustomSlashCommandsStr()}
-`;
+`,
+  };
 }
 
 async function reload() {
-  const tempFileBefore = getTempFileName({
-    initialContentStr: getPrettyReloadStr(),
-  });
+  const prefixes = ["global", "local", "applied"] as const;
+  const beforeFiles = prefixes.map((prefix) =>
+    getTempFileName({
+      pathPrefix: `lasso-${prefix}-before`,
+      initialContentStr: getPrettyReloadStrs()[prefix],
+    }),
+  );
 
   await initStateRepeatable();
 
-  const tempFileAfter = getTempFileName({
-    initialContentStr: getPrettyReloadStr(),
-  });
-  const diffResult = await tryCatchAsync(
-    execGitDiff({
-      tempFileBeforePath: tempFileBefore,
-      tempFileAfterPath: tempFileAfter,
-      expandContextLines: true,
+  const afterFiles = prefixes.map((prefix) =>
+    getTempFileName({
+      pathPrefix: `lasso-${prefix}-after`,
+      initialContentStr: getPrettyReloadStrs()[prefix],
     }),
   );
-  fsDeps.unlinkSync(tempFileBefore);
-  fsDeps.unlinkSync(tempFileAfter);
-
-  if (!diffResult.ok) {
-    print.error(
-      `An error occurred when getting the diff: ${getMessageFromError(diffResult.error)}`,
+  const diffResults = [];
+  for (let i = 0; i < prefixes.length; i++) {
+    const diffResult = await tryCatchAsync(
+      execGitDiff({
+        tempFileBeforePath: beforeFiles[i]!,
+        tempFileAfterPath: afterFiles[i]!,
+        includeFilename: true,
+      }),
     );
-    return;
+
+    if (!diffResult.ok) {
+      for (const path of beforeFiles.concat(afterFiles)) {
+        fsDeps.unlinkSync(path);
+      }
+      print.error(
+        `An error occurred when getting the diff: ${getMessageFromError(diffResult.error)}`,
+      );
+      return;
+    }
+    diffResults.push(diffResult.value.stdout);
   }
-  if (diffResult.value.stdout.length === 0) {
+  for (const path of beforeFiles.concat(afterFiles)) {
+    fsDeps.unlinkSync(path);
+  }
+
+  const diff = diffResults.join("");
+  if (diff.length === 0) {
     print.info("No diff from reload");
     return;
   }
 
   await openWithPager({
     pagerEnvKey: "LASSO_PAGER_RELOAD",
-    initialContentStr: diffResult.value.stdout,
+    initialContentStr: diff,
     contentType: "diff",
   });
 }
