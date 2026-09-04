@@ -84,8 +84,14 @@ describe("state", () => {
 
       const params = getState().app.messageParams.messages;
       assert.equal(params.length, 2);
-      assert.equal(params[0]!.role, "user");
-      assert.equal(params[1]!.role, "assistant");
+      const first = params[0];
+      assert(first !== undefined);
+
+      const second = params[1];
+      assert(second !== undefined);
+
+      assert.equal(first.role, "user");
+      assert.equal(second.role, "assistant");
       assert.equal(getState().app.messageParams.tokens, 0);
     });
   });
@@ -311,7 +317,9 @@ hello`,
       actions.setContextEntries([{ filePath: "/a/AGENTS.md", content: "A" }]);
       actions.setContextEntries([{ filePath: "/b/AGENTS.md", content: "B" }]);
       assert.equal(getState().app.contextEntries.length, 1);
-      assert.equal(getState().app.contextEntries[0]!.filePath, "/b/AGENTS.md");
+      const entry = getState().app.contextEntries[0];
+      assert(entry !== undefined);
+      assert.equal(entry.filePath, "/b/AGENTS.md");
     });
   });
 
@@ -354,7 +362,9 @@ hello`,
         },
       ]);
       assert.equal(getState().app.skills.length, 1);
-      assert.equal(getState().app.skills[0]!.name, "b");
+      const skill = getState().app.skills[0];
+      assert(skill !== undefined);
+      assert.equal(skill.name, "b");
     });
   });
 

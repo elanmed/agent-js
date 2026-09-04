@@ -22,6 +22,12 @@ import { getLanguageModel } from "./model.ts";
 
 export { getHeaders, getLanguageModel } from "./model.ts";
 
+function getApiStreamAbortSignal() {
+  const controller = getState().abortControllers.apiStream;
+  assert(controller !== null);
+  return controller.signal;
+}
+
 export async function resolveApiCall(userInput: string) {
   const toolCallIdToTempFile = new Map<string, string>();
 
@@ -46,7 +52,7 @@ export async function resolveApiCall(userInput: string) {
       messages: [...getState().app.messageParams.messages, inputMessageParam],
       tools,
       stopWhen: aiDeps.isLoopFinished(),
-      abortSignal: getState().abortControllers.apiStream!.signal,
+      abortSignal: getApiStreamAbortSignal(),
       experimental_onToolCallStart: ({ toolCall }) => {
         switch (toolCall.toolName as ToolName) {
           case "create_file": {
@@ -166,7 +172,7 @@ ${JSON.stringify(getState().app.messageParams.messages)}
       model: getLanguageModel(getState().config.model),
       messages: [{ content: compactMessageParam, role: "user" }],
       stopWhen: aiDeps.isLoopFinished(),
-      abortSignal: getState().abortControllers.apiStream!.signal,
+      abortSignal: getApiStreamAbortSignal(),
     }),
   );
   stopLoadingState();

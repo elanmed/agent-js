@@ -403,8 +403,10 @@ SKILLS: available skills`,
       });
       await maybeCompactMessageParams("hi");
       assert.strictEqual(capturedMessages.length, 1);
+      const capturedMessage = capturedMessages[0];
+      assert(capturedMessage !== undefined);
       assert.strictEqual(
-        capturedMessages[0]!.content,
+        capturedMessage.content,
         `Compact the following conversation. Your summary must be less than 25000 tokens:\n[{"role":"user","content":"hi"}]\n`,
       );
       assert.deepStrictEqual(getState().app.messageParams, {

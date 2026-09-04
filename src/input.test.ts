@@ -21,6 +21,13 @@ import {
   initLocalConfig,
   initGlobalConfig,
 } from "./input.ts";
+
+function getTestRl() {
+  const rl = getState().app.rl;
+  assert(rl !== null);
+  return rl;
+}
+
 import {
   testFs,
   testProcessEnv,
@@ -198,9 +205,7 @@ editor content
     });
 
     it("returns trimmed user input", async () => {
-      mock.method(getState().app.rl!, "question", () =>
-        Promise.resolve("  hello  "),
-      );
+      mock.method(getTestRl(), "question", () => Promise.resolve("  hello  "));
       actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
@@ -220,7 +225,7 @@ hello
       actions.setChatHistoryPath("/tmp/test-history.log");
       actions.setModel("old");
       actions.resetStdout();
-      mock.method(getState().app.rl!, "question", () =>
+      mock.method(getTestRl(), "question", () =>
         Promise.resolve("/model new-model"),
       );
       const result = await resolveUserInput({ isFirstInput: false });
@@ -238,7 +243,7 @@ hello
     });
 
     it("returns null and prints error on non-abort error", async () => {
-      mock.method(getState().app.rl!, "question", () =>
+      mock.method(getTestRl(), "question", () =>
         Promise.reject(new Error("read failed")),
       );
       const result = await resolveUserInput({ isFirstInput: false });
@@ -248,7 +253,7 @@ hello
 
     it("returns editor value when aborted by editor", async () => {
       actions.setChatHistoryPath("/tmp/test-history.log");
-      mock.method(getState().app.rl!, "question", () => {
+      mock.method(getTestRl(), "question", () => {
         actions.setEditorInputValue("from editor");
         const err = new Error("This operation was aborted");
         err.name = "AbortError";
@@ -272,7 +277,7 @@ from editor
       mock.method(process, "exit", () => {
         throw new Error("process.exit called");
       });
-      const questionMock = mock.method(getState().app.rl!, "question", () => {
+      const questionMock = mock.method(getTestRl(), "question", () => {
         const err = new Error("This operation was aborted");
         err.name = "AbortError";
         return Promise.reject(err);
@@ -287,7 +292,7 @@ from editor
     it("returns null when user declines exit confirmation", async () => {
       const err = new Error("This operation was aborted");
       err.name = "AbortError";
-      const questionMock = mock.method(getState().app.rl!, "question", () =>
+      const questionMock = mock.method(getTestRl(), "question", () =>
         Promise.resolve("n"),
       );
       questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
@@ -302,7 +307,7 @@ from editor
       });
       const err = new Error("This operation was aborted");
       err.name = "AbortError";
-      const questionMock = mock.method(getState().app.rl!, "question", () =>
+      const questionMock = mock.method(getTestRl(), "question", () =>
         Promise.resolve("yes"),
       );
       questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
@@ -323,7 +328,7 @@ from editor
       actions.resetStdout();
       const err = new Error("This operation was aborted");
       err.name = "AbortError";
-      const questionMock = mock.method(getState().app.rl!, "question", () =>
+      const questionMock = mock.method(getTestRl(), "question", () =>
         Promise.resolve("yes"),
       );
       questionMock.mock.mockImplementationOnce(() => Promise.reject(err));
@@ -1906,24 +1911,31 @@ description: A test skill
       );
 
       testProcessEnv._set("LASSO_PAGER_RELOAD", "cat __FILE__");
+
+      const getSnapshot = (name: string) => {
+        const snapshot = snapshots.get(name);
+        assert(snapshot !== undefined);
+        return snapshot;
+      };
+
       const result = await resolveSlashCommand("/reload");
       assert.strictEqual(result, null);
       assert.deepStrictEqual(
         [...snapshots.keys()],
         ["global", "local", "applied"],
       );
-      assert.match(snapshots.get("applied")!, /# Applied config/);
+      assert.match(getSnapshot("applied"), /# Applied config/);
       assert.match(
-        snapshots.get("applied")!,
+        getSnapshot("applied"),
         /# \[lasso\] AGENTS\.md context files/,
       );
-      assert.match(snapshots.get("applied")!, /# \[lasso\] Skills/);
+      assert.match(getSnapshot("applied"), /# \[lasso\] Skills/);
       assert.match(
-        snapshots.get("applied")!,
+        getSnapshot("applied"),
         /## Path: \/fake-home\/.config\/lasso\/context\/AGENTS.md/,
       );
-      assert.match(snapshots.get("global")!, /# Global config from path: /);
-      assert.match(snapshots.get("local")!, /# Local config from path: /);
+      assert.match(getSnapshot("global"), /# Global config from path: /);
+      assert.match(getSnapshot("local"), /# Local config from path: /);
     });
 
     it("handles custom slash command successfully", async () => {

@@ -1,3 +1,5 @@
+import assert from "node:assert";
+
 export interface CliArgs {
   debug: boolean;
 }
@@ -15,7 +17,8 @@ export function parseCliArgs() {
 
   const parsedArgs: CliArgs = structuredClone(defaultCliArgs);
   while (args.length > 0) {
-    const arg = args.shift()!;
+    const arg = args.shift();
+    assert(arg !== undefined);
 
     if (arg === "--debug") {
       parsedArgs.debug = true;

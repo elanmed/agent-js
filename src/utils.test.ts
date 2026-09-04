@@ -510,7 +510,9 @@ describe("utils", () => {
         const lockUtils = createLockUtils("/lock");
         const promise = lockUtils.createLock();
         while (timerCallbacks.length > 0) {
-          timerCallbacks.shift()!();
+          const callback = timerCallbacks.shift();
+          assert(callback !== undefined);
+          callback();
           await Promise.resolve();
         }
 
@@ -529,7 +531,9 @@ describe("utils", () => {
         assert.equal(timerCallbacks.length, 1);
 
         testFs._files.delete("/lock");
-        timerCallbacks.shift()!();
+        const callback = timerCallbacks.shift();
+        assert(callback !== undefined);
+        callback();
 
         assert.equal(await promise, true);
         assert.equal(testFs._files.get("/lock"), String(process.pid));
@@ -564,7 +568,9 @@ describe("utils", () => {
         const lockUtils = createLockUtils("/lock");
         const promise = lockUtils.createLock();
         while (timerCallbacks.length > 0) {
-          timerCallbacks.shift()!();
+          const callback = timerCallbacks.shift();
+          assert(callback !== undefined);
+          callback();
           await Promise.resolve();
         }
 

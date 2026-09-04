@@ -68,12 +68,14 @@ export function makeFakeFsDeps(
       const result = new Set<string>();
       for (const filePath of _files.keys()) {
         if (filePath.startsWith(prefix)) {
-          result.add(filePath.slice(prefix.length).split("/")[0]!);
+          const name = filePath.slice(prefix.length).split("/")[0];
+          if (name !== undefined) result.add(name);
         }
       }
       for (const dirPath of _dirs) {
         if (dirPath.startsWith(prefix)) {
-          result.add(dirPath.slice(prefix.length).split("/")[0]!);
+          const name = dirPath.slice(prefix.length).split("/")[0];
+          if (name !== undefined) result.add(name);
         }
       }
       return [...result];
@@ -282,7 +284,9 @@ export function mockExecCalls(
     (cmd: string, _opts: unknown, cb: ExecCallback) => {
       commands?.push(cmd);
       onCall?.(cmd);
-      const { stdout, error } = queue.shift()!;
+      const call = queue.shift();
+      if (call === undefined) throw new Error("Unexpected exec call");
+      const { stdout, error } = call;
       cb(error ?? null, stdout, "");
     },
   );

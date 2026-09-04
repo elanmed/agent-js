@@ -148,7 +148,8 @@ function abortRlQuestionForEditor(editorContent: string) {
   actions.setEditorInputValue(editorContent);
   const questionAbortController = getState().abortControllers.question;
   if (questionAbortController !== null) {
-    const rl = clearRlLine()!;
+    const rl = clearRlLine();
+    assert(rl !== null);
 
     const truncatedFirstLine = truncate(editorContent);
     rl.write(truncatedFirstLine);
@@ -369,9 +370,11 @@ export async function resolveUserInput({
   actions.resetStdout();
 
   actions.setQuestionAbortController(new AbortController());
+  const questionAbortController = getState().abortControllers.question;
+  assert(questionAbortController !== null);
   const inputResult = await tryCatchAsync(
     rl.question(getState().config.promptPrefix, {
-      signal: getState().abortControllers.question!.signal,
+      signal: questionAbortController.signal,
     }),
   );
   actions.setQuestionAbortController(null);
@@ -437,9 +440,11 @@ async function resolveExitConfirmation() {
   assert(rl !== null);
 
   actions.setQuestionAbortController(new AbortController());
+  const questionAbortController = getState().abortControllers.question;
+  assert(questionAbortController !== null);
   const exitResult = await tryCatchAsync(
     rl.question("y(es) or <C-c> to exit: ", {
-      signal: getState().abortControllers.question!.signal,
+      signal: questionAbortController.signal,
     }),
   );
   actions.setQuestionAbortController(null);
@@ -1023,10 +1028,16 @@ async function reload() {
   );
   const diffResults = [];
   for (let i = 0; i < prefixes.length; i++) {
+    const beforeFile = beforeFiles[i];
+    assert(beforeFile !== undefined);
+
+    const afterFile = afterFiles[i];
+    assert(afterFile !== undefined);
+
     const diffResult = await tryCatchAsync(
       execGitDiff({
-        tempFileBeforePath: beforeFiles[i]!,
-        tempFileAfterPath: afterFiles[i]!,
+        tempFileBeforePath: beforeFile,
+        tempFileAfterPath: afterFile,
       }),
     );
 

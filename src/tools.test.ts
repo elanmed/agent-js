@@ -772,16 +772,23 @@ bottom`,
           content: "result-2",
         },
       ]);
-      assert.deepStrictEqual(Object.keys(calls[0]!["tools"]!), [
+      const firstCall = calls[0];
+      assert(firstCall !== undefined);
+
+      const firstTools = firstCall["tools"];
+      const firstMessages = firstCall["messages"] as { role: string }[];
+      assert(firstTools !== undefined && firstTools !== null);
+
+      const firstMessage = firstMessages[0];
+      assert(firstMessage !== undefined);
+
+      assert.deepStrictEqual(Object.keys(firstTools), [
         "web_fetch_html",
         "web_fetch_json",
         "view_file",
         "load_skill",
       ]);
-      assert.strictEqual(
-        (calls[0]!["messages"] as { role: string }[])[0]!.role,
-        "user",
-      );
+      assert.strictEqual(firstMessage.role, "user");
     });
 
     it("gives read-write subagents write tools and prints file diffs", async () => {
@@ -789,7 +796,9 @@ bottom`,
       actions.resetStdout();
       testFs._files.set("/test/file.txt", "original content");
       mockGenerateText(async (options: Record<string, unknown>) => {
-        assert.deepStrictEqual(Object.keys(options["tools"]!), [
+        const writeTools = options["tools"];
+        assert(writeTools !== undefined && writeTools !== null);
+        assert.deepStrictEqual(Object.keys(writeTools), [
           "web_fetch_html",
           "web_fetch_json",
           "view_file",

@@ -743,7 +743,8 @@ export async function createSubagentTool(
     content: stringify(
       results.map((result, idx) => {
         if (result.status === "rejected") {
-          const task = tasks[idx]!;
+          const task = tasks[idx];
+          if (task === undefined) throw new Error("Missing subagent task");
           const model = task.model;
 
           return {
