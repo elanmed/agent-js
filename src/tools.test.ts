@@ -847,13 +847,39 @@ bottom`,
   });
 
   describe("execGitDiff", () => {
-    it("uses delta when available and resolves with stdout", async () => {
-      mockExecCalls([{ stdout: "delta 0.18.2" }, { stdout: "diff output" }]);
+    it("uses delta and three context lines by default", async () => {
+      const commands: string[] = [];
+      mockExecCalls(
+        [{ stdout: "delta 0.18.2" }, { stdout: "diff output" }],
+        commands,
+      );
       const result = await execGitDiff({
         tempFileBeforePath: "a",
         tempFileAfterPath: "b",
       });
       assert.deepStrictEqual(result, { stdout: "diff output", stderr: "" });
+      assert.deepStrictEqual(commands, [
+        "delta --version",
+        "git diff --no-index --color=always -U3 a b | delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit",
+      ]);
+    });
+
+    it("uses 1000 context lines when expanded", async () => {
+      const commands: string[] = [];
+      mockExecCalls(
+        [{ stdout: "delta 0.18.2" }, { stdout: "diff output" }],
+        commands,
+      );
+      const result = await execGitDiff({
+        tempFileBeforePath: "a",
+        tempFileAfterPath: "b",
+        expandContextLines: true,
+      });
+      assert.deepStrictEqual(result, { stdout: "diff output", stderr: "" });
+      assert.deepStrictEqual(commands, [
+        "delta --version",
+        "git diff --no-index --color=always -U1000 a b | delta --paging=never --line-numbers --hunk-header-style=omit --file-style=omit",
+      ]);
     });
 
     it("resolves when delta exits with code 1 (differences found)", async () => {

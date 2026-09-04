@@ -15,6 +15,7 @@ import {
   printAvailableContextFiles,
   pageContextStr,
   pageCustomSlashCommandsStr,
+  pageEditStr,
   spawnAndReadEditorContent,
   resume,
   initLocalConfig,
@@ -910,6 +911,34 @@ No available context files
         `context string content`,
       );
       assert.strictEqual(getCapturedAppStdout(), "");
+    });
+  });
+
+  describe("pageEditStr", () => {
+    beforeEach(() => {
+      actions.resetState();
+      actions.resetStdout();
+    });
+
+    it("prints that the editor is empty when editor input is null", async () => {
+      await pageEditStr();
+      assert.strictEqual(
+        stripAnsi(getCapturedAppStdout()),
+        `
+Editor is empty
+`,
+      );
+    });
+
+    it("prints that the editor is empty when editor input is an empty string", async () => {
+      actions.setEditorInputValue("");
+      await pageEditStr();
+      assert.strictEqual(
+        stripAnsi(getCapturedAppStdout()),
+        `
+Editor is empty
+`,
+      );
     });
   });
 

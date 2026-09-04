@@ -769,9 +769,17 @@ export async function printGitDiff({
 export async function execGitDiff(opts: {
   tempFileBeforePath: string;
   tempFileAfterPath: string;
+  expandContextLines?: boolean;
 }): Promise<{ stdout: string; stderr: string }> {
+  const contextLines = (() => {
+    if (opts.expandContextLines === true) {
+      return 1000;
+    }
+    return 3;
+  })();
+
   const isDeltaAvailable = await checkDelta();
-  const linesGitDiffCmd = `git diff --no-index --color=always ${opts.tempFileBeforePath} ${opts.tempFileAfterPath}`;
+  const linesGitDiffCmd = `git diff --no-index --color=always -U${String(contextLines)} ${opts.tempFileBeforePath} ${opts.tempFileAfterPath}`;
 
   const cmd = (() => {
     if (isDeltaAvailable) {

@@ -263,12 +263,16 @@ export function mockExec(opts: {
   }
 }
 
-export function mockExecCalls(calls: { stdout: string; error?: Error }[]) {
+export function mockExecCalls(
+  calls: { stdout: string; error?: Error }[],
+  commands?: string[],
+) {
   const queue = [...calls];
   mock.method(
     childProcess,
     "exec",
-    (_cmd: string, _opts: unknown, cb: ExecCallback) => {
+    (cmd: string, _opts: unknown, cb: ExecCallback) => {
+      commands?.push(cmd);
       const { stdout, error } = queue.shift()!;
       cb(error ?? null, stdout, "");
     },

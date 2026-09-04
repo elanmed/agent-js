@@ -186,11 +186,7 @@ export function initKeypress() {
             return;
           }
           case "edit-str": {
-            await openWithPager({
-              initialContentStr: getState().app.editorInputValue ?? "",
-              pagerEnvKey: "LASSO_PAGER_EDIT",
-              contentType: "markdown",
-            });
+            await pageEditStr();
             return;
           }
           case "paste": {
@@ -511,11 +507,7 @@ async function resolveBuiltinSlashCommand(
       return { handled: true, inputFromCommand: content };
     }
     case "edit-str": {
-      await openWithPager({
-        initialContentStr: getState().app.editorInputValue ?? "",
-        pagerEnvKey: "LASSO_PAGER_EDIT",
-        contentType: "markdown",
-      });
+      await pageEditStr();
       return { handled: true, inputFromCommand: null };
     }
     case "paste": {
@@ -805,6 +797,22 @@ export async function pageContextStr() {
     contentType: "markdown",
   });
 }
+
+export async function pageEditStr() {
+  const { editorInputValue } = getState().app;
+  if (editorInputValue === null || editorInputValue.length === 0) {
+    printNewline();
+    print.doing("Editor is empty");
+    return;
+  }
+
+  await openWithPager({
+    initialContentStr: editorInputValue,
+    pagerEnvKey: "LASSO_PAGER_EDIT",
+    contentType: "markdown",
+  });
+}
+
 export function printAvailableCommandsStr() {
   printNewline();
   print.doing("Available commands:");
@@ -1000,6 +1008,7 @@ async function reload() {
     execGitDiff({
       tempFileBeforePath: tempFileBefore,
       tempFileAfterPath: tempFileAfter,
+      expandContextLines: true,
     }),
   );
   fsDeps.unlinkSync(tempFileBefore);

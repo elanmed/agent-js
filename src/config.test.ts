@@ -35,6 +35,7 @@ const testConfig = {
 
 describe("config", () => {
   beforeEach(() => {
+    mock.method(Date, "now", () => 0);
     setupTestContext();
     mock.method(parseCliArgsDeps, "getArgv", () => ["node", "script.js"]);
   });
@@ -1459,8 +1460,8 @@ hello
     });
   });
 
-  it("sets sessionStartDate", async () => {
-    mock.method(Date, "now", () => 1_234);
+  it("preserves the initialized sessionStartDate", async () => {
+    const sessionStartDate = getState().app.sessionStartDate;
     testFs._files.set(
       getGlobalConfigPath(),
       JSON.stringify({
@@ -1469,7 +1470,7 @@ hello
     );
 
     await initState();
-    assert.strictEqual(getState().app.sessionStartDate, 1_234);
+    assert.strictEqual(getState().app.sessionStartDate, sessionStartDate);
   });
 
   it("sets debug log path", async () => {
@@ -1508,7 +1509,7 @@ hello
 
   describe("initStateRepeatable", () => {
     it("updates config and context without resetting session start date", async () => {
-      mock.method(Date, "now", () => 1_234);
+      const sessionStartDate = getState().app.sessionStartDate;
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -1517,7 +1518,7 @@ hello
       );
 
       await initState();
-      assert.strictEqual(getState().app.sessionStartDate, 1_234);
+      assert.strictEqual(getState().app.sessionStartDate, sessionStartDate);
 
       const globalConfigStr = JSON.stringify({
         ...testConfig,
@@ -1527,12 +1528,13 @@ hello
 
       await initStateRepeatable();
 
-      assert.strictEqual(getState().app.sessionStartDate, 1_234);
+      assert.strictEqual(getState().app.sessionStartDate, sessionStartDate);
       assert.strictEqual(getState().app.globalConfigStr, globalConfigStr);
       assert.strictEqual(getState().config.model, "claude-haiku-4-5");
     });
 
-    it("does not set the session start date or debug log path", async () => {
+    it("does not reset the session start date or debug log path", async () => {
+      const sessionStartDate = getState().app.sessionStartDate;
       testFs._files.set(
         getGlobalConfigPath(),
         JSON.stringify({
@@ -1542,7 +1544,7 @@ hello
 
       await initStateRepeatable();
 
-      assert.strictEqual(getState().app.sessionStartDate, 0);
+      assert.strictEqual(getState().app.sessionStartDate, sessionStartDate);
       assert.strictEqual(getState().app.debugLogPath, "");
     });
   });

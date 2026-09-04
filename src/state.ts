@@ -80,7 +80,7 @@ const createInitialState = (): State => ({
     apiEndTime: null,
     modelUsageForLimitWindow: {},
     modelUsageForSession: {},
-    sessionStartDate: 0,
+    sessionStartDate: Date.now(),
     sessionId: crypto.randomUUID(),
   },
   config: {
@@ -440,13 +440,6 @@ export const actions = {
     const now = performance.now();
     state.app.apiEndTime = now;
     logStateChange("set-api-end-time", String(before), String(now));
-  },
-
-  setSessionStartDate() {
-    const before = state.app.sessionStartDate;
-    const now = Date.now();
-    state.app.sessionStartDate = now;
-    logStateChange("set-session-start-date", String(before), String(now));
   },
 
   resetState() {

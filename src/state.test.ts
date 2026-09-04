@@ -7,6 +7,7 @@ import { makeFakeRl, setupTestContext } from "./test-helpers.ts";
 
 describe("state", () => {
   beforeEach(() => {
+    mock.method(Date, "now", () => 0);
     setupTestContext();
   });
 
@@ -421,13 +422,6 @@ hello`,
     assert.equal(getState().app.apiEndTime, null);
     actions.setApiEndTime();
     assert.strictEqual(getState().app.apiEndTime, 99_000);
-  });
-
-  it("set-session-start-date", () => {
-    mock.method(Date, "now", () => 42_000);
-    assert.equal(getState().app.sessionStartDate, 0);
-    actions.setSessionStartDate();
-    assert.strictEqual(getState().app.sessionStartDate, 42_000);
   });
 
   it("set-loading-state-frames", () => {

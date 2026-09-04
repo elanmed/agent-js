@@ -420,5 +420,4 @@ export async function initState() {
 
   initStateFromConfig();
   await initStateFromFs();
-  actions.setSessionStartDate();
 }
