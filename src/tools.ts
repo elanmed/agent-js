@@ -10,6 +10,7 @@ import {
   tryCatchAsync,
   execPromise,
   truncate,
+  getTempFileName,
 } from "./utils.ts";
 import { print, fencePrint, printNewline, checkDelta } from "./print.ts";
 import { getState } from "./state.ts";
@@ -540,8 +541,7 @@ export function loadSkillTool({ name }: LoadSkillTool): ToolResult {
 
 export const createSubagentTaskSchema = z.object({
   prompt: z.string(),
-  // TODO: read-write with diff
-  access: z.enum(["read-only"]),
+  access: z.enum(["read-only", "read-write"]),
   model: z
     .string()
     .min(1)
@@ -561,7 +561,7 @@ export const createSubagentTaskSchema = z.object({
     }),
   timeout: z.number().optional(),
 });
-const createSubagentToolSchema = z.object({
+export const createSubagentToolSchema = z.object({
   tasks: z.array(createSubagentTaskSchema),
 });
 export type CreateSubagentTool = z.infer<typeof createSubagentToolSchema>;
@@ -572,23 +572,10 @@ type SubagentResult = {
   prompt: string;
 } & ToolResult;
 
-export function getSubagentModel(subagentSchema: CreateSubagentTask) {
-  return subagentSchema.model;
-}
-
 export async function createSubagentTool(
   { tasks }: CreateSubagentTool,
   signal?: AbortSignal,
 ): Promise<ToolResult> {
-  const systemContent = [
-    BASE_SYSTEM_PROMPT,
-    getState().app.contextStr,
-    getState().app.skillsStr,
-    "You are a read-only subagent. Investigate the requested task and report findings.",
-  ]
-    .filter((content) => content.length > 0)
-    .join("\n");
-
   const subagentPromises = tasks.map(
     async (subagentSchema): Promise<SubagentResult> => {
       const timeout = subagentSchema.timeout ?? SUBAGENT_TIMEOUT_MS;
@@ -598,7 +585,29 @@ export async function createSubagentTool(
         timeout,
       );
 
-      const model = getSubagentModel(subagentSchema);
+      const model = subagentSchema.model;
+      const accessSystemContent = (() => {
+        if (subagentSchema.access === "read-only") {
+          return "You are a read-only subagent. Investigate the requested task and report findings.";
+        }
+        return "You are a read-write subagent. Make the requested changes and report findings.";
+      })();
+
+      const systemContent = [
+        BASE_SYSTEM_PROMPT,
+        getState().app.contextStr,
+        getState().app.skillsStr,
+        accessSystemContent,
+      ]
+        .filter((content) => content.length > 0)
+        .join("\n");
+
+      const subagentTools = (() => {
+        if (subagentSchema.access === "read-only") return readTools;
+        return { ...readTools, ...writeTools };
+      })();
+
+      const toolCallIdToTempFile = new Map<string, string>();
 
       const message = `[${model}] ${subagentSchema.prompt}`;
       toolPrint("   create_subagent", message);
@@ -613,13 +622,82 @@ export async function createSubagentTool(
           model: getLanguageModel(model),
           system: systemContent,
           messages: [inputMessageParam],
-          tools: readTools,
+          tools: subagentTools,
           stopWhen: aiDeps.isLoopFinished(),
           abortSignal: controller.signal,
+          experimental_onToolCallStart: ({
+            toolCall,
+          }: {
+            toolCall: { toolName: string; toolCallId: string; input: unknown };
+          }) => {
+            if (subagentSchema.access !== "read-write") return;
+
+            switch (toolCall.toolName as ToolName) {
+              case "create_file": {
+                toolCallIdToTempFile.set(
+                  toolCall.toolCallId,
+                  getTempFileName(),
+                );
+                break;
+              }
+              case "insert_lines":
+              case "str_replace": {
+                const { path } = objectWithPathSchema.parse(toolCall.input);
+                toolCallIdToTempFile.set(
+                  toolCall.toolCallId,
+                  getTempFileName({ initialContentPath: path }),
+                );
+                break;
+              }
+            }
+          },
+          experimental_onToolCallFinish: async ({
+            toolCall,
+            success,
+          }: {
+            toolCall: { toolName: string; toolCallId: string; input: unknown };
+            success: boolean;
+          }) => {
+            if (subagentSchema.access !== "read-write") return;
+
+            switch (toolCall.toolName as ToolName) {
+              case "create_file":
+              case "insert_lines":
+              case "str_replace": {
+                const tempFileBefore = toolCallIdToTempFile.get(
+                  toolCall.toolCallId,
+                );
+                if (tempFileBefore === undefined) return;
+
+                if (!success) {
+                  fsDeps.unlinkSync(tempFileBefore);
+                  toolCallIdToTempFile.delete(toolCall.toolCallId);
+                  return;
+                }
+
+                const { path } = objectWithPathSchema.parse(toolCall.input);
+                const tempFileAfter = getTempFileName({
+                  initialContentPath: path,
+                });
+                await printGitDiff({
+                  tempFileBeforePath: tempFileBefore,
+                  tempFileAfterPath: tempFileAfter,
+                  path,
+                });
+                fsDeps.unlinkSync(tempFileBefore);
+                fsDeps.unlinkSync(tempFileAfter);
+                toolCallIdToTempFile.delete(toolCall.toolCallId);
+                break;
+              }
+            }
+          },
         }),
       );
 
       if (!generateTextResult.ok) {
+        for (const tempFile of toolCallIdToTempFile.values()) {
+          fsDeps.unlinkSync(tempFile);
+        }
         cleanup();
         const timeoutResult = resolveTimeoutError({
           error: generateTextResult.error,
@@ -636,6 +714,9 @@ export async function createSubagentTool(
 
       const { totalUsage, text } = generateTextResult.value;
       await appendModelUsage(totalUsage, model);
+      for (const tempFile of toolCallIdToTempFile.values()) {
+        fsDeps.unlinkSync(tempFile);
+      }
       cleanup();
 
       return {
@@ -663,7 +744,7 @@ export async function createSubagentTool(
       results.map((result, idx) => {
         if (result.status === "rejected") {
           const task = tasks[idx]!;
-          const model = getSubagentModel(task);
+          const model = task.model;
 
           return {
             model,
@@ -733,7 +814,7 @@ const writeTools = {
 const baseAgentTools = {
   create_subagent: tool({
     description:
-      "Launch parallel read-only subagents for independent investigation. Each subagent can fetch web content, inspect files, and load skills, but cannot modify files or execute commands.",
+      "Launch parallel subagents for independent investigation or implementation. Prefer read-only subagents for parallel work to avoid conflicts. Read-only subagents can fetch web content, inspect files, and load skills; read-write subagents can modify files or execute commands.",
     inputSchema: createSubagentToolSchema,
     execute: (args, opts) => createSubagentTool(args, opts.abortSignal),
   }),

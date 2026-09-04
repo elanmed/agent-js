@@ -784,6 +784,65 @@ bottom`,
       );
     });
 
+    it("gives read-write subagents write tools and prints file diffs", async () => {
+      setupApiCallState();
+      actions.resetStdout();
+      testFs._files.set("/test/file.txt", "original content");
+      mockGenerateText(async (options: Record<string, unknown>) => {
+        assert.deepStrictEqual(Object.keys(options["tools"]!), [
+          "web_fetch_html",
+          "web_fetch_json",
+          "view_file",
+          "load_skill",
+          "create_file",
+          "str_replace",
+          "insert_lines",
+          "bash",
+        ]);
+        const onStart = options["experimental_onToolCallStart"] as (
+          arg: Record<string, unknown>,
+        ) => void;
+        const onFinish = options["experimental_onToolCallFinish"] as (
+          arg: Record<string, unknown>,
+        ) => Promise<void>;
+        onStart({
+          toolCall: {
+            toolName: "str_replace",
+            toolCallId: "call-1",
+            input: { path: "/test/file.txt" },
+          },
+        });
+        testFs._files.set("/test/file.txt", "modified content");
+        mockExec({ stdout: "+modified content" });
+        await onFinish({
+          toolCall: {
+            toolName: "str_replace",
+            toolCallId: "call-1",
+            input: { path: "/test/file.txt" },
+          },
+          success: true,
+        });
+        return makeGenerateTextResult({ text: "done" });
+      });
+
+      const result = await createSubagentTool({
+        tasks: [{ prompt: "edit", access: "read-write", model: "main-model" }],
+      });
+
+      assert.deepStrictEqual(JSON.parse(result.content), [
+        { model: "main-model", prompt: "edit", content: "done" },
+      ]);
+      assert.strictEqual(
+        stripAnsi(getCapturedAppStdout()),
+        `   create_subagent: [main-model] edit
+
+━━ File change: /test/file.txt ━━
++modified content
+
+`,
+      );
+    });
+
     it("uses the configured model when a task model is omitted", async () => {
       setupApiCallState();
       mockGenerateText((options: { model: { modelId: string } }) => {
