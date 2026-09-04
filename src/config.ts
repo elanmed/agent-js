@@ -80,6 +80,7 @@ const KeymapsSchema = z.record(z.string(), KeySchema.nullable());
 const DefaultedKeymapsSchema = z.record(z.string(), KeySchema);
 const CustomSlashCommandDirsSchema = z.array(z.string());
 const CustomSkillDirsSchema = z.array(z.string());
+const SubagentModelsSchema = z.array(z.string());
 const LoadingStateFrameDurationSchema = z.number();
 const LoadingStateFramesSchema = z
   .array(z.string())
@@ -109,6 +110,7 @@ export const ConfigSchema = z.strictObject({
   keymaps: KeymapsSchema.optional(),
   customSlashCommandDirs: CustomSlashCommandDirsSchema.optional(),
   customSkillDirs: CustomSkillDirsSchema.optional(),
+  subagentModels: SubagentModelsSchema.optional(),
   loadingStateFrameDuration: LoadingStateFrameDurationSchema.optional(),
   loadingStateFrames: LoadingStateFramesSchema.optional(),
   promptPrefix: PromptPrefixSchema.optional(),
@@ -131,6 +133,7 @@ export const DefaultedConfigSchema = z.strictObject({
   keymaps: DefaultedKeymapsSchema,
   customSlashCommandDirs: CustomSlashCommandDirsSchema,
   customSkillDirs: CustomSkillDirsSchema,
+  subagentModels: SubagentModelsSchema,
   loadingStateFrameDuration: LoadingStateFrameDurationSchema,
   loadingStateFrames: LoadingStateFramesSchema,
   promptPrefix: PromptPrefixSchema,
@@ -163,6 +166,7 @@ export const defaultConfig: DefaultedConfig = {
   },
   customSlashCommandDirs: [],
   customSkillDirs: [],
+  subagentModels: [],
   loadingStateFrameDuration: 80,
   loadingStateFrames: ["|", "/", "-", "\\"],
   promptPrefix: "> ",
@@ -319,6 +323,11 @@ export function initStateFromConfig() {
     localConfig.customSkillDirs ??
       globalConfig.customSkillDirs ??
       defaultConfig.customSkillDirs,
+  );
+  actions.setSubagentModels(
+    localConfig.subagentModels ??
+      globalConfig.subagentModels ??
+      defaultConfig.subagentModels,
   );
   const defaultedKeymaps = filterNulls({
     ...defaultConfig.keymaps,

@@ -6,7 +6,7 @@ _A minimal agent harness to rein in your llm_
 
 ## Features
 
-- **Minimal**: 4,000 lines of source code, 8,000 lines of tests
+- **Minimal**: 4,200 lines of source code, 8,300 lines of tests
   - Responses are piped through `bat` to render markdown
   - Multi-line input is supported by spawning an editor of your choice
   - A message queue lets you batch multiple prompts in the editor, sent one per turn
@@ -42,6 +42,7 @@ If `model`, `baseURL`, or `LASSO_API_KEY` are missing at startup, lasso warns an
 | `keymaps`                       | `object`                                             | optional | see below                | Custom keybindings                                              |
 | `customSlashCommandDirs`        | `string[]`                                           | optional | `[]`                     | Additional directories for custom slash commands                |
 | `customSkillDirs`               | `string[]`                                           | optional | `[]`                     | Additional directories for skills                               |
+| `subagentModels`                | `string[]`                                           | optional | `[]`                     | Models available to subagents                                   |
 | `loadingStateFrames`            | `string[]`                                           | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                                           |
 | `loadingStateFrameDuration`     | `number`                                             | optional | `80`                     | Spinner frame interval in ms                                    |
 | `promptPrefix`                  | `string`                                             | optional | `"> "`                   | Prompt prefix string                                            |
@@ -53,7 +54,7 @@ If `model`, `baseURL`, or `LASSO_API_KEY` are missing at startup, lasso warns an
 
 The local config either overwrites or extends the global config per option:
 
-- **Overwrite**: scalar options (`model`, `sdkProvider`, `gateway`, `baseURL`, `compactTriggerRatio`, `compactTargetRatio`, `loadingStateFrameDuration`, `promptPrefix`, `suppressBatUnavailableWarning`, `messageQueueDelimiter`, `usageLimit`) and arrays (`customSlashCommandDirs`, `customSkillDirs`, `loadingStateFrames`) replace the global value wholesale — arrays are not merged.
+- **Overwrite**: scalar options (`model`, `sdkProvider`, `gateway`, `baseURL`, `compactTriggerRatio`, `compactTargetRatio`, `loadingStateFrameDuration`, `promptPrefix`, `suppressBatUnavailableWarning`, `messageQueueDelimiter`, `usageLimit`) and arrays (`customSlashCommandDirs`, `customSkillDirs`, `subagentModels`, `loadingStateFrames`) replace the global value wholesale — arrays are not merged.
 - **Extend**: `keymaps`, `pricingPerModel`, and `contextWindowPerModel` merge entry-by-entry with the default and global entries, the local entry winning on conflicts. Setting an entry to `null` removes it entirely, cancelling the global or default entry (see the relevant sections below).
 
 ### Usage Limits
@@ -212,6 +213,8 @@ customSlashCommandDirs:
   - /home/me/my-commands
 customSkillDirs:
   - /home/me/my-skills
+subagentModels:
+  - claude-sonnet-4-6
 loadingStateFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 loadingStateFrameDuration: 100
 promptPrefix: "🤖 "

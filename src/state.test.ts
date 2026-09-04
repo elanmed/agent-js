@@ -120,6 +120,15 @@ describe("state", () => {
     assert.equal(getState().config.model, "claude-haiku-4-5");
   });
 
+  it("set-subagent-models", () => {
+    assert.deepStrictEqual(getState().app.subagentModels, []);
+    actions.setSubagentModels(["fast-model", "strong-model"]);
+    assert.deepStrictEqual(getState().app.subagentModels, [
+      "fast-model",
+      "strong-model",
+    ]);
+  });
+
   it("set-sdk-provider", () => {
     assert.equal(getState().config.sdkProvider, MISSING);
     actions.setSdkProvider("anthropic");

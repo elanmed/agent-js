@@ -68,6 +68,28 @@ describe("config", () => {
       assert.equal(getState().config.model, "claude-haiku-4-5");
     });
 
+    it("uses its subagentModels over the global config, default config", async () => {
+      testFs._files.set(
+        getGlobalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          subagentModels: ["global-model"],
+        }),
+      );
+      testFs._files.set(
+        getLocalConfigPath(),
+        JSON.stringify({
+          ...testConfig,
+          subagentModels: ["local-model"],
+        }),
+      );
+
+      await initState();
+
+      assert.deepStrictEqual(getState().config.subagentModels, ["local-model"]);
+      assert.deepStrictEqual(getState().app.subagentModels, ["local-model"]);
+    });
+
     it("uses its sdkProvider over the global config, default config", async () => {
       testFs._files.set(
         getGlobalConfigPath(),

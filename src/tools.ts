@@ -538,11 +538,27 @@ export function loadSkillTool({ name }: LoadSkillTool): ToolResult {
   };
 }
 
-const createSubagentTaskSchema = z.object({
+export const createSubagentTaskSchema = z.object({
   prompt: z.string(),
   // TODO: read-write with diff
   access: z.enum(["read-only"]),
-  model: z.string().optional(),
+  model: z
+    .string()
+    .min(1)
+    .superRefine((value, ctx) => {
+      const configuredModels = getState().app.subagentModels;
+      const allowedModels = (() => {
+        if (configuredModels.length > 0) return configuredModels;
+        return [getState().config.model];
+      })();
+
+      if (!allowedModels.includes(value)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Invalid model: ${value}`,
+        });
+      }
+    }),
   timeout: z.number().optional(),
 });
 const createSubagentToolSchema = z.object({
@@ -557,10 +573,6 @@ type SubagentResult = {
 } & ToolResult;
 
 export function getSubagentModel(subagentSchema: CreateSubagentTask) {
-  if (subagentSchema.model === undefined || subagentSchema.model.length === 0) {
-    return getState().config.model;
-  }
-
   return subagentSchema.model;
 }
 

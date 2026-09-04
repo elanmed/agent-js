@@ -40,6 +40,7 @@ interface State {
     localConfigStr: string;
     skillsStr: string;
     skills: Skill[];
+    subagentModels: string[];
     rl: readline.Interface | null;
     loadingStateTimeout: NodeJS.Timeout | null;
     loadingStateFrameIdx: number;
@@ -72,6 +73,7 @@ const createInitialState = (): State => ({
     localConfigStr: "",
     skillsStr: "",
     skills: [],
+    subagentModels: [],
     rl: null,
     loadingStateTimeout: null,
     loadingStateFrameIdx: 0,
@@ -96,6 +98,7 @@ const createInitialState = (): State => ({
       defaultConfig.customSlashCommandDirs,
     ),
     customSkillDirs: structuredClone(defaultConfig.customSkillDirs),
+    subagentModels: structuredClone(defaultConfig.subagentModels),
     loadingStateFrameDuration: defaultConfig.loadingStateFrameDuration,
     loadingStateFrames: structuredClone(defaultConfig.loadingStateFrames),
     promptPrefix: defaultConfig.promptPrefix,
@@ -148,6 +151,17 @@ export const actions = {
     const before = state.config.model;
     state.config.model = model;
     logStateChange("set-model", before, model);
+  },
+
+  setSubagentModels(subagentModels: string[]) {
+    const before = state.app.subagentModels;
+    state.app.subagentModels = subagentModels;
+    state.config.subagentModels = subagentModels;
+    logStateChange(
+      "set-subagent-models",
+      stringify(before),
+      stringify(subagentModels),
+    );
   },
 
   setSdkProvider(sdkProvider: SdkProvider) {

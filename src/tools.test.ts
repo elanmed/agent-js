@@ -11,6 +11,7 @@ import {
   executeWebFetchJsonTool,
   loadSkillTool,
   createSubagentTool,
+  createSubagentTaskSchema,
   printGitDiff,
   execGitDiff,
   tools,
@@ -666,6 +667,81 @@ bottom`,
     });
   });
 
+  describe("createSubagentTaskSchema", () => {
+    it("accepts the current model", () => {
+      actions.setModel("model-a");
+      assert.strictEqual(
+        createSubagentTaskSchema.safeParse({
+          prompt: "inspect",
+          access: "read-only",
+          model: "model-a",
+        }).success,
+        true,
+      );
+    });
+
+    it("requires and validates the model", () => {
+      actions.setModel("model-a");
+      assert.strictEqual(
+        createSubagentTaskSchema.safeParse({
+          prompt: "inspect",
+          access: "read-only",
+        }).success,
+        false,
+      );
+      assert.strictEqual(
+        createSubagentTaskSchema.safeParse({
+          prompt: "inspect",
+          access: "read-only",
+          model: "model-a",
+        }).success,
+        true,
+      );
+      assert.strictEqual(
+        createSubagentTaskSchema.safeParse({
+          prompt: "inspect",
+          access: "read-only",
+          model: "unknown",
+        }).success,
+        false,
+      );
+    });
+
+    it("accepts configured subagent models from state", () => {
+      actions.setModel("main-model");
+      actions.setSubagentModels(["fast-model", "strong-model"]);
+      assert.strictEqual(
+        createSubagentTaskSchema.safeParse({
+          prompt: "inspect",
+          access: "read-only",
+          model: "strong-model",
+        }).success,
+        true,
+      );
+      assert.strictEqual(
+        createSubagentTaskSchema.safeParse({
+          prompt: "inspect",
+          access: "read-only",
+          model: "main-model",
+        }).success,
+        false,
+      );
+    });
+
+    it("uses the current model when configured subagent models are empty", () => {
+      actions.setModel("main-model");
+      actions.setSubagentModels([]);
+      assert.strictEqual(
+        createSubagentTaskSchema.safeParse({
+          prompt: "inspect",
+          access: "read-only",
+          model: "main-model",
+        }).success,
+        true,
+      );
+    });
+  });
+
   describe("createSubagentTool", () => {
     it("runs read-only subagents in parallel and returns structured results", async () => {
       setupApiCallState();
@@ -716,7 +792,9 @@ bottom`,
       });
 
       const result = await createSubagentTool({
-        tasks: [{ prompt: "inspect", access: "read-only" }],
+        tasks: [
+          { prompt: "inspect", access: "read-only", model: "main-model" },
+        ],
       });
 
       assert.deepStrictEqual(JSON.parse(result.content), [
@@ -724,7 +802,7 @@ bottom`,
       ]);
     });
 
-    it("uses the configured model when a task model is empty", async () => {
+    it("uses the task model", async () => {
       setupApiCallState();
       mockGenerateText((options: { model: { modelId: string } }) => {
         assert.strictEqual(options.model.modelId, "main-model");
@@ -732,7 +810,9 @@ bottom`,
       });
 
       const result = await createSubagentTool({
-        tasks: [{ prompt: "inspect", access: "read-only", model: "" }],
+        tasks: [
+          { prompt: "inspect", access: "read-only", model: "main-model" },
+        ],
       });
 
       assert.deepStrictEqual(JSON.parse(result.content), [
@@ -834,7 +914,13 @@ bottom`,
 
       const resultPromise = createSubagentTool(
         {
-          tasks: [{ prompt: "inspect abort", access: "read-only" }],
+          tasks: [
+            {
+              prompt: "inspect abort",
+              access: "read-only",
+              model: "main-model",
+            },
+          ],
         },
         controller.signal,
       );
