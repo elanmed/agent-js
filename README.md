@@ -461,12 +461,11 @@ vim.g.clipboard = {
 
 ## TODO (soon)
 
-- [ ] Tool for creating subagents
-- [ ] Consolidate stdout state and chat history?
+- [ ] Support local MCP servers
 
 ## TODO (later)
 
-- [ ] Support MCP servers
+- [ ] Support remove MCP servers
 - [ ] Look into tanstack ai when it supports openai compatible
   - [ ] Support code-mode
 - [ ] Support Windows-style newlines
