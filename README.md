@@ -29,26 +29,26 @@ If `model`, `baseURL`, or `LASSO_API_KEY` are missing at startup, lasso warns an
 
 ### Config Options
 
-| Option                          | Type                                                 | Required | Default                  | Description                                                     |
-| ------------------------------- | ---------------------------------------------------- | -------- | ------------------------ | --------------------------------------------------------------- |
-| `model`                         | `string`                                             | optional | —                        | Model name (required in the merged config)                      |
-| `sdkProvider`                   | `"anthropic"` \| `"openai"` \| `"openai-compatible"` | optional | `openai-compatible`      | AI SDK provider                                                 |
-| `gateway`                       | `"opencode"`                                         | optional | —                        | Used to append gateway-specific headers                         |
-| `baseURL`                       | `string`                                             | optional | `null`                   | API base URL (required for `openai-compatible`)                 |
-| `pricingPerModel`               | `object`                                             | optional | `{}`                     | Token pricing per model per million                             |
-| `contextWindowPerModel`         | `object`                                             | optional | `{}`                     | Context window size in tokens per model                         |
-| `compactTriggerRatio`           | `number`                                             | optional | `0.7`                    | Compact when context usage exceeds this ratio                   |
-| `compactTargetRatio`            | `number`                                             | optional | `0.3`                    | Compact down to this context ratio                              |
-| `keymaps`                       | `object`                                             | optional | see below                | Custom keybindings                                              |
-| `customSlashCommandDirs`        | `string[]`                                           | optional | `[]`                     | Additional directories for custom slash commands                |
-| `customSkillDirs`               | `string[]`                                           | optional | `[]`                     | Additional directories for skills                               |
-| `subagentModels`                | `string[]`                                           | optional | `[]`                     | Models available to subagents                                   |
-| `loadingStateFrames`            | `string[]`                                           | optional | `["\|", "/", "-", "\\"]` | Custom spinner frames                                           |
-| `loadingStateFrameDuration`     | `number`                                             | optional | `80`                     | Spinner frame interval in ms                                    |
-| `promptPrefix`                  | `string`                                             | optional | `"> "`                   | Prompt prefix string                                            |
-| `suppressBatUnavailableWarning` | `boolean`                                            | optional | `false`                  | Suppress the startup warning when `bat` is missing              |
-| `messageQueueDelimiter`         | `string`                                             | optional | `l---\n`                 | Delimiter line separating multiple messages in the editor input |
-| `usageLimit`                    | `object`                                             | optional | `undefined`              | Dollar limit and tracking window                                |
+| Option                          | Type                                                 | Default                  | Description                                                     |
+| ------------------------------- | ---------------------------------------------------- | ------------------------ | --------------------------------------------------------------- |
+| `model`                         | `string`                                             | —                        | Model name (required in the merged config)                      |
+| `sdkProvider`                   | `"anthropic"` \| `"openai"` \| `"openai-compatible"` | `openai-compatible`      | AI SDK provider                                                 |
+| `gateway`                       | `"opencode"`                                         | —                        | Used to append gateway-specific headers                         |
+| `baseURL`                       | `string`                                             | `null`                   | API base URL (required for `openai-compatible`)                 |
+| `pricingPerModel`               | `object`                                             | `{}`                     | Token pricing per model per million                             |
+| `contextWindowPerModel`         | `object`                                             | `{}`                     | Context window size in tokens per model                         |
+| `compactTriggerRatio`           | `number`                                             | `0.7`                    | Compact when context usage exceeds this ratio                   |
+| `compactTargetRatio`            | `number`                                             | `0.3`                    | Compact down to this context ratio                              |
+| `keymaps`                       | `object`                                             | see below                | Custom keybindings                                              |
+| `customSlashCommandDirs`        | `string[]`                                           | `[]`                     | Additional directories for custom slash commands                |
+| `customSkillDirs`               | `string[]`                                           | `[]`                     | Additional directories for skills                               |
+| `subagentModels`                | `string[]`                                           | `[]`                     | Models available to subagents                                   |
+| `loadingStateFrames`            | `string[]`                                           | `["\|", "/", "-", "\\"]` | Custom spinner frames                                           |
+| `loadingStateFrameDuration`     | `number`                                             | `80`                     | Spinner frame interval in ms                                    |
+| `promptPrefix`                  | `string`                                             | `"> "`                   | Prompt prefix string                                            |
+| `suppressBatUnavailableWarning` | `boolean`                                            | `false`                  | Suppress the startup warning when `bat` is missing              |
+| `messageQueueDelimiter`         | `string`                                             | `l---\n`                 | Delimiter line separating multiple messages in the editor input |
+| `usageLimit`                    | `object`                                             | `undefined`              | Dollar limit and tracking window                                |
 
 ### Local Overwrite vs Extend
 
