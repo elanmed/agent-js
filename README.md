@@ -198,7 +198,8 @@ keymaps:
   history:
     name: o
     ctrl: true
-  clear:
+  # custom command
+  commit:
     name: x
     ctrl: true
 pricingPerModel:
@@ -214,7 +215,7 @@ customSlashCommandDirs:
 customSkillDirs:
   - /home/me/my-skills
 subagentModels:
-  - claude-sonnet-4-6
+  - claude-haiku-4-5
 loadingStateFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 loadingStateFrameDuration: 100
 promptPrefix: "🤖 "
@@ -305,7 +306,7 @@ The three messages above are sent one per turn, in order. Empty lines between me
 Set a custom delimiter in `settings.yaml` (must end with a newline, so it occupies its own line):
 
 ```yaml
-messageQueueDelimiter: "---"
+messageQueueDelimiter: "ll\n"
 ```
 
 ## AGENTS.md Context
