@@ -1027,7 +1027,6 @@ async function reload() {
       execGitDiff({
         tempFileBeforePath: beforeFiles[i]!,
         tempFileAfterPath: afterFiles[i]!,
-        includeFilename: true,
       }),
     );
 
@@ -1040,7 +1039,19 @@ async function reload() {
       );
       return;
     }
-    diffResults.push(diffResult.value.stdout);
+
+    if (diffResult.value.stdout.length > 0) {
+      const prefix = prefixes[i];
+      assert(prefix !== undefined);
+      const firstChar = prefix.at(0);
+      assert(firstChar !== undefined);
+
+      diffResults.push(
+        `${firstChar.toUpperCase()}${prefix.slice(1)} config:
+${diffResult.value.stdout}
+`,
+      );
+    }
   }
   for (const path of beforeFiles.concat(afterFiles)) {
     fsDeps.unlinkSync(path);

@@ -1824,9 +1824,37 @@ transcript content
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        `global diff
+        `Global config:
+global diff
+
+Local config:
 local diff
+
+Applied config:
 applied diff
+
+`,
+      );
+    });
+
+    it("only includes nonempty config diffs", async () => {
+      testProcessEnv._set("LASSO_PAGER_RELOAD", "cat __FILE__");
+      mockPagerSpawn();
+      mockExecCalls([
+        { stdout: "delta 0.18.2" },
+        { stdout: "" },
+        { stdout: "delta 0.18.2" },
+        { stdout: "local diff\n" },
+        { stdout: "delta 0.18.2" },
+        { stdout: "" },
+      ]);
+      const result = await resolveSlashCommand("/reload");
+      assert.strictEqual(result, null);
+      assert.strictEqual(
+        testFs._files.get("/tmp/lasso-test-uuid.txt"),
+        `Local config:
+local diff
+
 `,
       );
     });
