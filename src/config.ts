@@ -1,6 +1,5 @@
-import crypto from "node:crypto";
 import { z } from "zod";
-import { stringify, tryCatch } from "./utils.ts";
+import { getShortId, stringify, tryCatch } from "./utils.ts";
 import { getAvailableSlashCommands } from "./input.ts";
 import {
   getContextEntries,
@@ -412,10 +411,7 @@ export async function initStateRepeatable() {
 
 export async function initState() {
   initStateForDebug();
-  const debugLogPath = join(
-    getDebugLogDir(),
-    `debug-${crypto.randomUUID()}.log`,
-  );
+  const debugLogPath = join(getDebugLogDir(), `debug-${getShortId()}.log`);
   actions.setDebugLogPath(debugLogPath);
 
   initStateFromConfig();

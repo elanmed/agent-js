@@ -18,7 +18,8 @@ describe("log", () => {
 
   describe("debugLog", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1_700_000_000_000);
+      mock.restoreAll();
+      setupTestContext({ now: 1_700_000_000_000 });
       actions.setDebugLogPath("/fake-home/.config/lasso/debug-test-uuid.log");
     });
 
@@ -68,7 +69,8 @@ describe("log", () => {
 
   describe("appendToChatHistory", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1_700_000_000_000);
+      mock.restoreAll();
+      setupTestContext({ now: 1_700_000_000_000 });
     });
 
     it("creates directory when log file does not exist", () => {
@@ -114,8 +116,8 @@ response
 
   describe("initPromptHistory", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1_234_567_890_000);
-      actions.setSessionStartDate();
+      mock.restoreAll();
+      setupTestContext({ now: 1_234_567_890_000 });
     });
 
     it("creates directory and sets path when directory does not exist", () => {
@@ -159,8 +161,8 @@ response
 
   describe("deleteExpiredPromptHistory", () => {
     beforeEach(() => {
-      mock.method(Date, "now", () => 1_000_000_000_000);
-      actions.setSessionStartDate();
+      mock.restoreAll();
+      setupTestContext({ now: 1_000_000_000_000 });
     });
 
     it("returns early when directory does not exist", () => {

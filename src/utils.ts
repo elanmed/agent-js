@@ -45,6 +45,10 @@ export function normalizeLine(content: string): string {
   return content.trim().concat("\n");
 }
 
+export function getShortId(): string {
+  return crypto.randomBytes(9).toString("base64url");
+}
+
 export function getTempFileName(args?: {
   pathPrefix?: string | undefined;
   initialContentPath?: string | undefined;
@@ -55,7 +59,7 @@ export function getTempFileName(args?: {
 
   const tempFile = join(
     os.tmpdir(),
-    `${pathPrefix ?? "lasso"}-${crypto.randomUUID()}.txt`,
+    `${pathPrefix ?? "lasso"}-${getShortId()}.txt`,
   );
 
   if (initialContentPath !== undefined) {

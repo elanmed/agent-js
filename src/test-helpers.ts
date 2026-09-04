@@ -212,12 +212,19 @@ export function makeFakeRlWithWrites(overrides: object = {}) {
   return { rl, writes };
 }
 
-export function setupTestContext() {
+export function setupTestContext({ now = 0 }: { now?: number } = {}) {
   setupFakeDeps();
   mock.method(os, "homedir", () => "/fake-home");
   mock.method(os, "tmpdir", () => "/tmp");
-  mock.method(crypto, "randomUUID", () => "test-uuid");
-  mock.method(Date, "now", () => 0);
+  mock.method(
+    crypto,
+    "randomBytes",
+    () =>
+      ({
+        toString: () => "test-uuid",
+      }) as Buffer,
+  );
+  mock.method(Date, "now", () => now);
   actions.resetState();
 }
 
@@ -266,6 +273,7 @@ export function mockExec(opts: {
 export function mockExecCalls(
   calls: { stdout: string; error?: Error }[],
   commands?: string[],
+  onCall?: (cmd: string) => void,
 ) {
   const queue = [...calls];
   mock.method(
@@ -273,6 +281,7 @@ export function mockExecCalls(
     "exec",
     (cmd: string, _opts: unknown, cb: ExecCallback) => {
       commands?.push(cmd);
+      onCall?.(cmd);
       const { stdout, error } = queue.shift()!;
       cb(error ?? null, stdout, "");
     },

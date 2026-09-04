@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-base-to-string */
-import crypto from "node:crypto";
 import type readline from "node:readline/promises";
 import type { ModelMessage } from "ai";
 import {
@@ -11,7 +10,7 @@ import {
   type UsageLimit,
 } from "./config.ts";
 import { MISSING } from "./deps.ts";
-import { stringify } from "./utils.ts";
+import { getShortId, stringify } from "./utils.ts";
 import { debugLog } from "./log.ts";
 import type { ModelUsage } from "./usage.ts";
 import type { ContextEntry, Skill } from "./context.ts";
@@ -81,7 +80,7 @@ const createInitialState = (): State => ({
     modelUsageForLimitWindow: {},
     modelUsageForSession: {},
     sessionStartDate: Date.now(),
-    sessionId: crypto.randomUUID(),
+    sessionId: getShortId(),
   },
   config: {
     model: MISSING,

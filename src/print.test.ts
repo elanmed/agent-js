@@ -21,6 +21,7 @@ import {
   mockSetInterval,
   mockClearInterval,
   setupFakeDeps,
+  setupTestContext,
 } from "./test-helpers.ts";
 
 describe("print", () => {
@@ -381,8 +382,8 @@ test content
     });
 
     it("prints the session start date", () => {
-      mock.method(Date, "now", () => 42_000);
-      actions.setSessionStartDate();
+      mock.restoreAll();
+      setupTestContext({ now: 42_000 });
       printSessionStartDate();
       assert.strictEqual(
         stripAnsi(getCapturedAppStdout()),

@@ -28,7 +28,6 @@ import {
   setupKeypressTests,
   makeFakeRl,
   mockClipboardPaste,
-  mockExec,
   mockExecCalls,
   mockSpawnSync,
   mockPagerSpawn,
@@ -315,11 +314,12 @@ from editor
     });
 
     it("prints session start date when exiting", async () => {
+      mock.restoreAll();
+      setupTestContext({ now: 42_000 });
       mock.method(process, "exit", () => {
         throw new Error("process.exit called");
       });
-      mock.method(Date, "now", () => 42_000);
-      actions.setSessionStartDate();
+      actions.setRl(makeFakeRl());
       actions.resetStdout();
       const err = new Error("This operation was aborted");
       err.name = "AbortError";
@@ -1810,17 +1810,24 @@ transcript content
           baseURL: "https://api.example.com",
         }),
       );
+      testProcessEnv._set("LASSO_PAGER_RELOAD", "cat __FILE__");
+      mockPagerSpawn();
       mockExecCalls([
         { stdout: "delta 0.18.2" },
         { stdout: "global diff\n" },
+        { stdout: "delta 0.18.2" },
         { stdout: "local diff\n" },
+        { stdout: "delta 0.18.2" },
         { stdout: "applied diff\n" },
       ]);
       const result = await resolveSlashCommand("/reload");
       assert.strictEqual(result, null);
       assert.strictEqual(
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
-        "global diff\nlocal diff\napplied diff\n",
+        `global diff
+local diff
+applied diff
+`,
       );
     });
 
@@ -1833,7 +1840,7 @@ transcript content
         }),
       );
       testFs._dirs.add(getGlobalContextDir());
-      testFs._files.set("/fake-home/.config/lasso/context/AGENTS.md", "hello");
+      testFs._files.set(`${getGlobalContextDir()}/AGENTS.md`, "hello");
       testFs._globResults.set("/fake-home/.config/lasso/skills/**/SKILL.md", [
         "/fake-home/.config/lasso/skills/my-skill/SKILL.md",
       ]);
@@ -1847,28 +1854,30 @@ description: A test skill
       );
 
       const snapshots = new Map<string, string>();
-      mock.method(
-        childProcess,
-        "exec",
-        (cmd: string, _opts: unknown, cb: unknown) => {
+      mockExecCalls(
+        [
+          { stdout: "diff" },
+          { stdout: "diff" },
+          { stdout: "diff" },
+          { stdout: "diff" },
+          { stdout: "diff" },
+          { stdout: "diff" },
+        ],
+        undefined,
+        (cmd) => {
           for (const prefix of ["global", "local", "applied"]) {
-            if (cmd.includes(`lasso-${prefix}-before`)) {
+            if (cmd.includes(`lasso-${prefix}-after`)) {
               snapshots.set(
                 prefix,
-                testFs._files.get(
-                  `/tmp/lasso-${prefix}-before-test-uuid.txt`,
-                ) ?? "",
+                testFs._files.get(`/tmp/lasso-${prefix}-after-test-uuid.txt`) ??
+                  "",
               );
             }
           }
-          (cb as (error: Error | null, stdout: string, stderr: string) => void)(
-            null,
-            "diff",
-            "",
-          );
         },
       );
 
+      testProcessEnv._set("LASSO_PAGER_RELOAD", "cat __FILE__");
       const result = await resolveSlashCommand("/reload");
       assert.strictEqual(result, null);
       assert.deepStrictEqual(
