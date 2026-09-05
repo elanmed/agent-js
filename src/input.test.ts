@@ -1315,13 +1315,17 @@ custom command content`,
       actions.setKeymap("clear", { name: "x", ctrl: true });
       actions.setKeymap("skills", { name: "x", ctrl: true });
       harness.emitKey({ name: "x", ctrl: true });
-      // TODO: check harness.writes
+      assert.deepStrictEqual(harness.writes, [
+        { chunk: "/clear\n", key: undefined },
+      ]);
     });
 
     it("prefers builtin commands over custom commands on the same key", () => {
       actions.setKeymap("clear", { name: "c", ctrl: true });
       harness.emitKey({ name: "c", ctrl: true });
-      // TODO: check harness.writes
+      assert.deepStrictEqual(harness.writes, [
+        { chunk: "/clear\n", key: undefined },
+      ]);
     });
 
     it("clears the line on unmatched keys during loading", () => {
@@ -1337,7 +1341,9 @@ custom command content`,
       actions.setKeymap("clear", { name: "k", ctrl: true });
       actions.setLoadingStateTimeout({} as NodeJS.Timeout);
       harness.emitKey({ name: "k", ctrl: true });
-      // TODO: check harness.writes
+      assert.deepStrictEqual(harness.writes, [
+        { chunk: "/clear\n", key: undefined },
+      ]);
     });
 
     it("does not clear the line for matched keys during loading", () => {
