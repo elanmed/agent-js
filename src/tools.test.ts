@@ -24,7 +24,7 @@ import {
   mockExecCalls,
   mockGenerateText,
   stripAnsi,
-  getCapturedAppStdout,
+  mockStdout,
   makeGenerateTextResult,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
@@ -793,7 +793,7 @@ bottom`,
 
     it("gives read-write subagents write tools and prints file diffs", async () => {
       setupApiCallState();
-      actions.resetStdout();
+      const getCaptured = mockStdout();
       testFs._files.set("/test/file.txt", "original content");
       mockGenerateText(async (options: Record<string, unknown>) => {
         const writeTools = options["tools"];
@@ -842,7 +842,7 @@ bottom`,
         { model: "main-model", prompt: "edit", content: "done" },
       ]);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         `   create_subagent: [main-model] edit
 
 ━━ File change: /test/file.txt ━━
@@ -1103,11 +1103,8 @@ bottom`,
   });
 
   describe("printGitDiff", () => {
-    beforeEach(() => {
-      actions.resetStdout();
-    });
-
     it("prints diff with lines style", async () => {
+      const getCaptured = mockStdout();
       mockExec({ stdout: "+added line" });
       await printGitDiff({
         tempFileBeforePath: "/tmp/before",
@@ -1115,7 +1112,7 @@ bottom`,
         path: "/test/file.txt",
       });
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         `
 ━━ File change: /test/file.txt ━━
 +added line
@@ -1125,6 +1122,7 @@ bottom`,
     });
 
     it("prints an error when execGitDiff fails", async () => {
+      const getCaptured = mockStdout();
       const err = new Error("fatal") as Error & { code: number };
       err.code = 128;
       mockExec({ stdout: "", error: err });
@@ -1134,19 +1132,20 @@ bottom`,
         path: "/test/file.txt",
       });
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         "An error occurred when getting the diff for /test/file.txt: fatal\n",
       );
     });
 
     it("does not print when execGitDiff returns empty stdout", async () => {
+      const getCaptured = mockStdout();
       mockExec({ stdout: "" });
       await printGitDiff({
         tempFileBeforePath: "/tmp/before",
         tempFileAfterPath: "/tmp/after",
         path: "/test/file.txt",
       });
-      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "");
+      assert.strictEqual(stripAnsi(getCaptured()), "");
     });
   });
 });
