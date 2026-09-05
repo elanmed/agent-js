@@ -159,9 +159,6 @@ export function stripAnsi(str: string): string {
 
 let capturedAppStdout = "";
 
-const appendToStdout = actions.appendToStdout.bind(actions);
-const resetStdout = actions.resetStdout.bind(actions);
-
 export function getCapturedAppStdout() {
   return stripAnsi(capturedAppStdout);
 }
@@ -169,15 +166,6 @@ export function getCapturedAppStdout() {
 export function setupFakeDeps() {
   testFs._restore();
   capturedAppStdout = "";
-  // TODO: find a better way to track stdout
-  mock.method(actions, "appendToStdout", (line: string) => {
-    capturedAppStdout += line;
-    appendToStdout(line);
-  });
-  mock.method(actions, "resetStdout", () => {
-    capturedAppStdout = "";
-    resetStdout();
-  });
   for (const key of Object.keys(testFs)) {
     if (!EXCLUDED_KEYS.includes(key)) {
       mock.method(
@@ -190,7 +178,10 @@ export function setupFakeDeps() {
 
   testProcessEnv._clear();
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
-  mock.method(processDeps.stdout, "write", () => undefined);
+  mock.method(processDeps.stdout, "write", (out: string) => {
+    if (out.includes("\r")) return;
+    capturedAppStdout += out;
+  });
   mock.method(processDeps, "cwd", () => testCwd.get());
 }
 

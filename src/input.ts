@@ -165,8 +165,9 @@ export function initKeypress() {
 
   function typeCommand(command: string) {
     assert(rl !== null);
-    rl.write(`/${command}\n`);
-    actions.appendToStdout(`/${command}\n`);
+    const output = `/${command}\n`;
+    rl.write(output);
+    actions.appendToStdout(output);
   }
 
   stdin.on("keypress", (_char, key: Key) => {
