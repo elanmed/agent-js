@@ -12,9 +12,9 @@ import {
   warnOnMissingBat,
 } from "./print.ts";
 import { actions } from "./state.ts";
+import { processDeps } from "./deps.ts";
 import {
   stripAnsi,
-  getCapturedAppStdout,
   mockExec,
   mockSpawnSync,
   mockStdout,
@@ -45,12 +45,12 @@ describe("print", () => {
     });
 
     it("returns original content and warns when formatting fails", async () => {
-      actions.resetStdout();
+      const getCaptured = mockStdout();
       const invalid = null as unknown as string;
       const result = await formatMarkdown(invalid);
       assert.equal(result, invalid);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         "Outputting raw content, markdown formatting failed: Cannot read properties of null (reading 'length')\n",
       );
     });
@@ -109,7 +109,10 @@ describe("print", () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
-      mockStdout();
+      let captured = "";
+      mock.method(processDeps.stdout, "write", (out: string) => {
+        if (!out.includes("\r")) captured += out;
+      });
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
       startLoadingState();
@@ -121,7 +124,7 @@ describe("print", () => {
 
       await Promise.resolve();
 
-      assert.strictEqual(getCapturedAppStdout(), "X\nY\nZ\n");
+      assert.strictEqual(stripAnsi(captured), "X\nY\nZ\n");
     });
   });
 
@@ -133,14 +136,16 @@ describe("print", () => {
     });
 
     it("prints the text in a fence without session info", () => {
+      const getCaptured = mockStdout();
       fencePrint("Output");
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         "\u2501\u2501 Output \u2501\u2501\n",
       );
     });
 
     it("prints duration and token usage when showSessionInfo is set", () => {
+      const getCaptured = mockStdout();
       mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
       mock.method(performance, "now", () => 1_500);
@@ -149,12 +154,13 @@ describe("print", () => {
       fencePrint("Output", { showSessionInfo: true });
 
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         "\u2501\u2501 Output (500ms) (0 tokens in session) \u2501\u2501\n",
       );
     });
 
     it("includes context window usage when configured", () => {
+      const getCaptured = mockStdout();
       mock.method(performance, "now", () => 1_000);
       actions.setApiStartTime();
       mock.method(performance, "now", () => 1_500);
@@ -167,7 +173,7 @@ describe("print", () => {
       fencePrint("Output", { showSessionInfo: true });
 
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         "\u2501\u2501 Output (500ms) (0 tokens in session, 50% of context window) \u2501\u2501\n",
       );
     });
@@ -384,9 +390,10 @@ test content
     it("prints the session start date", () => {
       mock.restoreAll();
       setupTestContext({ now: 42_000 });
+      const getCaptured = mockStdout();
       printSessionStartDate();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         "Resume this session with /resume 42000\n",
       );
     });
