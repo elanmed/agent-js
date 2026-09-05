@@ -157,15 +157,8 @@ export function stripAnsi(str: string): string {
   return str.replace(ANSI_ESCAPE_PATTERN, "");
 }
 
-let capturedAppStdout = "";
-
-export function getCapturedAppStdout() {
-  return stripAnsi(capturedAppStdout);
-}
-
 export function setupFakeDeps() {
   testFs._restore();
-  capturedAppStdout = "";
   for (const key of Object.keys(testFs)) {
     if (!EXCLUDED_KEYS.includes(key)) {
       mock.method(
@@ -178,10 +171,6 @@ export function setupFakeDeps() {
 
   testProcessEnv._clear();
   mock.method(processDeps.env, "get", (key: string) => testProcessEnv.get(key));
-  mock.method(processDeps.stdout, "write", (out: string) => {
-    if (out.includes("\r")) return;
-    capturedAppStdout += out;
-  });
   mock.method(processDeps, "cwd", () => testCwd.get());
 }
 

@@ -41,15 +41,18 @@ import {
   mockBatAvailable,
   batPagerCmd,
   stripAnsi,
-  getCapturedAppStdout,
+  mockStdout,
 } from "./test-helpers.ts";
 import { fsDeps } from "./deps.ts";
 import childProcess from "node:child_process";
 import { getGlobalConfigPath, getGlobalContextDir } from "./paths.ts";
 
 describe("input", () => {
+  let getCapturedStdout: () => string;
+
   beforeEach(() => {
     setupTestContext();
+    getCapturedStdout = mockStdout();
   });
 
   describe("spawnAndReadEditorContent", () => {
@@ -209,7 +212,7 @@ editor content
       actions.setChatHistoryPath("/tmp/test-history.log");
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, "hello");
-      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "\n━━ Input ━━\n");
+      assert.strictEqual(stripAnsi(getCapturedStdout()), "\n━━ Input ━━\n");
       assert.strictEqual(
         testFs._files.get("/tmp/test-history.log"),
         `1970-01-01T00:00:00.000Z  *user*
@@ -249,7 +252,7 @@ hello
       const result = await resolveUserInput({ isFirstInput: false });
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 ━━ Input ━━
 read failed
@@ -327,6 +330,7 @@ from editor
     it("prints session start date when exiting", async () => {
       mock.restoreAll();
       setupTestContext({ now: 42_000 });
+      getCapturedStdout = mockStdout();
       mock.method(process, "exit", () => {
         throw new Error("process.exit called");
       });
@@ -343,7 +347,7 @@ from editor
         /process.exit called/,
       );
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 ━━ Input ━━
 Resume this session with /resume 42000
@@ -714,7 +718,7 @@ l---
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(getState().app.messageParams.tokensStale, true);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Model updated from `old-model` to `new-model`\n",
       );
     });
@@ -724,7 +728,7 @@ l---
       setModelCommand("/model new-model extra");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Usage: /model [model]?\n",
       );
     });
@@ -734,7 +738,7 @@ l---
       setModelCommand("/model");
       assert.strictEqual(getState().config.model, "old-model");
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Usage: /model [model]?\n",
       );
     });
@@ -744,7 +748,7 @@ l---
       setModelCommand("/model provider/new-model");
       assert.strictEqual(getState().config.model, "provider/new-model");
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Model updated from `old` to `provider/new-model`\n",
       );
     });
@@ -770,7 +774,7 @@ l---
     it("prints current model", () => {
       actions.setModel("gpt-4");
       getModel();
-      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "gpt-4\n");
+      assert.strictEqual(stripAnsi(getCapturedStdout()), "gpt-4\n");
     });
   });
 
@@ -788,7 +792,7 @@ l---
         messages: [],
       });
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Context cleared (0 tokens in session)\n",
       );
     });
@@ -803,7 +807,7 @@ l---
       const result = resume("/resume");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -812,7 +816,7 @@ l---
       const result = resume("/resume 123 456");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -821,7 +825,7 @@ l---
       const result = resume("/resume abc");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -830,7 +834,7 @@ l---
       const result = resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "No conversation found with session start date: 1234567890000\n",
       );
     });
@@ -866,7 +870,7 @@ transcript content
       const result = resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "No conversation found with session start date: 1234567890000\n",
       );
     });
@@ -880,7 +884,7 @@ transcript content
       const result = resume("/resume 1234567890000");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "No conversation found with session start date: 1234567890000\n",
       );
     });
@@ -895,7 +899,7 @@ transcript content
     it("prints no available context files when entries list is empty", async () => {
       await pageContextStr();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available context files
 `,
@@ -923,7 +927,7 @@ No available context files
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         `context string content`,
       );
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
     });
   });
 
@@ -936,7 +940,7 @@ No available context files
     it("prints that the editor is empty when editor input is null", async () => {
       await pageEditStr();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Editor is empty
 `,
@@ -947,7 +951,7 @@ Editor is empty
       actions.setEditorInputValue("");
       await pageEditStr();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Editor is empty
 `,
@@ -964,7 +968,7 @@ Editor is empty
     it("prints no available custom slash commands when list is empty", async () => {
       await pageCustomSlashCommandsStr();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available custom slash commands
 `,
@@ -1003,7 +1007,7 @@ No available custom slash commands
       ]);
       printSkills();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Available skills:
 - test-skill: A test skill
@@ -1015,7 +1019,7 @@ Available skills:
     it("prints no available skills when skills list is empty", () => {
       printSkills();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available skills
 `,
@@ -1039,7 +1043,7 @@ No available skills
       ]);
       printSkills();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Available skills:
 - real-skill: A real skill
@@ -1061,7 +1065,7 @@ Available skills:
       ]);
       printAvailableContextFiles();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Available context files:
 - /project/AGENTS.md
@@ -1072,7 +1076,7 @@ Available context files:
     it("prints no available context files when entries list is empty", () => {
       printAvailableContextFiles();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available context files
 `,
@@ -1099,7 +1103,7 @@ No available context files
       ]);
       printAvailableContextFiles();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Available context files:
 - /project/AGENTS.md
@@ -1125,7 +1129,7 @@ Available context files:
       ]);
       await resolveSlashCommand("/commands");
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Available commands:
 - /edit
@@ -1227,7 +1231,7 @@ Available commands:
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "log content",
       );
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
     });
 
     it("opens editor input in a pager when edit-str keymap matches", async () => {
@@ -1240,7 +1244,7 @@ Available commands:
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         "editor input",
       );
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
     });
 
     it("opens config in a pager when config keymap matches", () => {
@@ -1251,7 +1255,7 @@ Available commands:
         testFs._files.get("/tmp/lasso-test-uuid.txt") ?? "",
         /# Applied config/,
       );
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
     });
 
     it("opens context in a pager when context-str keymap matches", async () => {
@@ -1267,7 +1271,7 @@ Available commands:
         testFs._files.get("/tmp/lasso-test-uuid.txt"),
         `context string content`,
       );
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
     });
 
     it("opens custom commands in a pager when commands-str keymap matches", () => {
@@ -1282,7 +1286,7 @@ Available commands:
 
 custom command content`,
       );
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
     });
 
     for (const [command, keyName] of [
@@ -1334,7 +1338,7 @@ custom command content`,
       assert.deepStrictEqual(harness.writes, [
         { chunk: null, key: { ctrl: true, name: "u" } },
       ]);
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
     });
 
     it("types keymap command while loading when a question is pending", () => {
@@ -1351,7 +1355,7 @@ custom command content`,
       actions.setQuestionAbortController(null);
       actions.setLoadingStateTimeout({} as NodeJS.Timeout);
       harness.emitKey({ name: "k", ctrl: true });
-      assert.strictEqual(getCapturedAppStdout(), "");
+      assert.strictEqual(getCapturedStdout(), "");
       assert.deepStrictEqual(harness.writes, []);
     });
   });
@@ -1596,7 +1600,7 @@ pasted content
       assert.strictEqual(result, null);
       assert.strictEqual(getState().config.model, "new-model");
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Model updated from `old` to `new-model`\n",
       );
     });
@@ -1606,7 +1610,7 @@ pasted content
       actions.resetStdout();
       const result = await resolveSlashCommand("/model");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "gpt-4\n");
+      assert.strictEqual(stripAnsi(getCapturedStdout()), "gpt-4\n");
     });
 
     it("handles /skills command", async () => {
@@ -1614,7 +1618,7 @@ pasted content
       const result = await resolveSlashCommand("/skills");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available skills
 `,
@@ -1626,7 +1630,7 @@ No available skills
       const result = await resolveSlashCommand("/context");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available context files
 `,
@@ -1638,7 +1642,7 @@ No available context files
       const result = await resolveSlashCommand("/commands");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Available commands:
 - /edit
@@ -1704,7 +1708,7 @@ custom command content`,
       const result = await resolveSlashCommand("/commands-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available custom slash commands
 `,
@@ -1716,7 +1720,7 @@ No available custom slash commands
       const result = await resolveSlashCommand("/context-str");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 No available context files
 `,
@@ -1742,7 +1746,7 @@ No available context files
       actions.resetStdout();
       const result = await resolveSlashCommand("/config");
       assert.strictEqual(result, null);
-      assert.strictEqual(stripAnsi(getCapturedAppStdout()), "");
+      assert.strictEqual(stripAnsi(getCapturedStdout()), "");
       const tempContent = testFs._files.get("/tmp/lasso-test-uuid.txt");
       assert.ok(tempContent !== undefined);
       assert.match(tempContent, /^# Global config from path: /);
@@ -1755,7 +1759,7 @@ No available context files
       const result = await resolveSlashCommand("/keymaps");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Keymaps:
 - edit: {"name":"g","ctrl":true}
@@ -1770,7 +1774,7 @@ Keymaps:
       const result = await resolveSlashCommand("/usage");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "0 tokens in session\n",
       );
     });
@@ -1784,7 +1788,7 @@ Keymaps:
       const result = await resolveSlashCommand("/usage");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "0 tokens in session, 50% of context window\n",
       );
     });
@@ -1794,7 +1798,7 @@ Keymaps:
       const result = await resolveSlashCommand("/resume");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Usage: /resume [session start date]\n",
       );
     });
@@ -2024,7 +2028,7 @@ some   task
       const result = await resolveSlashCommand("/unknown");
       assert.strictEqual(result, null);
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         `
 Invalid command: /unknown, valid commands:
 - /edit
@@ -2056,7 +2060,7 @@ Invalid command: /unknown, valid commands:
       actions.resetStdout();
       initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Created the local config at /test-cwd/.lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -2074,7 +2078,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "The local config already exists at /test-cwd/.lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -2090,7 +2094,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Failed to write the config to /test-cwd/.lasso/settings.yaml\n",
       );
     });
@@ -2099,7 +2103,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       initGlobalConfig();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Created the global config at /fake-home/.config/lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -2120,7 +2124,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       initGlobalConfig();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "The global config already exists at /fake-home/.config/lasso/settings.yaml\n",
       );
       assert.strictEqual(
@@ -2136,7 +2140,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       initGlobalConfig();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Failed to write the config to /fake-home/.config/lasso/settings.yaml\n",
       );
     });
@@ -2148,7 +2152,7 @@ baseURL: https://opencode.ai/zen/v1
       actions.resetStdout();
       initLocalConfig();
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCapturedStdout()),
         "Failed to create the directory: /test-cwd/.lasso\n",
       );
     });
