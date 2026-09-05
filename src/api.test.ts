@@ -7,8 +7,8 @@ import {
   setupApiCallState,
   testFs,
   mockExec,
+  mockStdout,
   stripAnsi,
-  getCapturedAppStdout,
   makeGenerateTextResult,
 } from "./test-helpers.ts";
 import { aiDeps } from "./deps.ts";
@@ -226,7 +226,7 @@ response text
     });
 
     it("prints diff and cleans up on tool call finish success", async () => {
-      actions.resetStdout();
+      const getCaptured = mockStdout();
       testFs._files.set("/test/file.txt", "modified content");
       mock.method(
         aiDeps,
@@ -259,7 +259,7 @@ response text
       mockExec({ stdout: "+added line" });
       await resolveApiCall("edit file");
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         "\n━━ File change: /test/file.txt ━━\n+added line\n\n",
       );
       assert.strictEqual(testFs._files.has("/tmp/lasso-test-uuid.txt"), false);
@@ -458,7 +458,7 @@ SKILLS: available skills`,
     });
 
     it("warns when compaction does not reach the target", async () => {
-      actions.resetStdout();
+      const getCaptured = mockStdout();
       actions.setCompactTargetRatio(0.25);
       actions.appendToMessageParams({ role: "user", content: "hi" });
       actions.setMessageParamTokens(80_000);
@@ -481,7 +481,7 @@ SKILLS: available skills`,
         messages: [{ role: "assistant", content: "compacted summary" }],
       });
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         `Compacting…
 Compacted to 30,000, 5,000 over the target.
 `,
@@ -503,7 +503,7 @@ Compacted to 30,000, 5,000 over the target.
     });
 
     it("keeps messages and prints Interrupted compaction on abort error", async () => {
-      actions.resetStdout();
+      const getCaptured = mockStdout();
       actions.appendToMessageParams({ role: "user", content: "hi" });
       actions.setMessageParamTokens(80_000);
       const err = new Error("aborted");
@@ -517,7 +517,7 @@ Compacted to 30,000, 5,000 over the target.
         messages: [{ role: "user", content: "hi" }],
       });
       assert.strictEqual(
-        stripAnsi(getCapturedAppStdout()),
+        stripAnsi(getCaptured()),
         `Compacting…
 Interrupted compaction
 `,

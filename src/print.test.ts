@@ -12,7 +12,6 @@ import {
   warnOnMissingBat,
 } from "./print.ts";
 import { actions } from "./state.ts";
-import { processDeps } from "./deps.ts";
 import {
   stripAnsi,
   mockExec,
@@ -63,7 +62,7 @@ describe("print", () => {
       mockClearInterval(callbacks);
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
-      const getCaptured = mockStdout();
+      const getCaptured = mockStdout({ includeSpinnerFrames: true });
 
       startLoadingState();
       callbacks.forEach((cb) => cb());
@@ -80,7 +79,7 @@ describe("print", () => {
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
 
-      const getCaptured = mockStdout();
+      const getCaptured = mockStdout({ includeSpinnerFrames: true });
 
       startLoadingState();
       callbacks.forEach((cb) => cb());
@@ -109,10 +108,7 @@ describe("print", () => {
       actions.resetState();
       const callbacks = mockSetInterval();
       mockClearInterval(callbacks);
-      let captured = "";
-      mock.method(processDeps.stdout, "write", (out: string) => {
-        if (!out.includes("\r")) captured += out;
-      });
+      const getCaptured = mockStdout();
       actions.setLoadingStateFrames(["a", "b", "c"]);
 
       startLoadingState();
@@ -124,7 +120,7 @@ describe("print", () => {
 
       await Promise.resolve();
 
-      assert.strictEqual(stripAnsi(captured), "X\nY\nZ\n");
+      assert.strictEqual(stripAnsi(getCaptured()), "X\nY\nZ\n");
     });
   });
 

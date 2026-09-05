@@ -106,9 +106,11 @@ export function makeFakeFsDeps(
   };
 }
 
-export function mockStdout() {
+export function mockStdout(opts: { includeSpinnerFrames?: boolean } = {}) {
+  const { includeSpinnerFrames = false } = opts;
   let captured = "";
   mock.method(processDeps.stdout, "write", (out: string) => {
+    if (!includeSpinnerFrames && out.includes("\r")) return;
     captured += out;
   });
   return () => captured;
